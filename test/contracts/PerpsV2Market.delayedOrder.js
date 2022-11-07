@@ -832,11 +832,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, price, takerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader2, price, takerFeeDelayedOrder, spotTradeDetails);
 						});
 					});
 
@@ -850,11 +850,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, price, makerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader2, price, makerFeeDelayedOrder, spotTradeDetails);
 						});
 					});
 				});

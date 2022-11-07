@@ -4,15 +4,9 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./PerpsV2MarketDelayedOrdersBase.sol";
 import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
-import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
-
-// Reference
-import "./interfaces/IPerpsV2MarketBaseTypes.sol";
-import "./interfaces/IPerpsV2ExchangeRate.sol";
-import "./interfaces/IPyth.sol";
 
 /**
- Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (onchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -49,7 +43,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {
+    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -62,7 +56,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         int sizeDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
-    ) external {
+    ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -133,18 +127,11 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
 
         // price depends on whether the delay or price update has reached/occurred first
         uint currentPrice = _assetPriceRequireSystemChecks();
-        uint tradePrice = currentPrice;
-        if (currentRoundId >= order.targetRoundId) {
-            // the correct price for the past round if target round was met
-            (uint pastPrice, ) = _exchangeRates().rateAndTimestampAtRound(_baseAsset(), order.targetRoundId);
-            tradePrice = pastPrice;
-        }
 
         _executeDelayedOrder(
             account,
             order,
             currentPrice,
-            tradePrice,
             currentRoundId,
             _takerFeeDelayedOrder(_marketKey()),
             _makerFeeDelayedOrder(_marketKey())

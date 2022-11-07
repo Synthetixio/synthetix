@@ -8,7 +8,7 @@ import "./PerpsV2MarketProxyable.sol";
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
- Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (base for onchain and offchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -19,7 +19,7 @@ import "./interfaces/IPerpsV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersBase
 contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
@@ -42,7 +42,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         uint desiredTimeDelta,
         bytes32 trackingCode,
         bool isOffchain
-    ) internal onlyProxy {
+    ) internal {
         // check that a previous order doesn't exist
         require(marketState.delayedOrders(messageSender).sizeDelta == 0, "previous order exists");
 
@@ -121,7 +121,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         );
     }
 
-    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal onlyProxy {
+    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
         _confirmCanCancel(account, order, currentRoundId);
@@ -163,7 +163,6 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         address account,
         DelayedOrder memory order,
         uint currentPrice,
-        uint tradePrice,
         uint currentRoundId,
         uint takerFee,
         uint makerFee
@@ -193,7 +192,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: tradePrice, // the funding is applied only from order confirmation time
+                price: currentPrice, // the funding is applied only from order confirmation time
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
                 trackingCode: order.trackingCode

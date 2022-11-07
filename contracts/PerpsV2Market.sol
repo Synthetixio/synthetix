@@ -54,6 +54,8 @@ import "./interfaces/IPerpsV2Market.sol";
  *                                       `views` contains functions to provide visibility to different parameters and
  *                                           is used by external or manager contracts.
  *                                        `delayedOrders` contains the logic to implement the delayed order flows.
+ *                                        `offchainDelayedOrders` contains the logic to implement the delayed order
+ *                                           with off-chain pricing flows.
  *
  *     - PerpsV2State.sol:               The State contracts holds all the state for the market and is consumed/updated
  *                                       by the fragments.
@@ -64,7 +66,9 @@ import "./interfaces/IPerpsV2Market.sol";
  *     - PerpsV2MarketViews.sol:         Contains the logic to access market and positions parameters by external or
  *                                       manager contracts
  *
- *     - PerpsV2MarketDelayedOrder.sol:  Contains the logic to implement delayed order flows
+ *     - PerpsV2MarketDelayedOrders.sol:  Contains the logic to implement delayed order flows
+ *
+ *     - PerpsV2MarketDelayedOrdersOffchain.sol:  Contains the logic to implement delayed order with off-chain pricing flows
  *
  *
  * Technical note: internal functions within the PerpsV2Market contract assume the following:

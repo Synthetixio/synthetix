@@ -252,6 +252,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
 			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
+			assert.bnEqual(
+				details.feeRates.takerFeeOffchainDelayedOrder,
+				params.takerFeeOffchainDelayedOrder
+			);
+			assert.bnEqual(
+				details.feeRates.makerFeeOffchainDelayedOrder,
+				params.makerFeeOffchainDelayedOrder
+			);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
 
@@ -340,6 +348,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
+			assert.equal(
+				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				params.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				params.makerFeeOffchainDelayedOrder
+			);
 		});
 
 		it('For market keys', async () => {
@@ -374,6 +390,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
 			assert.equal(sBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
+			assert.equal(
+				sBTCSummary.feeRates.takerFeeOffchainDelayedOrder,
+				fmParams.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sBTCSummary.feeRates.makerFeeOffchainDelayedOrder,
+				fmParams.makerFeeOffchainDelayedOrder
+			);
 
 			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
 
@@ -389,6 +413,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, sETHParams.takerFeeDelayedOrder);
 			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, sETHParams.makerFeeDelayedOrder);
+			assert.equal(
+				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				sETHParams.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				sETHParams.makerFeeOffchainDelayedOrder
+			);
 
 			assert.equal(
 				sLINKSummary.market,
@@ -404,6 +436,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
 			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
 			assert.equal(sLINKSummary.feeRates.makerFeeDelayedOrder, toUnit('0'));
+			assert.equal(sLINKSummary.feeRates.takerFeeOffchainDelayedOrder, toUnit('0.00005'));
+			assert.equal(sLINKSummary.feeRates.makerFeeOffchainDelayedOrder, toUnit('0'));
 		});
 	});
 });

@@ -65,6 +65,8 @@ contract PerpsV2MarketData {
         uint makerFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
+        uint takerFeeOffchainDelayedOrder;
+        uint makerFeeOffchainDelayedOrder;
     }
 
     struct FundingDetails {
@@ -162,7 +164,14 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder)
+                FeeRates(
+                    params.takerFee,
+                    params.makerFee,
+                    params.takerFeeDelayedOrder,
+                    params.makerFeeDelayedOrder,
+                    params.takerFeeOffchainDelayedOrder,
+                    params.makerFeeOffchainDelayedOrder
+                )
             );
         }
 
@@ -207,7 +216,14 @@ contract PerpsV2MarketData {
                 address(market),
                 baseAsset,
                 marketKey,
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder),
+                FeeRates(
+                    params.takerFee,
+                    params.makerFee,
+                    params.takerFeeDelayedOrder,
+                    params.makerFeeDelayedOrder,
+                    params.takerFeeOffchainDelayedOrder,
+                    params.makerFeeOffchainDelayedOrder
+                ),
                 MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),

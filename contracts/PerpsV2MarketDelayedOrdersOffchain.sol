@@ -6,12 +6,11 @@ import "./PerpsV2MarketDelayedOrdersBase.sol";
 import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
 
 // Reference
-// import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 import "./interfaces/IPerpsV2ExchangeRate.sol";
 import "./interfaces/IPyth.sol";
 
 /**
- Contract that implements DelayedOrders (onchain and offchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (offchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -51,7 +50,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      */
-    function submitOffchainDelayedOrder(int sizeDelta) external {
+    function submitOffchainDelayedOrder(int sizeDelta) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -59,7 +58,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         _submitDelayedOrder(_marketKey(), sizeDelta, 0, bytes32(0), true);
     }
 
-    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -128,7 +127,6 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         _executeDelayedOrder(
             account,
             order,
-            currentPrice,
             currentPrice,
             0,
             _takerFeeOffchainDelayedOrder(_marketKey()),
