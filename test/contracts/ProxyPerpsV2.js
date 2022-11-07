@@ -144,7 +144,7 @@ contract('ProxyPerpsV2', async accounts => {
 			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableAddressSetAbi, user);
 			await assert.revert(
 				Proxied.add(TestableProxyable.address),
-				'function call to a non-contract account'
+				'Transaction reverted without a reason string'
 			);
 		});
 	});
@@ -496,7 +496,7 @@ contract('ProxyPerpsV2', async accounts => {
 			await (await ProxyPerpsV2.addRoute('0x0a3b0a4f', TestableAddressSet.address, false)).wait();
 
 			// TestableProxyable.emitSomeEvent()
-			await (await ProxyPerpsV2.addRoute('0x953bb133', TestableProxyable.address, true)).wait();
+			await (await ProxyPerpsV2.addRoute('0x953bb133', TestableProxyable.address, false)).wait();
 		});
 
 		it('can write and read a value', async () => {
@@ -511,18 +511,11 @@ contract('ProxyPerpsV2', async accounts => {
 			assert.isTrue(result);
 		});
 
-		it('can still call the default target', async () => {
-			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableProxyableAbi, user);
-			const receipt = await (await Proxied.emitSomeEvent()).wait();
-
-			assert.equal(receipt.events.length, 1);
-		});
-
 		it('reverts calling a route not added', async () => {
 			const Proxied = new ethers.Contract(ProxyPerpsV2.address, TestableBytes32SetAbi, user);
 			await assert.revert(
 				Proxied.add(toBytes32('Some Value')),
-				'function call to a non-contract account'
+				'Transaction reverted without a reason string'
 			);
 		});
 	});
