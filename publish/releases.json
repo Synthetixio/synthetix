@@ -748,14 +748,9 @@
 			"sip": 280,
 			"layer": "ovm",
 			"sources": {
-				"base": ["FeePool", "DebtCache", "PerpsV2MarketManager"],
+				"base": ["FuturesMarketManager"],
 				"ovm": [
-					"FeePool",
-					"Synths.+",
-					"PurgeableSynth",
-					"MultiCollateralSynth",
-					"DebtCache",
-					"PerpsV2MarketManager",
+					"FuturesMarketManager",
 					"PerpsV2MarketSettings",
 					"PerpsV2MarketData",
 					"PerpsV2Proxy.+",

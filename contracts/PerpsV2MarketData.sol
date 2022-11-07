@@ -2,9 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Internal references
+import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IPerpsV2MarketViews.sol";
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
-import "./interfaces/IPerpsV2MarketManager.sol";
 import "./interfaces/IPerpsV2MarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
@@ -109,10 +109,10 @@ contract PerpsV2MarketData {
 
     /* ========== VIEWS ========== */
 
-    function _futuresMarketManager() internal view returns (IPerpsV2MarketManager) {
+    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return
-            IPerpsV2MarketManager(
-                resolverProxy.requireAndGetAddress("PerpsV2MarketManager", "Missing PerpsV2MarketManager Address")
+            IFuturesMarketManager(
+                resolverProxy.requireAndGetAddress("FuturesMarketManager", "Missing FuturesMarketManager Address")
             );
     }
 

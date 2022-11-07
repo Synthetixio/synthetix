@@ -49,7 +49,7 @@ contract('PerpsV2MarketData', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ProxyPerpsV2MarketBTC: futuresMarket,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: futuresMarketSettings,
 			PerpsV2MarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
@@ -60,7 +60,7 @@ contract('PerpsV2MarketData', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
@@ -141,7 +141,7 @@ contract('PerpsV2MarketData', accounts => {
 					})
 				)
 			);
-			await futuresMarketManager.addMarkets([market.address], {
+			await futuresMarketManager.addProxiedMarkets([market.address], {
 				from: owner,
 			});
 
