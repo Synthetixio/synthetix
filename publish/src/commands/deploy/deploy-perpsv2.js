@@ -14,6 +14,7 @@ module.exports = async ({
 	deploymentPath,
 	network,
 	useOvm,
+	futuresMarketManager,
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
@@ -28,12 +29,14 @@ module.exports = async ({
 		network,
 	});
 
-	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesMarketManager',
-		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
-		deps: ['ReadProxyAddressResolver'],
-	});
+	if (!futuresMarketManager) {
+		futuresMarketManager = await deployer.deployContract({
+			name: 'FuturesMarketManager',
+			source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+			args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
+			deps: ['ReadProxyAddressResolver'],
+		});
+	}
 
 	if (!useOvm) {
 		return;
@@ -52,6 +55,11 @@ module.exports = async ({
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
+	await deployer.deployContract({
+		name: 'PerpsV2ExchangeRate',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
+
 	const deployedFuturesMarkets = [];
 
 	for (const marketConfig of perpsv2Markets) {
@@ -66,6 +74,8 @@ module.exports = async ({
 		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketDelayedOrderName = 'PerpsV2DelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketOffchainDelayedOrderName =
+			'PerpsV2OffchainDelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		// Deploy contracts
 		// Proxy
@@ -118,6 +128,19 @@ module.exports = async ({
 			force: true,
 		});
 
+		// Offchain DelayedOrder
+		const futuresMarketDelayedOrderOffchain = await deployer.deployContract({
+			name: marketOffchainDelayedOrderName,
+			source: 'PerpsV2MarketDelayedOrdersOffchain',
+			args: [
+				futuresMarketProxy.address,
+				futuresMarketState.address,
+				account,
+				addressOf(ReadProxyAddressResolver),
+			],
+			force: true,
+		});
+
 		// Configure Contracts, Proxy and State
 
 		// Initial cleanup
@@ -154,7 +177,24 @@ module.exports = async ({
 			writeArg: [futuresMarketProxy.address],
 		});
 
+		await runStep({
+			contract: `PerpsV2MarketDelayedOrdersOffchain`,
+			target: futuresMarketDelayedOrderOffchain,
+			write: 'setProxy',
+			writeArg: [futuresMarketProxy.address],
+		});
+
 		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions);
+		for (const f of filteredFunctions) {
+			await runStep({
+				contract: `ProxyPerpsV2`,
+				target: futuresMarketProxy,
+				write: 'addRoute',
+				writeArg: [f.signature, futuresMarketDelayedOrder.address, f.isView],
+			});
+		}
+
+		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyPerpsV2`,
@@ -197,9 +237,8 @@ module.exports = async ({
 	// Now replace the relevant markets in the manager (if any)
 
 	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
-		const numManagerKnownMarkets = await futuresMarketManager.numMarkets();
 		const managerKnownMarkets = Array.from(
-			await futuresMarketManager.markets(0, numManagerKnownMarkets)
+			await futuresMarketManager['allMarkets(bool)'](true)
 		).sort();
 
 		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));
@@ -210,8 +249,8 @@ module.exports = async ({
 			await runStep({
 				contract: `FuturesMarketManager`,
 				target: futuresMarketManager,
-				read: 'markets',
-				readArg: [0, numManagerKnownMarkets],
+				read: 'allMarkets(bool)',
+				readArg: [true],
 				expected: markets => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
 				write: 'removeMarkets',
 				writeArg: [toRemove],
@@ -224,12 +263,12 @@ module.exports = async ({
 			await runStep({
 				contract: `FuturesMarketManager`,
 				target: futuresMarketManager,
-				read: 'markets',
-				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
+				read: 'allMarkets(bool)',
+				readArg: [true],
 				expected: markets =>
 					JSON.stringify(markets.slice().sort()) ===
 					JSON.stringify(deployedFuturesMarkets.slice().sort()),
-				write: 'addMarkets',
+				write: 'addProxiedMarkets',
 				writeArg: [toAdd],
 				gasLimit: 150e3 * toAdd.length, // extra gas per market
 			});

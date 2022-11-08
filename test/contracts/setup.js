@@ -1300,6 +1300,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeRates',
@@ -1312,6 +1313,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeRates',
@@ -1324,6 +1326,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeRates',
@@ -1336,6 +1339,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeRates',
@@ -1351,6 +1355,7 @@ const setupAllContracts = async ({
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2DelayedOrderBTC',
 				'PerpsV2OffchainOrderBTC',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FlexibleStorage',
@@ -1366,6 +1371,7 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateETH',
 				'PerpsV2MarketViewsETH',
 				'PerpsV2NextPriceETH',
+				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FlexibleStorage',

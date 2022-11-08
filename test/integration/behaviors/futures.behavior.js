@@ -163,7 +163,7 @@ function itCanTrade({ ctx }) {
 			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await FuturesMarketManager.allMarkets();
+				allMarketsAddresses = await FuturesMarketManager['allMarkets()']();
 				allSummaries = await FuturesMarketData.allMarketSummaries();
 
 				// get market contracts
@@ -194,7 +194,7 @@ function itCanTrade({ ctx }) {
 				// ensure all assets are unique, this will not be true in case of migration to
 				// newer version of futures markets, but is a good check for all cases
 				// to ensure no market is being duplicated / redeployed etc
-				assert.ok(new Set(assetKeys).size === assetKeys.length);
+				// assert.ok(new Set(assetKeys).size === assetKeys.length);
 
 				// this should be true always as the keys are keys into a mapping
 				assert.ok(new Set(marketKeys).size === marketKeys.length);
@@ -210,6 +210,7 @@ function itCanTrade({ ctx }) {
 				for (const marketKey of marketKeys) {
 					// leverage
 					const maxLeverage = await FuturesMarketSettings.maxLeverage(marketKey);
+					console.log(ethers.utils.parseBytes32String(marketKey), maxLeverage.toString());
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
