@@ -566,7 +566,7 @@ contract('PerpsV2Market', accounts => {
 			const side = parseInt(leverage.toString()) > 0 ? 'long' : 'short';
 			const sideVar = leverage.div(leverage.abs());
 
-			describe.only(`${side}`, () => {
+			describe(`${side}`, () => {
 				it('Ensure that the order fee (both maker and taker) is correct when the order is actually submitted', async () => {
 					const price = toUnit('100');
 
@@ -795,28 +795,47 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				it('Increase an existing position opposite to the skew smaller than the skew', async () => {
+					const price = toUnit('100');
+					await setPrice(baseAsset, price);
+
+					// assuming leverage is 3.5 (long)
+					//
+					// margin = 1000 / 2 = 500
+					// size = 500 * 3.5 / 100 = 17.5
+					const margin1 = multiplyDecimal(margin, toUnit('2'));
+					const size1 = multiplyDecimal(margin1, leverage).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100)),
+						fillPrice: price,
+						marginDelta: margin1,
+						sizeDelta: size1,
 					});
 
+					// note: the .neg on leverage and the lack of .mul(2) on margin
+					//
+					// this is a different trader going in the opposite direction.
+					//
+					// size = -3.5 * 1000 / 100 = -35
+					//
+					// skew after this trade is -17.5
+					const size2 = multiplyDecimal(leverage.neg(), margin).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
-						sizeDelta: multiplyDecimal(leverage.neg(), margin).div(toBN(100)),
+						sizeDelta: size2,
 					});
 
-					assert.bnEqual(
-						(
-							await futuresMarket.orderFee(multiplyDecimal(leverage.neg(), margin).div(toBN(200)))
-						)[0],
-						toUnit('1.75')
-					);
+					// size = -3.5 * 1000 / 200 = 17.5
+					//
+					// this size pushes the skew back to 0. the size trade is only charged the makerFee.
+					const size3 = multiplyDecimal(leverage.neg(), margin).div(toUnit('200'));
+					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const expectedFee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
+
+					assert.bnEqual((await futuresMarket.orderFee(size3))[0], expectedFee);
 				});
 
 				it('Increase an existing position opposite to the skew larger than the skew', async () => {
@@ -891,89 +910,112 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				it('Reduce an existing position opposite to the skew', async () => {
-					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
+					const price = toUnit('100');
+					await setPrice(baseAsset, price);
+
+					const margin1 = multiplyDecimal(margin, toUnit('2'));
+					const size1 = multiplyDecimal(leverage, margin1).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: sizeDelta1,
+						fillPrice: price,
+						marginDelta: margin1,
+						sizeDelta: size1,
 					});
 
-					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
+					const size2 = multiplyDecimal(leverage.neg(), margin).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
-						sizeDelta: sizeDelta2,
+						sizeDelta: size2,
 					});
 
-					const size = sizeDelta2.neg().div(toBN(2));
-					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), takerFee).abs();
-					assert.bnEqual((await futuresMarket.orderFee(size)).fee, fee);
+					const size3 = divideDecimal(size2.neg(), toUnit('2'));
+					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size3)).fee, fee);
 				});
 
-				it('close an existing position on the side of the skew', async () => {
-					const sizeDelta = multiplyDecimal(leverage, margin).div(toBN(100));
+				it('Close an existing position on the side of the skew', async () => {
+					const price = toUnit('100');
+					await setPrice(baseAsset, price);
+
+					const size1 = divideDecimal(multiplyDecimal(leverage, margin), price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
-						sizeDelta,
+						sizeDelta: size1,
 					});
 
-					const size = sizeDelta.neg();
-					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), makerFee).abs();
-					assert.bnEqual((await futuresMarket.orderFee(sizeDelta.neg())).fee, fee);
+					const size2 = size1.neg();
+					const fillPrice = (await futuresMarket.fillPrice(size2))[0];
+					const fee = multiplyDecimal(multiplyDecimal(size2, fillPrice), makerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size2)).fee, fee);
 				});
 
-				it('close an existing position opposite to the skew', async () => {
-					const sizeDelta1 = multiplyDecimal(leverage, margin.mul(toBN(2))).div(toBN(100));
+				it('Close an existing position opposite to the skew', async () => {
+					const price = toUnit('100');
+					await setPrice(baseAsset, price);
+
+					const margin1 = multiplyDecimal(margin, toUnit('2'));
+					const size1 = multiplyDecimal(leverage, margin1).div(price);
+
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: sizeDelta1,
+						fillPrice: price,
+						marginDelta: margin1,
+						sizeDelta: size1,
 					});
 
-					const sizeDelta2 = multiplyDecimal(leverage.neg(), margin).div(toBN(100));
+					const size2 = multiplyDecimal(leverage.neg(), margin).div(price);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
-						sizeDelta: sizeDelta2,
+						sizeDelta: size2,
 					});
 
-					const size = sizeDelta2.neg();
-					const fee = multiplyDecimal(multiplyDecimal(size, toUnit('100')), takerFee).abs();
-					assert.bnEqual((await futuresMarket.orderFee(size)).fee, fee);
+					const size3 = size2.neg();
+					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size3)).fee, fee);
 				});
 
 				it('Updated order, opposite and smaller than the skew, on opposite side of an existing position', async () => {
+					const price = toUnit('100');
+					await setPrice(baseAsset, price);
+
+					const margin1 = multiplyDecimal(margin, toUnit('2'));
+					const size1 = toUnit('70').mul(sideVar);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader2,
-						fillPrice: toUnit('100'),
-						marginDelta: margin.mul(toBN(2)),
-						sizeDelta: toUnit('70').mul(sideVar),
+						fillPrice: price,
+						marginDelta: margin1,
+						sizeDelta: size1,
 					});
 
+					const size2 = multiplyDecimal(toUnit('-35'), sideVar);
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: toUnit('100'),
+						fillPrice: price,
 						marginDelta: margin,
-						sizeDelta: toUnit('-35').mul(sideVar),
+						sizeDelta: size2,
 					});
 
-					assert.bnEqual(
-						(await futuresMarket.orderFee(toUnit('-17.5').mul(sideVar)))[0],
-						toUnit('1.75')
-					);
+					const size3 = multiplyDecimal(toUnit('-17.5'), sideVar);
+					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+
+					// makerFee because we're in the opposite direction (hence reducing skew).
+					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
+					assert.bnEqual((await futuresMarket.orderFee(size3))[0], fee);
 				});
 			});
 		}
