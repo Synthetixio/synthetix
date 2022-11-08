@@ -1,1 +1,44 @@
-[]
+[
+	{
+		"marketKey": "pBTC",
+		"asset": "sBTC",
+		"takerFee": "0.003",
+		"makerFee": "0.0025",
+		"takerFeeDelayedOrder": "0.002",
+		"makerFeeDelayedOrder": "0.002",
+		"takerFeeOffchainDelayedOrder": "0.0002",
+		"makerFeeOffchainDelayedOrder": "0.002",
+		"nextPriceConfirmWindow": "2",
+		"delayedOrderConfirmWindow": "60",
+		"minDelayTimeDelta": "30",
+		"maxDelayTimeDelta": "120",
+		"offchainDelayedOrderMinAge": "15",
+		"offchainDelayedOrderMaxAge": "60",
+		"maxLeverage": "25",
+		"maxMarketValueUSD": "10000000",
+		"maxFundingVelocity": "0.1",
+		"skewScaleUSD": "300000000",
+		"paused": false
+	},
+	{
+		"marketKey": "pETH",
+		"asset": "sETH",
+		"takerFee": "0.0035",
+		"makerFee": "0.0030",
+		"takerFeeDelayedOrder": "0.002",
+		"makerFeeDelayedOrder": "0.002",
+		"takerFeeOffchainDelayedOrder": "0.0002",
+		"makerFeeOffchainDelayedOrder": "0.0002",
+		"nextPriceConfirmWindow": "2",
+		"delayedOrderConfirmWindow": "60",
+		"minDelayTimeDelta": "30",
+		"maxDelayTimeDelta": "120",
+		"offchainDelayedOrderMinAge": "15",
+		"offchainDelayedOrderMaxAge": "60",
+		"maxLeverage": "25",
+		"maxMarketValueUSD": "25000000",
+		"maxFundingVelocity": "0.1",
+		"skewScaleUSD": "300000000",
+		"paused": false
+	}
+]
