@@ -361,7 +361,6 @@ const setupContract = async ({
 		// Perps V2
 		MockPyth: [60, 1],
 		PerpsV2ExchangeRate: [owner, tryGetAddressOf('AddressResolver')],
-		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketData: [tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketStateBTC: [
@@ -763,7 +762,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyPerpsV2MarketBTC'].setTarget(instance.address, { from: owner }),
-				cache['PerpsV2MarketManager'].addMarkets([cache['ProxyPerpsV2MarketBTC'].address], {
+				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketBTC'].address], {
 					from: owner,
 				}),
 			]);
@@ -778,7 +777,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyPerpsV2MarketETH'].setTarget(instance.address, { from: owner }),
-				cache['PerpsV2MarketManager'].addMarkets([cache['ProxyPerpsV2MarketETH'].address], {
+				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketETH'].address], {
 					from: owner,
 				}),
 			]);
@@ -854,15 +853,6 @@ const setupContract = async ({
 					}),
 				]);
 			} else if (mock === 'FuturesMarketManager') {
-				await Promise.all([
-					mockGenericContractFnc({
-						instance,
-						mock,
-						fncName: 'totalDebt',
-						returns: ['0', false],
-					}),
-				]);
-			} else if (mock === 'PerpsV2MarketManager') {
 				await Promise.all([
 					mockGenericContractFnc({
 						instance,
@@ -1035,14 +1025,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: [
-				'Issuer',
-				'Exchanger',
-				'CollateralManager',
-				'EtherWrapper',
-				'FuturesMarketManager',
-				'PerpsV2MarketManager',
-			],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -1213,7 +1196,6 @@ const setupAllContracts = async ({
 				'CollateralManager',
 				'EtherWrapper',
 				'FuturesMarketManager',
-				'PerpsV2MarketManager',
 				'WrapperFactory',
 				'SynthetixBridgeToOptimism',
 			],
@@ -1263,7 +1245,10 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'ExchangeCircuitBreaker'],
+			deps: [
+				'AddressResolver',
+				'Exchanger' /*, 'FuturesMarketSettings', 'ExchangeCircuitBreaker' */,
+			],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1309,10 +1294,6 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'PerpsV2MarketSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'PerpsV2MarketData', deps: ['PerpsV2MarketSettings'] },
-		{
-			contract: 'PerpsV2MarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'PerpsV2MarketSettings', 'ExchangeRates'],
-		},
 		{
 			contract: 'PerpsV2MarketViewsBTC',
 			source: 'PerpsV2MarketViews',
@@ -1371,6 +1352,7 @@ const setupAllContracts = async ({
 				'PerpsV2DelayedOrderBTC',
 				'PerpsV2OffchainOrderBTC',
 				'AddressResolver',
+				'FuturesMarketManager',
 				'FlexibleStorage',
 				'ExchangeRates',
 				'PerpsV2ExchangeRate',
@@ -1385,6 +1367,7 @@ const setupAllContracts = async ({
 				'PerpsV2MarketViewsETH',
 				'PerpsV2NextPriceETH',
 				'AddressResolver',
+				'FuturesMarketManager',
 				'FlexibleStorage',
 				'ExchangeRates',
 				'PerpsV2ExchangeRate',

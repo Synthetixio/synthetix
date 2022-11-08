@@ -119,7 +119,7 @@ contract('PerpsV2Market', accounts => {
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketStateBTC: futuresMarketState,
 			PerpsV2MarketBTC: futuresMarketImpl,
 			PerpsV2MarketViewsBTC: futuresMarketViewsImpl,
@@ -140,7 +140,7 @@ contract('PerpsV2Market', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',

@@ -60,7 +60,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'PerpsV2MarketBTC',

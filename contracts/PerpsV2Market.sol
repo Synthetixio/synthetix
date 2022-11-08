@@ -30,7 +30,7 @@ import "./interfaces/IPerpsV2Market.sol";
  *
  * The contract architecture is as follows:
  *
- *     - PerpsV2MarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
+ *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
  *                                  futures markets and the rest of the system. It accumulates the total debt
  *                                  over all markets, and issues and burns sUSD on each market's behalf.
  *

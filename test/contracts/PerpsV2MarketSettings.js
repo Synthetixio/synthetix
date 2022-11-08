@@ -49,13 +49,13 @@ contract('PerpsV2MarketSettings', accounts => {
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
 				'PerpsV2MarketSettings',
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -115,7 +115,7 @@ contract('PerpsV2MarketSettings', accounts => {
 		);
 
 		// add the market
-		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addProxiedMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -488,7 +488,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			);
 
 			// add the market
-			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([secondBTCMarket.address], { from: owner });
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {

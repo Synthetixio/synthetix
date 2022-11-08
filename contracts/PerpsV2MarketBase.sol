@@ -17,11 +17,13 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Internal references
 import "./interfaces/IPerpsV2MarketState.sol";
 
-interface IPerpsV2MarketManagerInternal {
+// Use internal interface (external functions not present in IFuturesMarketManager)
+interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
@@ -56,7 +58,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 internal constant CONTRACT_PERPSV2MARKETMANAGER = "PerpsV2MarketManager";
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
     bytes32 internal constant CONTRACT_PERPSV2EXCHANGERATE = "PerpsV2ExchangeRate";
 
@@ -103,7 +105,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[3] = CONTRACT_PERPSV2MARKETMANAGER;
+        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
         newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
         // newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
@@ -126,8 +128,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function _manager() internal view returns (IPerpsV2MarketManagerInternal) {
-        return IPerpsV2MarketManagerInternal(requireAndGetAddress(CONTRACT_PERPSV2MARKETMANAGER));
+    function _manager() internal view returns (IFuturesMarketManagerInternal) {
+        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _settings() internal view returns (address) {

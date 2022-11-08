@@ -29,8 +29,8 @@ module.exports = async ({
 	});
 
 	const futuresMarketManager = await deployer.deployContract({
-		name: 'PerpsV2MarketManager',
-		source: useOvm ? 'PerpsV2MarketManager' : 'EmptyPerpsV2MarketManager',
+		name: 'FuturesMarketManager',
+		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
 		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
 		deps: ['ReadProxyAddressResolver'],
 	});
@@ -208,7 +208,7 @@ module.exports = async ({
 			.sort();
 		if (toRemove.length > 0) {
 			await runStep({
-				contract: `PerpsV2MarketManager`,
+				contract: `FuturesMarketManager`,
 				target: futuresMarketManager,
 				read: 'markets',
 				readArg: [0, numManagerKnownMarkets],
@@ -222,7 +222,7 @@ module.exports = async ({
 
 		if (toAdd.length > 0) {
 			await runStep({
-				contract: `PerpsV2MarketManager`,
+				contract: `FuturesMarketManager`,
 				target: futuresMarketManager,
 				read: 'markets',
 				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
