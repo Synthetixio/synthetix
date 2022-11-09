@@ -29,7 +29,6 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     /*
      * The maximum size in base units of an order on each side of the market that will not exceed the max market value.
-     * TODO: Remove `invalid` here as it does not need to know about prices.
      */
     function maxOrderSizes()
         external
@@ -114,6 +113,11 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         (uint price, bool invalid) = _assetPrice();
         uint fillPrice = _fillPrice(size, price);
         return (fillPrice, invalid);
+    }
+
+    /* @dev Given the size and baseBase (e.g. current off-chain price), return the expected fillPrice */
+    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint price) {
+        return _fillPrice(size, basePrice);
     }
 
     function marketSizes() external view returns (uint long, uint short) {

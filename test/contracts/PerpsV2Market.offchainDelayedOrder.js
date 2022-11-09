@@ -76,7 +76,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		emaConf = feedBaseFromUNIT(defaultFeedEMAConfidence),
 		publishTime,
 	}) {
-		const feedUpdateData = await mockPyth.createPriceFeedUpdateData(
+		return mockPyth.createPriceFeedUpdateData(
 			id,
 			price,
 			conf,
@@ -85,8 +85,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			emaConf,
 			publishTime || (await currentTime())
 		);
-
-		return feedUpdateData;
 	}
 
 	// function decimalToFeedBaseUNIT(price, feedExpo = defaultFeedExpo) {
@@ -364,10 +362,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
-			const offchainFillPrice = (await perpsV2Market.fillPrice(size))[0];
+			const fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice);
 			const expectedFee = multiplyDecimal(
 				size,
-				multiplyDecimal(offchainFillPrice, takerFeeOffchainDelayedOrder)
+				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
 			);
 
 			// execute the order
@@ -947,7 +945,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							//
 							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
 							// set the commitFee here because commitFee was _before_ the submit and price update.
-							fillPrice = (await perpsV2Market.fillPrice(size))[0];
+							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
 						});
 
 						it('from account owner', async () => {
@@ -984,7 +982,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
 							await setOnchainPrice(baseAsset, targetPrice);
 
-							fillPrice = (await perpsV2Market.fillPrice(size))[0];
+							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
 						});
 
 						it('from account owner', async () => {
