@@ -1741,9 +1741,9 @@ const setupAllContracts = async ({
 							toWei('0.00001'), // 0.001% maker fee offchain delayed order
 
 							toWei('10'), // 10x max leverage
-							toWei('100000'), // 100000 max market debt
+							toWei('1000'), // 1000 max market value
 							toWei('0.1'), // 10% max funding velocity
-							toWei('100000'), // 100000 USD skewScaleUSD
+							toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
 
 							toBN('2'), // 2 rounds next price confirm window
 							30, // 30s delay confirm window

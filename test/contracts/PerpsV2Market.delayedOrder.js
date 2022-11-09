@@ -94,7 +94,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price, desiredTimeDelta, minDelayTimeDelta;
+	let margin, size, price, fillPrice, desiredTimeDelta, minDelayTimeDelta;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -105,6 +105,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		desiredTimeDelta = 60;
 		minDelayTimeDelta = 60;
 		await setPrice(baseAsset, price);
+		fillPrice = (await futuresMarket.fillPrice(size))[0];
 	});
 
 	describe('submitDelayedOrder()', () => {
@@ -134,14 +135,13 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				contracts: [futuresMarket, futuresDelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
-			// PositionModified
+
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: futuresMarket.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
 				log: decodedLogs[1],
 			});
-			// DelayedOrderSubmitted
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: futuresMarket.address,
@@ -302,8 +302,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			// go to next round
 			await setPrice(baseAsset, price);
-
-			const expectedFee = multiplyDecimal(size, multiplyDecimal(price, takerFeeDelayedOrder));
+			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const expectedFee = multiplyDecimal(size, multiplyDecimal(fillPrice, takerFeeDelayedOrder));
 
 			// execute the order
 			const tx = await futuresMarket.executeDelayedOrder(trader, { from: trader });
@@ -564,11 +564,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			let roundId, commitFee, keeperFee;
 
 			beforeEach(async () => {
+				// the beginning of each test, `trader` submits a delayed order with `size`.
+				//
+				// the commitFee they pay is relative to the current skew and price. this means we want to track
+				// their commitFee upfront now (as this is the fee refunded if they are also the keeper).
+
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				// commitFee is the fee that would be charged for a spot trade when order is submitted
-				commitFee = (await futuresMarket.orderFee(size))[0];
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await futuresMarketSettings.minKeeperFee();
+				// commitFee is the fee that would be charged for a spot trade when order is submitted
+				commitFee = (await futuresMarket.orderFee(size))[0];
+
 				await futuresMarket.submitDelayedOrder(size, desiredTimeDelta, { from: trader });
 			});
 
@@ -649,6 +655,14 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			// spotTradeDetails: trade details of the same trade if it would happen as spot
 			async function checkExecution(from, targetPrice, feeRate, spotTradeDetails) {
 				const currentMargin = toBN((await futuresMarket.positions(trader)).margin);
+
+				// note we need to calc the fillPrice _before_ executing the order because the p/d applied is based
+				// on the skew at the time of trade. if we ran this _after_ then the premium would be lower as the
+				// size delta as a % is lower post execution.
+				//
+				// e.g. 20 / 100 > 20 / 120
+				const fillPrice = (await futuresMarket.fillPrice(size))[0];
+
 				// execute the order
 				const tx = await futuresMarket.executeDelayedOrder(trader, { from: from });
 
@@ -685,19 +699,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					});
 				}
 
-				// trader was refunded correctly
-				// PositionModified
 				let expectedMargin = currentMargin.add(expectedRefund);
-				const currentPrice = (await futuresMarket.assetPrice()).price;
+
+				// trader was refunded correctly
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: futuresMarket.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, currentPrice, toBN(2), 0],
+					args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
 
 				// trade was executed correctly
-				// PositionModified
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
@@ -755,23 +767,31 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					// check we can execute.
 					//
 					// note the predicate uses `price` and not `targetPrice` because target is never reached
-					await checkExecution(trader, price, takerFeeDelayedOrder, spotTradeDetails);
+					const expectedPrice = (await futuresMarket.fillPrice(size))[0];
+					await checkExecution(trader, expectedPrice, takerFeeDelayedOrder, spotTradeDetails);
 				});
 
 				describe('during target round', () => {
+					let targetFillPrice;
 					describe('taker trade', () => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, targetFillPrice, takerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								takerFeeDelayedOrder,
+								spotTradeDetails
+							);
 						});
 					});
 
@@ -782,15 +802,21 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							await futuresMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetPrice, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								spotTradeDetails
+							);
 						});
 					});
 
@@ -826,35 +852,58 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					});
 
 					describe('taker trade', () => {
+						let targetFillPrice;
+
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, price);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, price, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, targetFillPrice, takerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, price, takerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								takerFeeDelayedOrder,
+								spotTradeDetails
+							);
 						});
 					});
 
 					describe('maker trade', () => {
+						let targetFillPrice;
+
 						beforeEach(async () => {
 							// skew the other way
+							//
+							// note: we need to update spotTradeDetails because this modifies the skew and hence
+							// will affect the p/d on fillPrice. since this existing trade is short, the execution
+							// of the delay order contracts the skew hence targetFillPrice will be a discount on price.
 							await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
 							await futuresMarket.modifyPosition(size.mul(toBN(-2)), { from: trader3 });
+
+							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+
 							// go to next round
 							await setPrice(baseAsset, price);
+							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, price, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, spotTradeDetails);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, price, makerFeeDelayedOrder, spotTradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								spotTradeDetails
+							);
 						});
 					});
 				});
