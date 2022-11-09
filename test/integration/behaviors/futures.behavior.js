@@ -189,7 +189,6 @@ function itCanTrade({ ctx }) {
 					const marketSummary = await FuturesMarketManager.marketSummaries([someMarket.address]);
 					marketKeyIsV2[marketKey] = marketSummary[0].proxied;
 				}
-				console.log(marketKeyIsV2);
 			});
 
 			it('number of markets and summaries', async () => {
@@ -223,12 +222,12 @@ function itCanTrade({ ctx }) {
 					assert.bnLt(maxLeverage, toUnit(100));
 
 					const maxMarketValueUSD = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.maxMarketValueUSD(marketKey)
+						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
 						: await FuturesMarketSettings.maxMarketValueUSD(marketKey);
 					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
 
 					const skewScaleUSD = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.skewScaleUSD(marketKey)
+						? await PerpsV2MarketSettings.skewScale(marketKey)
 						: await FuturesMarketSettings.skewScaleUSD(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
 					assert.bnGt(skewScaleUSD, toUnit(1));
