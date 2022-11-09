@@ -38,10 +38,10 @@ contract('PerpsV2MarketSettings', accounts => {
 	const nextPriceConfirmWindow = toBN('2');
 
 	const maxLeverage = toUnit('10');
-	const maxMarketValueUSD = toUnit('100000');
+	const maxMarketValue = toUnit('1000');
 
 	const maxFundingVelocity = toUnit('0.1');
-	const skewScaleUSD = toUnit('10000');
+	const skewScale = toUnit('10000');
 
 	const offchainDelayedOrderMinAge = toBN('15');
 	const offchainDelayedOrderMaxAge = toBN('60');
@@ -132,13 +132,13 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMaxDelayTimeDelta',
 				'setMaxFundingVelocity',
 				'setMaxLeverage',
-				'setMaxMarketValueUSD',
+				'setMaxMarketValue',
 				'setMinDelayTimeDelta',
 				'setMinInitialMargin',
 				'setMinKeeperFee',
 				'setNextPriceConfirmWindow',
 				'setParameters',
-				'setSkewScaleUSD',
+				'setSkewScale',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 				'setTakerFeeOffchainDelayedOrder',
@@ -160,9 +160,9 @@ contract('PerpsV2MarketSettings', accounts => {
 				takerFeeOffchainDelayedOrder,
 				makerFeeOffchainDelayedOrder,
 				maxLeverage,
-				maxMarketValueUSD,
+				maxMarketValue,
 				maxFundingVelocity,
-				skewScaleUSD,
+				skewScale,
 				nextPriceConfirmWindow,
 				offchainDelayedOrderMinAge,
 				offchainDelayedOrderMaxAge,
@@ -209,9 +209,9 @@ contract('PerpsV2MarketSettings', accounts => {
 				);
 			});
 
-			it('should revert if setSkewScaleUSD is 0', async () => {
+			it('should revert if setSkewScale is 0', async () => {
 				await assert.revert(
-					futuresMarketSettings.setSkewScaleUSD(marketKey, 0, {
+					futuresMarketSettings.setSkewScale(marketKey, 0, {
 						from: owner,
 					}),
 					'cannot set skew scale 0'

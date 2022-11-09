@@ -35,7 +35,7 @@ contract PerpsV2MarketData {
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxMarketValueUSD;
+        uint maxMarketValue;
     }
 
     struct Sides {
@@ -57,7 +57,7 @@ contract PerpsV2MarketData {
 
     struct FundingParameters {
         uint maxFundingVelocity;
-        uint skewScaleUSD;
+        uint skewScale;
     }
 
     struct FeeRates {
@@ -195,7 +195,7 @@ contract PerpsV2MarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(params.maxFundingVelocity, params.skewScaleUSD);
+        return FundingParameters(params.maxFundingVelocity, params.skewScale);
     }
 
     function _marketSizes(IPerpsV2MarketViews market) internal view returns (Sides memory) {
@@ -224,7 +224,7 @@ contract PerpsV2MarketData {
                     params.takerFeeOffchainDelayedOrder,
                     params.makerFeeOffchainDelayedOrder
                 ),
-                MarketLimits(params.maxLeverage, params.maxMarketValueUSD),
+                MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, invalid)

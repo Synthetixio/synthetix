@@ -167,9 +167,9 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0'), // 0% maker fee offchain delayed order
 
 					toWei('5'), // 5x max leverage
-					toWei('1000000'), // 1000000 max total margin
+					toWei('1000'), // 1000 max market value
 					toWei('0.2'), // 20% max funding velocity
-					toWei('100000'), // 100000 USD skewScaleUSD
+					toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
 
 					toBN('2'), // 2 rounds next price confirm window
 					30, // 30s delay confirm window
@@ -261,10 +261,10 @@ contract('PerpsV2MarketData', accounts => {
 				params.makerFeeOffchainDelayedOrder
 			);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
-			assert.bnEqual(details.limits.maxMarketValueUSD, params.maxMarketValueUSD);
+			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
 
 			assert.bnEqual(details.fundingParameters.maxFundingVelocity, params.maxFundingVelocity);
-			assert.bnEqual(details.fundingParameters.skewScaleUSD, params.skewScaleUSD);
+			assert.bnEqual(details.fundingParameters.skewScale, params.skewScale);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();

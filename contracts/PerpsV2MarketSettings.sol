@@ -116,10 +116,17 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum allowable notional value on each side of a market.
+     * The maximum allowable value (base asset) on each side of a market.
      */
-    function maxMarketValueUSD(bytes32 _marketKey) public view returns (uint) {
-        return _maxMarketValueUSD(_marketKey);
+    function maxMarketValue(bytes32 _marketKey) public view returns (uint) {
+        return _maxMarketValue(_marketKey);
+    }
+
+    /*
+     * The skew level at which the max funding velocity will be charged.
+     */
+    function skewScale(bytes32 _marketKey) public view returns (uint) {
+        return _skewScale(_marketKey);
     }
 
     /*
@@ -127,13 +134,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function maxFundingVelocity(bytes32 _marketKey) public view returns (uint) {
         return _maxFundingVelocity(_marketKey);
-    }
-
-    /*
-     * The skew level at which the max funding velocity will be charged.
-     */
-    function skewScaleUSD(bytes32 _marketKey) public view returns (uint) {
-        return _skewScaleUSD(_marketKey);
     }
 
     /*
@@ -160,9 +160,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _takerFeeOffchainDelayedOrder(_marketKey),
                 _makerFeeOffchainDelayedOrder(_marketKey),
                 _maxLeverage(_marketKey),
-                _maxMarketValueUSD(_marketKey),
+                _maxMarketValue(_marketKey),
                 _maxFundingVelocity(_marketKey),
-                _skewScaleUSD(_marketKey),
+                _skewScale(_marketKey),
                 _nextPriceConfirmWindow(_marketKey),
                 _delayedOrderConfirmWindow(_marketKey),
                 _minDelayTimeDelta(_marketKey),
@@ -266,8 +266,8 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValueUSD(bytes32 _marketKey, uint _maxMarketValueUSD) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValueUSD);
+    function setMaxMarketValue(bytes32 _marketKey, uint _maxMarketValue) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
     }
 
     // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
@@ -289,10 +289,10 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAX_FUNDING_VELOCITY, _maxFundingVelocity);
     }
 
-    function setSkewScaleUSD(bytes32 _marketKey, uint _skewScaleUSD) public onlyOwner {
-        require(_skewScaleUSD > 0, "cannot set skew scale 0");
+    function setSkewScale(bytes32 _marketKey, uint _skewScale) public onlyOwner {
+        require(_skewScale > 0, "cannot set skew scale 0");
         _recomputeFunding(_marketKey);
-        _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScaleUSD);
+        _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScale);
     }
 
     function setMinDelayTimeDelta(bytes32 _marketKey, uint _minDelayTimeDelta) public onlyOwner {
@@ -308,9 +308,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setTakerFee(_marketKey, _parameters.takerFee);
         setMakerFee(_marketKey, _parameters.makerFee);
         setMaxLeverage(_marketKey, _parameters.maxLeverage);
-        setMaxMarketValueUSD(_marketKey, _parameters.maxMarketValueUSD);
+        setMaxMarketValue(_marketKey, _parameters.maxMarketValue);
         setMaxFundingVelocity(_marketKey, _parameters.maxFundingVelocity);
-        setSkewScaleUSD(_marketKey, _parameters.skewScaleUSD);
+        setSkewScale(_marketKey, _parameters.skewScale);
         setTakerFeeDelayedOrder(_marketKey, _parameters.takerFeeDelayedOrder);
         setMakerFeeDelayedOrder(_marketKey, _parameters.makerFeeDelayedOrder);
         setNextPriceConfirmWindow(_marketKey, _parameters.nextPriceConfirmWindow);

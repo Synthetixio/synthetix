@@ -80,7 +80,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
-
+        // check to ensure we are not running the offchain delayed order.
         require(!order.isOffchain, "use offchain method");
 
         _cancelDelayedOrder(account, order);
@@ -127,6 +127,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
 
         // price depends on whether the delay or price update has reached/occurred first
         uint currentPrice = _assetPriceRequireSystemChecks();
+        currentPrice = _fillPrice(order.sizeDelta, _assetPriceRequireSystemChecks());
 
         _executeDelayedOrder(
             account,

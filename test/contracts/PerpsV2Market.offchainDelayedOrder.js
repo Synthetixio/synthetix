@@ -76,7 +76,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		emaConf = feedBaseFromUNIT(defaultFeedEMAConfidence),
 		publishTime,
 	}) {
-		const feedUpdateData = await mockPyth.createPriceFeedUpdateData(
+		return mockPyth.createPriceFeedUpdateData(
 			id,
 			price,
 			conf,
@@ -85,8 +85,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			emaConf,
 			publishTime || (await currentTime())
 		);
-
-		return feedUpdateData;
 	}
 
 	// function decimalToFeedBaseUNIT(price, feedExpo = defaultFeedExpo) {
@@ -201,6 +199,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+			const fillPrice = (await perpsV2Market.fillPrice(size))[0];
+
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, {
 				from: trader,
 			});
@@ -225,14 +226,12 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				contracts: [perpsV2Market, perpsV2DelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
-			// PositionModified
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
 				log: decodedLogs[1],
 			});
-			// DelayedOrderSubmitted
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
@@ -347,14 +346,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 
 			// setup
-			await perpsV2Market.submitOffchainDelayedOrderWithTracking(
-				size,
-
-				trackingCode,
-				{
-					from: trader,
-				}
-			);
+			await perpsV2Market.submitOffchainDelayedOrderWithTracking(size, trackingCode, {
+				from: trader,
+			});
 
 			// go to next round
 			await setOnchainPrice(baseAsset, price);
@@ -368,9 +362,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
+			const fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice);
 			const expectedFee = multiplyDecimal(
 				size,
-				multiplyDecimal(offChainPrice, takerFeeOffchainDelayedOrder)
+				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
 			);
 
 			// execute the order
@@ -647,6 +642,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		describe('when an order exists', () => {
 			let commitFee, keeperFee, updateFeedData;
 
+			beforeEach(async () => {
+				// keeperFee is the minimum keeperFee for the system
+				keeperFee = await perpsV2MarketSettings.minKeeperFee();
+				// commitFee is the fee that would be charged for a spot trade when order is submitted
+				commitFee = (await perpsV2Market.orderFee(size))[0];
+			});
+
 			async function submitOffchainOrderAndDelay(delay, feedTimeOffset = 0) {
 				await setOffchainPrice(trader, {
 					id: defaultFeedId,
@@ -868,7 +870,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				}
 
 				// trader was refunded correctly
-				// PositionModified
 				let expectedMargin = currentMargin.add(expectedRefund);
 
 				decodedEventEqual({
@@ -879,7 +880,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				});
 
 				// trade was executed correctly
-				// PositionModified
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
@@ -895,7 +895,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
-				// DelayedOrderRemoved
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
@@ -912,7 +911,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			}
 
 			describe('execution results in correct views and events', () => {
-				let targetPrice, targetOffchainPrice, spotTradeDetails, updateFeedData;
+				let targetPrice, targetOffchainPrice, fillPrice, spotTradeDetails, updateFeedData;
 
 				beforeEach(async () => {
 					await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
@@ -937,13 +936,23 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							await setOnchainPrice(baseAsset, targetOffchainPrice);
 							spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
 							await setOnchainPrice(baseAsset, targetPrice);
+
+							// note we need to calc the fillPrice _before_ executing the order because the p/d applied is based
+							// on the skew at the time of trade. if we ran this _after_ then the premium would be lower as the
+							// size delta as a % is lower post execution.
+							//
+							// e.g. 20 / 100 > 20 / 120
+							//
+							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
+							// set the commitFee here because commitFee was _before_ the submit and price update.
+							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
 						});
 
 						it('from account owner', async () => {
 							await checkExecution(
 								trader,
-								targetOffchainPrice,
-								targetOffchainPrice,
+								fillPrice,
+								fillPrice,
 								takerFeeOffchainDelayedOrder,
 								spotTradeDetails,
 								updateFeedData
@@ -953,8 +962,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						it('from keeper', async () => {
 							await checkExecution(
 								trader2,
-								targetOffchainPrice,
-								targetOffchainPrice,
+								fillPrice,
+								fillPrice,
 								takerFeeOffchainDelayedOrder,
 								spotTradeDetails,
 								updateFeedData
@@ -972,13 +981,15 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							await setOnchainPrice(baseAsset, targetOffchainPrice);
 							spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
 							await setOnchainPrice(baseAsset, targetPrice);
+
+							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
 						});
 
 						it('from account owner', async () => {
 							await checkExecution(
 								trader,
-								targetOffchainPrice,
-								targetOffchainPrice,
+								fillPrice,
+								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								spotTradeDetails,
 								updateFeedData
@@ -988,8 +999,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						it('from keeper', async () => {
 							await checkExecution(
 								trader2,
-								targetOffchainPrice,
-								targetOffchainPrice,
+								fillPrice,
+								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								spotTradeDetails,
 								updateFeedData

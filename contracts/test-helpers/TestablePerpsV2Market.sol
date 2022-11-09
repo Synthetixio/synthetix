@@ -19,8 +19,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function proportionalSkew() external view returns (int) {
-        (uint price, ) = _assetPrice();
-        return _proportionalSkew(price);
+        _assetPrice();
+        return _proportionalSkew();
     }
 
     function maxFundingVelocity() external view returns (uint) {
@@ -39,9 +39,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
             bool invalid
         )
     {
-        uint price;
-        (price, invalid) = _assetPrice();
-        int sizeLimit = int(_maxMarketValueUSD(_marketKey())).divideDecimal(int(price));
+        (uint _, bool invalid) = _assetPrice();
+        int sizeLimit = int(_maxMarketValue(_marketKey()));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));
@@ -108,6 +107,17 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     function assetPrice() external view returns (uint price, bool invalid) {
         return (0, false);
+    }
+
+    function fillPrice(int size) external view returns (uint price, bool invalid) {
+        (uint price, bool invalid) = _assetPrice();
+        uint fillPrice = _fillPrice(size, price);
+        return (fillPrice, invalid);
+    }
+
+    /* @dev Given the size and baseBase (e.g. current off-chain price), return the expected fillPrice */
+    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint price) {
+        return _fillPrice(size, basePrice);
     }
 
     function marketSizes() external view returns (uint long, uint short) {

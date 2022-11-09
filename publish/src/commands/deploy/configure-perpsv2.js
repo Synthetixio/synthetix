@@ -11,7 +11,6 @@ module.exports = async ({
 	loadAndCheckRequiredSources,
 	runStep,
 	useOvm,
-	freshDeploy,
 	deploymentPath,
 	network,
 	generateSolidity,
@@ -95,9 +94,9 @@ module.exports = async ({
 			offchainDelayedOrderMinAge,
 			offchainDelayedOrderMaxAge,
 			maxLeverage,
-			maxMarketValueUSD,
+			maxMarketValue,
 			maxFundingVelocity,
-			skewScaleUSD,
+			skewScale,
 			paused,
 		} = market;
 
@@ -119,9 +118,9 @@ module.exports = async ({
 			offchainDelayedOrderMinAge: w3utils.toWei(offchainDelayedOrderMinAge),
 			offchainDelayedOrderMaxAge: w3utils.toWei(offchainDelayedOrderMaxAge),
 			maxLeverage: w3utils.toWei(maxLeverage),
-			maxMarketValueUSD: w3utils.toWei(maxMarketValueUSD),
+			maxMarketValue: w3utils.toWei(maxMarketValue),
 			maxFundingVelocity: w3utils.toWei(maxFundingVelocity),
-			skewScaleUSD: w3utils.toWei(skewScaleUSD),
+			skewScale: w3utils.toWei(skewScale),
 		};
 
 		for (const setting in settings) {

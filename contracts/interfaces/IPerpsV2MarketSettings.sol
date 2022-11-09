@@ -10,9 +10,9 @@ interface IPerpsV2MarketSettings {
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
         uint maxLeverage;
-        uint maxMarketValueUSD;
+        uint maxMarketValue;
         uint maxFundingVelocity;
-        uint skewScaleUSD;
+        uint skewScale;
         uint nextPriceConfirmWindow;
         uint delayedOrderConfirmWindow;
         uint minDelayTimeDelta;
@@ -43,11 +43,11 @@ interface IPerpsV2MarketSettings {
 
     function maxLeverage(bytes32 _marketKey) external view returns (uint);
 
-    function maxMarketValueUSD(bytes32 _marketKey) external view returns (uint);
+    function maxMarketValue(bytes32 _marketKey) external view returns (uint);
 
     function maxFundingVelocity(bytes32 _marketKey) external view returns (uint);
 
-    function skewScaleUSD(bytes32 _marketKey) external view returns (uint);
+    function skewScale(bytes32 _marketKey) external view returns (uint);
 
     function minDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
 

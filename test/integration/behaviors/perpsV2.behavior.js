@@ -257,16 +257,16 @@ function itCanTrade({ ctx }) {
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
-					const maxMarketValueUSD = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.maxMarketValueUSD(marketKey)
+					const maxMarketValue = marketKeyIsV2[marketKey]
+						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
 						: await FuturesMarketSettings.maxMarketValueUSD(marketKey);
-					assert.bnLt(maxMarketValueUSD, toUnit(100000000));
+					assert.bnLt(maxMarketValue, toUnit(100000000));
 
-					const skewScaleUSD = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.skewScaleUSD(marketKey)
+					const skewScale = marketKeyIsV2[marketKey]
+						? await PerpsV2MarketSettings.skewScale(marketKey)
 						: await FuturesMarketSettings.skewScaleUSD(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
-					assert.bnGt(skewScaleUSD, toUnit(1));
+					assert.bnGt(skewScale, toUnit(1));
 				}
 			});
 
