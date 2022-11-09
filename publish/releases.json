@@ -703,7 +703,8 @@
 				"Synthetix",
 				"Liquidator",
 				"RewardEscrowV2Storage"
-			]
+			],
+			"released": "both"
 		},
 		{
 			"sip": 257,
@@ -724,6 +725,20 @@
 			"released": "both"
 		},
 		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeSettlementLib",
+				"ExchangeRates",
+				"Issuer",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
 			"sip": 269,
 			"layer": "ovm",
 			"sources": [],
@@ -733,14 +748,9 @@
 			"sip": 280,
 			"layer": "ovm",
 			"sources": {
-				"base": ["FeePool", "DebtCache", "PerpsV2MarketManager"],
+				"base": ["FuturesMarketManager"],
 				"ovm": [
-					"FeePool",
-					"Synths.+",
-					"PurgeableSynth",
-					"MultiCollateralSynth",
-					"DebtCache",
-					"PerpsV2MarketManager",
+					"FuturesMarketManager",
 					"PerpsV2MarketSettings",
 					"PerpsV2MarketData",
 					"PerpsV2Proxy.+",
@@ -1378,7 +1388,8 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
 		},
 		{
 			"name": "Aspidiske (Optimism)",
@@ -1387,7 +1398,27 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
+		},
+		{
+			"name": "Suhail",
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Suhail (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
 		}
 	]
 }

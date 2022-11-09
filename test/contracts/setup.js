@@ -182,7 +182,17 @@ const setupContract = async ({
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		const safeDecimalMath = await artifacts.require('SafeDecimalMath').new();
-		if (artifact._json.contractName === 'SystemSettings') {
+
+		if (
+			artifact._json.contractName === 'Exchanger' ||
+			artifact._json.contractName === 'ExchangerWithFeeRecAlternatives'
+		) {
+			// SafeDecimalMath -> ExchangeSettlementLib -> Exchanger*
+			const ExchangeSettlementLib = artifacts.require('ExchangeSettlementLib');
+			ExchangeSettlementLib.link(safeDecimalMath);
+			artifact.link(await ExchangeSettlementLib.new());
+			artifact.link(await safeDecimalMath);
+		} else if (artifact._json.contractName === 'SystemSettings') {
 			// SafeDecimalMath -> SystemSettingsLib -> SystemSettings
 			const SystemSettingsLib = artifacts.require('SystemSettingsLib');
 			SystemSettingsLib.link(safeDecimalMath);
@@ -235,6 +245,7 @@ const setupContract = async ({
 		ExchangeCircuitBreaker: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithFeeRecAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
+		DirectIntegrationManager: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		SynthetixDebtShare: [owner, tryGetAddressOf('AddressResolver')],
 		BaseSynthetix: [
@@ -348,7 +359,8 @@ const setupContract = async ({
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Perps V2
-		PerpsV2MarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		MockPyth: [60, 1],
+		PerpsV2ExchangeRate: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketData: [tryGetAddressOf('AddressResolver')],
 		PerpsV2MarketStateBTC: [
@@ -381,9 +393,9 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2DelayedOrderETH: [
-			tryGetAddressOf('ProxyPerpsV2MarketETH'),
-			tryGetAddressOf('PerpsV2MarketStateETH'),
+		PerpsV2OffchainOrderBTC: [
+			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
@@ -722,19 +734,19 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async PerpsV2DelayedOrderETH() {
+		async PerpsV2OffchainOrderBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
-				cache['PerpsV2MarketStateETH'].removeAssociatedContracts([deployerAccount], {
+				cache['PerpsV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
 					from: owner,
 				}),
-				cache['PerpsV2MarketStateETH'].addAssociatedContracts([instance.address], {
+				cache['PerpsV2MarketStateBTC'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
-				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
+				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
 				...filteredFunctions.map(e =>
-					cache['ProxyPerpsV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
+					cache['ProxyPerpsV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
 						from: owner,
 					})
 				),
@@ -750,7 +762,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyPerpsV2MarketBTC'].setTarget(instance.address, { from: owner }),
-				cache['PerpsV2MarketManager'].addMarkets([cache['ProxyPerpsV2MarketBTC'].address], {
+				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketBTC'].address], {
 					from: owner,
 				}),
 			]);
@@ -765,7 +777,7 @@ const setupContract = async ({
 					from: owner,
 				}),
 				cache['ProxyPerpsV2MarketETH'].setTarget(instance.address, { from: owner }),
-				cache['PerpsV2MarketManager'].addMarkets([cache['ProxyPerpsV2MarketETH'].address], {
+				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketETH'].address], {
 					from: owner,
 				}),
 			]);
@@ -849,15 +861,6 @@ const setupContract = async ({
 						returns: ['0', false],
 					}),
 				]);
-			} else if (mock === 'PerpsV2MarketManager') {
-				await Promise.all([
-					mockGenericContractFnc({
-						instance,
-						mock,
-						fncName: 'totalDebt',
-						returns: ['0', false],
-					}),
-				]);
 			} else if (mock === 'FuturesMarket') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -925,8 +928,13 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
+			contract: 'DirectIntegrationManager',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
+		{
 			contract: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings', 'CircuitBreaker'],
+			mocks: ['ExchangeCircuitBreaker'],
 		},
 		{ contract: 'SynthetixDebtShare' },
 		{ contract: 'SupplySchedule' },
@@ -1017,14 +1025,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: [
-				'Issuer',
-				'Exchanger',
-				'CollateralManager',
-				'EtherWrapper',
-				'FuturesMarketManager',
-				'PerpsV2MarketManager',
-			],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -1065,6 +1066,7 @@ const setupAllContracts = async ({
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
+				'DirectIntegrationManager',
 				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
@@ -1077,7 +1079,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'ExchangeRatesWithDexPricing',
 			resolverAlias: 'ExchangeRates',
-			deps: ['AddressResolver', 'CircuitBreaker', 'SystemSettings'],
+			deps: ['AddressResolver', 'DirectIntegrationManager', 'CircuitBreaker'],
 		},
 		{
 			contract: 'ExchangerWithFeeRecAlternatives',
@@ -1092,6 +1094,7 @@ const setupAllContracts = async ({
 			],
 			deps: [
 				'AddressResolver',
+				'DirectIntegrationManager',
 				'TradingRewards',
 				'SystemStatus',
 				'ExchangeRates',
@@ -1193,7 +1196,6 @@ const setupAllContracts = async ({
 				'CollateralManager',
 				'EtherWrapper',
 				'FuturesMarketManager',
-				'PerpsV2MarketManager',
 				'WrapperFactory',
 				'SynthetixBridgeToOptimism',
 			],
@@ -1243,7 +1245,10 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'FuturesMarketSettings', 'ExchangeCircuitBreaker'],
+			deps: [
+				'AddressResolver',
+				'Exchanger' /*, 'FuturesMarketSettings', 'ExchangeCircuitBreaker' */,
+			],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1275,7 +1280,8 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 
-		// Futures v2
+		// Perps v2
+		{ contract: 'PerpsV2ExchangeRate', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketBTC' },
 		{ contract: 'Proxy', source: 'ProxyPerpsV2', forContract: 'PerpsV2MarketETH' },
 		{
@@ -1286,15 +1292,8 @@ const setupAllContracts = async ({
 			contract: 'PerpsV2MarketStateETH',
 			source: 'PerpsV2MarketState',
 		},
-		{
-			contract: 'PerpsV2MarketSettings',
-			deps: ['AddressResolver', 'FlexibleStorage'],
-		},
+		{ contract: 'PerpsV2MarketSettings', deps: ['AddressResolver', 'FlexibleStorage'] },
 		{ contract: 'PerpsV2MarketData', deps: ['PerpsV2MarketSettings'] },
-		{
-			contract: 'PerpsV2MarketManager',
-			deps: ['AddressResolver', 'Exchanger', 'PerpsV2MarketSettings', 'ExchangeCircuitBreaker'],
-		},
 		{
 			contract: 'PerpsV2MarketViewsBTC',
 			source: 'PerpsV2MarketViews',
@@ -1303,7 +1302,8 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateBTC',
 				'AddressResolver',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1314,7 +1314,8 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateETH',
 				'AddressResolver',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1325,18 +1326,20 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateETH',
 				'AddressResolver',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
-			contract: 'PerpsV2NextPriceETH',
-			source: 'PerpsV2MarketNextPriceOrders',
+			contract: 'PerpsV2OffchainOrderBTC',
+			source: 'PerpsV2MarketDelayedOrdersOffchain',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
 				'AddressResolver',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1347,9 +1350,12 @@ const setupAllContracts = async ({
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2DelayedOrderBTC',
+				'PerpsV2OffchainOrderBTC',
 				'AddressResolver',
+				'FuturesMarketManager',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 		{
@@ -1361,8 +1367,10 @@ const setupAllContracts = async ({
 				'PerpsV2MarketViewsETH',
 				'PerpsV2NextPriceETH',
 				'AddressResolver',
+				'FuturesMarketManager',
 				'FlexibleStorage',
-				'ExchangeCircuitBreaker',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
 			],
 		},
 	];
@@ -1729,14 +1737,21 @@ const setupAllContracts = async ({
 							toWei('0.001'), // 0.1% maker fee
 							toWei('0.0005'), // 0.05% taker fee delayed order
 							toWei('0.0001'), // 0.01% maker fee delayed order
-							toBN('2'), // 2 rounds next price confirm window
-							30, // 30s delay confirm window
+							toWei('0.00005'), // 0.005% taker fee offchain delayed order
+							toWei('0.00001'), // 0.001% maker fee offchain delayed order
+
 							toWei('10'), // 10x max leverage
 							toWei('1000'), // 1000 max market value
 							toWei('0.1'), // 10% max funding velocity
 							toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
+
+							toBN('2'), // 2 rounds next price confirm window
+							30, // 30s delay confirm window
 							60, // 60s minimum delay time in seconds
 							120, // 120s maximum delay time in seconds
+
+							15, // 20s offchain min delay window
+							60, // 20s offchain max delay window
 						],
 						{ from: owner }
 					),

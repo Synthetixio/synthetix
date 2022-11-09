@@ -49,7 +49,7 @@ contract('PerpsV2MarketData', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ProxyPerpsV2MarketBTC: futuresMarket,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: futuresMarketSettings,
 			PerpsV2MarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
@@ -60,7 +60,7 @@ contract('PerpsV2MarketData', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH', 'sLINK'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
@@ -141,7 +141,7 @@ contract('PerpsV2MarketData', accounts => {
 					})
 				)
 			);
-			await futuresMarketManager.addMarkets([market.address], {
+			await futuresMarketManager.addProxiedMarkets([market.address], {
 				from: owner,
 			});
 
@@ -159,18 +159,25 @@ contract('PerpsV2MarketData', accounts => {
 			await futuresMarketSettings.setParameters(
 				marketKey,
 				[
-					toWei('0.005'), // 0.5% taker fee
-					toWei('0.001'), // 0.1% maker fee
-					toWei('0.0005'), // 0.05% taker fee delayed order
-					toWei('0'), // 0% maker fee delayed order
-					toBN('2'), // 2 rounds next price confirm window
-					30, // 30s delay confirm window
+					toUnit('0.005'), // 0.5% taker fee
+					toUnit('0.001'), // 0.1% maker fee
+					toUnit('0.0005'), // 0.05% taker fee delayed order
+					toUnit('0'), // 0% maker fee delayed order
+					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
+					toUnit('0'), // 0% maker fee offchain delayed order
+
 					toWei('5'), // 5x max leverage
 					toWei('1000'), // 1000 max market value
 					toWei('0.2'), // 20% max funding velocity
 					toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
+
+					toBN('2'), // 2 rounds next price confirm window
+					30, // 30s delay confirm window
+
 					60, // 60s minimum delay time in seconds
 					120, // 120s maximum delay time in seconds
+					15, // offchainDelayedOrderMinAge
+					60, // offchainDelayedOrderMaxAge
 				],
 				{ from: owner }
 			);
@@ -245,6 +252,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
 			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
+			assert.bnEqual(
+				details.feeRates.takerFeeOffchainDelayedOrder,
+				params.takerFeeOffchainDelayedOrder
+			);
+			assert.bnEqual(
+				details.feeRates.makerFeeOffchainDelayedOrder,
+				params.makerFeeOffchainDelayedOrder
+			);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
 
@@ -333,6 +348,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
+			assert.equal(
+				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				params.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				params.makerFeeOffchainDelayedOrder
+			);
 		});
 
 		it('For market keys', async () => {
@@ -367,6 +390,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
 			assert.equal(sBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
+			assert.equal(
+				sBTCSummary.feeRates.takerFeeOffchainDelayedOrder,
+				fmParams.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sBTCSummary.feeRates.makerFeeOffchainDelayedOrder,
+				fmParams.makerFeeOffchainDelayedOrder
+			);
 
 			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
 
@@ -382,6 +413,14 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, sETHParams.takerFeeDelayedOrder);
 			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, sETHParams.makerFeeDelayedOrder);
+			assert.equal(
+				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				sETHParams.takerFeeOffchainDelayedOrder
+			);
+			assert.equal(
+				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				sETHParams.makerFeeOffchainDelayedOrder
+			);
 
 			assert.equal(
 				sLINKSummary.market,
@@ -397,6 +436,8 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
 			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
 			assert.equal(sLINKSummary.feeRates.makerFeeDelayedOrder, toUnit('0'));
+			assert.equal(sLINKSummary.feeRates.takerFeeOffchainDelayedOrder, toUnit('0.00005'));
+			assert.equal(sLINKSummary.feeRates.makerFeeOffchainDelayedOrder, toUnit('0'));
 		});
 	});
 });

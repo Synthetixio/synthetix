@@ -206,9 +206,6 @@
 	"PerpsV2MarketNextPriceOrdersETH": {
 		"deploy": true
 	},
-	"PerpsV2MarketManager": {
-		"deploy": true
-	},
 	"PerpsV2MarketSettings": {
 		"deploy": true
 	},
@@ -234,6 +231,12 @@
 		"deploy": true
 	},
 	"SystemSettingsLib": {
+		"deploy": true
+	},
+	"ExchangeSettlementLib": {
+		"deploy": true
+	},
+	"DirectIntegrationManager": {
 		"deploy": true
 	}
 }

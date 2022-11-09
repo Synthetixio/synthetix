@@ -43,6 +43,7 @@ contract('PerpsV2Market', accounts => {
 		futuresMarketImpl,
 		futuresMarketViewsImpl,
 		futuresMarketDelayedOrderImpl,
+		futuresMarketOffchainDelayedOrderImpl,
 		futuresMarketState,
 		exchangeRates,
 		exchanger,
@@ -70,6 +71,8 @@ contract('PerpsV2Market', accounts => {
 	const makerFee = toUnit('0.001');
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
+	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
+	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('1000');
 	const maxFundingVelocity = toUnit('0.1');
@@ -79,6 +82,8 @@ contract('PerpsV2Market', accounts => {
 	const minInitialMargin = toUnit('100');
 	const minDelayTimeDelta = 60;
 	const maxDelayTimeDelta = 120;
+	const offchainMinAge = 15;
+	const offchainMaxAge = 60;
 
 	const initialFundingIndex = toBN(0);
 
@@ -112,11 +117,12 @@ contract('PerpsV2Market', accounts => {
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketStateBTC: futuresMarketState,
 			PerpsV2MarketBTC: futuresMarketImpl,
 			PerpsV2MarketViewsBTC: futuresMarketViewsImpl,
 			PerpsV2DelayedOrderBTC: futuresMarketDelayedOrderImpl,
+			PerpsV2OffchainOrderBTC: futuresMarketOffchainDelayedOrderImpl,
 			ProxyPerpsV2MarketBTC: futuresMarketProxy,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
@@ -132,7 +138,7 @@ contract('PerpsV2Market', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
@@ -194,6 +200,19 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
+		it('Only expected functions are mutative PerpsV2MarketDelayedOrdersOffchain', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: futuresMarketOffchainDelayedOrderImpl.abi,
+				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
+				expected: [
+					'cancelOffchainDelayedOrder',
+					'executeOffchainDelayedOrder',
+					'submitOffchainDelayedOrder',
+					'submitOffchainDelayedOrderWithTracking',
+				],
+			});
+		});
+
 		it('Only expected functions are mutative PerpsV2MarketViews', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketViewsImpl.abi,
@@ -233,12 +252,16 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(parameters.makerFee, makerFee);
 			assert.bnEqual(parameters.takerFeeDelayedOrder, takerFeeDelayedOrder);
 			assert.bnEqual(parameters.makerFeeDelayedOrder, makerFeeDelayedOrder);
+			assert.bnEqual(parameters.takerFeeOffchainDelayedOrder, takerFeeOffchainDelayedOrder);
+			assert.bnEqual(parameters.makerFeeOffchainDelayedOrder, makerFeeOffchainDelayedOrder);
 			assert.bnEqual(parameters.maxLeverage, maxLeverage);
 			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
 			assert.bnEqual(parameters.maxFundingVelocity, maxFundingVelocity);
 			assert.bnEqual(parameters.skewScale, skewScale);
 			assert.bnEqual(parameters.minDelayTimeDelta, minDelayTimeDelta);
 			assert.bnEqual(parameters.maxDelayTimeDelta, maxDelayTimeDelta);
+			assert.bnEqual(parameters.offchainDelayedOrderMinAge, offchainMinAge);
+			assert.bnEqual(parameters.offchainDelayedOrderMaxAge, offchainMaxAge);
 		});
 
 		it('prices are properly fetched', async () => {
@@ -430,6 +453,42 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
+		describe('PerpsV2MarketDelayedOrdersOffchain', () => {
+			it('Only proxy functions only work for proxy', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.submitOffchainDelayedOrder,
+					args: [1],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.submitOffchainDelayedOrderWithTracking,
+					args: [1, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.cancelOffchainDelayedOrder,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: futuresMarketOffchainDelayedOrderImpl.executeOffchainDelayedOrder,
+					args: [noBalance, [toBytes32('code')]],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+			});
+		});
+
 		describe('PerpsV2MarketState', () => {
 			it('Only associate functions only work for associate contracts - PerpsV2MarketState', async () => {
 				await onlyGivenAddressCanInvoke({
@@ -506,7 +565,7 @@ contract('PerpsV2Market', accounts => {
 
 				await onlyGivenAddressCanInvoke({
 					fnc: futuresMarketState.updateDelayedOrder,
-					args: [noBalance, 1, 1, 1, 1, 1, toBytes32('code')],
+					args: [noBalance, false, 1, 1, 1, 1, 1, 1, toBytes32('code')],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only an associated contract can perform this action',
 					skipPassCheck: true,
@@ -4686,9 +4745,13 @@ contract('PerpsV2Market', accounts => {
 					'Invalid price'
 				);
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], {
-						from: owner,
-					}),
+					futuresMarketSettings.setParameters(
+						marketKey,
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+						{
+							from: owner,
+						}
+					),
 					'Invalid price'
 				);
 			});
@@ -4756,17 +4819,25 @@ contract('PerpsV2Market', accounts => {
 			it('then futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingVelocity(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 
 			it('futuresMarketSettings parameter changes still revert if price is invalid', async () => {
 				await setPrice(baseAsset, toUnit('1'), false); // circuit breaker will revert
 				await assert.revert(
-					futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-						from: owner,
-					}),
+					futuresMarketSettings.setParameters(
+						marketKey,
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+						{
+							from: owner,
+						}
+					),
 					'Invalid price'
 				);
 			});
@@ -4910,9 +4981,13 @@ contract('PerpsV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingVelocity(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 		});
 
@@ -4983,9 +5058,13 @@ contract('PerpsV2Market', accounts => {
 			it('futuresMarketSettings parameter changes do not revert', async () => {
 				await futuresMarketSettings.setMaxFundingVelocity(marketKey, 0, { from: owner });
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
-				await futuresMarketSettings.setParameters(marketKey, [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], {
-					from: owner,
-				});
+				await futuresMarketSettings.setParameters(
+					marketKey,
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					{
+						from: owner,
+					}
+				);
 			});
 		});
 	});

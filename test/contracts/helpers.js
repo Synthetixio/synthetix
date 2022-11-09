@@ -103,9 +103,6 @@ module.exports = {
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 
-			// // for debugging
-			// console.log(i, arg.toString(), value.toString())
-
 			if (type === 'address') {
 				assert.equal(
 					web3.utils.toChecksumAddress(value),

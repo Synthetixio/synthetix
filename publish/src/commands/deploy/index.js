@@ -375,6 +375,7 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		runStep,
+		useOvm,
 	});
 
 	await importFeePeriods({

@@ -14,14 +14,16 @@ import "./SignedSafeDecimalMath.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
+import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Internal references
 import "./interfaces/IPerpsV2MarketState.sol";
 
-interface IPerpsV2MarketManagerInternal {
+// Use internal interface (external functions not present in IFuturesMarketManager)
+interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
@@ -52,11 +54,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    // bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
-    bytes32 internal constant CONTRACT_PERPSV2MARKETMANAGER = "PerpsV2MarketManager";
-    bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+    bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
+    bytes32 internal constant CONTRACT_PERPSV2EXCHANGERATE = "PerpsV2ExchangeRate";
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
@@ -97,17 +101,23 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[2] = CONTRACT_PERPSV2MARKETMANAGER;
-        newAddresses[3] = CONTRACT_PERPSV2MARKETSETTINGS;
-        newAddresses[4] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_EXRATES;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
+        newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
+        // newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-        return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    // function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
+    //     return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
+    // }
+
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _exchanger() internal view returns (IExchanger) {
@@ -118,8 +128,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function _manager() internal view returns (IPerpsV2MarketManagerInternal) {
-        return IPerpsV2MarketManagerInternal(requireAndGetAddress(CONTRACT_PERPSV2MARKETMANAGER));
+    function _manager() internal view returns (IFuturesMarketManagerInternal) {
+        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _settings() internal view returns (address) {
@@ -127,12 +137,19 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /* ---------- Market Details ---------- */
+    function _baseAsset() internal view returns (bytes32) {
+        return marketState.baseAsset();
+    }
+
+    function _marketKey() internal view returns (bytes32) {
+        return marketState.marketKey();
+    }
 
     /*
      * Returns the pSkew = skew / skewScale capping the pSkew between [-1, 1].
      */
     function _proportionalSkew() internal view returns (int) {
-        int pSkew = int(marketState.marketSkew()).divideDecimal(int(_skewScale(marketState.marketKey())));
+        int pSkew = int(marketState.marketSkew()).divideDecimal(int(_skewScale(_marketKey())));
 
         // Ensures the proportionalSkew is between -1 and 1.
         return _min(_max(-_UNIT, pSkew), _UNIT);
@@ -144,7 +161,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _currentFundingVelocity() internal view returns (int) {
-        int maxFundingVelocity = int(_maxFundingVelocity(marketState.marketKey()));
+        int maxFundingVelocity = int(_maxFundingVelocity(_marketKey()));
         return _proportionalSkew().multiplyDecimal(maxFundingVelocity);
     }
 
@@ -311,7 +328,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(marketState.marketKey()).sub(milli));
+        int maxLeverage = int(_maxLeverage(_marketKey()).sub(milli));
         uint inaccessible = _abs(_notionalValue(position.size, price).divideDecimal(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -422,7 +439,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
     ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
-        return _exchanger().dynamicFeeRateForExchange(sUSD, marketState.baseAsset());
+        return _exchanger().dynamicFeeRateForExchange(sUSD, _baseAsset());
     }
 
     function _latestFundingIndex() internal view returns (uint) {
@@ -504,13 +521,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         {
             // stack too deep
             int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
-            if (_maxLeverage(marketState.marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            if (_maxLeverage(_marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }
         }
 
         // Check that the order isn't too large for the markets.
-        if (_orderSizeTooLarge(_maxMarketValue(marketState.marketKey()), oldPos.size, newPos.size)) {
+        if (_orderSizeTooLarge(_maxMarketValue(_marketKey()), oldPos.size, newPos.size)) {
             return (oldPos, 0, Status.MaxMarketSizeExceeded);
         }
 
@@ -524,9 +541,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * Public because used both externally and internally
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
-        (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(marketState.baseAsset());
+        (price, invalid) = _exchangeRates().rateAndInvalid(_baseAsset());
         // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(marketState.baseAsset());
+        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset());
         return (price, invalid);
     }
 

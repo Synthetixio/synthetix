@@ -224,23 +224,36 @@ contract ProxyPerpsV2 is Owned {
             isView = _routes[_routeIndexes[sig4]].isView;
         }
 
-        if (!isView) {
+        if (isView) {
+            assembly {
+                let free_ptr := mload(0x40)
+                calldatacopy(free_ptr, 0, calldatasize)
+
+                /* We must explicitly forward ether to the underlying contract as well. */
+                let result := staticcall(gas, implementation, free_ptr, calldatasize, 0, 0)
+                returndatacopy(free_ptr, 0, returndatasize)
+
+                if iszero(result) {
+                    revert(free_ptr, returndatasize)
+                }
+                return(free_ptr, returndatasize)
+            }
+        } else {
             // Mutable call setting Proxyable.messageSender as this is using call not delegatecall
             Proxyable(implementation).setMessageSender(msg.sender);
-        }
+            assembly {
+                let free_ptr := mload(0x40)
+                calldatacopy(free_ptr, 0, calldatasize)
 
-        assembly {
-            let free_ptr := mload(0x40)
-            calldatacopy(free_ptr, 0, calldatasize)
+                /* We must explicitly forward ether to the underlying contract as well. */
+                let result := call(gas, implementation, callvalue, free_ptr, calldatasize, 0, 0)
+                returndatacopy(free_ptr, 0, returndatasize)
 
-            /* We must explicitly forward ether to the underlying contract as well. */
-            let result := call(gas, implementation, callvalue, free_ptr, calldatasize, 0, 0)
-            returndatacopy(free_ptr, 0, returndatasize)
-
-            if iszero(result) {
-                revert(free_ptr, returndatasize)
+                if iszero(result) {
+                    revert(free_ptr, returndatasize)
+                }
+                return(free_ptr, returndatasize)
             }
-            return(free_ptr, returndatasize)
         }
     }
 

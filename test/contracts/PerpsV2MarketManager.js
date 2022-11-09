@@ -22,7 +22,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
-contract('PerpsV2MarketManager', accounts => {
+contract('FuturesMarketManager', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
 		systemSettings,
@@ -68,7 +68,7 @@ contract('PerpsV2MarketManager', accounts => {
 
 	before(async () => {
 		({
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: futuresMarketSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
@@ -82,8 +82,9 @@ contract('PerpsV2MarketManager', accounts => {
 			synths: ['sUSD'],
 			feeds: ['BTC', 'ETH', 'LINK'],
 			contracts: [
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
+				'PerpsV2ExchangeRate',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -115,19 +116,20 @@ contract('PerpsV2MarketManager', accounts => {
 				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
 					'addMarkets',
+					'addProxiedMarkets',
 					'removeMarkets',
 					'removeMarketsByKey',
-					'updateMarketsImplementations',
 					'issueSUSD',
 					'burnSUSD',
 					'payFee',
 					'payFee',
+					'updateMarketsImplementations',
 				],
 			});
 		});
 
 		it('contract has CONTRACT_NAME getter', async () => {
-			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('PerpsV2MarketManager'));
+			assert.equal(await futuresMarketManager.CONTRACT_NAME(), toBytes32('FuturesMarketManager'));
 		});
 	});
 
@@ -149,7 +151,7 @@ contract('PerpsV2MarketManager', accounts => {
 			marketProxies = await Promise.all(markets.map(market => putBehindProxy(market)));
 
 			proxyAddresses = marketProxies.map(m => m.address);
-			await futuresMarketManager.addMarkets(proxyAddresses, { from: owner });
+			await futuresMarketManager.addProxiedMarkets(proxyAddresses, { from: owner });
 		});
 
 		it('Adding a single market', async () => {
@@ -172,7 +174,7 @@ contract('PerpsV2MarketManager', accounts => {
 			});
 
 			const proxy = await putBehindProxy(market);
-			await futuresMarketManager.addMarkets([proxy.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
 
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
 			assert.equal((await futuresMarketManager.markets(2, 1))[0], proxy.address);
@@ -196,7 +198,7 @@ contract('PerpsV2MarketManager', accounts => {
 
 			const proxiesAddress = proxies.map(m => m.address);
 
-			const tx = await futuresMarketManager.addMarkets(proxiesAddress, { from: owner });
+			const tx = await futuresMarketManager.addProxiedMarkets(proxiesAddress, { from: owner });
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
 			assert.deepEqual(await futuresMarketManager.markets(2, 2), proxiesAddress);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), proxiesAddress);
@@ -232,7 +234,7 @@ contract('PerpsV2MarketManager', accounts => {
 			});
 			const proxy = await putBehindProxy(market);
 			await assert.revert(
-				futuresMarketManager.addMarkets([proxy.address], { from: owner }),
+				futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner }),
 				'Market already exists'
 			);
 		});
@@ -256,7 +258,7 @@ contract('PerpsV2MarketManager', accounts => {
 				skipPostDeploy: true,
 			});
 			const proxy2 = await putBehindProxy(market2);
-			await futuresMarketManager.addMarkets([proxy2.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([proxy2.address], { from: owner });
 
 			// check correct addresses returned
 			assert.equal(await futuresMarketManager.marketForKey(secondKey), proxy2.address);
@@ -320,7 +322,7 @@ contract('PerpsV2MarketManager', accounts => {
 			});
 
 			const proxy = await putBehindProxy(market);
-			await futuresMarketManager.addMarkets([proxy.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
 			await futuresMarketManager.removeMarketsByKey(['sBTC', 'sLINK'].map(toBytes32), {
 				from: owner,
 			});
@@ -372,7 +374,7 @@ contract('PerpsV2MarketManager', accounts => {
 			const revertReason = 'Only the contract owner may perform this action';
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.addMarkets,
+				fnc: futuresMarketManager.addProxiedMarkets,
 				args: [[proxy.address]],
 				accounts,
 				address: owner,
@@ -417,7 +419,7 @@ contract('PerpsV2MarketManager', accounts => {
 			});
 
 			proxy = await putBehindProxy(market);
-			await futuresMarketManager.addMarkets([proxy.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
 		});
 
 		it('issuing/burning sUSD', async () => {
@@ -502,7 +504,7 @@ contract('PerpsV2MarketManager', accounts => {
 
 				proxies = await Promise.all(markets.map(market => putBehindProxy(market)));
 
-				await futuresMarketManager.addMarkets(
+				await futuresMarketManager.addProxiedMarkets(
 					proxies.map(m => m.address),
 					{ from: owner }
 				);
@@ -535,7 +537,7 @@ contract('PerpsV2MarketManager', accounts => {
 				});
 
 				const proxy = await putBehindProxy(market);
-				await futuresMarketManager.addMarkets([proxy.address], { from: owner });
+				await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
 
 				assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
 				assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
@@ -620,7 +622,7 @@ contract('PerpsV2MarketManager', accounts => {
 				);
 
 				await market.setTarget(marketImpl.address, { from: owner });
-				await futuresMarketManager.addMarkets([market.address], {
+				await futuresMarketManager.addProxiedMarkets([market.address], {
 					from: owner,
 				});
 
@@ -642,14 +644,20 @@ contract('PerpsV2MarketManager', accounts => {
 						toUnit('0.001'), // 0.1% maker fee
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
-						toBN('2'), // 2 rounds next price confirm window
-						30, // 30s delay confirm window
+						toUnit('0.00005'), // 0.005% taker fee offchain delayed order
+						toUnit('0'), // 0% maker fee offchain delayed order
+
 						toUnit('5'), // 5x max leverage
 						toUnit('1000'), // 1000 max market value
 						toUnit('0.2'), // 20% max funding velocity
 						toUnit('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
+
+						toBN('2'), // 2 rounds next price confirm window
+						30, // 30s delay confirm window
 						60, // 60s minimum delay time in seconds
 						120, // 120s maximum delay time in seconds
+						15, // offchainDelayedOrderMinAge
+						60, // offchainDelayedOrderMaxAge
 					],
 					{ from: owner }
 				);

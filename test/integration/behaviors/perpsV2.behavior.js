@@ -34,7 +34,7 @@ function itCanTrade({ ctx }) {
 		const sUSDAmount = ethers.utils.parseEther('100000');
 
 		let someUser, otherUser;
-		let PerpsV2MarketManager,
+		let FuturesMarketManager,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
 			PerpsV2MarketBTC,
@@ -47,7 +47,7 @@ function itCanTrade({ ctx }) {
 
 		before('target contracts and users', () => {
 			({
-				PerpsV2MarketManager,
+				FuturesMarketManager,
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
 				PerpsV2MarketBTC: PerpsV2MarketImplBTC,
@@ -104,12 +104,12 @@ function itCanTrade({ ctx }) {
 			describe('with funded margin', () => {
 				const largerMargin = margin.mul(50); // 50k
 				before('fund margin', async () => {
-					({ debt } = await PerpsV2MarketManager.totalDebt());
+					({ debt } = await FuturesMarketManager.totalDebt());
 					await (await market.transferMargin(largerMargin)).wait();
 				});
 
 				it('futures debt increases roughly by the margin deposit', async () => {
-					const res = await PerpsV2MarketManager.totalDebt();
+					const res = await FuturesMarketManager.totalDebt();
 					assert.bnClose(
 						res.debt.toString(),
 						debt.add(largerMargin).toString(),
@@ -192,7 +192,7 @@ function itCanTrade({ ctx }) {
 			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await PerpsV2MarketManager.allMarkets();
+				allMarketsAddresses = await FuturesMarketManager.allMarkets();
 				allSummaries = await PerpsV2MarketData.allMarketSummaries();
 
 				// get market contracts

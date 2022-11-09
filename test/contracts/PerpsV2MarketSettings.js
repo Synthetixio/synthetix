@@ -32,23 +32,30 @@ contract('PerpsV2MarketSettings', accounts => {
 	const makerFee = toUnit('0.001');
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
+	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
+	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
+
 	const nextPriceConfirmWindow = toBN('2');
+
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('1000');
 
 	const maxFundingVelocity = toUnit('0.1');
 	const skewScale = toUnit('10000');
 
+	const offchainDelayedOrderMinAge = toBN('15');
+	const offchainDelayedOrderMaxAge = toBN('60');
+
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
-			PerpsV2MarketManager: futuresMarketManager,
+			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
 				'PerpsV2MarketSettings',
-				'PerpsV2MarketManager',
+				'FuturesMarketManager',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -108,7 +115,7 @@ contract('PerpsV2MarketSettings', accounts => {
 		);
 
 		// add the market
-		await futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addProxiedMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -121,6 +128,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setLiquidationFeeRatio',
 				'setMakerFee',
 				'setMakerFeeDelayedOrder',
+				'setMakerFeeOffchainDelayedOrder',
 				'setMaxDelayTimeDelta',
 				'setMaxFundingVelocity',
 				'setMaxLeverage',
@@ -133,6 +141,9 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setSkewScale',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
+				'setTakerFeeOffchainDelayedOrder',
+				'setOffchainDelayedOrderMinAge',
+				'setOffchainDelayedOrderMaxAge',
 			],
 		});
 	});
@@ -146,11 +157,15 @@ contract('PerpsV2MarketSettings', accounts => {
 				makerFee,
 				takerFeeDelayedOrder,
 				makerFeeDelayedOrder,
-				nextPriceConfirmWindow,
+				takerFeeOffchainDelayedOrder,
+				makerFeeOffchainDelayedOrder,
 				maxLeverage,
 				maxMarketValue,
 				maxFundingVelocity,
 				skewScale,
+				nextPriceConfirmWindow,
+				offchainDelayedOrderMinAge,
+				offchainDelayedOrderMaxAge,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];
@@ -473,7 +488,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			);
 
 			// add the market
-			await futuresMarketManager.addMarkets([secondBTCMarket.address], { from: owner });
+			await futuresMarketManager.addProxiedMarkets([secondBTCMarket.address], { from: owner });
 		});
 
 		it('should be able to change parameters for both markets independently', async () => {

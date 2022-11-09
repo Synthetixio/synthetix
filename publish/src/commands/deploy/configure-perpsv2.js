@@ -11,7 +11,6 @@ module.exports = async ({
 	loadAndCheckRequiredSources,
 	runStep,
 	useOvm,
-	freshDeploy,
 	deploymentPath,
 	network,
 	generateSolidity,

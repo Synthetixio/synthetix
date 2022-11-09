@@ -24,11 +24,12 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function maxFundingVelocity() external view returns (uint) {
-        return _maxFundingVelocity(marketState.marketKey());
+        return _maxFundingVelocity(_marketKey());
     }
 
     /*
      * The maximum size in base units of an order on each side of the market that will not exceed the max market value.
+     * TODO: Remove `invalid` here as it does not need to know about prices.
      */
     function maxOrderSizes()
         external
@@ -40,7 +41,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         )
     {
         (uint _, bool invalid) = _assetPrice();
-        int sizeLimit = int(_maxMarketValue(marketState.marketKey()));
+        int sizeLimit = int(_maxMarketValue(_marketKey()));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));
@@ -195,7 +196,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     /* ---------- Delayed Orders ---------- */
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(0, 0, 0, 0, 0, bytes32(0));
+        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, bytes32(0));
     }
 
     function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
@@ -209,4 +210,14 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     function cancelDelayedOrder(address account) external {}
 
     function executeDelayedOrder(address account) external {}
+
+    /* ---------- Offchain Delayed Orders ---------- */
+
+    function submitOffchainDelayedOrder(int sizeDelta) external {}
+
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+
+    function cancelOffchainDelayedOrder(address account) external {}
+
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
 }

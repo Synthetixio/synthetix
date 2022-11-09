@@ -311,13 +311,13 @@
 	"FuturesMarketDOGE": {
 		"deploy": false
 	},
-	"PerpsV2MarketManager": {
-		"deploy": true
+	"RewardEscrowV2Storage": {
+		"deploy": false
 	},
-	"PerpsV2MarketSettings": {
-		"deploy": true
+	"DirectIntegrationManager": {
+		"deploy": false
 	},
-	"PerpsV2MarketData": {
-		"deploy": true
+	"ExchangeSettlementLib": {
+		"deploy": false
 	}
 }

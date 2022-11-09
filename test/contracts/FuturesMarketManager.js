@@ -89,12 +89,14 @@ contract('FuturesMarketManager', accounts => {
 				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
 					'addMarkets',
+					'addProxiedMarkets',
 					'removeMarkets',
 					'removeMarketsByKey',
 					'issueSUSD',
 					'burnSUSD',
 					'payFee',
 					'payFee',
+					'updateMarketsImplementations',
 				],
 			});
 		});
@@ -418,14 +420,14 @@ contract('FuturesMarketManager', accounts => {
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.burnSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 		});
 	});

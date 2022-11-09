@@ -2,9 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Internal references
+import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IPerpsV2MarketViews.sol";
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
-import "./interfaces/IPerpsV2MarketManager.sol";
 import "./interfaces/IPerpsV2MarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
@@ -65,6 +65,8 @@ contract PerpsV2MarketData {
         uint makerFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
+        uint takerFeeOffchainDelayedOrder;
+        uint makerFeeOffchainDelayedOrder;
     }
 
     struct FundingDetails {
@@ -107,10 +109,10 @@ contract PerpsV2MarketData {
 
     /* ========== VIEWS ========== */
 
-    function _futuresMarketManager() internal view returns (IPerpsV2MarketManager) {
+    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return
-            IPerpsV2MarketManager(
-                resolverProxy.requireAndGetAddress("PerpsV2MarketManager", "Missing PerpsV2MarketManager Address")
+            IFuturesMarketManager(
+                resolverProxy.requireAndGetAddress("FuturesMarketManager", "Missing FuturesMarketManager Address")
             );
     }
 
@@ -162,7 +164,14 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder)
+                FeeRates(
+                    params.takerFee,
+                    params.makerFee,
+                    params.takerFeeDelayedOrder,
+                    params.makerFeeDelayedOrder,
+                    params.takerFeeOffchainDelayedOrder,
+                    params.makerFeeOffchainDelayedOrder
+                )
             );
         }
 
@@ -207,7 +216,14 @@ contract PerpsV2MarketData {
                 address(market),
                 baseAsset,
                 marketKey,
-                FeeRates(params.takerFee, params.makerFee, params.takerFeeDelayedOrder, params.makerFeeDelayedOrder),
+                FeeRates(
+                    params.takerFee,
+                    params.makerFee,
+                    params.takerFeeDelayedOrder,
+                    params.makerFeeDelayedOrder,
+                    params.takerFeeOffchainDelayedOrder,
+                    params.makerFeeOffchainDelayedOrder
+                ),
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),

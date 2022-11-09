@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
-import "./Proxyable.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
@@ -17,7 +16,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// basic views that are expected to be supported by v1 (IFuturesMarket)
+// basic views that are expected to be supported by v1 (IFuturesMarket) and v2 (via ProxyPerpsV2)
 interface IMarketViews {
     function marketKey() external view returns (bytes32);
 
@@ -32,6 +31,11 @@ interface IMarketViews {
     function marketDebt() external view returns (uint debt, bool isInvalid);
 
     function currentFundingRate() external view returns (int fundingRate);
+
+    // TODO add details for FundingVelocity after SIP-279 p/d is included
+
+    // only supported by PerpsV2 Markets (and implemented in ProxyPerpsV2)
+    function getAllTargets() external view returns (address[] memory);
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
@@ -43,6 +47,11 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     AddressSetLib.AddressSet internal _markets;
     mapping(bytes32 => address) public marketForKey;
+    mapping(address => bool) internal _proxiedMarkets;
+
+    // PerpsV2 implementations
+    AddressSetLib.AddressSet internal _implementations;
+    mapping(address => address[]) internal _marketImplementation;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -140,6 +149,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         uint marketDebt;
         int currentFundingRate;
         bool priceInvalid;
+        bool proxied;
+        // TODO add details for FundingVelocity after SIP-279 p/d is included
     }
 
     function _marketSummaries(address[] memory addresses) internal view returns (MarketSummary[] memory) {
@@ -162,7 +173,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
                 marketSkew: market.marketSkew(),
                 marketDebt: debt,
                 currentFundingRate: market.currentFundingRate(),
-                priceInvalid: invalid
+                priceInvalid: invalid,
+                proxied: _proxiedMarkets[addresses[i]]
             });
         }
 
@@ -183,23 +195,66 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function _addImplementations(address market) internal {
+        address[] memory implementations = IMarketViews(market).getAllTargets();
+        for (uint i = 0; i < implementations.length; i++) {
+            _implementations.add(implementations[i]);
+        }
+        _marketImplementation[market] = implementations;
+    }
+
+    function _removeImplementations(address market) internal {
+        address[] memory implementations = _marketImplementation[market];
+        for (uint i = 0; i < implementations.length; i++) {
+            if (_implementations.contains(implementations[i])) {
+                _implementations.remove(implementations[i]);
+            }
+        }
+        delete _marketImplementation[market];
+    }
+
     /*
      * Add a set of new markets. Reverts if some market key already has a market.
      */
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
-            address market = marketsToAdd[i];
-            require(!_markets.contains(market), "Market already exists");
-
-            bytes32 key = IMarketViews(market).marketKey();
-            bytes32 baseAsset = IMarketViews(market).baseAsset();
-
-            require(marketForKey[key] == address(0), "Market already exists for key");
-            marketForKey[key] = market;
-            _markets.add(market);
-            emit MarketAdded(market, baseAsset, key);
+            _addMarket(marketsToAdd[i], false);
         }
+    }
+
+    /*
+     * Add a set of new markets. Reverts if some market key already has a market.
+     */
+    function addProxiedMarkets(address[] calldata marketsToAdd) external onlyOwner {
+        uint numOfMarkets = marketsToAdd.length;
+        for (uint i; i < numOfMarkets; i++) {
+            _addMarket(marketsToAdd[i], true);
+        }
+    }
+
+    /*
+     * Add a set of new markets. Reverts if some market key already has a market.
+     */
+    function _addMarket(address market, bool isProxied) internal onlyOwner {
+        // address market = marketsToAdd[i];
+        require(!_markets.contains(market), "Market already exists");
+
+        bytes32 key = IMarketViews(market).marketKey();
+        bytes32 baseAsset = IMarketViews(market).baseAsset();
+
+        require(marketForKey[key] == address(0), "Market already exists for key");
+        marketForKey[key] = market;
+        _markets.add(market);
+
+        _proxiedMarkets[market] = isProxied;
+        // if PerpsV2 Market Add implementations
+        if (isProxied) {
+            _addImplementations(market);
+        }
+
+        // Emit the event
+        emit MarketAdded(market, baseAsset, key);
     }
 
     function _removeMarkets(address[] memory marketsToRemove) internal {
@@ -212,6 +267,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             bytes32 baseAsset = IMarketViews(market).baseAsset();
 
             require(marketForKey[key] != address(0), "Unknown market");
+
+            // if PerpsV2 Market Remove implementations
+            if (_proxiedMarkets[market]) {
+                _removeImplementations(market);
+            }
+
+            delete _proxiedMarkets[market];
             delete marketForKey[key];
             _markets.remove(market);
             emit MarketRemoved(market, baseAsset, key);
@@ -232,12 +294,26 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         _removeMarkets(_marketsForKeys(marketKeysToRemove));
     }
 
+    function updateMarketsImplementations(address[] calldata marketsToUpdate) external onlyOwner {
+        uint numOfMarkets = marketsToUpdate.length;
+        for (uint i; i < numOfMarkets; i++) {
+            address market = marketsToUpdate[i];
+            require(market != address(0), "Unknown market");
+
+            // Remove old implementations
+            _removeImplementations(market);
+
+            // Pull new implementations
+            _addImplementations(market);
+        }
+    }
+
     /*
      * Allows a market to issue sUSD to an account when it withdraws margin.
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function issueSUSD(address account, uint amount) external onlyMarkets {
+    function issueSUSD(address account, uint amount) external onlyMarketImplementations {
         // No settlement is required to issue synths into the target account.
         _sUSD().issue(account, amount);
     }
@@ -247,7 +323,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function burnSUSD(address account, uint amount) external onlyMarkets returns (uint postReclamationAmount) {
+    function burnSUSD(address account, uint amount) external onlyMarketImplementations returns (uint postReclamationAmount) {
         // We'll settle first, in order to ensure the user has sufficient balance.
         // If the settlement reduces the user's balance below the requested amount,
         // the settled remainder will be the resulting deposit.
@@ -274,12 +350,12 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function payFee(uint amount, bytes32 trackingCode) external onlyMarkets {
+    function payFee(uint amount, bytes32 trackingCode) external onlyMarketImplementations {
         _payFee(amount, trackingCode);
     }
 
     // backwards compatibility with futures v1
-    function payFee(uint amount) external onlyMarkets {
+    function payFee(uint amount) external onlyMarketImplementations {
         _payFee(amount, bytes32(0));
     }
 
@@ -292,12 +368,15 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== MODIFIERS ========== */
 
-    function _requireIsMarket() internal view {
-        require(_markets.contains(msg.sender), "Permitted only for markets");
+    function _requireIsMarketOrImplementation() internal view {
+        require(
+            _markets.contains(msg.sender) || _implementations.contains(msg.sender),
+            "Permitted only for market implementations"
+        );
     }
 
-    modifier onlyMarkets() {
-        _requireIsMarket();
+    modifier onlyMarketImplementations() {
+        _requireIsMarketOrImplementation();
         _;
     }
 

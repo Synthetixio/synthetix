@@ -30,7 +30,7 @@ import "./interfaces/IPerpsV2Market.sol";
  *
  * The contract architecture is as follows:
  *
- *     - PerpsV2MarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
+ *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
  *                                  futures markets and the rest of the system. It accumulates the total debt
  *                                  over all markets, and issues and burns sUSD on each market's behalf.
  *
@@ -54,6 +54,8 @@ import "./interfaces/IPerpsV2Market.sol";
  *                                       `views` contains functions to provide visibility to different parameters and
  *                                           is used by external or manager contracts.
  *                                        `delayedOrders` contains the logic to implement the delayed order flows.
+ *                                        `offchainDelayedOrders` contains the logic to implement the delayed order
+ *                                           with off-chain pricing flows.
  *
  *     - PerpsV2State.sol:               The State contracts holds all the state for the market and is consumed/updated
  *                                       by the fragments.
@@ -64,7 +66,9 @@ import "./interfaces/IPerpsV2Market.sol";
  *     - PerpsV2MarketViews.sol:         Contains the logic to access market and positions parameters by external or
  *                                       manager contracts
  *
- *     - PerpsV2MarketDelayedOrder.sol:  Contains the logic to implement delayed order flows
+ *     - PerpsV2MarketDelayedOrders.sol:  Contains the logic to implement delayed order flows
+ *
+ *     - PerpsV2MarketDelayedOrdersOffchain.sol:  Contains the logic to implement delayed order with off-chain pricing flows
  *
  *
  * Technical note: internal functions within the PerpsV2Market contract assume the following:
@@ -194,8 +198,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
@@ -223,8 +227,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             TradeParams({
                 sizeDelta: -size,
                 price: price,
-                takerFee: _takerFee(marketState.marketKey()),
-                makerFee: _makerFee(marketState.marketKey()),
+                takerFee: _takerFee(_marketKey()),
+                makerFee: _makerFee(_marketKey()),
                 trackingCode: trackingCode
             })
         );
