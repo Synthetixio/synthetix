@@ -15,9 +15,9 @@
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "60",
 		"maxLeverage": "25",
-		"maxMarketValueUSD": "10000000",
+		"maxMarketValue": "10000000",
 		"maxFundingVelocity": "0.1",
-		"skewScaleUSD": "300000000",
+		"skewScale": "300000000",
 		"paused": false
 	},
 	{
@@ -36,9 +36,9 @@
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "60",
 		"maxLeverage": "25",
-		"maxMarketValueUSD": "25000000",
+		"maxMarketValue": "25000000",
 		"maxFundingVelocity": "0.1",
-		"skewScaleUSD": "300000000",
+		"skewScale": "300000000",
 		"paused": false
 	}
 ]
