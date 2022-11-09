@@ -41,42 +41,38 @@ import "./interfaces/IPerpsV2Market.sol";
  *
  * Each market is composed of the following pieces, one of each of this exists per asset:
  *
- *     - ProxyPerpsV2.sol:              The Proxy is the main entry point and visible, permanent address of the market.
- *                                      It acts as a combination of Proxy and Router sending the messages to the
- *                                      appropriate implementation (or fragment) of the Market.
- *                                      Margin is maintained isolated per market. each market is composed of several
- *                                      contracts (or fragments) accessed by this proxy:
- *                                       `base` contains all the common logic and is inherited by other fragments.
- *                                            It's treated as abstract and not deployed alone;
- *                                       `proxyable` is an extension of `base` that implements the proxyable interface
- *                                           and is used as base for fragments that require the messageSender.
- *                                       `mutations` contains the basic market behaviour
- *                                       `views` contains functions to provide visibility to different parameters and
- *                                           is used by external or manager contracts.
- *                                        `delayedOrders` contains the logic to implement the delayed order flows.
- *                                        `offchainDelayedOrders` contains the logic to implement the delayed order
- *                                           with off-chain pricing flows.
+ *     - ProxyPerpsV2.sol:          The Proxy is the main entry point and visible, permanent address of the market.
+ *                                  It acts as a combination of Proxy and Router sending the messages to the
+ *                                  appropriate implementation (or fragment) of the Market.
+ *                                  Margin is maintained isolated per market. each market is composed of several
+ *                                  contracts (or fragments) accessed by this proxy:
+ *                                  `base` contains all the common logic and is inherited by other fragments.
+ *                                  It's treated as abstract and not deployed alone;
+ *                                  `proxyable` is an extension of `base` that implements the proxyable interface
+ *                                  and is used as base for fragments that require the messageSender.
+ *                                  `mutations` contains the basic market behaviour
+ *                                  `views` contains functions to provide visibility to different parameters and
+ *                                  is used by external or manager contracts.
+ *                                  `delayedOrders` contains the logic to implement the delayed order flows.
+ *                                  `offchainDelayedOrders` contains the logic to implement the delayed order
+ *                                  with off-chain pricing flows.
  *
- *     - PerpsV2State.sol:               The State contracts holds all the state for the market and is consumed/updated
- *                                       by the fragments.
- *                                       It provides access to the positions in case a migration is needed in the future.
+ *     - PerpsV2State.sol:          The State contracts holds all the state for the market and is consumed/updated
+ *                                  by the fragments.
+ *                                  It provides access to the positions in case a migration is needed in the future.
  *
- *     - PerpsV2Market.sol:              Contains the core logic to implement the market and position flows.
+ *     - PerpsV2Market.sol:         Contains the core logic to implement the market and position flows.
  *
- *     - PerpsV2MarketViews.sol:         Contains the logic to access market and positions parameters by external or
- *                                       manager contracts
+ *     - PerpsV2MarketViews.sol:    Contains the logic to access market and positions parameters by external or
+ *                                  manager contracts
  *
- *     - PerpsV2MarketDelayedOrders.sol:  Contains the logic to implement delayed order flows
- *
- *     - PerpsV2MarketDelayedOrdersOffchain.sol:  Contains the logic to implement delayed order with off-chain pricing flows
+ *     - PerpsV2MarketDelayedOrdersOffchain.sol: Contains the logic to implement delayed order with off-chain pricing flows
  *
  *
  * Technical note: internal functions within the PerpsV2Market contract assume the following:
  *
  *     - prices passed into them are valid;
- *
  *     - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
- *
  *     - the account being managed was not liquidated in the same transaction;
  */
 

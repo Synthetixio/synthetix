@@ -53,8 +53,6 @@ interface IPerpsV2MarketSettings {
 
     function minDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
 
-    function minDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
-
     function maxDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
 
     function parameters(bytes32 _marketKey) external view returns (Parameters memory);

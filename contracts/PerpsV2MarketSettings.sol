@@ -123,13 +123,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum theoretical funding velocity per day charged by a market.
-     */
-    function maxFundingVelocity(bytes32 _marketKey) public view returns (uint) {
-        return _maxFundingVelocity(_marketKey);
-    }
-
-    /*
      * The skew level at which the max funding velocity will be charged.
      */
     function skewScale(bytes32 _marketKey) public view returns (uint) {
@@ -141,13 +134,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function maxFundingVelocity(bytes32 _marketKey) public view returns (uint) {
         return _maxFundingVelocity(_marketKey);
-    }
-
-    /*
-     * The skew level at which the max funding rate will be charged.
-     */
-    function maxDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
-        return _maxDelayTimeDelta(_marketKey);
     }
 
     /*
@@ -307,14 +293,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         require(_skewScale > 0, "cannot set skew scale 0");
         _recomputeFunding(_marketKey);
         _setParameter(_marketKey, PARAMETER_MIN_SKEW_SCALE, _skewScale);
-    }
-
-    function setMinDelayTimeDelta(bytes32 _marketKey, uint _minDelayTimeDelta) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MIN_DELAY_TIME_DELTA, _minDelayTimeDelta);
-    }
-
-    function setMaxDelayTimeDelta(bytes32 _marketKey, uint _maxDelayTimeDelta) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA, _maxDelayTimeDelta);
     }
 
     function setMinDelayTimeDelta(bytes32 _marketKey, uint _minDelayTimeDelta) public onlyOwner {

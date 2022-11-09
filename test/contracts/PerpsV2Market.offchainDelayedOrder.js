@@ -201,6 +201,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+			const fillPrice = (await perpsV2Market.fillPrice(size))[0];
+
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, {
 				from: trader,
 			});
@@ -225,14 +228,12 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				contracts: [perpsV2Market, perpsV2DelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
-			// PositionModified
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, price, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
 				log: decodedLogs[1],
 			});
-			// DelayedOrderSubmitted
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
@@ -347,14 +348,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 
 			// setup
-			await perpsV2Market.submitOffchainDelayedOrderWithTracking(
-				size,
-
-				trackingCode,
-				{
-					from: trader,
-				}
-			);
+			await perpsV2Market.submitOffchainDelayedOrderWithTracking(size, trackingCode, {
+				from: trader,
+			});
 
 			// go to next round
 			await setOnchainPrice(baseAsset, price);
@@ -368,9 +364,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
+			const offchainFillPrice = (await perpsV2Market.fillPrice(size))[0];
 			const expectedFee = multiplyDecimal(
 				size,
-				multiplyDecimal(offChainPrice, takerFeeOffchainDelayedOrder)
+				multiplyDecimal(offchainFillPrice, takerFeeOffchainDelayedOrder)
 			);
 
 			// execute the order
@@ -868,7 +865,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				}
 
 				// trader was refunded correctly
-				// PositionModified
 				let expectedMargin = currentMargin.add(expectedRefund);
 
 				decodedEventEqual({
@@ -879,7 +875,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				});
 
 				// trade was executed correctly
-				// PositionModified
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
 
 				// calculate the expected margin after trade
@@ -895,7 +890,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
-				// DelayedOrderRemoved
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
