@@ -9,12 +9,10 @@ interface IPerpsV2MarketSettings {
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
-
         uint maxLeverage;
         uint maxMarketValue;
         uint maxFundingVelocity;
         uint skewScale;
-
         uint nextPriceConfirmWindow;
         uint delayedOrderConfirmWindow;
         uint minDelayTimeDelta;

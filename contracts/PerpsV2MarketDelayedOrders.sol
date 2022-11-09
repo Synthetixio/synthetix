@@ -169,8 +169,8 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
     ) internal view returns (bool) {
         bytes32 marketKey = _marketKey();
         return
-        (block.timestamp > executableAtTime &&
-        (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
-        ((currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey))); // don't underflow
+            (block.timestamp > executableAtTime &&
+                (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
+            ((currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey))); // don't underflow
     }
 }

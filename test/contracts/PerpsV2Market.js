@@ -3824,11 +3824,11 @@ contract('PerpsV2Market', accounts => {
 			await setPrice(baseAsset, price3);
 
 			// get the position's margin/size before we close and withdraw. we .neg here because we're closing.
-			const position = await futuresMarket.positions(trader);
-			const size3 = toBN(position.size).neg();
-			const margin3 = toBN(position.margin);
-			const fee3 = (await futuresMarket.orderFee(size3))[0];
-			const fillPrice3 = (await futuresMarket.fillPrice(size3))[0];
+			// const position = await futuresMarket.positions(trader);
+			// const size3 = toBN(position.size).neg();
+			// const margin3 = toBN(position.margin);
+			// const fee3 = (await futuresMarket.orderFee(size3))[0];
+			// const fillPrice3 = (await futuresMarket.fillPrice(size3))[0];
 
 			await closePositionAndWithdrawMargin({
 				market: futuresMarket,
