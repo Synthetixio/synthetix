@@ -34,7 +34,7 @@ module.exports = async ({
 	});
 
 	if (!useOvm) {
-		return;
+		return { futuresMarketManager: null };
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
