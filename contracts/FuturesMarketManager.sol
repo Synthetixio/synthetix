@@ -45,9 +45,10 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== STATE VARIABLES ========== */
 
-    AddressSetLib.AddressSet internal _markets;
+    AddressSetLib.AddressSet internal _allMarkets;
+    AddressSetLib.AddressSet internal _legacyMarkets;
+    AddressSetLib.AddressSet internal _proxiedMarkets;
     mapping(bytes32 => address) public marketForKey;
-    mapping(address => bool) internal _proxiedMarkets;
 
     // PerpsV2 implementations
     AddressSetLib.AddressSet internal _implementations;
@@ -91,21 +92,47 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * Returns slices of the list of all markets.
      */
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
-        return _markets.getPage(index, pageSize);
+        return _allMarkets.getPage(index, pageSize);
+    }
+
+    /*
+     * Returns slices of the list of all v1 or v2 (proxied) markets.
+     */
+    function markets(
+        uint index,
+        uint pageSize,
+        bool proxiedMarkets
+    ) external view returns (address[] memory) {
+        if (proxiedMarkets) {
+            return _proxiedMarkets.getPage(index, pageSize);
+        } else {
+            return _legacyMarkets.getPage(index, pageSize);
+        }
     }
 
     /*
      * The number of markets known to the manager.
      */
     function numMarkets() external view returns (uint) {
-        return _markets.elements.length;
+        return _allMarkets.elements.length;
     }
 
     /*
      * The list of all markets.
      */
     function allMarkets() public view returns (address[] memory) {
-        return _markets.getPage(0, _markets.elements.length);
+        return _allMarkets.getPage(0, _allMarkets.elements.length);
+    }
+
+    /*
+     * The list of all markets.
+     */
+    function allMarkets(bool proxiedMarkets) public view returns (address[] memory) {
+        if (proxiedMarkets) {
+            return _proxiedMarkets.getPage(0, _proxiedMarkets.elements.length);
+        } else {
+            return _legacyMarkets.getPage(0, _legacyMarkets.elements.length);
+        }
     }
 
     function _marketsForKeys(bytes32[] memory marketKeys) internal view returns (address[] memory) {
@@ -130,9 +157,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
-        uint numOfMarkets = _markets.elements.length;
+        uint numOfMarkets = _allMarkets.elements.length;
         for (uint i = 0; i < numOfMarkets; i++) {
-            (uint marketDebt, bool invalid) = IMarketViews(_markets.elements[i]).marketDebt();
+            (uint marketDebt, bool invalid) = IMarketViews(_allMarkets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
         }
@@ -174,7 +201,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
                 marketDebt: debt,
                 currentFundingRate: market.currentFundingRate(),
                 priceInvalid: invalid,
-                proxied: _proxiedMarkets[addresses[i]]
+                proxied: _proxiedMarkets.contains(addresses[i])
             });
         }
 
@@ -238,19 +265,21 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      */
     function _addMarket(address market, bool isProxied) internal onlyOwner {
         // address market = marketsToAdd[i];
-        require(!_markets.contains(market), "Market already exists");
+        require(!_allMarkets.contains(market), "Market already exists");
 
         bytes32 key = IMarketViews(market).marketKey();
         bytes32 baseAsset = IMarketViews(market).baseAsset();
 
         require(marketForKey[key] == address(0), "Market already exists for key");
         marketForKey[key] = market;
-        _markets.add(market);
+        _allMarkets.add(market);
 
-        _proxiedMarkets[market] = isProxied;
-        // if PerpsV2 Market Add implementations
         if (isProxied) {
+            _proxiedMarkets.add(market);
+            // if PerpsV2 Market Add implementations
             _addImplementations(market);
+        } else {
+            _legacyMarkets.add(market);
         }
 
         // Emit the event
@@ -269,13 +298,15 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             require(marketForKey[key] != address(0), "Unknown market");
 
             // if PerpsV2 Market Remove implementations
-            if (_proxiedMarkets[market]) {
+            if (_proxiedMarkets.contains(market)) {
                 _removeImplementations(market);
+                _proxiedMarkets.remove(market);
+            } else {
+                _legacyMarkets.remove(market);
             }
 
-            delete _proxiedMarkets[market];
             delete marketForKey[key];
-            _markets.remove(market);
+            _allMarkets.remove(market);
             emit MarketRemoved(market, baseAsset, key);
         }
     }
@@ -370,7 +401,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     function _requireIsMarketOrImplementation() internal view {
         require(
-            _markets.contains(msg.sender) || _implementations.contains(msg.sender),
+            _allMarkets.contains(msg.sender) || _implementations.contains(msg.sender),
             "Permitted only for market implementations"
         );
     }

@@ -302,7 +302,7 @@ const deploy = async ({
 		useOvm,
 	});
 
-	await deployFutures({
+	const { futuresMarketManager } = await deployFutures({
 		account,
 		addressOf,
 		getDeployParameter,
@@ -324,6 +324,7 @@ const deploy = async ({
 		network,
 		deploymentPath,
 		loadAndCheckRequiredSources,
+		futuresMarketManager,
 	});
 
 	await deployDappUtils({

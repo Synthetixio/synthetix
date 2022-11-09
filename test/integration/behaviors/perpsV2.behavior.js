@@ -35,11 +35,13 @@ function itCanTrade({ ctx }) {
 
 		let someUser, otherUser;
 		let FuturesMarketManager,
+			FuturesMarketSettings,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
 			PerpsV2MarketBTC,
 			PerpsV2MarketImplBTC,
 			PerpsV2DelayedOrderBTC,
+			PerpsV2OffchainDelayedOrderBTC,
 			PerpsV2MarketViewsBTC,
 			PerpsV2ProxyBTC,
 			ExchangeRates,
@@ -48,10 +50,12 @@ function itCanTrade({ ctx }) {
 		before('target contracts and users', () => {
 			({
 				FuturesMarketManager,
+				FuturesMarketSettings,
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
 				PerpsV2MarketBTC: PerpsV2MarketImplBTC,
 				PerpsV2DelayedOrderBTC,
+				PerpsV2OffchainDelayedOrderBTC,
 				PerpsV2MarketViewsBTC,
 				PerpsV2ProxyBTC,
 				ExchangeRates,
@@ -64,7 +68,12 @@ function itCanTrade({ ctx }) {
 
 			PerpsV2MarketBTC = proxyedContract(
 				PerpsV2ProxyBTC,
-				unifyAbis([PerpsV2MarketImplBTC, PerpsV2MarketViewsBTC, PerpsV2DelayedOrderBTC]),
+				unifyAbis([
+					PerpsV2MarketImplBTC,
+					PerpsV2MarketViewsBTC,
+					PerpsV2DelayedOrderBTC,
+					PerpsV2OffchainDelayedOrderBTC,
+				]),
 				someUser
 			);
 		});
@@ -190,9 +199,10 @@ function itCanTrade({ ctx }) {
 
 		describe('markets and parameters', () => {
 			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
+			const marketKeyIsV2 = [];
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await FuturesMarketManager.allMarkets();
+				allMarketsAddresses = await FuturesMarketManager['allMarkets()']();
 				allSummaries = await PerpsV2MarketData.allMarketSummaries();
 
 				// get market contracts
@@ -210,7 +220,10 @@ function itCanTrade({ ctx }) {
 				marketKeys = [];
 				for (const someMarket of allMarkets) {
 					assetKeys.push(await someMarket.baseAsset());
-					marketKeys.push(await someMarket.marketKey());
+					const marketKey = await someMarket.marketKey();
+					marketKeys.push(marketKey);
+					const marketSummary = await FuturesMarketManager.marketSummaries([someMarket.address]);
+					marketKeyIsV2[marketKey] = marketSummary[0].proxied;
 				}
 			});
 
@@ -223,7 +236,7 @@ function itCanTrade({ ctx }) {
 				// ensure all assets are unique, this will not be true in case of migration to
 				// newer version of futures markets, but is a good check for all cases
 				// to ensure no market is being duplicated / redeployed etc
-				assert.ok(new Set(assetKeys).size === assetKeys.length);
+				// assert.ok(new Set(assetKeys).size === assetKeys.length);
 
 				// this should be true always as the keys are keys into a mapping
 				assert.ok(new Set(marketKeys).size === marketKeys.length);
@@ -238,14 +251,20 @@ function itCanTrade({ ctx }) {
 			it(`per market parameters make sense`, async () => {
 				for (const marketKey of marketKeys) {
 					// leverage
-					const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
+					const maxLeverage = marketKeyIsV2[marketKey]
+						? await PerpsV2MarketSettings.maxLeverage(marketKey)
+						: await FuturesMarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLt(maxLeverage, toUnit(100));
 
-					const maxMarketValue = await PerpsV2MarketSettings.maxMarketValue(marketKey);
+					const maxMarketValue = marketKeyIsV2[marketKey]
+						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
+						: await FuturesMarketSettings.maxMarketValueUSD(marketKey);
 					assert.bnLt(maxMarketValue, toUnit(100000000));
 
-					const skewScale = await PerpsV2MarketSettings.skewScale(marketKey);
+					const skewScale = marketKeyIsV2[marketKey]
+						? await PerpsV2MarketSettings.skewScale(marketKey)
+						: await FuturesMarketSettings.skewScaleUSD(marketKey);
 					// not too small, may not be true for a deprecated (winding down) market
 					assert.bnGt(skewScale, toUnit(1));
 				}
