@@ -15,11 +15,29 @@ contract EmptyFuturesMarketManager is IFuturesMarketManager {
         return _markets;
     }
 
+    function markets(
+        uint index,
+        uint pageSize,
+        bool proxiedMarkets
+    ) external view returns (address[] memory) {
+        index;
+        pageSize;
+        proxiedMarkets;
+        address[] memory _markets;
+        return _markets;
+    }
+
     function numMarkets() external view returns (uint) {
         return 0;
     }
 
     function allMarkets() external view returns (address[] memory) {
+        address[] memory _markets;
+        return _markets;
+    }
+
+    function allMarkets(bool proxiedMarkets) external view returns (address[] memory) {
+        proxiedMarkets;
         address[] memory _markets;
         return _markets;
     }
