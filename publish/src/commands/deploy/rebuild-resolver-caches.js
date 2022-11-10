@@ -72,6 +72,12 @@ module.exports = async ({
 					'Warning: Cannot fetch logs on this network. Known limitation on OVM mainnet - cannot search back greater than 10k blocks'
 				)
 			);
+		} else if (/The largest supported block range is 1000/.test(err.message)) {
+			console.log(
+				yellow.bold(
+					'Warning: Cannot fetch logs on this network. Known limitation on Tenderly Fork - cannot search back greater than 1k blocks'
+				)
+			);
 		} else {
 			throw err;
 		}
