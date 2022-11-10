@@ -177,13 +177,6 @@ module.exports = async ({
 			writeArg: [futuresMarketProxy.address],
 		});
 
-		await runStep({
-			contract: `PerpsV2MarketDelayedOrdersOffchain`,
-			target: futuresMarketDelayedOrderOffchain,
-			write: 'setProxy',
-			writeArg: [futuresMarketProxy.address],
-		});
-
 		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
@@ -194,13 +187,28 @@ module.exports = async ({
 			});
 		}
 
+		// Configure Offchain Next Price
+		await runStep({
+			contract: `PerpsV2MarketState`,
+			target: futuresMarketState,
+			write: 'addAssociatedContracts',
+			writeArg: [[futuresMarketDelayedOrderOffchain.address]],
+		});
+
+		await runStep({
+			contract: `PerpsV2MarketDelayedOrdersOffchain`,
+			target: futuresMarketDelayedOrderOffchain,
+			write: 'setProxy',
+			writeArg: [futuresMarketProxy.address],
+		});
+
 		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions);
 		for (const f of filteredFunctions) {
 			await runStep({
 				contract: `ProxyPerpsV2`,
 				target: futuresMarketProxy,
 				write: 'addRoute',
-				writeArg: [f.signature, futuresMarketDelayedOrder.address, f.isView],
+				writeArg: [f.signature, futuresMarketDelayedOrderOffchain.address, f.isView],
 			});
 		}
 
