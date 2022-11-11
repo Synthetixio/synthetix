@@ -111,7 +111,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         require(order.isOffchain, "use onchain method");
 
         // update price feed (this is payable)
-        _perpsV2ExchangeRate().updatePythPrice(messageSender, priceUpdateData);
+        _perpsV2ExchangeRate().updatePythPrice.value(msg.value)(messageSender, priceUpdateData);
 
         // get latest price for asset
         uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
@@ -120,10 +120,8 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
         uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
 
-        require(
-            (executionTimestamp > order.intentionTime) && (executionTimestamp - order.intentionTime > minAge),
-            "too early"
-        );
+        require((executionTimestamp > order.intentionTime), "price not updated");
+        require((executionTimestamp - order.intentionTime > minAge), "too early");
         require((executionTimestamp - order.intentionTime < maxAge), "too late");
 
         _executeDelayedOrder(

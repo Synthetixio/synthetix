@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 
@@ -11,7 +12,7 @@ import "./interfaces/IPyth.sol";
 import "./interfaces/PythStructs.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2ExchangeRate
-contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
+contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
     bytes32 public constant CONTRACT_NAME = "PerpsV2ExchangeRate";
 
     bytes32 internal constant SETTING_OFFCHAIN_ORACLE = "offchainOracle";
@@ -52,7 +53,7 @@ contract PerpsV2ExchangeRate is Owned, MixinSystemSettings {
 
     /* ---------- priceFeeds mutation ---------- */
 
-    function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable {
+    function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable nonReentrant {
         // Get fee amount to pay to Pyth
         uint fee = offchainOracle().getUpdateFee(priceUpdateData.length);
         require(msg.value >= fee, "Not enough eth for paying the fee");

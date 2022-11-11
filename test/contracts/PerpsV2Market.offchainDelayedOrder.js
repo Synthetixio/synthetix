@@ -53,6 +53,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	const defaultFeedEMAPrice = 2100;
 	const defaultFeedEMAConfidence = 1;
 
+	const pythFee = 100;
+
 	async function setOnchainPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
 			exchangeRates,
@@ -64,7 +66,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 	async function setOffchainPrice(user, priceData = {}) {
 		const updateFeedData = await getFeedUpdateData(priceData);
-		await perpsV2ExchangeRate.updatePythPrice(user, [updateFeedData], { from: user });
+		await perpsV2ExchangeRate.updatePythPrice(user, [updateFeedData], {
+			from: user,
+			value: pythFee,
+		});
 	}
 
 	async function getFeedUpdateData({
@@ -1026,6 +1031,103 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						);
 					});
 				});
+			});
+		});
+	});
+
+	describe('when pyth fee is > 0', () => {
+		let updateFeedData, userBalanceBefore, pythBalanceBefore, perpsBalanceBefore;
+
+		beforeEach('set pyth fee and an order', async () => {
+			// set fee to pythFee
+			await mockPyth.mockUpdateFee(pythFee, { from: owner });
+
+			// create an order
+			await setOffchainPrice(trader, {
+				id: defaultFeedId,
+				price: feedBaseFromUNIT(offChainPrice),
+				conf: feedBaseFromUNIT(confidence),
+				publishTime: await currentTime(),
+			});
+
+			await perpsV2Market.submitOffchainDelayedOrder(size, { from: trader });
+
+			await fastForward(offchainDelayedOrderMinAge + 1);
+
+			updateFeedData = await getFeedUpdateData({
+				id: defaultFeedId,
+				price: feedBaseFromUNIT(offChainPrice),
+				conf: feedBaseFromUNIT(confidence),
+				publishTime: await currentTime(),
+			});
+
+			userBalanceBefore = await ethers.provider.getBalance(trader);
+			pythBalanceBefore = await ethers.provider.getBalance(mockPyth.address);
+			perpsBalanceBefore = await ethers.provider.getBalance(perpsV2ExchangeRate.address);
+		});
+
+		async function checkBalances(delta, gasUsed, reverted) {
+			const userBalanceAfter = await ethers.provider.getBalance(trader);
+			const pythBalanceAfter = await ethers.provider.getBalance(mockPyth.address);
+			const perpsBalanceAfter = await ethers.provider.getBalance(perpsV2ExchangeRate.address);
+
+			if (!reverted) {
+				assert.bnEqual(userBalanceAfter, userBalanceBefore.sub(delta).sub(gasUsed));
+			}
+			assert.bnEqual(pythBalanceAfter, pythBalanceBefore.add(delta));
+			assert.bnEqual(perpsBalanceAfter, perpsBalanceBefore);
+		}
+
+		describe('when executing with 0 value sent', () => {
+			it('reverts and does not change balances', async () => {
+				await assert.revert(
+					perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+						from: trader,
+					}),
+					'Not enough eth for paying the fee'
+				);
+
+				await checkBalances(0, 0, true);
+			});
+		});
+
+		describe('when executing without enough value sent', () => {
+			it('reverts and does not change balances', async () => {
+				await assert.revert(
+					perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+						from: trader,
+						value: 1,
+					}),
+					'Not enough eth for paying the fee'
+				);
+
+				await checkBalances(0, 0, true);
+			});
+		});
+
+		describe('when executing with exact value sent', () => {
+			it('executes the order and change balances as expected', async () => {
+				const tx = await perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+					from: trader,
+					value: pythFee,
+				});
+
+				const weiUsedInTx = tx.receipt.effectiveGasPrice * tx.receipt.gasUsed;
+
+				await checkBalances(pythFee, weiUsedInTx, false);
+			});
+		});
+
+		describe('when executing with more value than required sent', () => {
+			it('executes the order and change balances as expected', async () => {
+				const tx = await perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+					from: trader,
+					value: pythFee * 2,
+				});
+
+				const weiUsedInTx = tx.receipt.effectiveGasPrice * tx.receipt.gasUsed;
+
+				await checkBalances(pythFee, weiUsedInTx, false);
 			});
 		});
 	});
