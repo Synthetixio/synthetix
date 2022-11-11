@@ -21,17 +21,17 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 		let Synthetix, SynthsUSD, FeePool;
 		let balancesUSD, debtsUSD;
 
-		before('target contracts and users', () => {
-			({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
-
-			user = ctx.l1.users.someUser;
-		});
-
-		before('ensure the user has enough SNX', async () => {
-			await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
-		});
-
 		describe('when the user issues sUSD', () => {
+			before('target contracts and users', () => {
+				({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
+
+				user = ctx.l1.users.someUser;
+			});
+
+			before('ensure the user has enough SNX', async () => {
+				await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
+			});
+
 			before('record balances', async () => {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
 			});
