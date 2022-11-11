@@ -212,6 +212,9 @@
 	"PerpsV2MarketData": {
 		"deploy": true
 	},
+	"PerpsV2ExchangeRate": {
+		"deploy": true
+	},
 	"WrapperFactory": {
 		"deploy": true
 	},

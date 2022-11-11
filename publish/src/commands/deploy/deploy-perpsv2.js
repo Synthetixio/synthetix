@@ -105,6 +105,7 @@ module.exports = async ({
 				addressOf(ReadProxyAddressResolver),
 			],
 			force: true,
+			skipResolver: true,
 		});
 
 		// Views
@@ -113,6 +114,7 @@ module.exports = async ({
 			source: 'PerpsV2MarketViews',
 			args: [futuresMarketState.address, account, addressOf(ReadProxyAddressResolver)],
 			force: true,
+			skipResolver: true,
 		});
 
 		// DelayedOrder
@@ -126,6 +128,7 @@ module.exports = async ({
 				addressOf(ReadProxyAddressResolver),
 			],
 			force: true,
+			skipResolver: true,
 		});
 
 		// Offchain DelayedOrder
@@ -139,6 +142,7 @@ module.exports = async ({
 				addressOf(ReadProxyAddressResolver),
 			],
 			force: true,
+			skipResolver: true,
 		});
 
 		// Configure Contracts, Proxy and State
