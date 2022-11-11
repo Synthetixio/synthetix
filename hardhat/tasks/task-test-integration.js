@@ -1,5 +1,6 @@
 const path = require('path');
 const isCI = require('is-ci');
+const { gray } = require('chalk');
 
 const {
 	constants: { BUILD_FOLDER },
@@ -137,6 +138,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 	.addFlag('debugOptimism', 'Debug Optimism activity')
 	.addFlag('compile', 'Compile the l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy the l1 instance before running the tests')
+	.addFlag('linear', 'Force parallel testing to false')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/dual/';
 		hre.config.debugOptimism = taskArguments.debugOptimism;
@@ -190,5 +192,10 @@ function _commonIntegrationTestSettings({ hre, taskArguments }) {
 
 	if (taskArguments.grep) {
 		hre.config.mocha.grep = taskArguments.grep;
+	}
+
+	if (taskArguments.linear) {
+		console.log(gray(`Not running tests in parallel`));
+		hre.config.mocha.parallel = false;
 	}
 }
