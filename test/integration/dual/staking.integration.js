@@ -31,7 +31,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 			await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 		});
 
-		describe('when the user issues sUSD', () => {
+		describe.skip('when the user issues sUSD', () => {
 			before('record balances', async () => {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
 			});
