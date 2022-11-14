@@ -143,17 +143,32 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         require(block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()) * 2, "cannot cancel yet");
     }
 
-    ///// Internal views
+    ///// Internal
 
     /*
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      */
-    function _offchainAssetPriceRequireSystemChecks(uint maxAge) internal view returns (uint price, uint publishTime) {
+    function _offchainAssetPriceRequireSystemChecks(uint maxAge) internal returns (uint price, uint publishTime) {
         // check that futures market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(_baseAsset());
 
-        return _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), maxAge);
+        // offchain PerpsV2 virtual market
+        _systemStatus().requireFuturesMarketActive(_offchainMarketKey(_marketKey()));
+
+        // Onchain oracle asset price
+        uint onchainPrice = _assetPriceRequireSystemChecks();
+        (price, publishTime) = _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), maxAge);
+
+        require(onchainPrice > 0 && price > 0, "invalid, price is 0");
+
+        uint delta =
+            (onchainPrice > price)
+                ? onchainPrice.divideDecimal(price).sub(SafeDecimalMath.unit())
+                : price.divideDecimal(onchainPrice).sub(SafeDecimalMath.unit());
+        require(_offchainPriceDivergence(_marketKey()) > delta, "price divergence too high");
+
+        return (price, publishTime);
     }
 }

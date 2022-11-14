@@ -29,6 +29,7 @@ contract('PerpsV2MarketData', accounts => {
 	const keySuffix = '-perp';
 	const newMarketKey = toBytes32('sETH' + keySuffix);
 	const newAssetKey = toBytes32('sETH');
+	const offchainPrefix = 'oc';
 
 	const owner = accounts[1];
 	const trader1 = accounts[2];
@@ -84,6 +85,7 @@ contract('PerpsV2MarketData', accounts => {
 		for (const symbol of ['sETH', 'sLINK']) {
 			const assetKey = toBytes32(symbol);
 			const marketKey = toBytes32(symbol + keySuffix);
+			const offchainMarketKey = toBytes32(offchainPrefix + symbol + keySuffix);
 
 			const marketState = await setupContract({
 				accounts,
@@ -178,6 +180,9 @@ contract('PerpsV2MarketData', accounts => {
 					120, // 120s maximum delay time in seconds
 					15, // offchainDelayedOrderMinAge
 					60, // offchainDelayedOrderMaxAge
+
+					offchainMarketKey,
+					toUnit('0.05'),
 				],
 				{ from: owner }
 			);

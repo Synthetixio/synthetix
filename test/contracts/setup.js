@@ -8,6 +8,7 @@ const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
 const {
 	toBytes32,
+	fromBytes32,
 	getUsers,
 	constants: { ZERO_ADDRESS },
 	defaults: {
@@ -1733,6 +1734,9 @@ const setupAllContracts = async ({
 
 				const assetKey = await proxiedMarketViews.baseAsset();
 				const marketKey = await proxiedMarketViews.marketKey();
+				const offchainMarketKey = toBytes32(
+					'oc' + fromBytes32(marketKey.replace(/([0\s]+$)/g, ''))
+				);
 				await setupPriceAggregators(returnObj['ExchangeRates'], owner, [assetKey]);
 				await updateAggregatorRates(returnObj['ExchangeRates'], null, [assetKey], [toUnit('1')]);
 				await Promise.all([
@@ -1758,6 +1762,9 @@ const setupAllContracts = async ({
 
 							15, // 20s offchain min delay window
 							60, // 20s offchain max delay window
+
+							offchainMarketKey, // offchain market key
+							toUnit('0.06'), // offchain price divergence 5%
 						],
 						{ from: owner }
 					),

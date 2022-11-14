@@ -575,6 +575,7 @@ contract('FuturesMarketManager', accounts => {
 			for (const symbol of assets) {
 				const assetKey = toBytes32(symbol);
 				const marketKey = toBytes32('s' + symbol);
+				const offchainMarketKey = toBytes32('oc' + symbol);
 
 				const marketState = await setupContract({
 					accounts,
@@ -658,6 +659,9 @@ contract('FuturesMarketManager', accounts => {
 						120, // 120s maximum delay time in seconds
 						15, // offchainDelayedOrderMinAge
 						60, // offchainDelayedOrderMaxAge
+
+						offchainMarketKey,
+						toUnit('0.05'),
 					],
 					{ from: owner }
 				);

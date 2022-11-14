@@ -356,7 +356,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			});
 
 			// go to next round
-			await setOnchainPrice(baseAsset, price);
+			await setOnchainPrice(baseAsset, offChainPrice);
 
 			latestPublishTime = await currentTime();
 
@@ -797,6 +797,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					it('if price too high', async () => {
 						// set price too high
+						await setOnchainPrice(baseAsset, offChainPrice.mul(toBN(5)));
+
 						updateFeedData = await getFeedUpdateData({
 							id: defaultFeedId,
 							price: feedBaseFromUNIT(offChainPrice.mul(toBN(5))),
@@ -814,6 +816,118 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 								from: trader2,
 							}),
 							'Max leverage exceeded'
+						);
+					});
+				});
+
+				describe('if off-chain price is zero', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await setOnchainPrice(baseAsset, price);
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
+
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(0),
+							conf: feedBaseFromUNIT(confidence),
+							publishTime: await currentTime(),
+						});
+					});
+
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'invalid, price is 0'
+						);
+					});
+				});
+
+				describe('off-chain is a lot higher than diverts', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await setOnchainPrice(baseAsset, price);
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
+
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(price.mul(toBN(2))),
+							conf: feedBaseFromUNIT(confidence),
+							publishTime: await currentTime(),
+						});
+					});
+
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'price divergence too high'
+						);
+					});
+				});
+
+				describe('on-chain is a lot higher than diverts', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await setOnchainPrice(baseAsset, price.mul(toBN(2)));
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
+
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(price),
+							conf: feedBaseFromUNIT(confidence),
+							publishTime: await currentTime(),
+						});
+					});
+
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'price divergence too high'
+						);
+					});
+				});
+
+				describe('if off-chain virtual market is paused', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
+						// commitFee is the fee that would be charged for a spot trade when order is submitted
+						commitFee = (await perpsV2Market.orderFee(size))[0];
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await setOnchainPrice(baseAsset, price);
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
+
+						updateFeedData = await getFeedUpdateData({
+							id: defaultFeedId,
+							price: feedBaseFromUNIT(price),
+							conf: feedBaseFromUNIT(confidence),
+							publishTime: await currentTime(),
+						});
+
+						// pause the market
+						await systemStatus.suspendFuturesMarket(ocMarketKet, '0', { from: owner });
+					});
+
+					it('reverts', async () => {
+						await assert.revert(
+							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
+							'Market suspended'
 						);
 					});
 				});
