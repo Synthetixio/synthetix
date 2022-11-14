@@ -703,7 +703,8 @@
 				"Synthetix",
 				"Liquidator",
 				"RewardEscrowV2Storage"
-			]
+			],
+			"released": "both"
 		},
 		{
 			"sip": 257,
@@ -721,6 +722,20 @@
 			"sip": 262,
 			"layer": "ovm",
 			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeSettlementLib",
+				"ExchangeRates",
+				"Issuer",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
 			"released": "both"
 		},
 		{
@@ -1368,7 +1383,8 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
 		},
 		{
 			"name": "Aspidiske (Optimism)",
@@ -1377,7 +1393,27 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
+		},
+		{
+			"name": "Suhail",
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Suhail (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
 		}
 	]
 }

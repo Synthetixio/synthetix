@@ -290,7 +290,7 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
-						(await ExchangeRates.atomicTwapWindow()).toString(),
+						(await SystemSettings.atomicTwapWindow()).toString(),
 						ATOMIC_TWAP_WINDOW
 					);
 					assert.strictEqual(
@@ -452,7 +452,7 @@ describe('publish scripts', () => {
 								newRateStalePeriod
 							);
 							assert.strictEqual(
-								(await ExchangeRates.atomicTwapWindow()).toString(),
+								(await SystemSettings.atomicTwapWindow()).toString(),
 								newAtomicTwapWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
