@@ -46,6 +46,9 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainDelayedOrderMinAge = toBN('15');
 	const offchainDelayedOrderMaxAge = toBN('60');
 
+	const offchainMarketKey = toBytes32('ocsBTC');
+	const offchainPriceDivergence = toUnit('0.05');
+
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
@@ -168,6 +171,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				nextPriceConfirmWindow,
 				offchainDelayedOrderMinAge,
 				offchainDelayedOrderMaxAge,
+				offchainMarketKey,
+				offchainPriceDivergence,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];

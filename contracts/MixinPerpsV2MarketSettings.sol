@@ -31,8 +31,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScale";
     bytes32 internal constant PARAMETER_MIN_DELAY_TIME_DELTA = "minDelayTimeDelta";
     bytes32 internal constant PARAMETER_MAX_DELAY_TIME_DELTA = "maxDelayTimeDelta";
-    bytes32 internal constant PARAMETER_OFFCHAIN_MARKET_KEY = "offchainDelayedOrderMarketKey";
-    bytes32 internal constant PARAMETER_OFFCHAIN_PRICE_DIVERGENCE = "offchainDelayedOrderDivergence";
+    bytes32 internal constant PARAMETER_OFFCHAIN_MARKET_KEY = "offchainMarketKey";
+    bytes32 internal constant PARAMETER_OFFCHAIN_PRICE_DIVERGENCE = "offchainPriceDivergence";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
