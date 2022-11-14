@@ -714,11 +714,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint escrowToLiquidate
         )
     {
-        // Consider triggering a migration of liquidateble accounts to V3
-        // if(getAddress("LegacyMarket") != address(0)){
-        //    legacyMarket.migrate(account);
-        // }
-
         require(liquidator().isLiquidationOpen(account, isSelfLiquidation), "Not open for liquidation");
 
         // liquidationAmounts checks isLiquidationOpen for the account
