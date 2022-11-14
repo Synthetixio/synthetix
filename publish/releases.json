@@ -747,11 +747,7 @@
 		{
 			"sip": 299,
 			"layer": "both",
-			"sources": [
-				"Synthetix",
-				"Issuer",
-				"Liquidator"
-			]
+			"sources": ["Synthetix", "Liquidator"]
 		}
 	],
 	"releases": [
