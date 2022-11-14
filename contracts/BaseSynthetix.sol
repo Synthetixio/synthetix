@@ -457,21 +457,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         rewardEscrowV2().revokeFrom(account, msg.sender, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
     }
 
-    /**
-     * @notice Once off function for SIP-239 to recover unallocated SNX rewards
-     * due to an initialization issue in the LiquidatorRewards contract deployed in SIP-148.
-     * @param amount The amount of SNX to be recovered and distributed to the rightful owners
-     */
-    bool public restituted = false;
-
-    function initializeLiquidatorRewardsRestitution(uint amount) external onlyOwner {
-        if (!restituted) {
-            restituted = true;
-            bool success = _transferByProxy(address(liquidatorRewards()), owner, amount);
-            require(success, "restitution transfer failed");
-        }
-    }
-
     function exchangeWithTrackingForInitiator(
         bytes32,
         uint,
