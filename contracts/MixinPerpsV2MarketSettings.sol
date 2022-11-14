@@ -31,6 +31,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MIN_SKEW_SCALE = "skewScale";
     bytes32 internal constant PARAMETER_MIN_DELAY_TIME_DELTA = "minDelayTimeDelta";
     bytes32 internal constant PARAMETER_MAX_DELAY_TIME_DELTA = "maxDelayTimeDelta";
+    bytes32 internal constant PARAMETER_OFFCHAIN_MARKET_KEY = "offchainDelayedOrderMarketKey";
+    bytes32 internal constant PARAMETER_OFFCHAIN_PRICE_DIVERGENCE = "offchainDelayedOrderDivergence";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
@@ -128,6 +130,18 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _maxDelayTimeDelta(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA);
+    }
+
+    function _offchainMarketKey(bytes32 _marketKey) internal view returns (bytes32) {
+        return
+            _flexibleStorage().getBytes32Value(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY))
+            );
+    }
+
+    function _offchainPriceDivergence(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_OFFCHAIN_PRICE_DIVERGENCE);
     }
 
     function _minKeeperFee() internal view returns (uint) {

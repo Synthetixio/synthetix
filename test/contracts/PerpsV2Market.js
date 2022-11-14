@@ -4747,7 +4747,7 @@ contract('PerpsV2Market', accounts => {
 				await assert.revert(
 					futuresMarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 						{
 							from: owner,
 						}
@@ -4821,7 +4821,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}
@@ -4833,7 +4833,7 @@ contract('PerpsV2Market', accounts => {
 				await assert.revert(
 					futuresMarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 						{
 							from: owner,
 						}
@@ -4983,7 +4983,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}
@@ -5060,7 +5060,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await futuresMarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}

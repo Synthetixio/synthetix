@@ -356,7 +356,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			});
 
 			// go to next round
-			await setOnchainPrice(baseAsset, price);
+			await setOnchainPrice(baseAsset, offChainPrice);
 
 			latestPublishTime = await currentTime();
 
@@ -797,6 +797,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					it('if price too high', async () => {
 						// set price too high
+						await setOnchainPrice(baseAsset, offChainPrice.mul(toBN(5)));
+
 						updateFeedData = await getFeedUpdateData({
 							id: defaultFeedId,
 							price: feedBaseFromUNIT(offChainPrice.mul(toBN(5))),

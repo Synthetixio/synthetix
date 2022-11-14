@@ -144,6 +144,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setTakerFeeOffchainDelayedOrder',
 				'setOffchainDelayedOrderMinAge',
 				'setOffchainDelayedOrderMaxAge',
+				'setOffchainMarketKey',
+				'setOffchainPriceDivergence',
 			],
 		});
 	});
