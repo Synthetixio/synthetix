@@ -3948,29 +3948,53 @@ contract('PerpsV2Market', accounts => {
 	});
 
 	// TODO: REINTRODUCE THESE UNIT TESTS AFTER MERGING INTO FUTURESV2 BRANCH!!!
-	describe.skip('Liquidations', () => {
+	describe.only('Liquidations', () => {
 		describe('Liquidation price', () => {
 			it('Liquidation price is accurate with funding', async () => {
-				await setPrice(baseAsset, toUnit('100'));
-				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('100'), { from: trader }); // 10x long
-				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-100'), { from: trader2 }); // 10x short
+				const price = toUnit('100');
+				await setPrice(baseAsset, price);
+
+				const margin1 = toUnit('1000');
+				const size1 = toUnit('100');
+				await futuresMarket.transferMargin(margin1, { from: trader });
+				await futuresMarket.modifyPosition(size1, { from: trader });
+
+				const margin2 = toUnit('1000');
+				const size2 = toUnit('-100');
+
+				await futuresMarket.transferMargin(margin2, { from: trader2 });
+				await futuresMarket.modifyPosition(size2, { from: trader2 });
+
+				// How is the liquidation price calculated?
+				//
+				// liquidationBufferRatio = 0.0025
+				// liquidationFeeRatio    = 0.0035
+				// liquidationMinFee      = 1 (USD)
+				//
+				// liquidationFee = max(Math.abs(size) * price * liquidationFeeRatio, minFee)
+				//                = max(100 * 100 * 0.0035, 1)
+				//                = 35
+
+				// liquidationMargin = abs(pos.size) * price * liquidationBufferRatio + liquidationFee
+				//                   = 100 * 100 * 0.0025 + 35
+				//                   = 60
+
+				// liquidationPrice = pos.lastPrice + (liquidationMargin - pos.margin) / pos.size - fundingPerUnit
+				//                  = price + (liquidationMargin - margin2) / 100 - fundingPerUnit
+				//                  = 100.05 + (60 - 969.985) / 100 - fundingPerUnit
+				//                  = 100.05 + -9.7 - fundingPerUnit
+				//
+				// note: 969.985 instead of 1000 margin due to trading fees deducted from the position margin.
+				//       trading fee is makerFee (with some p/d due to increasing the skew).
 
 				let liquidationPrice = await futuresMarket.liquidationPrice(trader);
 
-				// fee = 100 * 100 * 0.003 = 30
-				// liqMargin = max(20, 100*100*0.0035) + 100*100*0.0025 = 60
-				// liqPrice = 100 + (60 − (1000 - 30))÷100 = 90.9
-				assert.bnClose(liquidationPrice.price, toUnit('90.9'), toUnit('0.001'));
+				assert.bnClose(liquidationPrice.price, toUnit('90.95'), toUnit('0.001'));
 				assert.isFalse(liquidationPrice.invalid);
 
 				liquidationPrice = await futuresMarket.liquidationPrice(trader2);
 
-				// fee = 100 * 100 * 0.001 = 10
-				// liqMargin = max(20, 100*100*0.0035) + 100*100*0.0025 = 60
-				// liqPrice = 100 + (60 − (1000 - 10))÷(-100) = 109.3
-				assert.bnEqual(liquidationPrice.price, toUnit('109.3'));
+				assert.bnEqual(liquidationPrice.price, toUnit('109.34995'));
 				assert.isFalse(liquidationPrice.invalid);
 			});
 
