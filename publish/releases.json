@@ -746,7 +746,7 @@
 		},
 		{
 			"sip": 280,
-			"layer": "ovm",
+			"layer": "both",
 			"sources": {
 				"base": ["FuturesMarketManager"],
 				"ovm": [
@@ -1420,6 +1420,25 @@
 			},
 			"sips": [267],
 			"released": true
+		},
+		{
+			"name": "Xxxxx",
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [280],
+			"released": false
+		},
+		{
+			"name": "Xxxxx (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [280],
+			"released": false
 		}
 	]
 }
