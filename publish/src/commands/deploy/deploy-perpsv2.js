@@ -66,7 +66,7 @@ module.exports = async ({
 		console.log(
 			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
 		);
-		let filteredFunctions;
+		let filteredFunctions = [];
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);
 		const marketName = 'PerpsV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
@@ -157,15 +157,7 @@ module.exports = async ({
 		});
 
 		// Configure Views
-		filteredFunctions = getFunctionSignatures(futuresMarketViews, excludedFunctions);
-		for (const f of filteredFunctions) {
-			await runStep({
-				contract: `ProxyPerpsV2`,
-				target: futuresMarketProxy,
-				write: 'addRoute',
-				writeArg: [f.signature, futuresMarketViews.address, f.isView],
-			});
-		}
+		filteredFunctions.push(...getFunctionSignatures(futuresMarketViews, excludedFunctions));
 
 		// Configure Next Price
 		await runStep({
@@ -182,15 +174,7 @@ module.exports = async ({
 			writeArg: [futuresMarketProxy.address],
 		});
 
-		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions);
-		for (const f of filteredFunctions) {
-			await runStep({
-				contract: `ProxyPerpsV2`,
-				target: futuresMarketProxy,
-				write: 'addRoute',
-				writeArg: [f.signature, futuresMarketDelayedOrder.address, f.isView],
-			});
-		}
+		filteredFunctions.push(...getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions));
 
 		// Configure Offchain Next Price
 		await runStep({
@@ -207,15 +191,9 @@ module.exports = async ({
 			writeArg: [futuresMarketProxy.address],
 		});
 
-		filteredFunctions = getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions);
-		for (const f of filteredFunctions) {
-			await runStep({
-				contract: `ProxyPerpsV2`,
-				target: futuresMarketProxy,
-				write: 'addRoute',
-				writeArg: [f.signature, futuresMarketDelayedOrderOffchain.address, f.isView],
-			});
-		}
+		filteredFunctions.push(
+			...getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions)
+		);
 
 		// Configure Market
 		await runStep({
@@ -232,13 +210,28 @@ module.exports = async ({
 			writeArg: [futuresMarketProxy.address],
 		});
 
-		filteredFunctions = getFunctionSignatures(futuresMarket, excludedFunctions);
+		filteredFunctions.push(...getFunctionSignatures(futuresMarket, excludedFunctions));
+
+		// Remove duplicate selectors
+		filteredFunctions = filteredFunctions.filter(
+			(value, index, self) => index === self.findIndex(t => t.signature === value.signature)
+		);
+		// Order by selectors
+		filteredFunctions = filteredFunctions.sort((a, b) => a.signature > b.signature);
+
+		// Add Missing selectors
 		for (const f of filteredFunctions) {
 			await runStep({
-				contract: `ProxyPerpsV2`,
+				contract: 'ProxyPerpsV2',
 				target: futuresMarketProxy,
+				read: 'getRoute',
+				readArg: [f.signature],
+				expected: readResult =>
+					readResult.selector === f.signature &&
+					readResult.implementation === f.contractAddress &&
+					readResult.isView === f.isView,
 				write: 'addRoute',
-				writeArg: [f.signature, futuresMarket.address, f.isView],
+				writeArg: [f.signature, f.contractAddress, f.isView],
 			});
 		}
 

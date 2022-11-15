@@ -30,6 +30,7 @@ const getFunctionSignatures = (instance, excludedFunctions) => {
 			functionName: contractInterface.functions[funcName].name,
 			stateMutability: contractInterface.functions[funcName].stateMutability,
 			isView: contractInterface.functions[funcName].stateMutability === 'view',
+			contractAddress: instance.address,
 		};
 		signatures.push(signature);
 	}

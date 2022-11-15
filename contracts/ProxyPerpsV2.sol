@@ -134,6 +134,13 @@ contract ProxyPerpsV2 is Owned {
         emit RouteRemoved(selector);
     }
 
+    function getRoute(bytes4 selector) external view returns (Route memory) {
+        if (!_contains(selector)) {
+            return Route(0, address(0), false);
+        }
+        return _routes[_routeIndexes[selector]];
+    }
+
     function getRoutesLength() external view returns (uint) {
         return _routes.length;
     }
