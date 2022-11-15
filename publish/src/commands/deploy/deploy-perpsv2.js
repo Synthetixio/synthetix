@@ -84,6 +84,7 @@ module.exports = async ({
 			source: 'ProxyPerpsV2',
 			args: [account],
 			force: true,
+			skipResolver: true,
 		});
 
 		// State

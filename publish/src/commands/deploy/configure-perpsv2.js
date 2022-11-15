@@ -97,6 +97,8 @@ module.exports = async ({
 			maxMarketValue,
 			maxFundingVelocity,
 			skewScale,
+			offchainMarketKey,
+			offchainPriceDivergence,
 			paused,
 		} = market;
 
@@ -121,6 +123,8 @@ module.exports = async ({
 			maxMarketValue: w3utils.toWei(maxMarketValue),
 			maxFundingVelocity: w3utils.toWei(maxFundingVelocity),
 			skewScale: w3utils.toWei(skewScale),
+			offchainMarketKey: toBytes32(offchainMarketKey),
+			offchainPriceDivergence: w3utils.toWei(offchainPriceDivergence),
 		};
 
 		for (const setting in settings) {
