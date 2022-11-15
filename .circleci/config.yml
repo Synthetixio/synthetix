@@ -18,10 +18,7 @@ jobs:
   job-audit:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-sec-tools:16.17-ubuntu
     steps:
       - checkout
       - run:
@@ -71,10 +68,7 @@ jobs:
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     resource_class: large
     steps:
       - checkout
@@ -103,10 +97,7 @@ jobs:
   job-fork-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     resource_class: large
     steps:
       - checkout
@@ -206,10 +197,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -218,10 +206,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -232,10 +217,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - run:
           name: Set node & npm versions
@@ -266,10 +248,7 @@ jobs:
   job-simulate-release:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -293,10 +272,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -354,10 +330,7 @@ jobs:
   job-unit-tests-coverage-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-sec-tools:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -370,10 +343,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     resource_class: large
     parallelism: 8
     steps:
@@ -400,10 +370,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -421,10 +388,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     resource_class: large
     parallelism: 8
     steps:
@@ -457,10 +421,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     steps:
       - checkout
       - attach_workspace:
@@ -476,10 +437,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:16.15-ubuntu
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+      - image: synthetixio/docker-node:16.17-ubuntu
     parameters:
       network:
         type: string

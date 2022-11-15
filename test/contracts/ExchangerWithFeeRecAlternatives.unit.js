@@ -43,7 +43,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithFeeRecAlternatives.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['exchange', 'exchangeAtomically', 'settle', 'suspendSynthWithInvalidRate'],
+			expected: ['exchange', 'exchangeAtomically', 'settle'],
 		});
 	});
 
@@ -511,21 +511,31 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													systemDestinationRate: lastRate,
 												},
 												() => {
-													beforeEach('attempt exchange', async () => {
-														this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
-															currencyKey =>
-																currencyKey === sETH
-																	? [badRate.toString(), true, false]
-																	: [lastRate.toString(), false, false]
-														);
-														await this.instance.exchangeAtomically(...getExchangeArgs());
-													});
-													it('did not issue or burn synths', async () => {
-														assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
-														assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
-														assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
-														assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
-													});
+													behaviors.whenMockedWithUintSystemSetting(
+														{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
+														() => {
+															beforeEach('attempt exchange', async () => {
+																this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
+																	currencyKey =>
+																		currencyKey === sETH
+																			? [badRate.toString(), true, false]
+																			: [lastRate.toString(), false, false]
+																);
+																await this.instance.exchangeAtomically(
+																	...getExchangeArgs({
+																		sourceCurrency: sUSD,
+																		destinationCurrency: sETH,
+																	})
+																);
+															});
+															it('did not issue or burn synths', async () => {
+																assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+																assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
+																assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
+																assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+															});
+														}
+													);
 												}
 											);
 
@@ -538,26 +548,31 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 													systemDestinationRate: badRate,
 												},
 												() => {
-													beforeEach('attempt exchange', async () => {
-														this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
-															currencyKey =>
-																currencyKey === sETH
-																	? [badRate.toString(), true, false]
-																	: [lastRate.toString(), false, false]
-														);
-														await this.instance.exchangeAtomically(
-															...getExchangeArgs({
-																sourceCurrency: sETH,
-																destinationCurrency: sUSD,
-															})
-														);
-													});
-													it('did not issue or burn synths', async () => {
-														assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
-														assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
-														assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
-														assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
-													});
+													behaviors.whenMockedWithUintSystemSetting(
+														{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
+														() => {
+															beforeEach('attempt exchange', async () => {
+																this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
+																	currencyKey =>
+																		currencyKey === sETH
+																			? [badRate.toString(), true, false]
+																			: [lastRate.toString(), false, false]
+																);
+																await this.instance.exchangeAtomically(
+																	...getExchangeArgs({
+																		sourceCurrency: sETH,
+																		destinationCurrency: sUSD,
+																	})
+																);
+															});
+															it('did not issue or burn synths', async () => {
+																assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+																assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
+																assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
+																assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+															});
+														}
+													);
 												}
 											);
 

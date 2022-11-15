@@ -49,90 +49,94 @@ module.exports = async ({
 		if (comment) {
 			instructions.push(`// ${comment}`);
 		}
-		const { abi } = deployment.sources[sourceOf(target)];
+		try {
+			const { abi } = deployment.sources[sourceOf(target)];
 
-		// set of unique contracts that have owner actions applied and will need to accept ownership
-		contractsAddedToSoliditySet.add(contract);
+			// set of unique contracts that have owner actions applied and will need to accept ownership
+			contractsAddedToSoliditySet.add(contract);
 
-		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
+			const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 
-		// now generate the write action as solidity
-		const argsForWriteFnc = [];
-		const internalInstructions = [];
-		for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
-			const abiEntry = abi.find(({ name }) => name === write);
+			// now generate the write action as solidity
+			const argsForWriteFnc = [];
+			const internalInstructions = [];
+			for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
+				const abiEntry = abi.find(({ name }) => name === write);
 
-			const { internalType, name: inputArgumentName } = abiEntry.inputs[index];
+				const { internalType, name: inputArgumentName } = abiEntry.inputs[index];
 
-			const decodeBytes32IfRequired = input =>
-				Array.isArray(input)
-					? input.map(decodeBytes32IfRequired)
-					: /^0x[0-9a-fA-F]{64}/.test(input)
-					? `"${parseBytes32String(input)}"`
-					: input;
-			const useVariableForContractNameIfRequired = input =>
-				Array.isArray(input)
-					? input.map(useVariableForContractNameIfRequired)
-					: input in newContractsBeingAdded
-					? newContractVariableFunctor(newContractsBeingAdded[input].name)
-					: input;
-			const transformValueIfRequired = input =>
-				useVariableForContractNameIfRequired(decodeBytes32IfRequired(input));
+				const decodeBytes32IfRequired = input =>
+					Array.isArray(input)
+						? input.map(decodeBytes32IfRequired)
+						: /^0x[0-9a-fA-F]{64}/.test(input)
+						? `"${parseBytes32String(input)}"`
+						: input;
+				const useVariableForContractNameIfRequired = input =>
+					Array.isArray(input)
+						? input.map(useVariableForContractNameIfRequired)
+						: input in newContractsBeingAdded
+						? newContractVariableFunctor(newContractsBeingAdded[input].name)
+						: input;
+				const transformValueIfRequired = input =>
+					useVariableForContractNameIfRequired(decodeBytes32IfRequired(input));
 
-			if (Array.isArray(argument)) {
-				// arrays needs to be created in memory
-				const typeOfArrayElement = internalType.replace(/\[|\]/g, '').replace(/^contract /, '');
+				if (Array.isArray(argument)) {
+					// arrays needs to be created in memory
+					const typeOfArrayElement = internalType.replace(/\[|\]/g, '').replace(/^contract /, '');
 
-				const variableName = `${contract.toLowerCase()}_${write}_${
-					inputArgumentName ? inputArgumentName + '_' : ''
-				}${runIndex}_${index}`;
-				internalInstructions.push(
-					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
-				);
-				for (const [i, arg] of Object.entries(argument)) {
+					const variableName = `${contract.toLowerCase()}_${write}_${
+						inputArgumentName ? inputArgumentName + '_' : ''
+					}${runIndex}_${index}`;
 					internalInstructions.push(
-						`${variableName}[${i}] = ${typeOfArrayElement}(${transformValueIfRequired(arg)})`
+						`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 					);
+					for (const [i, arg] of Object.entries(argument)) {
+						internalInstructions.push(
+							`${variableName}[${i}] = ${typeOfArrayElement}(${transformValueIfRequired(arg)})`
+						);
+					}
+					argsForWriteFnc.push(variableName);
+				} else if (/^contract /.test(internalType)) {
+					// if it's a contract type, it needs casting
+					argsForWriteFnc.push(
+						`${internalType.split(' ')[1]}(${transformValueIfRequired(argument)})`
+					);
+				} else {
+					// otherwise just add it
+					argsForWriteFnc.push(transformValueIfRequired(argument));
 				}
-				argsForWriteFnc.push(variableName);
-			} else if (/^contract /.test(internalType)) {
-				// if it's a contract type, it needs casting
-				argsForWriteFnc.push(
-					`${internalType.split(' ')[1]}(${transformValueIfRequired(argument)})`
-				);
-			} else {
-				// otherwise just add it
-				argsForWriteFnc.push(transformValueIfRequired(argument));
 			}
-		}
-		// to prevent stack too deep issues, turn these into internal functions
-		if (internalInstructions.length) {
-			// add the actual command in the last step
-			internalInstructions.push(
-				`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`
-			);
-			const internalFunctionName = `${contract.toLowerCase()}_${write}_${runIndex}`;
+			// to prevent stack too deep issues, turn these into internal functions
+			if (internalInstructions.length) {
+				// add the actual command in the last step
+				internalInstructions.push(
+					`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`
+				);
+				const internalFunctionName = `${contract.toLowerCase()}_${write}_${runIndex}`;
 
-			// track this new internal function
-			internalFunctions.push({
-				name: internalFunctionName,
-				instructions: internalInstructions,
-			});
+				// track this new internal function
+				internalFunctions.push({
+					name: internalFunctionName,
+					instructions: internalInstructions,
+				});
 
-			// and add the invocation of it as the next instruction
-			instructions.push(`${internalFunctionName}()`);
-		} else if (customSolidity) {
-			// custom solidity allows for a bit more complex solidity cases
-			const { name, instructions: internalInstructions } = customSolidity;
+				// and add the invocation of it as the next instruction
+				instructions.push(`${internalFunctionName}()`);
+			} else if (customSolidity) {
+				// custom solidity allows for a bit more complex solidity cases
+				const { name, instructions: internalInstructions } = customSolidity;
 
-			internalFunctions.push({
-				name,
-				instructions: internalInstructions,
-			});
+				internalFunctions.push({
+					name,
+					instructions: internalInstructions,
+				});
 
-			instructions.push(`${name}()`);
-		} else {
-			instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
+				instructions.push(`${name}()`);
+			} else {
+				instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
+			}
+		} catch (err) {
+			console.log(`An error ocurred for ${contract} during solidity generation:`, err.message);
 		}
 	}
 
