@@ -3948,8 +3948,7 @@ contract('PerpsV2Market', accounts => {
 		});
 	});
 
-	// TODO: REINTRODUCE THESE UNIT TESTS AFTER MERGING INTO FUTURESV2 BRANCH!!!
-	describe.only('Liquidations', () => {
+	describe('Liquidations', () => {
 		describe('Liquidation price', () => {
 			const getExpectedLiquidationPrice = async ({
 				margin,
@@ -4049,7 +4048,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isFalse(liquidationPrice2.invalid);
 			});
 
-			it.only('Liquidation price is accurate if the liquidation margin changes', async () => {
+			it('Liquidation price is accurate if the liquidation margin changes', async () => {
 				const price = toUnit('250');
 				await setPrice(baseAsset, price);
 
@@ -4221,16 +4220,26 @@ contract('PerpsV2Market', accounts => {
 				);
 			});
 
-			it('Liquidation price is accurate with funding (variant)', async () => {
+			it('Liquidation price is accurate with funding (ff 1 day)', async () => {
 				await futuresMarketSettings.setSkewScale(marketKey, toUnit('40'), { from: owner });
-				await setPrice(baseAsset, toUnit('250'));
+
+				const price = toUnit('250');
+				await setPrice(baseAsset, price);
 
 				// submit orders that induces an initial 0.05 funding rate. the market is currently long by 20 size
-				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('30'), { from: trader }); // 5x long
+				const margin1 = toUnit('1500');
+				const size1 = toUnit('30');
+				const fee1 = (await futuresMarket.orderFee(size1))[0];
+				const fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				await futuresMarket.transferMargin(margin1, { from: trader });
+				await futuresMarket.modifyPosition(size1, { from: trader });
 
-				await futuresMarket.transferMargin(toUnit('500'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 }); // 5x short
+				const margin2 = toUnit('1500');
+				const size2 = toUnit('-10');
+				const fee2 = (await futuresMarket.orderFee(size2))[0];
+				const fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				await futuresMarket.transferMargin(margin2, { from: trader2 });
+				await futuresMarket.modifyPosition(size2, { from: trader2 });
 
 				// note: the funding rate as grown by a small amount between the first modify and 2nd transfer.
 				// to be specific, in this example funding grew by `0.00000173611111111` (proportional to the 30 size
@@ -4242,28 +4251,34 @@ contract('PerpsV2Market', accounts => {
 				// 1 day of funding
 				await fastForward(24 * 60 * 60);
 
-				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
-				//                   = 250 + (45 - 1477.5) / 30 - -0.025001736131204988
-				//                   ~202.275
-				//
-				// note: above margin is 1447.5 because of the 22.5 trading fee
-				const lPriceT1 = await futuresMarket.liquidationPrice(trader);
-				assert.bnClose(lPriceT1[0], toUnit(202.275), toUnit(0.001));
-
-				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
-				//                   = 250 + (26.25 - 497.5) / -10 - -0.025001736111111113
-				//                   ~297.15
-				//
-				// Similar to above, margin is 497.5 because of a 2.5 trading fee.
-				const lPriceT2 = await futuresMarket.liquidationPrice(trader2);
-				assert.bnClose(lPriceT2[0], toUnit(297.15), toUnit(0.001));
+				assert.bnEqual(
+					(await futuresMarket.liquidationPrice(trader)).price,
+					await getExpectedLiquidationPrice({
+						margin: margin1,
+						size: size1,
+						fillPrice: fillPrice1,
+						fee: fee1,
+						price,
+						account: trader,
+					})
+				);
+				assert.bnEqual(
+					(await futuresMarket.liquidationPrice(trader2)).price,
+					await getExpectedLiquidationPrice({
+						margin: margin2,
+						size: size2,
+						fillPrice: fillPrice2,
+						fee: fee2,
+						price,
+						account: trader2,
+					})
+				);
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
-				const skewScale = toUnit('50'); // 250 per unit, 50 units = 12.5k
+				const skewScale = toUnit('50');
 				await futuresMarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
 
-				// the market is currently long by 10 size
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('30'), { from: trader });
@@ -4274,20 +4289,9 @@ contract('PerpsV2Market', accounts => {
 
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 
-				// Check the prices are accurate while we're here.
-
-				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
-				//                   = 250 + (45 - 1477.5) / 30 - -0.49000972223829736
-				//                   ~202.74
 				const lPriceT1 = await futuresMarket.liquidationPrice(trader);
-				assert.bnClose(lPriceT1[0], toUnit(202.74), toUnit(0.01));
 				assert.isTrue(lPriceT1[1]);
-
-				// liquidation price = lastPrice + (liquidationMargin - margin) / size - fundingPerUnit
-				//                   = 250 + (32.5 - 995) / -20 - -0.4900113426100073
-				//                   ~298.615
 				const lPriceT2 = await futuresMarket.liquidationPrice(trader2);
-				assert.bnClose(lPriceT2[0], toUnit(298.615), toUnit(0.01));
 				assert.isTrue(lPriceT2[1]);
 			});
 
@@ -4389,7 +4393,7 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
-		describe('liquidatePosition', () => {
+		describe.skip('liquidatePosition', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
