@@ -1453,7 +1453,7 @@ contract('PerpsV2Market', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			const postDetails = await futuresMarket.postTradeDetails(size, trader);
+			const postDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(
@@ -1519,7 +1519,7 @@ contract('PerpsV2Market', accounts => {
 				futuresMarket.modifyPosition(toBN('0'), slippage, { from: trader }),
 				'Cannot submit empty order'
 			);
-			const postDetails = await futuresMarket.postTradeDetails(toBN('0'), trader);
+			const postDetails = await futuresMarket.postTradeDetails(toBN('0'), toUnit('0'), trader);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
@@ -1536,7 +1536,7 @@ contract('PerpsV2Market', accounts => {
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
 
 			const sizeDelta = toUnit('-50');
-			const postDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+			const postDetails = await futuresMarket.postTradeDetails(sizeDelta, toUnit('0'), trader);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
 			await assert.revert(
@@ -1593,14 +1593,14 @@ contract('PerpsV2Market', accounts => {
 				futuresMarket.modifyPosition(toUnit('101'), slippage, { from: trader }),
 				'Max leverage exceeded'
 			);
-			let postDetails = await futuresMarket.postTradeDetails(toUnit('101'), trader);
+			let postDetails = await futuresMarket.postTradeDetails(toUnit('101'), toUnit('0'), trader);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(
 				futuresMarket.modifyPosition(toUnit('-101'), slippage, { from: trader2 }),
 				'Max leverage exceeded'
 			);
-			postDetails = await futuresMarket.postTradeDetails(toUnit('-101'), trader2);
+			postDetails = await futuresMarket.postTradeDetails(toUnit('-101'), toUnit('0'), trader2);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 		});
 
@@ -1617,14 +1617,14 @@ contract('PerpsV2Market', accounts => {
 				'Insufficient margin'
 			);
 
-			let postDetails = await futuresMarket.postTradeDetails(price, trader);
+			let postDetails = await futuresMarket.postTradeDetails(price, toUnit('0'), trader);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
 			await futuresMarket.transferMargin(toUnit('1'), { from: trader });
 
 			const fee = toUnit('0.30015');
-			postDetails = await futuresMarket.postTradeDetails(size, trader);
+			postDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
 			assert.bnEqual(postDetails.size, size);
 			assert.bnEqual(postDetails.price, fillPrice);
@@ -1717,7 +1717,7 @@ contract('PerpsV2Market', accounts => {
 						await futuresMarket.transferMargin(maxMargin.add(toUnit('11')), { from: trader });
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
-						const postDetails = await futuresMarket.postTradeDetails(tooBig, trader);
+						const postDetails = await futuresMarket.postTradeDetails(tooBig, toUnit('0'), trader);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
 						await assert.revert(
@@ -1750,7 +1750,11 @@ contract('PerpsV2Market', accounts => {
 						//
 						// 70 + 25 = 95
 						const sizeDelta = orderSize.div(toBN(100)).mul(toBN(25));
-						const postDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+						const postDetails = await futuresMarket.postTradeDetails(
+							sizeDelta,
+							toUnit('0'),
+							trader
+						);
 						assert.equal(postDetails.status, Status.Ok);
 						await futuresMarket.modifyPosition(sizeDelta, slippage, {
 							from: trader,
@@ -2082,7 +2086,11 @@ contract('PerpsV2Market', accounts => {
 				await setPrice(await futuresMarket.baseAsset(), toUnit('240'));
 				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
 
-				const postTradeDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+				const postTradeDetails = await futuresMarket.postTradeDetails(
+					sizeDelta,
+					toUnit('0'),
+					trader
+				);
 
 				// Now execute the trade.
 				await futuresMarket.modifyPosition(sizeDelta, slippage, { from: trader });
@@ -2107,7 +2115,11 @@ contract('PerpsV2Market', accounts => {
 				});
 
 				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
-				const postTradeDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+				const postTradeDetails = await futuresMarket.postTradeDetails(
+					sizeDelta,
+					toUnit('0'),
+					trader
+				);
 
 				// Now execute the trade.
 				await futuresMarket.modifyPosition(sizeDelta, slippage, { from: trader });

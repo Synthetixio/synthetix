@@ -1054,7 +1054,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							// go to next round
 							// Get spotTradeDetails with offchain price and back to original price
 							await setOnchainPrice(baseAsset, targetOffchainPrice);
-							spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
+							spotTradeDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), trader);
 							await setOnchainPrice(baseAsset, targetPrice);
 
 							// note we need to calc the fillPrice _before_ executing the order because the p/d applied is based
@@ -1099,7 +1099,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							// go to next round
 							// Get spotTradeDetails with offchain price and back to original price
 							await setOnchainPrice(baseAsset, targetOffchainPrice);
-							spotTradeDetails = await perpsV2Market.postTradeDetails(size, trader);
+							spotTradeDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), trader);
 							await setOnchainPrice(baseAsset, targetPrice);
 
 							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);

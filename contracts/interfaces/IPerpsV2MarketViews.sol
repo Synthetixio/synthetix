@@ -64,7 +64,11 @@ interface IPerpsV2MarketViews {
 
     function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
 
-    function postTradeDetails(int sizeDelta, address sender)
+    function postTradeDetails(
+        int sizeDelta,
+        uint tradePrice,
+        address sender
+    )
         external
         view
         returns (

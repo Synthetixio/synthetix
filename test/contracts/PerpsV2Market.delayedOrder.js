@@ -773,7 +773,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					// fast-forward to the order's executableAtTime
 					//
 					// note that we do NOT update the price (to ensure target round is never reached)
-					spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+					spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 					await fastForward(desiredTimeDelta);
 
 					// check we can execute.
@@ -790,7 +790,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
 							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
-							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+							spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 						});
 
 						it('from account owner', async () => {
@@ -815,7 +815,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
 							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
-							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+							spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 						});
 
 						it('from account owner', async () => {
@@ -860,7 +860,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						await setPrice(baseAsset, price);
 
 						// latest price = the price we use.
-						spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+						spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 					});
 
 					describe('taker trade', () => {
@@ -898,7 +898,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							await futuresMarket.transferMargin(margin.mul(toBN(2)), { from: trader3 });
 							await futuresMarket.modifyPosition(size.mul(toBN(-2)), slippage, { from: trader3 });
 
-							spotTradeDetails = await futuresMarket.postTradeDetails(size, trader);
+							spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 
 							// go to next round
 							await setPrice(baseAsset, price);

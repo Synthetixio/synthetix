@@ -104,7 +104,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // This is because this method is used by system settings when changing funding related
         // parameters, so needs to function even when system / market is paused. E.g. to facilitate
         // market migration.
-        (uint _, bool invalid) = _assetPrice();
+        (, bool invalid) = _assetPrice();
         // A check for a valid price is still in place, to ensure that a system settings action
         // doesn't take place when the price is invalid (e.g. some oracle issue).
         require(!invalid, "Invalid price");

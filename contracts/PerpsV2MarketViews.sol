@@ -114,7 +114,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (uint _, bool isInvalid) = _assetPrice();
+        (, bool isInvalid) = _assetPrice();
         return (_unrecordedFunding(), isInvalid);
     }
 
@@ -147,7 +147,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (uint _, bool isInvalid) = _assetPrice();
+        (, bool isInvalid) = _assetPrice();
         return (_accruedFunding(marketState.positions(account)), isInvalid);
     }
 
@@ -232,11 +232,19 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
-     * Returns all new position details if a given order from `sender` was confirmed at the current price.
+     * @notice Returns all new position details if a given order from `sender` was confirmed at the current price.
      *
      * note: We do not check for slippage during this trade simulation.
+     *
+     * @param sizeDelta The size of the next trade
+     * @param tradePrice An arbitrary price to simulate on. When price is 0 then the current price will be used
+     * @param sender The user holding the position we would like to simulate
      */
-    function postTradeDetails(int sizeDelta, address sender)
+    function postTradeDetails(
+        int sizeDelta,
+        uint tradePrice,
+        address sender
+    )
         external
         view
         returns (
@@ -248,17 +256,18 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             Status status
         )
     {
-        bool invalid;
-        (price, invalid) = _assetPrice();
-
-        if (invalid) {
-            return (0, 0, 0, 0, 0, Status.InvalidPrice);
+        if (tradePrice == 0) {
+            (uint exchangePrice, bool invalid) = _assetPrice();
+            if (invalid) {
+                return (0, 0, 0, 0, 0, Status.InvalidPrice);
+            }
+            tradePrice = exchangePrice;
         }
 
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, price), // we use fillPrice here as we're not actually calling _trade.
+                price: _fillPrice(sizeDelta, tradePrice), // we use fillPrice here as we're not actually calling _trade.
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
                 slippage: 0,
