@@ -174,19 +174,19 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
-    function modifyPosition(int sizeDelta) external {
-        _modifyPosition(sizeDelta, bytes32(0));
+    function modifyPosition(int sizeDelta, uint slippage) external {
+        _modifyPosition(sizeDelta, slippage, bytes32(0));
     }
 
     /*
      * Same as modifyPosition, but emits an event with the passed tracking code to
      * allow off-chain calculations for fee sharing with originating integrations
      */
-    function modifyPositionWithTracking(int sizeDelta, bytes32 trackingCode) external {
-        _modifyPosition(sizeDelta, trackingCode);
+    function modifyPositionWithTracking(int sizeDelta, uint slippage, bytes32 trackingCode) external {
+        _modifyPosition(sizeDelta, slippage, trackingCode);
     }
 
-    function _modifyPosition(int sizeDelta, bytes32 trackingCode) internal onlyProxy {
+    function _modifyPosition(int sizeDelta, uint slippage, bytes32 trackingCode) internal onlyProxy {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding();
         _trade(
@@ -196,6 +196,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 price: price,
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
+                slippage: slippage,
                 trackingCode: trackingCode
             })
         );
@@ -225,6 +226,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 price: price,
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
+                slippage: 0, // zero here because we don't care when closing a position.
                 trackingCode: trackingCode
             })
         );

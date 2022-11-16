@@ -225,6 +225,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
                 price: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
+                slippage: 0, // slippage is not needed to calculate order fees.
                 trackingCode: bytes32(0)
             });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
@@ -232,6 +233,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
 
     /*
      * Returns all new position details if a given order from `sender` was confirmed at the current price.
+     *
+     * note: We do not check for slippage during this trade simulation.
      */
     function postTradeDetails(int sizeDelta, address sender)
         external
@@ -255,9 +258,10 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, price),
+                price: _fillPrice(sizeDelta, price), // we use fillPrice here as we're not actually calling _trade.
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
+                slippage: 0,
                 trackingCode: bytes32(0)
             });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(marketState.positions(sender), params);

@@ -71,6 +71,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         uint price;
         uint takerFee;
         uint makerFee;
+        uint slippage;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -95,6 +96,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
+        _errorMessages[uint8(Status.SlippageToleranceExceeded)] = "Price exceeded slippage tolerance";
     }
 
     /* ---------- External Contracts ---------- */
@@ -575,7 +577,11 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
      * fee on a 10k USD sized trade then the slippagePrice would be 100 + 10000 * 0.0045 = 145.
      */
-    function _maxSlippagePrice(uint price, uint slippage, uint orderFee) internal pure returns (uint) {
+    function _maxSlippagePrice(
+        uint price,
+        uint slippage,
+        uint orderFee
+    ) internal pure returns (uint) {
         // No slippage is specified, use the orderFee as the upper bound.
         if (slippage == 0) {
             return price.add(orderFee);
