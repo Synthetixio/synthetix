@@ -160,6 +160,16 @@ jobs:
           paths:
             - ./optimism
       - run:
+          name: Start docker chains
+          background: true
+          command: |
+            docker --version
+            npx hardhat ops --start
+      - cmd-wait-for-port:
+          port: 8545
+      - cmd-wait-for-port:
+          port: 9545
+      - run:
           name: Build cannonfiles
           command: |
             npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
@@ -172,16 +182,6 @@ jobs:
           name: Run isolated layer 2 integration tests
           command: |
             npx hardhat --network localhost test:integration:l2 --deploy
-      - run:
-          name: Start docker chains
-          background: true
-          command: |
-            docker --version
-            npx hardhat ops --start
-      - cmd-wait-for-port:
-          port: 8545
-      - cmd-wait-for-port:
-          port: 9545
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
