@@ -115,9 +115,15 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (fillPrice, invalid);
     }
 
-    /* @dev Given the size and baseBase (e.g. current off-chain price), return the expected fillPrice */
+    /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
     function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint price) {
         return _fillPrice(size, basePrice);
+    }
+
+    /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
+    function netFundingPerUnit(address account) external view returns (int) {
+        Position memory position = marketState.positions(account);
+        return _netFundingPerUnit(position.lastFundingIndex);
     }
 
     function marketSizes() external view returns (uint long, uint short) {
