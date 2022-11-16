@@ -3963,7 +3963,7 @@ contract('PerpsV2Market', accounts => {
 			}) => {
 				const defaultLiquidationBufferRatio = toUnit('0.0025');
 				const defaultLiquidationFeeRatio = toUnit('0.0035');
-				const defaultLiquidationMinFee = toUnit('20'); // 20 USD
+				const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
 
 				const liqMinFee = minFee || defaultLiquidationMinFee;
 				const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
@@ -3971,7 +3971,7 @@ contract('PerpsV2Market', accounts => {
 
 				// How is the liquidation price calculated?
 				//
-				// liqFee    = max(Math.abs(size) * price * liquidationFeeRatio, minFee)
+				// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
 				// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
 				// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees)) / pos.size - fundingPerUnit
 
@@ -4424,7 +4424,7 @@ contract('PerpsV2Market', accounts => {
 				// liquidated longs). However, the long positions are actually underwater and the negative
 				// contribution is not removed until liquidation
 				//
-				// marketDebt is impacted by funding (priceWithFunding) and debtCorrection, which affects marketDebt
+				// marketDebt is impacted by funding (priceWithFunding) and debtCorrection, which affects marketDebt,
 				// is also affected by p/d as lastPrice stored on the position is the fillPrice (impacted by sizeDelta).
 				//
 				// nextFundingEntry = lastFundingEntry + unrecordedFunding
