@@ -209,10 +209,11 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return DelayedOrder(false, 0, 0, 0, 0, 0, 0, 0, bytes32(0));
     }
 
-    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
+    function submitDelayedOrder(int sizeDelta, uint slippage, uint desiredTimeDelta) external {}
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
+        uint slippage,
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {}
@@ -223,9 +224,9 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     /* ---------- Offchain Delayed Orders ---------- */
 
-    function submitOffchainDelayedOrder(int sizeDelta) external {}
+    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external {}
 
-    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+    function submitOffchainDelayedOrderWithTracking(int sizeDelta, uint slippage, bytes32 trackingCode) external {}
 
     function cancelOffchainDelayedOrder(address account) external {}
 
