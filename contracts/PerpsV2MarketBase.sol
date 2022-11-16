@@ -580,7 +580,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         if (slippage == 0) {
             return price.add(orderFee);
         }
-        return multipleDecimal(price, uint(_UNIT).add(slippage));
+        return price.multiplyDecimal(uint(_UNIT).add(slippage));
     }
 
     /*

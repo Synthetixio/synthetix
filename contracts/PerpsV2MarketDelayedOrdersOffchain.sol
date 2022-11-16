@@ -118,7 +118,6 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         uint minAge = _offchainDelayedOrderMinAge(_marketKey());
 
         (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
-        uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
 
         require((executionTimestamp > order.intentionTime), "price not updated");
         require((executionTimestamp - order.intentionTime > minAge), "too early");
@@ -127,7 +126,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         _executeDelayedOrder(
             account,
             order,
-            fillPrice,
+            currentPrice,
             0,
             _takerFeeOffchainDelayedOrder(_marketKey()),
             _makerFeeOffchainDelayedOrder(_marketKey())

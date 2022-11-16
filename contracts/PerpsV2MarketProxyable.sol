@@ -156,6 +156,9 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     function _trade(address sender, TradeParams memory params) internal {
+        // update the price of the intended trade to account to the affect to skew.
+        params.price = _fillPrice(params.sizeDelta, params.price);
+
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({

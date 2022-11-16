@@ -183,11 +183,14 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
         uint fundingIndex = _recomputeFunding();
 
+        // we need to grab the fillPrice for events and margin updates (but this is also calc in _trade).
+        uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
+
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, currentPrice, int(toRefund));
+        _updatePositionMargin(account, position, fillPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
+        emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         // execute or revert
         _trade(
