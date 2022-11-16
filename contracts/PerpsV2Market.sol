@@ -182,11 +182,19 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Same as modifyPosition, but emits an event with the passed tracking code to
      * allow off-chain calculations for fee sharing with originating integrations
      */
-    function modifyPositionWithTracking(int sizeDelta, uint slippage, bytes32 trackingCode) external {
+    function modifyPositionWithTracking(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) external {
         _modifyPosition(sizeDelta, slippage, trackingCode);
     }
 
-    function _modifyPosition(int sizeDelta, uint slippage, bytes32 trackingCode) internal onlyProxy {
+    function _modifyPosition(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) internal onlyProxy {
         uint price = _assetPriceRequireSystemChecks();
         _recomputeFunding();
         _trade(

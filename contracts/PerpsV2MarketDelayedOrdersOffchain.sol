@@ -59,7 +59,11 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         _submitDelayedOrder(_marketKey(), sizeDelta, slippage, 0, bytes32(0), true);
     }
 
-    function submitOffchainDelayedOrderWithTracking(int sizeDelta, uint slippage, bytes32 trackingCode) external onlyProxy {
+    function submitOffchainDelayedOrderWithTracking(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 

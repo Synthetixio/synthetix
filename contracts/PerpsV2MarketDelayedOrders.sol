@@ -44,7 +44,11 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      * @param slippage is a percentage tolerance on fillPrice to be check upon execution
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitDelayedOrder(int sizeDelta, uint slippage, uint desiredTimeDelta) external onlyProxy {
+    function submitDelayedOrder(
+        int sizeDelta,
+        uint slippage,
+        uint desiredTimeDelta
+    ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 

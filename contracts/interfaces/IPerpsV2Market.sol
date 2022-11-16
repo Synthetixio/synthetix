@@ -15,7 +15,11 @@ interface IPerpsV2Market {
 
     function modifyPosition(int sizeDelta, uint slippage) external;
 
-    function modifyPositionWithTracking(int sizeDelta, uint slippage, bytes32 trackingCode) external;
+    function modifyPositionWithTracking(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) external;
 
     function closePosition() external;
 
