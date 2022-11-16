@@ -29,10 +29,8 @@ task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('native', 'Compile with the native solc compiler')
-	.addFlag('parallel', 'Run tests in parallel')
 	.addOptionalParam('jobs', 'Max number of worker processes for parallel runs', 4, types.int)
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
-	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		const { gas, grep, native, gasOutputFile, parallel, jobs } = taskArguments;
 

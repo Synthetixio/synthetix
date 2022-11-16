@@ -47,11 +47,11 @@ steps:
   - run:
       name: Run isolated layer 1 integration tests
       command: |
-        npx hardhat test:integration:l1 --deploy
+        npx hardhat --network localhost test:integration:l1 --deploy
   - run:
       name: Run isolated layer 2 integration tests
       command: |
-        npx hardhat test:integration:l2 --deploy
+        npx hardhat --network localhost test:integration:l2 --deploy
   - run:
       name: Start docker chains
       background: true
@@ -65,7 +65,7 @@ steps:
   - run:
       name: Run dual layer 1 and layer 2 integration tests
       command: |
-        npx hardhat test:integration:dual --deploy
+        npx hardhat --network localhost test:integration:dual --deploy
   - store_test_results:
       path: /tmp/junit/
   - store_artifacts:

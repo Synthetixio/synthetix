@@ -65,7 +65,8 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 				const owner = getUsers({ network: 'local', user: 'deployer' });
 				await hre.run('cannon:deploy', {
 					impersonate: owner.address,
-					cannonfile: 'cannonfile.aggregator.toml',
+					packageWithSettings: ['chainlink:0.7-mock'],
+					overrideManifest: 'cannonfile.aggregator.toml',
 				});
 				await hre.run('cannon:deploy', { impersonate: owner.address });
 			}
