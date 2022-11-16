@@ -547,6 +547,11 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return (price, invalid);
     }
 
+    /*
+     * @dev SIP-279 fillPrice price at which a trade is executed against accounting for how this position's
+     * size impacts the skew. If the size contracts the skew (reduces) then a discount is apply on the price
+     * whereas expanding the skew incurs an additional premium.
+     */
     function _fillPrice(int size, uint price) internal view returns (uint) {
         int skew = marketState.marketSkew();
         int skewScale = int(_skewScale(_marketKey()));
@@ -557,6 +562,25 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int priceAfter = int(price).add(pdAfter);
 
         return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2));
+    }
+
+    /*
+     * @dev Given the current price (not fillPrice) and slippage, determine the upper bound the fillPrice
+     * is allowed, for a trade to execute successfully.
+     *
+     * For instance, if price is 100 and slippage is 0.01 then maxSlippagePrice is 101. The fillPrice must be
+     * below 101 for the trade to succeed.
+     *
+     * When slippage is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
+     * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
+     * fee on a 10k USD sized trade then the slippagePrice would be 100 + 10000 * 0.0045 = 145.
+     */
+    function _maxSlippagePrice(uint price, uint slippage, uint orderFee) internal pure returns (uint) {
+        // No slippage is specified, use the orderFee as the upper bound.
+        if (slippage == 0) {
+            return price.add(orderFee);
+        }
+        return multipleDecimal(price, uint(_UNIT).add(slippage));
     }
 
     /*
