@@ -3985,17 +3985,6 @@ contract('PerpsV2Market', accounts => {
 					liqBufferRatio
 				).add(expectedLiquidationFee);
 
-				// console.log('--within--');
-				// console.log('expectedNetFundingPerUnit', expectedNetFundingPerUnit.toString());
-				// console.log('liqFee', expectedLiquidationFee.toString());
-				// console.log('liqMargin', expectedLiquidationMargin.toString());
-				// console.log('size', size.toString());
-				// console.log('fee', fee.toString());
-				// console.log('margin', margin.toString());
-				// console.log('remainingMargin', margin.sub(fee).toString());
-				// console.log('price', price.toString());
-				// console.log('fillPrice', fillPrice.toString());
-
 				return fillPrice
 					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee)), size))
 					.sub(expectedNetFundingPerUnit);
@@ -4393,7 +4382,7 @@ contract('PerpsV2Market', accounts => {
 			});
 		});
 
-		describe.skip('liquidatePosition', () => {
+		describe('liquidatePosition', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
@@ -4431,10 +4420,12 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				assert.isTrue(await futuresMarket.canLiquidate(trader2));
 
-				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two liquidated longs)
-				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
+				// Note at this point the true market debt should be $2000 ($1000 profit for the short trader, and two
+				// liquidated longs). However, the long positions are actually underwater and the negative
+				// contribution is not removed until liquidation
 				//
-				// marketDebt is impacted by funding. specifically,
+				// marketDebt is impacted by funding (priceWithFunding) and debtCorrection, which affects marketDebt
+				// is also affected by p/d as lastPrice stored on the position is the fillPrice (impacted by sizeDelta).
 				//
 				// nextFundingEntry = lastFundingEntry + unrecordedFunding
 				// priceWithFunding = price + nextFundingEntry
@@ -4445,9 +4436,9 @@ contract('PerpsV2Market', accounts => {
 				//      = 40 (skewed long = funding positive and negative funding entry
 				//
 				// marketDebt = skew * priceWithFunding + debtCorrection
-				// marketDebt = 40 * 199.97999867 + -7050.000000000046
-				//            = 949.1999468
-				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('949.19'), toUnit('0.1'));
+				// marketDebt = 40 * 199.97999867 + -7050.806400000019
+				//            = 948.3935468
+				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('948.393'), toUnit('0.1'));
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
 					toUnit('-0.02'),
@@ -4479,7 +4470,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-20'));
 
 				// Market debt is now just the remaining position, plus the funding they've made.
-				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('1995.4'), toUnit('0.01'));
+				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('1996.399'), toUnit('0.01'));
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
@@ -4504,9 +4495,9 @@ contract('PerpsV2Market', accounts => {
 				//      = 40 (skewed long = funding positive and negative funding entry
 				//
 				// marketDebt = skew * priceWithFunding + debtCorrection
-				// marketDebt = 40 * 349.96499797 + -7049.999999999954
-				//            = 6948.5999188
-				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('6948.599'), toUnit('0.1'));
+				// marketDebt = 40 * 349.96499797 + -7050.8064
+				//            = 6947.7935188
+				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('6947.793'), toUnit('0.1'));
 				assert.bnClose(
 					(await futuresMarket.unrecordedFunding())[0],
 					toUnit('-0.035'),
@@ -4524,21 +4515,19 @@ contract('PerpsV2Market', accounts => {
 				// trader3 has a -20 size and when removed bumps skew up to 60 and debtCorrection is reflected
 				//
 				// marketDebt = skew * priceWithFunding + debtCorrection
-				// marketDebt = 60 * 349.96499797 + -13045.000000000013
-				//            = 7952.8998782
-				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('7952.899'), toUnit('0.1'));
+				// marketDebt = 60 * 349.96499797 + -13046.805399999994
+				//            = 7951.0944782
+				assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('7951.094'), toUnit('0.1'));
 
 				// Funding has been recorded by the liquidation.
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
-				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
-				// fee 40*250*0.003 = 30
-				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 				const liqPrice = (await futuresMarket.liquidationPrice(trader)).price;
-				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+				assert.bnClose(liqPrice, toUnit('227.27'), toUnit('0.01'));
 
 				const newPrice = liqPrice.sub(toUnit(1));
 				await setPrice(baseAsset, newPrice);
@@ -4604,11 +4593,9 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('liquidations of positive margin position pays to fee pool, long case', async () => {
-				// liqMargin = max(20, 250 * 40 * 0.0035) + 250 * 40*0.0025 = 60
-				// fee 40*250*0.003 = 30
-				// Remaining margin = 250 + (60 - (1000 - 30)) / (40)= 227.25
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await futuresMarket.liquidationPrice(trader)).price;
-				assert.bnClose(liqPrice, toUnit('227.25'), toUnit('0.01'));
+				assert.bnClose(liqPrice, toUnit('227.27'), toUnit('0.01'));
 
 				const newPrice = liqPrice.sub(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
@@ -4644,11 +4631,9 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
-				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
-				// fee 20*250*0.001 = 5
-				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20)= 298.125
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await futuresMarket.liquidationPrice(trader3)).price;
-				assert.bnClose(liqPrice, toUnit('298.125'), toUnit('0.01'));
+				assert.bnClose(liqPrice, toUnit('298.174'), toUnit('0.01'));
 
 				const newPrice = liqPrice.add(toUnit(1));
 
@@ -4711,11 +4696,9 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('liquidations of positive margin position pays to fee pool, short case', async () => {
-				// liqMargin = max(20, 250 * 20 * 0.0035) + 250 * 20*0.0025 = 32.5
-				// fee 20*250*0.001 = 5
-				// Remaining margin = 250 + (32.5 - (1000 - 5)) / (-20)= 298.125
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await futuresMarket.liquidationPrice(trader3)).price;
-				assert.bnClose(liqPrice, toUnit('298.125'), toUnit('0.01'));
+				assert.bnClose(liqPrice, toUnit('298.174'), toUnit('0.01'));
 
 				const newPrice = liqPrice.add(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
