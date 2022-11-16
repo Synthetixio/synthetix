@@ -40,6 +40,11 @@ steps:
       paths:
         - ./optimism
   - run:
+      name: Build cannonfiles
+      command: |
+        npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
+        npx hardhat --network cannon cannon:build
+  - run:
       name: Start docker chains
       background: true
       command: |
@@ -49,11 +54,6 @@ steps:
       port: 8545
   - cmd-wait-for-port:
       port: 9545
-  - run:
-      name: Build cannonfiles
-      command: |
-        npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
-        npx hardhat --network cannon cannon:build
   - run:
       name: Run isolated layer 1 integration tests
       command: |
