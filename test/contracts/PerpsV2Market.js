@@ -1363,6 +1363,14 @@ contract('PerpsV2Market', accounts => {
 	});
 
 	describe('Modifying positions', () => {
+		describe('Slippage', () => {
+			it('should succeed with a reasonable slippage');
+			it('should fail when the fillPrice exceeds the slippage tolerance');
+			it('should default to the makerFee as slippage when nothing is provided');
+			it('should default to the takerFee as slippage when nothing is provided');
+			it('should fail when no slippage is provided and fillPrice exceeds default tolerance');
+		});
+
 		it('can modify a position', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
