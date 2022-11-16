@@ -9,11 +9,11 @@ const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
 const ethers = require('ethers');
 
-describe('staking & claiming integration tests (L1, L2)', async () => {
+describe('staking & claiming integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	describe('staking and claiming', async () => {
+	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
@@ -21,7 +21,7 @@ describe('staking & claiming integration tests (L1, L2)', async () => {
 		let Synthetix, SynthsUSD, FeePool;
 		let balancesUSD, debtsUSD;
 
-		describe('when the user issues sUSD', async () => {
+		describe('when the user issues sUSD', () => {
 			beforeEach('target contracts and users', () => {
 				({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
 
@@ -51,12 +51,12 @@ describe('staking & claiming integration tests (L1, L2)', async () => {
 				);
 			});
 
-			describe('claiming', async () => {
+			describe('claiming', () => {
 				beforeEach('exchange something', async () => {
 					await exchangeSomething({ ctx: ctx.l1 });
 				});
 
-				describe('when the fee period closes', async () => {
+				describe('when the fee period closes', () => {
 					beforeEach('skip fee period', async () => {
 						await skipFeePeriod({ ctx: ctx.l1 });
 					});
@@ -68,7 +68,7 @@ describe('staking & claiming integration tests (L1, L2)', async () => {
 						await tx.wait();
 					});
 
-					describe('when the user claims rewards', async () => {
+					describe('when the user claims rewards', () => {
 						beforeEach('record balances', async () => {
 							balancesUSD = await SynthsUSD.balanceOf(user.address);
 						});
@@ -88,7 +88,7 @@ describe('staking & claiming integration tests (L1, L2)', async () => {
 				});
 			});
 
-			describe('when the user burns sUSD', async () => {
+			describe('when the user burns sUSD', () => {
 				beforeEach('skip min stake time', async () => {
 					await skipMinimumStakeTime({ ctx: ctx.l1 });
 				});
