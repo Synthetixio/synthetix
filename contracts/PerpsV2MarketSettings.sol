@@ -137,17 +137,31 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The delayed order lower bound whereby the desired delta must be greater than or equal to.
+     * The off-chain delayed order lower bound whereby the desired delta must be greater than or equal to.
      */
     function minDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
         return _minDelayTimeDelta(_marketKey);
     }
 
     /*
-     * The delayed order upper bound whereby the desired delta must be greater than or equal to.
+     * The off-chain delayed order upper bound whereby the desired delta must be greater than or equal to.
      */
     function maxDelayTimeDelta(bytes32 _marketKey) public view returns (uint) {
         return _maxDelayTimeDelta(_marketKey);
+    }
+
+    /*
+     * The off-chain delayed order market key, used to pause and resume offchain markets.
+     */
+    function offchainMarketKey(bytes32 _marketKey) public view returns (bytes32) {
+        return _offchainMarketKey(_marketKey);
+    }
+
+    /*
+     * The max divergence between onchain and offchain prices for an offchain delayed order execution.
+     */
+    function offchainPriceDivergence(bytes32 _marketKey) public view returns (uint) {
+        return _offchainPriceDivergence(_marketKey);
     }
 
     function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
@@ -168,7 +182,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _minDelayTimeDelta(_marketKey),
                 _maxDelayTimeDelta(_marketKey),
                 _offchainDelayedOrderMinAge(_marketKey),
-                _offchainDelayedOrderMaxAge(_marketKey)
+                _offchainDelayedOrderMaxAge(_marketKey),
+                _offchainMarketKey(_marketKey),
+                _offchainPriceDivergence(_marketKey)
             );
     }
 
@@ -303,6 +319,22 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAX_DELAY_TIME_DELTA, _maxDelayTimeDelta);
     }
 
+    function setOffchainMarketKey(bytes32 _marketKey, bytes32 _offchainMarketKey) public onlyOwner {
+        _flexibleStorage().setBytes32Value(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY)),
+            _offchainMarketKey
+        );
+        emit ParameterUpdated(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY, _offchainMarketKey);
+    }
+
+    /*
+     * The max divergence between onchain and offchain prices for an offchain delayed order execution.
+     */
+    function setOffchainPriceDivergence(bytes32 _marketKey, uint _offchainPriceDivergence) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_OFFCHAIN_PRICE_DIVERGENCE, _offchainPriceDivergence);
+    }
+
     function setParameters(bytes32 _marketKey, Parameters calldata _parameters) external onlyOwner {
         _recomputeFunding(_marketKey);
         setTakerFee(_marketKey, _parameters.takerFee);
@@ -321,6 +353,8 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setMakerFeeOffchainDelayedOrder(_marketKey, _parameters.makerFeeOffchainDelayedOrder);
         setOffchainDelayedOrderMinAge(_marketKey, _parameters.offchainDelayedOrderMinAge);
         setOffchainDelayedOrderMaxAge(_marketKey, _parameters.offchainDelayedOrderMaxAge);
+        setOffchainMarketKey(_marketKey, _parameters.offchainMarketKey);
+        setOffchainPriceDivergence(_marketKey, _parameters.offchainPriceDivergence);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
@@ -348,6 +382,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
+    event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, bytes32 value);
     event MinKeeperFeeUpdated(uint sUSD);
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);
