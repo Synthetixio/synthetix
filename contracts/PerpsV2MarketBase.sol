@@ -592,7 +592,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         uint slippage,
         uint orderFee
     ) internal pure returns (uint) {
-        // No slippage is specified, use the orderFee as the upper bound.
+        // No slippage is specified, use the orderFee for the upper bound.
+        //
+        // note: We look at orderFee (not maker/taker fee) because orderFee considers the case when a
+        // trade with large enough size can flip the skew.
         if (slippage == 0) {
             return price.add(orderFee);
         }
