@@ -567,11 +567,21 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Given the current price (not fillPrice) and slippage, determine the upper bound the fillPrice
-     * is allowed, for a trade to execute successfully.
+     * @dev Given the current oracle price (not fillPrice) and slippage, return the max slippage
+     * price which is a price that is inclusive of the slippage tolerance.
      *
-     * For instance, if price is 100 and slippage is 0.01 then maxSlippagePrice is 101. The fillPrice must be
-     * below 101 for the trade to succeed.
+     * For instance, if price ETH is $1000 and slippage is 1% then maxSlippagePrice is $1010. The fillPrice
+     * on the trade must be below $1010 for the trade to succeed.
+     *
+     * For clarity when slippage is:
+     *  0.1   then 10%
+     *  0.01  then 1%
+     *  0.001 then 0.1%
+     *
+     * When price is $1000 and slippage is:
+     *  0.1   then price * (1 + 0.1)   = 1100
+     *  0.01  then price * (1 + 0.01)  = 1010
+     *  0.001 then price * (1 + 0.001) = 1001
      *
      * When slippage is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
      * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
