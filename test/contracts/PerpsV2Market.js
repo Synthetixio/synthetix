@@ -3583,11 +3583,11 @@ contract('PerpsV2Market', accounts => {
 			// velocity = 12 / 400 * 0.1
 			//          = 0.003
 			//
-			// funding_rate = 0 + (0.003 * (43200 / 86400))
-			//              = 0 + (0.003 * 0.5)
-			//              = 0.0015
+			// funding_rate = 0 + (0.003 * (43200 / 86400)) + <very_small_buffer>
+			//              = 0 + (0.003 * 0.5) + <very_small_buffer>
+			//              = ~0.0015
 			const fundingRate = toUnit('0.0015');
-			assert.bnEqual(await futuresMarket.currentFundingRate(), fundingRate);
+			assert.bnClose(await futuresMarket.currentFundingRate(), fundingRate, toUnit('0.001'));
 
 			// Why 0.003?
 			//
@@ -3597,8 +3597,8 @@ contract('PerpsV2Market', accounts => {
 			const fundingVelocity = await futuresMarket.currentFundingVelocity();
 			assert.bnEqual(fundingVelocity, toUnit('0.003'));
 
-			// 1 day
-			await fastForward(SECS_IN_DAY);
+			// 2 days
+			await fastForward(SECS_IN_DAY * 2);
 			await setPrice(baseAsset, price);
 
 			// pause the market
