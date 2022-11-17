@@ -36,7 +36,7 @@ contract('PerpsV2MarketData', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
-	const slippage = toUnit('0.5'); // 50% slippage tolerance acceptable.
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(

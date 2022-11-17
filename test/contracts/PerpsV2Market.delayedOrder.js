@@ -34,7 +34,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const initialPrice = toUnit('100');
-	const slippage = toUnit('0.5'); // 50% slippage tolerance acceptable.
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(

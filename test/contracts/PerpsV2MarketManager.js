@@ -35,7 +35,7 @@ contract('FuturesMarketManager', accounts => {
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const initialMint = toUnit('100000');
-	const slippage = toUnit('0.5'); // 50% slippage tolerance acceptable.
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(

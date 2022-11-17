@@ -97,7 +97,7 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
-				slippage = toUnit('0.5');
+				slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
 
 			it('user can transferMargin and withdraw it', async () => {

@@ -37,7 +37,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
 	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
 	const initialPrice = toUnit('100');
-	const slippage = toUnit('0.5'); // 50% slippage tolerance acceptable.
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	const offchainDelayedOrderMinAge = 15;
 	const offchainDelayedOrderMaxAge = 60;

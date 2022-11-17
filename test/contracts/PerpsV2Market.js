@@ -85,7 +85,7 @@ contract('PerpsV2Market', accounts => {
 	const maxDelayTimeDelta = 120;
 	const offchainMinAge = 15;
 	const offchainMaxAge = 60;
-	const slippage = toUnit('0.5'); // 50% slippage tolerance acceptable.
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	const initialFundingIndex = toBN(0);
 
