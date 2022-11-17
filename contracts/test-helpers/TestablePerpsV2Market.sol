@@ -39,7 +39,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
             bool invalid
         )
     {
-        (uint _, bool invalid) = _assetPrice();
+        (, bool invalid) = _assetPrice();
         int sizeLimit = int(_maxMarketValue(_marketKey()));
         (uint longSize, uint shortSize) = _marketSizes();
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
@@ -188,7 +188,11 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, false);
     }
 
-    function postTradeDetails(int sizeDelta, address sender)
+    function postTradeDetails(
+        int sizeDelta,
+        uint tradePrice,
+        address sender
+    )
         external
         view
         returns (
@@ -206,13 +210,18 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     /* ---------- Delayed Orders ---------- */
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, bytes32(0));
+        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, 0, bytes32(0));
     }
 
-    function submitDelayedOrder(int sizeDelta, uint desiredTimeDelta) external {}
+    function submitDelayedOrder(
+        int sizeDelta,
+        uint slippage,
+        uint desiredTimeDelta
+    ) external {}
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
+        uint slippage,
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {}
@@ -223,9 +232,13 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     /* ---------- Offchain Delayed Orders ---------- */
 
-    function submitOffchainDelayedOrder(int sizeDelta) external {}
+    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external {}
 
-    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external {}
+    function submitOffchainDelayedOrderWithTracking(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) external {}
 
     function cancelOffchainDelayedOrder(address account) external {}
 

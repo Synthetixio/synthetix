@@ -171,6 +171,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
      * @dev Only the associated contract may call this.
      * @param account The account whose value to set.
      * @param sizeDelta Difference in position to pass to modifyPosition
+     * @param slippage Slippage tolerance as a percentage used on fillPrice at execution
      * @param targetRoundId Price oracle roundId using which price this order needs to executed
      * @param commitDeposit The commitDeposit paid upon submitting that needs to be refunded if order succeeds
      * @param keeperDeposit The keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
@@ -182,6 +183,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         address account,
         bool isOffchain,
         int128 sizeDelta,
+        uint128 slippage,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
@@ -192,6 +194,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         delayedOrders[account] = DelayedOrder(
             isOffchain,
             sizeDelta,
+            slippage,
             targetRoundId,
             commitDeposit,
             keeperDeposit,

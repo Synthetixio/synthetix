@@ -4,14 +4,14 @@ const { assert } = require('../../contracts/common');
 const { addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 
-// conveniece methods
+// convenience methods
 const toUnit = v => ethers.utils.parseUnits(v.toString());
 const unit = toUnit(1);
 const toBN = v => ethers.BigNumber.from(v.toString());
 const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
-const proxyedContract = (proxy, abi, user) => {
+const proxiedContract = (proxy, abi, user) => {
 	return new ethers.Contract(proxy.address, abi, user);
 };
 
@@ -66,7 +66,7 @@ function itCanTrade({ ctx }) {
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
-			PerpsV2MarketBTC = proxyedContract(
+			PerpsV2MarketBTC = proxiedContract(
 				PerpsV2ProxyBTC,
 				unifyAbis([
 					PerpsV2MarketImplBTC,
@@ -87,7 +87,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('position management', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x, debt;
+			let market, assetKey, marketKey, price, balance, posSize1x, debt, slippage;
 			const margin = toUnit('1000');
 
 			before('market and conditions', async () => {
@@ -97,6 +97,7 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
+				slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
@@ -132,7 +133,7 @@ function itCanTrade({ ctx }) {
 				it('user can open and close position', async () => {
 					// open position
 					const initialMargin = (await market.positions(someUser.address)).margin;
-					await market.modifyPosition(posSize1x);
+					await market.modifyPosition(posSize1x, slippage);
 
 					const position = await market.positions(someUser.address);
 					assert.bnGt(initialMargin, position.margin); // fee was taken
@@ -145,7 +146,7 @@ function itCanTrade({ ctx }) {
 				});
 
 				it('user can modifyPosition to short', async () => {
-					await market.modifyPosition(posSize1x.mul(toBN(-5)));
+					await market.modifyPosition(posSize1x.mul(toBN(-5)), slippage);
 					const position = await market.positions(someUser.address);
 					assert.bnEqual(position.size, posSize1x.mul(toBN(-5))); // right position size
 
@@ -161,7 +162,7 @@ function itCanTrade({ ctx }) {
 
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
-						await market.modifyPosition(multiplyDecimal(posSize1x, maxLeverage));
+						await market.modifyPosition(multiplyDecimal(posSize1x, maxLeverage), slippage);
 					});
 
 					before('if new aggregator is set and price drops 20%', async () => {
@@ -174,7 +175,7 @@ function itCanTrade({ ctx }) {
 						await assert.revert(market.transferMargin(toBN(-1)), 'Insufficient margin');
 
 						// cannot modify
-						await assert.revert(market.modifyPosition(toBN(-1)), 'can be liquidated');
+						await assert.revert(market.modifyPosition(toBN(-1), slippage), 'can be liquidated');
 
 						// cannot close
 						await assert.revert(market.closePosition(), 'can be liquidated');

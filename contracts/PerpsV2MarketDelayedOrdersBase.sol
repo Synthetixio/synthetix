@@ -39,6 +39,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
     function _submitDelayedOrder(
         bytes32 marketKey,
         int sizeDelta,
+        uint slippage,
         uint desiredTimeDelta,
         bytes32 trackingCode,
         bool isOffchain
@@ -71,6 +72,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 price: price,
                 takerFee: isOffchain ? _takerFeeOffchainDelayedOrder(marketKey) : _takerFeeDelayedOrder(marketKey),
                 makerFee: isOffchain ? _makerFeeOffchainDelayedOrder(marketKey) : _makerFeeDelayedOrder(marketKey),
+                slippage: slippage,
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -89,6 +91,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             DelayedOrder({
                 isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
+                slippage: uint128(slippage),
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
@@ -112,6 +115,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             messageSender,
             order.isOffchain,
             order.sizeDelta,
+            order.slippage,
             order.targetRoundId,
             order.commitDeposit,
             order.keeperDeposit,
@@ -183,11 +187,16 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
         uint fundingIndex = _recomputeFunding();
 
+        // we need to grab the fillPrice for events and margin updates (but this is also calc in _trade).
+        //
+        // warning: do not pass fillPrice into `_trade`!
+        uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
+
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, currentPrice, int(toRefund));
+        _updatePositionMargin(account, position, fillPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(position.id, account, position.margin, position.size, 0, currentPrice, fundingIndex, 0);
+        emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         // execute or revert
         _trade(
@@ -197,6 +206,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 price: currentPrice, // the funding is applied only from order confirmation time
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
+                slippage: order.slippage,
                 trackingCode: order.trackingCode
             })
         );
