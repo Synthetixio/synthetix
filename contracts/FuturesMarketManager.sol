@@ -118,6 +118,17 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     }
 
     /*
+     * The number of markets known to the manager.
+     */
+    function numMarkets(bool proxiedMarkets) external view returns (uint) {
+        if (proxiedMarkets) {
+            return _proxiedMarkets.elements.length;
+        } else {
+            return _legacyMarkets.elements.length;
+        }
+    }
+
+    /*
      * The list of all markets.
      */
     function allMarkets() public view returns (address[] memory) {
@@ -329,7 +340,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         uint numOfMarkets = marketsToUpdate.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToUpdate[i];
-            require(market != address(0), "Unknown market");
+            require(market != address(0), "Invalid market");
 
             // Remove old implementations
             _removeImplementations(market);
@@ -401,7 +412,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     function _requireIsMarketOrImplementation() internal view {
         require(
-            _allMarkets.contains(msg.sender) || _implementations.contains(msg.sender),
+            _legacyMarkets.contains(msg.sender) || _implementations.contains(msg.sender),
             "Permitted only for market implementations"
         );
     }

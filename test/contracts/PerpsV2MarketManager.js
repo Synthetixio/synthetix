@@ -22,7 +22,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
-contract('FuturesMarketManager', accounts => {
+contract('FuturesMarketManager (PerpsV2)', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
 		systemSettings,
@@ -157,6 +157,10 @@ contract('FuturesMarketManager', accounts => {
 		it('Adding a single market', async () => {
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(markets.length));
+			assert.bnEqual(
+				await futuresMarketManager.methods['numMarkets(bool)'](true),
+				toBN(markets.length)
+			);
 			assert.equal(markets.length, 2);
 			assert.deepEqual(markets, proxyAddresses);
 
@@ -177,6 +181,7 @@ contract('FuturesMarketManager', accounts => {
 			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
 
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(3));
 			assert.equal((await futuresMarketManager.markets(2, 1))[0], proxy.address);
 
 			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), proxy.address);
@@ -200,6 +205,7 @@ contract('FuturesMarketManager', accounts => {
 
 			const tx = await futuresMarketManager.addProxiedMarkets(proxiesAddress, { from: owner });
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(4));
 			assert.deepEqual(await futuresMarketManager.markets(2, 2), proxiesAddress);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), proxiesAddress);
 
@@ -270,6 +276,7 @@ contract('FuturesMarketManager', accounts => {
 
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(1));
 			assert.deepEqual(markets, [proxyAddresses[1]]);
 
 			assert.equal(await futuresMarketManager.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
@@ -279,6 +286,7 @@ contract('FuturesMarketManager', accounts => {
 			const tx = await futuresMarketManager.removeMarkets(proxyAddresses, { from: owner });
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(0));
 			assert.deepEqual(markets, []);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(currencyKeys), [
 				ZERO_ADDRESS,
@@ -306,6 +314,7 @@ contract('FuturesMarketManager', accounts => {
 
 			let markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(1));
 			assert.deepEqual(markets, [proxyAddresses[0]]);
 
 			const market = await setupContract({
@@ -329,6 +338,7 @@ contract('FuturesMarketManager', accounts => {
 
 			markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), toBN(0));
 			assert.deepEqual(markets, []);
 		});
 
