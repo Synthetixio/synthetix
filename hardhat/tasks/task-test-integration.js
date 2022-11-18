@@ -3,7 +3,6 @@ const isCI = require('is-ci');
 
 const {
 	constants: { BUILD_FOLDER },
-	getUsers,
 } = require('../..');
 const { task } = require('hardhat/config');
 const {
@@ -62,7 +61,6 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
-
 				await deployInstance({
 					useOvm: false,
 					providerUrl,
