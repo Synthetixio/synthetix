@@ -4,7 +4,7 @@ steps:
   # get foundry
   - restore_cache:
       keys:
-        - foundry-bin-${foundry_locked_commit}
+        - foundry-bin-${foundry_locked_commit}-11
   - rust/install: {}
   - run: |
       if [ ! -d ~/.foundry ]; then
@@ -15,7 +15,7 @@ steps:
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
 
   - save_cache:
-      key: foundry-bin-${foundry_locked_commit}
+      key: foundry-bin-${foundry_locked_commit}-11
       paths:
         - ~/.foundry/bin
 
@@ -24,8 +24,8 @@ steps:
       at: .
   - run: npx hardhat compile --optimizer --fail-oversize
   - run: node publish build --test-helpers
-  - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
-  - run: npx hardhat cannon:build
+  - run: npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
+  - run: npx hardhat --network cannon cannon:build
   - persist_to_workspace:
       root: .
       paths:

@@ -5,7 +5,7 @@ steps:
   # get foundry
   - restore_cache:
       keys:
-        - foundry-bin-${foundry_locked_commit}
+        - foundry-bin-${foundry_locked_commit}-11
   - rust/install: {}
   - run: |
       if [ ! -d ~/.foundry ]; then
@@ -16,7 +16,7 @@ steps:
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
 
   - save_cache:
-      key: foundry-bin-${foundry_locked_commit}
+      key: foundry-bin-${foundry_locked_commit}-11
       paths:
         - ~/.foundry/bin
 

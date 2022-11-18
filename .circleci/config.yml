@@ -39,7 +39,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}
+            - foundry-bin-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -49,7 +49,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}
+          key: foundry-bin-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout
@@ -57,8 +57,8 @@ jobs:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: node publish build --test-helpers
-      - run: npx hardhat cannon:build --file cannonfile.aggregator.toml
-      - run: npx hardhat cannon:build
+      - run: npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
+      - run: npx hardhat --network cannon cannon:build
       - persist_to_workspace:
           root: .
           paths:
@@ -130,7 +130,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}
+            - foundry-bin-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -140,7 +140,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}
+          key: foundry-bin-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout
@@ -160,13 +160,10 @@ jobs:
           paths:
             - ./optimism
       - run:
-          name: Run isolated layer 1 integration tests
+          name: Build cannonfiles
           command: |
-            npx hardhat test:integration:l1 --deploy
-      - run:
-          name: Run isolated layer 2 integration tests
-          command: |
-            npx hardhat test:integration:l2 --deploy
+            npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
+            npx hardhat --network cannon cannon:build
       - run:
           name: Start docker chains
           background: true
@@ -178,9 +175,17 @@ jobs:
       - cmd-wait-for-port:
           port: 9545
       - run:
+          name: Run isolated layer 1 integration tests
+          command: |
+            npx hardhat --network localhost test:integration:l1 --deploy --provider-port 9545
+      - run:
+          name: Run isolated layer 2 integration tests
+          command: |
+            npx hardhat --network localhost test:integration:l2 --deploy --provider-port 9545
+      - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --deploy
+            npx hardhat --network localhost test:integration:dual --deploy
       - store_test_results:
           path: /tmp/junit/
       - store_artifacts:
@@ -288,7 +293,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}
+            - foundry-bin-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -298,7 +303,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}
+          key: foundry-bin-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout
