@@ -357,10 +357,8 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 };
 
 const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
-	let offchainFeeds;
-
 	if (!deploymentPath && (!path || !fs)) {
-		offchainFeeds = data[getFolderNameForNetwork({ network, useOvm })].offchainFeeds;
+		return data[getFolderNameForNetwork({ network, useOvm })].offchainFeeds;
 	} else {
 		const pathToFeeds = deploymentPath
 			? path.join(deploymentPath, constants.OFFCHAIN_FEEDS_FILENAME)
@@ -373,10 +371,8 @@ const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } 
 		if (!fs.existsSync(pathToFeeds)) {
 			throw Error(`Cannot find off-chain feeds file.`);
 		}
-		offchainFeeds = JSON.parse(fs.readFileSync(pathToFeeds));
+		return JSON.parse(fs.readFileSync(pathToFeeds));
 	}
-
-	return offchainFeeds;
 };
 
 /**
