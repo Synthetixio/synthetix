@@ -62,13 +62,21 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
-				const owner = getUsers({ network: 'local', user: 'deployer' });
+
+				await deployInstance({
+					useOvm: false,
+					providerUrl,
+					providerPort: providerPort,
+					buildPath: buildPath,
+				});
+
+				/*const owner = getUsers({ network: 'local', user: 'deployer' });
 				await hre.run('cannon:deploy', {
 					impersonate: owner.address,
 					packageWithSettings: ['chainlink:0.7-mock'],
 					overrideManifest: 'cannonfile.aggregator.toml',
 				});
-				await hre.run('cannon:deploy', { impersonate: owner.address });
+				await hre.run('cannon:deploy', { impersonate: owner.address });*/
 			}
 
 			hre.config.addedSynths = synthsToAdd;
@@ -127,7 +135,14 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				const owner = getUsers({ network: 'local', user: 'deployer' });
+				await deployInstance({
+					useOvm: true,
+					providerUrl,
+					providerPort: providerPortL2,
+					buildPath: buildPath,
+				});
+
+				/*const owner = getUsers({ network: 'local', user: 'deployer' });
 				await hre.run('cannon:deploy', {
 					impersonate: owner.address,
 					cannonfile: 'cannonfile.aggregator.toml',
@@ -137,7 +152,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					cannonfile: 'cannonfile.optimism.toml',
 					preset: 'local-ovm',
 					settings: ['network=local-ovm'],
-				});
+				});*/
 			}
 			hre.config.addedSynths = synthsToAdd;
 		}
