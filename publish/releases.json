@@ -1410,6 +1410,23 @@
 			},
 			"sips": [267],
 			"released": true
+		},
+		{
+			"name": "Alphecca",
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299]
+		},
+		{
+			"name": "Alphecca (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299]
 		}
 	]
 }
