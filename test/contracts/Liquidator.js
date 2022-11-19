@@ -297,6 +297,23 @@ contract('Liquidator', accounts => {
 				});
 			});
 		});
+		describe('when the v3 legacy market is set', () => {
+			beforeEach(async () => {
+				// Set the LegacyMarket address to something non-zero
+				await addressResolver.importAddresses(['LegacyMarket'].map(toBytes32), [owner], {
+					from: owner,
+				});
+
+				// now have Liquidator resync its cache
+				await liquidator.rebuildCache();
+			});
+			it('when flagAccountForLiquidation() is invoked, it reverts with must liquidate using V3', async () => {
+				await assert.revert(
+					liquidator.flagAccountForLiquidation(alice, { from: owner }),
+					'Must liquidate using V3'
+				);
+			});
+		});
 		describe('protected methods', () => {
 			describe('only internal contracts can call', () => {
 				beforeEach(async () => {

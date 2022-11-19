@@ -139,4 +139,6 @@ interface ISynthetix {
     function mintSecondaryRewards(uint amount) external;
 
     function burnSecondary(address account, uint amount) external;
+
+    function revokeAllEscrow(address account) external;
 }

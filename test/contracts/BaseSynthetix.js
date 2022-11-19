@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('hardhat');
+const { artifacts, contract, web3, ethers } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -36,6 +36,7 @@ contract('BaseSynthetix', async accounts => {
 		exchangeRates,
 		debtCache,
 		escrow,
+		rewardEscrowV2,
 		addressResolver,
 		systemSettings,
 		systemStatus,
@@ -53,6 +54,7 @@ contract('BaseSynthetix', async accounts => {
 			SystemStatus: systemStatus,
 			CircuitBreaker: circuitBreaker,
 			SynthetixEscrow: escrow,
+			RewardEscrowV2: rewardEscrowV2,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
@@ -75,6 +77,11 @@ contract('BaseSynthetix', async accounts => {
 				'RewardEscrowV2', // required for collateral check in issuer
 			],
 		}));
+
+		// approve creating escrow entries from owner
+		await baseSynthetixImpl.approve(rewardEscrowV2.address, ethers.constants.MaxUint256, {
+			from: owner,
+		});
 
 		// use implementation ABI on the proxy address to simplify calling
 		baseSynthetixProxy = await artifacts.require('BaseSynthetix').at(baseSynthetixProxy.address);
@@ -112,6 +119,7 @@ contract('BaseSynthetix', async accounts => {
 				'mint',
 				'mintSecondary',
 				'mintSecondaryRewards',
+				'revokeAllEscrow',
 				'settle',
 				'transfer',
 				'transferFrom',
@@ -601,6 +609,36 @@ contract('BaseSynthetix', async accounts => {
 				assert.bnEqual(await baseSynthetixImpl.balanceOf(account1), toUnit('0'));
 				assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('10'));
 			});
+		});
+
+		// SIP-299
+		describe('revokeAllEscrow', () => {
+			it('restricted to legacy market', async () => {
+				await addressResolver.importAddresses(['LegacyMarket'].map(toBytes32), [account2], {
+					from: owner,
+				});
+				await rewardEscrowV2.createEscrowEntry(account1, toUnit('100'), 1, { from: owner });
+				await assert.revert(
+					baseSynthetixImpl.revokeAllEscrow(account1, { from: owner }),
+					'Only LegacyMarket can revoke escrow'
+				);
+			});
+		});
+
+		it('should transfer when legacy market address is non-zero', async () => {
+			await addressResolver.importAddresses(['LegacyMarket'].map(toBytes32), [account2], {
+				from: owner,
+			});
+
+			// transfer some snx to the LegacyMarket
+			assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('0'));
+			await baseSynthetixProxy.transfer(account2, toUnit('10'), { from: owner });
+			assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('10'));
+
+			// transfer SNX from the legacy market to another account
+			await baseSynthetixProxy.transfer(account1, toUnit('10'), { from: account2 });
+			assert.bnEqual(await baseSynthetixImpl.balanceOf(account1), toUnit('10'));
+			assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('0'));
 		});
 
 		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
