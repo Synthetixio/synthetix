@@ -183,7 +183,10 @@ target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x534e580000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_snx.contracts.aggregator.address %>"]
+args = [
+    "0x534e580000000000000000000000000000000000000000000000000000000000",
+    "<%= imports.aggregator_snx.contracts.aggregator.address %>",
+]
 
 depends = ["invoke.accept_ownership", "import.aggregator_snx"]
 
@@ -192,7 +195,10 @@ target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x4554480000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_eth.contracts.aggregator.address %>"]
+args = [
+    "0x4554480000000000000000000000000000000000000000000000000000000000",
+    "<%= imports.aggregator_eth.contracts.aggregator.address %>",
+]
 
 depends = ["invoke.accept_ownership", "import.aggregator_eth"]
 
@@ -201,7 +207,10 @@ target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
-args = ["0x4254430000000000000000000000000000000000000000000000000000000000", "<%= imports.aggregator_btc.contracts.aggregator.address %>"]
+args = [
+    "0x4254430000000000000000000000000000000000000000000000000000000000",
+    "<%= imports.aggregator_btc.contracts.aggregator.address %>",
+]
 
 depends = ["invoke.accept_ownership", "import.aggregator_btc"]
 
@@ -247,4 +256,8 @@ func = "issueSynths"
 args = ["1000000000000000000000"]
 #args = ['1']
 
-depends = ["invoke.test_user_snx", "invoke.increase_snapshot_stale_time", "invoke.increase_rate_stale_time"]
+depends = [
+    "invoke.test_user_snx",
+    "invoke.increase_snapshot_stale_time",
+    "invoke.increase_rate_stale_time",
+]
