@@ -5,9 +5,6 @@ const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
 
-// convenience methods
-const toUnit = v => ethers.utils.parseUnits(v.toString());
-
 function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
 		let user7, user8;
@@ -401,7 +398,15 @@ function itCanLiquidate({ ctx }) {
 			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
 			let beforeSnxBalance, beforeRewardsCredittedSnx;
-			const snxRate = toUnit(0.3); // 30 cents
+
+			before('ensure exchange rate is set', async () => {
+				exchangeRate = await getRate({ ctx, symbol: 'SNX' });
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '6000000000000000000', // $6
+				});
+			});
 
 			before('ensure user8 has alot of escrowed SNX', async () => {
 				flagReward = await Liquidator.flagReward();
@@ -428,7 +433,7 @@ function itCanLiquidate({ ctx }) {
 				await addAggregatorAndSetRate({
 					ctx,
 					currencyKey: toBytes32('SNX'),
-					rate: snxRate,
+					rate: '300000000000000000', // $0.30
 				});
 			});
 
