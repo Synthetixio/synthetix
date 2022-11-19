@@ -77,7 +77,7 @@ contract('PerpsV2Market', accounts => {
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('1000');
 	const maxFundingVelocity = toUnit('0.1');
-	const skewScale = toUnit('1000');
+	const skewScale = toUnit('100000');
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
 	const minInitialMargin = toUnit('100');
@@ -1374,10 +1374,10 @@ contract('PerpsV2Market', accounts => {
 		it('can modify a position', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
-			const size = toUnit('50');
+			const size = toUnit('50'); // 10x leverage
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPrice(size))[0]; // $205 fillPrice
 			const fee = (await futuresMarket.orderFee(size))[0];
 			const tx = await futuresMarket.modifyPosition(size, slippage, { from: trader });
 
@@ -2849,8 +2849,8 @@ contract('PerpsV2Market', accounts => {
 		});
 	});
 
-	describe('Premium/Discount Pricing', () => {
-		it('A complete premium/discount sample scenario', async () => {
+	describe('Premium/Discount adjusted pricing', () => {
+		it('A complete premium/discount price adjusted sample scenario', async () => {
 			const price = toUnit('100');
 
 			await setPrice(baseAsset, price);

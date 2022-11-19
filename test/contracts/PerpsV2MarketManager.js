@@ -652,7 +652,7 @@ contract('FuturesMarketManager', accounts => {
 						toUnit('5'), // 5x max leverage
 						toUnit('1000'), // 1000 max market value
 						toUnit('0.2'), // 20% max funding velocity
-						toUnit('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
+						toUnit('100000'), // 100k native units skewScale
 
 						toBN('2'), // 2 rounds next price confirm window
 						30, // 30s delay confirm window
