@@ -213,16 +213,16 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     /*
      * Submit an order to close a position.
      */
-    function closePosition() external {
-        _closePosition(bytes32(0));
+    function closePosition(uint slippage) external {
+        _closePosition(slippage, bytes32(0));
     }
 
     /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
-    function closePositionWithTracking(bytes32 trackingCode) external {
-        _closePosition(trackingCode);
+    function closePositionWithTracking(uint slippage, bytes32 trackingCode) external {
+        _closePosition(slippage, trackingCode);
     }
 
-    function _closePosition(bytes32 trackingCode) internal onlyProxy {
+    function _closePosition(uint slippage, bytes32 trackingCode) internal onlyProxy {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks();
@@ -234,7 +234,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 price: price,
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
-                slippage: 0, // zero here because we don't care when closing a position.
+                slippage: slippage,
                 trackingCode: trackingCode
             })
         );

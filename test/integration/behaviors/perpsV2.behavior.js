@@ -141,7 +141,7 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					await (await market.closePosition()).wait();
+					await (await market.closePosition(slippage)).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
@@ -151,7 +151,7 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x.mul(toBN(-5))); // right position size
 
 					// close
-					await market.closePosition();
+					await market.closePosition(slippage);
 				});
 
 				describe('existing position', () => {
@@ -178,7 +178,7 @@ function itCanTrade({ ctx }) {
 						await assert.revert(market.modifyPosition(toBN(-1), slippage), 'can be liquidated');
 
 						// cannot close
-						await assert.revert(market.closePosition(), 'can be liquidated');
+						await assert.revert(market.closePosition(slippage), 'can be liquidated');
 					});
 
 					it('position can be liquidated by another user', async () => {

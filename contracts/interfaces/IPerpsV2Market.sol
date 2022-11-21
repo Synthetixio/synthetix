@@ -21,9 +21,9 @@ interface IPerpsV2Market {
         bytes32 trackingCode
     ) external;
 
-    function closePosition() external;
+    function closePosition(uint slippage) external;
 
-    function closePositionWithTracking(bytes32 trackingCode) external;
+    function closePositionWithTracking(uint slippage, bytes32 trackingCode) external;
 
     function liquidatePosition(address account) external;
 }
