@@ -10,19 +10,14 @@ import "./Proxyable.sol";
 /**
  * Based on Proxy.sol that adds routing capabilities to route specific function calls (selectors) to
  * specific implementations and flagging the routes if are views in order to not call
- * proxyable.setMessageSender() that is mutative (resulting in a revert). If the function call (selector) is
- * not found, the default target (same as defined as target in Proxy.sol) is used as fallback.
+ * proxyable.setMessageSender() that is mutative (resulting in a revert).
  *
  * In order to manage the routes it provides two onlyOwner functions (`addRoute` and `removeRoute`), and
  * some helper views to get the size of the route list (`getRoutesLength`), the list of routes (`getRoutesPage`),
- * and a list of all the targeted contracts (including default target and routed targets).
- *
- * Note that all the targets are enabled to emit events, not only the default target.
+ * and a list of all the targeted contracts.
  */
 // https://docs.synthetix.io/contracts/source/contracts/ProxyPerpsV2
 contract ProxyPerpsV2 is Owned {
-    address public target;
-
     /* ----- Dynamic router storage ----- */
     struct Route {
         bytes4 selector;
@@ -159,21 +154,11 @@ contract ProxyPerpsV2 is Owned {
     }
 
     function getAllTargets() external view returns (address[] memory) {
-        address[] memory allTargets = new address[](_routedTargets.length + 1);
-        for (uint i = 0; i < _routedTargets.length; i++) {
-            allTargets[i] = _routedTargets[i];
-        }
-        allTargets[_routedTargets.length] = target;
-        return allTargets;
+        return _routedTargets;
     }
 
     ///// BASED ON PROXY.SOL /////
     /* ----- Proxy based on Proxy.sol ----- */
-
-    function setTarget(Proxyable _target) external onlyOwner {
-        target = address(_target);
-        emit TargetUpdated(_target);
-    }
 
     function _emit(
         bytes calldata callData,
@@ -214,15 +199,12 @@ contract ProxyPerpsV2 is Owned {
     // solhint-disable no-complex-fallback
     function() external payable {
         bytes4 sig4 = msg.sig;
-        bool isView;
-        address implementation = target;
+
+        require(_contains(sig4), "Invalid selector");
 
         // Identify target
-        if (_contains(sig4)) {
-            // sig4 found, update impl and isView flag
-            implementation = _routes[_routeIndexes[sig4]].implementation;
-            isView = _routes[_routeIndexes[sig4]].isView;
-        }
+        address implementation = _routes[_routeIndexes[sig4]].implementation;
+        bool isView = _routes[_routeIndexes[sig4]].isView;
 
         if (isView) {
             assembly {
@@ -258,11 +240,9 @@ contract ProxyPerpsV2 is Owned {
     }
 
     modifier onlyTargets {
-        require(msg.sender == target || _targetReferences[msg.sender] > 0, "Must be a proxy target");
+        require(_targetReferences[msg.sender] > 0, "Must be a proxy target");
         _;
     }
-
-    event TargetUpdated(Proxyable newTarget);
 
     event RouteUpdated(bytes4 route, address implementation, bool isView);
 
