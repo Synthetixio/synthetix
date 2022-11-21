@@ -133,7 +133,12 @@ const excludedFunctions = [
 	'rebuildCache',
 	'isResolvedCache',
 	// ProxyPerpsV2
+	'addRoute',
+	'removeRoute',
 	'getRoutesPage',
+	'getRoutesLength',
+	'getRoutesPage',
+	'getAllTargets',
 	// PerpsV2MarketBase
 	'marketState',
 ];
@@ -754,6 +759,8 @@ const setupContract = async ({
 			]);
 		},
 		async PerpsV2MarketBTC() {
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
 			await Promise.all([
 				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
 				cache['PerpsV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
@@ -762,13 +769,20 @@ const setupContract = async ({
 				cache['PerpsV2MarketStateBTC'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
-				cache['ProxyPerpsV2MarketBTC'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
+				...filteredFunctions.map(e =>
+					cache['ProxyPerpsV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				),
 				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketBTC'].address], {
 					from: owner,
 				}),
 			]);
 		},
 		async PerpsV2MarketETH() {
+			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+
 			await Promise.all([
 				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
 				cache['PerpsV2MarketStateETH'].removeAssociatedContracts([deployerAccount], {
@@ -777,7 +791,12 @@ const setupContract = async ({
 				cache['PerpsV2MarketStateETH'].addAssociatedContracts([instance.address], {
 					from: owner,
 				}),
-				cache['ProxyPerpsV2MarketETH'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
+				...filteredFunctions.map(e =>
+					cache['ProxyPerpsV2MarketETH'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				),
 				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketETH'].address], {
 					from: owner,
 				}),

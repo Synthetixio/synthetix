@@ -55,7 +55,6 @@ contract('FuturesMarketManager', accounts => {
 
 		const filteredFunctions = getFunctionSignatures(market, excludedFunctions);
 
-		await proxy.setTarget(market.address, { from: owner });
 		await Promise.all(
 			filteredFunctions.map(e =>
 				proxy.addRoute(e.signature, market.address, e.isView, {
@@ -611,10 +610,12 @@ contract('FuturesMarketManager', accounts => {
 					args: [marketState.address, owner, addressResolver.address],
 				});
 
-				const filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
+				const filteredFunctions = [
+					...getFunctionSignatures(marketImpl, excludedFunctions),
+					...getFunctionSignatures(marketViews, excludedFunctions),
+				];
 
 				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
-				await market.setTarget(marketImpl.address, { from: owner });
 				await Promise.all(
 					filteredFunctions.map(e =>
 						market.addRoute(e.signature, marketViews.address, e.isView, {
@@ -623,7 +624,6 @@ contract('FuturesMarketManager', accounts => {
 					)
 				);
 
-				await market.setTarget(marketImpl.address, { from: owner });
 				await futuresMarketManager.addProxiedMarkets([market.address], {
 					from: owner,
 				});
@@ -634,7 +634,9 @@ contract('FuturesMarketManager', accounts => {
 				markets.push(market);
 				marketKeys.push(marketKey);
 
-				await addressResolver.rebuildCaches([market.address, marketViews.address], { from: owner });
+				await addressResolver.rebuildCaches([marketImpl.address, marketViews.address], {
+					from: owner,
+				});
 
 				await setPrice(assetKey, toUnit(1000));
 

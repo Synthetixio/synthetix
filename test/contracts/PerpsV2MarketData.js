@@ -129,6 +129,7 @@ contract('PerpsV2MarketData', accounts => {
 			});
 
 			const filteredFunctions = [
+				...getFunctionSignatures(marketImpl, excludedFunctions),
 				...getFunctionSignatures(marketViews, excludedFunctions),
 				...getFunctionSignatures(marketDelayedOrder, excludedFunctions),
 			];
@@ -136,7 +137,6 @@ contract('PerpsV2MarketData', accounts => {
 			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
 				from: owner,
 			});
-			await market.setTarget(marketImpl.address, { from: owner });
 			await Promise.all(
 				filteredFunctions.map(e =>
 					market.addRoute(e.signature, marketViews.address, e.isView, {
@@ -149,7 +149,7 @@ contract('PerpsV2MarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches(
-				[market.address, marketViews.address, marketDelayedOrder.address],
+				[marketImpl.address, marketViews.address, marketDelayedOrder.address],
 				{
 					from: owner,
 				}
