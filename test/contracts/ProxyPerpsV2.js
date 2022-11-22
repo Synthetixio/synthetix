@@ -153,6 +153,7 @@ contract('ProxyPerpsV2', async accounts => {
 		const routedAddress1 = ethers.Wallet.createRandom().address;
 		const routedAddress2 = ethers.Wallet.createRandom().address;
 		const routedAddress3 = ethers.Wallet.createRandom().address;
+		const emptyTarget = '0x0000000000000000000000000000000000000000';
 		const sampleRoutes = [
 			{
 				selector: '0x00112211',
