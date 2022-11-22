@@ -61,11 +61,12 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
         // Update the price data (and pay the fee)
         offchainOracle().updatePriceFeeds.value(fee)(priceUpdateData);
 
-        // Try to return unused value, or revert if failed
-        // payable(messageSender).transfer(msg.value - fee);
-        // solhint-disable-next-line  avoid-low-level-calls
-        (bool success, ) = sender.call.value(msg.value - fee)("");
-        require(success, "Failed to call payable");
+        if (msg.value - fee > 0) {
+            // Need to refund caller. Try to return unused value, or revert if failed
+            // solhint-disable-next-line  avoid-low-level-calls
+            (bool success, ) = sender.call.value(msg.value - fee)("");
+            require(success, "Failed to refund caller");
+        }
     }
 
     // it is a view but it can revert

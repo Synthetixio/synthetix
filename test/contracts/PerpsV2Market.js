@@ -144,6 +144,7 @@ contract('PerpsV2Market', accounts => {
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
+				// 'TestablePerpsV2MarketBTC',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
