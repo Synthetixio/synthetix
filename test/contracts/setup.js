@@ -1957,5 +1957,6 @@ module.exports = {
 	setupAllContracts,
 	constantsOverrides,
 	excludedFunctions,
+	excludedTestableFunctions,
 	getFunctionSignatures,
 };

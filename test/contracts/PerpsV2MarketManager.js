@@ -6,6 +6,7 @@ const {
 	setupAllContracts,
 	setupContract,
 	excludedFunctions,
+	excludedTestableFunctions,
 	getFunctionSignatures,
 } = require('./setup');
 const { toUnit } = require('../utils')();
@@ -573,6 +574,8 @@ contract('FuturesMarketManager', accounts => {
 		beforeEach(async () => {
 			// Add v1 markets
 			for (const symbol of assets) {
+				let filteredFunctions;
+
 				const assetKey = toBytes32(symbol);
 				const marketKey = toBytes32('s' + symbol);
 				const offchainMarketKey = toBytes32('oc' + symbol);
@@ -610,10 +613,26 @@ contract('FuturesMarketManager', accounts => {
 					args: [marketState.address, owner, addressResolver.address],
 				});
 
-				const filteredFunctions = [
-					...getFunctionSignatures(marketImpl, excludedFunctions),
-					...getFunctionSignatures(marketViews, excludedFunctions),
-				];
+				filteredFunctions = getFunctionSignatures(marketImpl, [
+					...excludedTestableFunctions,
+					...excludedFunctions.filter(e => e !== 'marketState'),
+				]);
+				await Promise.all(
+					filteredFunctions.map(e =>
+						market.addRoute(e.signature, marketImpl.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
+
+				filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
+				await Promise.all(
+					filteredFunctions.map(e =>
+						market.addRoute(e.signature, marketViews.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
 
 				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
 				await Promise.all(
