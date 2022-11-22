@@ -560,9 +560,36 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         int pdBefore = skew.divideDecimal(skewScale);
         int pdAfter = skew.add(size).divideDecimal(skewScale);
-        int priceBefore = int(price).add(pdBefore);
-        int priceAfter = int(price).add(pdAfter);
+        int priceBefore = int(price).add(int(price).multiplyDecimal(pdBefore));
+        int priceAfter = int(price).add(int(price).multiplyDecimal(pdAfter));
 
+        // How is the p/d-adjusted price calculated using an example:
+        //
+        // price      = $1200 USD (oracle)
+        // size       = 100
+        // skew       = 0
+        // skew_scale = 1,000,000 (1M)
+        //
+        // Then,
+        //
+        // pd_before = 0 / 1,000,000
+        //           = 0
+        // pd_after  = (0 + 100) / 1,000,000
+        //           = 100 / 1,000,000
+        //           = 0.0001
+        //
+        // price_before = 1200 * (1 + pd_before)
+        //              = 1200 * (1 + 0)
+        //              = 1200
+        // price_after  = 1200 * (1 + pd_after)
+        //              = 1200 * (1 + 0.0001)
+        //              = 1200 * (1.0001)
+        //              = 1200.12
+        // Finally,
+        //
+        // fill_price = (price_before + price_after) / 2
+        //            = (1200 + 1200.12) / 2
+        //            = 1200.06
         return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2));
     }
 

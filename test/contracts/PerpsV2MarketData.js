@@ -189,7 +189,7 @@ contract('PerpsV2MarketData', accounts => {
 					toWei('5'), // 5x max leverage
 					toWei('1000'), // 1000 max market value
 					toWei('0.2'), // 20% max funding velocity
-					toWei('1000'), // 1000 native units skewScale ($100 x 1000 = 100k USD)
+					toWei('100000'), // 100k native units skewScale
 
 					toBN('2'), // 2 rounds next price confirm window
 					30, // 30s delay confirm window
