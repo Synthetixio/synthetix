@@ -7,7 +7,12 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	// setupPriceAggregators,
+	updateAggregatorRates,
+} = require('./helpers');
 
 contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	let futuresMarketSettings,
@@ -64,6 +69,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
+				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
 				'AddressResolver',
 				'FeePool',
@@ -77,7 +83,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			],
 		}));
 
+		// use implementation ABI on the proxy address to simplify calling
+		futuresMarket = await PerpsV2Market.at(futuresMarket.address);
+
 		// Update the rate so that it is not invalid
+		// await setupPriceAggregators(exchangeRates, owner, ['sUSD', 'sBTC', 'sETH'].map(toBytes32));
 		await setPrice(baseAsset, initialPrice);
 
 		// disable dynamic fee for most tests
@@ -88,9 +98,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		for (const t of [trader, trader2, trader3]) {
 			await sUSD.issue(t, traderInitialBalance);
 		}
-
-		// use implementation ABI on the proxy address to simplify calling
-		futuresMarket = await PerpsV2Market.at(futuresMarket.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

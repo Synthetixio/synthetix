@@ -84,6 +84,8 @@ contract('PerpsV2MarketData', accounts => {
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
+			let filteredFunctions;
+
 			const assetKey = toBytes32(symbol);
 			const marketKey = toBytes32(symbol + keySuffix);
 			const offchainMarketKey = toBytes32(offchainPrefix + symbol + keySuffix);
@@ -128,15 +130,20 @@ contract('PerpsV2MarketData', accounts => {
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
-			const filteredFunctions = [
-				...getFunctionSignatures(marketImpl, excludedFunctions),
-				...getFunctionSignatures(marketViews, excludedFunctions),
-				...getFunctionSignatures(marketDelayedOrder, excludedFunctions),
-			];
-
 			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
 				from: owner,
 			});
+
+			filteredFunctions = getFunctionSignatures(marketImpl, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketImpl.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
+			filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
 			await Promise.all(
 				filteredFunctions.map(e =>
 					market.addRoute(e.signature, marketViews.address, e.isView, {
@@ -144,6 +151,16 @@ contract('PerpsV2MarketData', accounts => {
 					})
 				)
 			);
+
+			filteredFunctions = getFunctionSignatures(marketDelayedOrder, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketDelayedOrder.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
 			await futuresMarketManager.addProxiedMarkets([market.address], {
 				from: owner,
 			});

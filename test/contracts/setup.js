@@ -142,6 +142,43 @@ const excludedFunctions = [
 	// PerpsV2MarketBase
 	'marketState',
 ];
+const excludedTestableFunctions = [
+	// Delayed orders
+	'submitDelayedOrder',
+	'submitDelayedOrderWithTracking',
+	'cancelDelayedOrder',
+	'executeDelayedOrder',
+	// Off-chain delayed orders
+	'submitOffchainDelayedOrder',
+	'submitOffchainDelayedOrderWithTracking',
+	'cancelOffchainDelayedOrder',
+	'executeOffchainDelayedOrder',
+	// Market views
+	'marketKey',
+	'baseAsset',
+	'marketSize',
+	'marketSkew',
+	'fundingLastRecomputed',
+	'fundingSequence',
+	'positions',
+	'assetPrice',
+	'marketSizes',
+	'marketDebt',
+	'currentFundingRate',
+	'currentFundingVelocity',
+	'unrecordedFunding',
+	'fundingSequenceLength',
+	'notionalValue',
+	'profitLoss',
+	'accruedFunding',
+	'remainingMargin',
+	'accessibleMargin',
+	'liquidationPrice',
+	'liquidationFee',
+	'canLiquidate',
+	'orderFee',
+	'postTradeDetails',
+];
 
 const getFunctionSignatures = (instance, excludedFunctions) => {
 	const contractInterface = new ethers.utils.Interface(instance.abi);
@@ -405,6 +442,18 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		PerpsV2DelayedOrderETH: [
+			tryGetAddressOf('ProxyPerpsV2MarketETH'),
+			tryGetAddressOf('PerpsV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		PerpsV2OffchainOrderETH: [
+			tryGetAddressOf('ProxyPerpsV2MarketETH'),
+			tryGetAddressOf('PerpsV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
 		PerpsV2MarketBTC: [
 			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
@@ -417,6 +466,12 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		// TestablePerpsV2MarketBTC: [
+		// 	tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+		// 	tryGetAddressOf('PerpsV2MarketStateBTC'),
+		// 	owner,
+		// 	tryGetAddressOf('AddressResolver'),
+		// ],
 	};
 
 	let instance;
@@ -759,7 +814,10 @@ const setupContract = async ({
 			]);
 		},
 		async PerpsV2MarketBTC() {
-			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+			const filteredFunctions = getFunctionSignatures(instance, [
+				...excludedTestableFunctions,
+				...excludedFunctions.filter(e => e !== 'marketState'),
+			]);
 
 			await Promise.all([
 				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
@@ -781,7 +839,10 @@ const setupContract = async ({
 			]);
 		},
 		async PerpsV2MarketETH() {
-			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
+			const filteredFunctions = getFunctionSignatures(instance, [
+				...excludedTestableFunctions,
+				...excludedFunctions.filter(e => e !== 'marketState'),
+			]);
 
 			await Promise.all([
 				instance.setProxy(cache['ProxyPerpsV2MarketETH'].address, { from: owner }),
@@ -800,6 +861,36 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addProxiedMarkets([cache['ProxyPerpsV2MarketETH'].address], {
 					from: owner,
 				}),
+			]);
+		},
+		async TestablePerpsV2MarketBTC() {
+			const filteredFunctions = getFunctionSignatures(
+				{
+					abi: [
+						'function proportionalSkew() view returns (int)',
+						'function maxFundingVelocity() view returns (uint)',
+						'function maxOrderSizes() view returns (uint, uint, bool)',
+						'liquidationMargin(address) view returns (uint)',
+						'currentLeverage(address) view returns (int, bool)',
+					],
+				},
+				excludedFunctions.filter(e => e !== 'marketState')
+			);
+
+			await Promise.all([
+				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
+				cache['PerpsV2MarketStateBTC'].removeAssociatedContracts([deployerAccount], {
+					from: owner,
+				}),
+				cache['PerpsV2MarketStateBTC'].addAssociatedContracts([instance.address], {
+					from: owner,
+				}),
+				instance.setProxy(cache['ProxyPerpsV2MarketBTC'].address, { from: owner }),
+				...filteredFunctions.map(e =>
+					cache['ProxyPerpsV2MarketBTC'].addRoute(e.signature, instance.address, e.isView, {
+						from: owner,
+					})
+				),
 			]);
 		},
 		async GenericMock() {
@@ -1265,10 +1356,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'FuturesMarketManager',
-			deps: [
-				'AddressResolver',
-				'Exchanger' /*, 'FuturesMarketSettings', 'ExchangeCircuitBreaker' */,
-			],
+			deps: ['AddressResolver', 'Exchanger'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
@@ -1294,6 +1382,7 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
+				'SystemStatus',
 				'FlexibleStorage',
 				'ExchangeCircuitBreaker',
 			],
@@ -1344,6 +1433,32 @@ const setupAllContracts = async ({
 			contract: 'PerpsV2DelayedOrderBTC',
 			source: 'PerpsV2MarketDelayedOrders',
 			deps: [
+				'ProxyPerpsV2MarketBTC',
+				'PerpsV2MarketStateBTC',
+				'PerpsV2MarketSettings',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
+			],
+		},
+		{
+			contract: 'PerpsV2OffchainOrderBTC',
+			source: 'PerpsV2MarketDelayedOrdersOffchain',
+			deps: [
+				'ProxyPerpsV2MarketBTC',
+				'PerpsV2MarketStateBTC',
+				'PerpsV2MarketSettings',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeRates',
+				'PerpsV2ExchangeRate',
+			],
+		},
+		{
+			contract: 'PerpsV2DelayedOrderETH',
+			source: 'PerpsV2MarketDelayedOrders',
+			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
 				'PerpsV2MarketSettings',
@@ -1354,7 +1469,7 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'PerpsV2OffchainOrderBTC',
+			contract: 'PerpsV2OffchainOrderETH',
 			source: 'PerpsV2MarketDelayedOrdersOffchain',
 			deps: [
 				'ProxyPerpsV2MarketETH',
@@ -1390,7 +1505,8 @@ const setupAllContracts = async ({
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
 				'PerpsV2MarketViewsETH',
-				'PerpsV2NextPriceETH',
+				'PerpsV2DelayedOrderETH',
+				'PerpsV2OffchainOrderETH',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FuturesMarketManager',
@@ -1399,6 +1515,16 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
+		// {
+		// 	contract: 'TestablePerpsV2MarketBTC',
+		// 	source: 'TestablePerpsV2Market',
+		// 	deps: ['PerpsV2MarketBTC'],
+		// },
+		// {
+		// 	contract: 'TestablePerpsV2MarketETH',
+		// 	source: 'TestablePerpsV2Market',
+		// 	deps: ['PerpsV2MarketETH'],
+		// },
 	];
 
 	// check contract list for contracts with the same address resolver name
@@ -1746,7 +1872,7 @@ const setupAllContracts = async ({
 				),
 			];
 
-			// TODO: fetch settings per-market programmatically
+			// fetch settings per-market programmatically
 			const setupPerpsV2Market = async market => {
 				const marketViewsArtifact = artifacts.require('PerpsV2MarketViews');
 				const proxiedMarketViews = await marketViewsArtifact.at(market.address);
@@ -1783,7 +1909,7 @@ const setupAllContracts = async ({
 							60, // 20s offchain max delay window
 
 							offchainMarketKey, // offchain market key
-							toUnit('0.06'), // offchain price divergence 5%
+							toUnit('0.06'), // offchain price divergence 6%
 						],
 						{ from: owner }
 					),
