@@ -1,5 +1,6 @@
 name = "synthetix"
 description = "Infinite liquidity is here."
+version = "<%= package.version %>"
 
 # overrides the deployed contracts used by the deployer
 # not to be confused with the cannon network

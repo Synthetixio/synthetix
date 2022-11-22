@@ -8,7 +8,7 @@ steps:
   # get foundry
   - restore_cache:
       keys:
-        - foundry-bin-${foundry_locked_commit}
+        - foundry-bin-${foundry_locked_commit}-11
   - rust/install: {}
   - run: |
       if [ ! -d ~/.foundry ]; then
@@ -19,7 +19,7 @@ steps:
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
 
   - save_cache:
-      key: foundry-bin-${foundry_locked_commit}
+      key: foundry-bin-${foundry_locked_commit}-11
       paths:
         - ~/.foundry/bin
 
@@ -40,13 +40,10 @@ steps:
       paths:
         - ./optimism
   - run:
-      name: Run isolated layer 1 integration tests
+      name: Build cannonfiles
       command: |
-        npx hardhat test:integration:l1 --deploy
-  - run:
-      name: Run isolated layer 2 integration tests
-      command: |
-        npx hardhat test:integration:l2 --deploy
+        npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
+        npx hardhat --network cannon cannon:build
   - run:
       name: Start docker chains
       background: true
@@ -58,9 +55,17 @@ steps:
   - cmd-wait-for-port:
       port: 9545
   - run:
+      name: Run isolated layer 1 integration tests
+      command: |
+        npx hardhat --network localhost test:integration:l1 --deploy --provider-port 9545
+  - run:
+      name: Run isolated layer 2 integration tests
+      command: |
+        npx hardhat --network localhost test:integration:l2 --deploy --provider-port 9545
+  - run:
       name: Run dual layer 1 and layer 2 integration tests
       command: |
-        npx hardhat test:integration:dual --deploy
+        npx hardhat --network localhost test:integration:dual --deploy
   - store_test_results:
       path: /tmp/junit/
   - store_artifacts:
