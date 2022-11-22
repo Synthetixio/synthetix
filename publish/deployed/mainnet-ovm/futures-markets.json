@@ -42,20 +42,6 @@
 		"paused": false
 	},
 	{
-		"marketKey": "sSOL",
-		"asset": "SOL",
-		"takerFee": "0.0040",
-		"makerFee": "0.0035",
-		"takerFeeNextPrice": "0.003",
-		"makerFeeNextPrice": "0.003",
-		"nextPriceConfirmWindow": "2",
-		"maxLeverage": "25",
-		"maxMarketValueUSD": "3000000",
-		"maxFundingRate": "0.1",
-		"skewScaleUSD": "50000000",
-		"paused": false
-	},
-	{
 		"marketKey": "sAVAX",
 		"asset": "AVAX",
 		"takerFee": "0.0040",
