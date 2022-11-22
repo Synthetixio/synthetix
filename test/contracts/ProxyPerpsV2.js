@@ -153,6 +153,7 @@ contract('ProxyPerpsV2', async accounts => {
 		const routedAddress1 = ethers.Wallet.createRandom().address;
 		const routedAddress2 = ethers.Wallet.createRandom().address;
 		const routedAddress3 = ethers.Wallet.createRandom().address;
+		const emptyTarget = '0x0000000000000000000000000000000000000000';
 		const sampleRoutes = [
 			{
 				selector: '0x00112211',
@@ -175,6 +176,34 @@ contract('ProxyPerpsV2', async accounts => {
 				isView: true,
 			},
 		];
+
+		it('can get a valid target selector', async () => {
+			// Add 1st selector
+			route = sampleRoutes[0];
+
+			await (
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+			).wait();
+
+			const targetRoute = await ProxyPerpsV2.getRoute(route.selector);
+			assert.equal(targetRoute.selector, route.selector);
+			assert.equal(targetRoute.implementation, route.implementation);
+			assert.equal(targetRoute.isView, route.isView);
+		});
+
+		it('gets the nil target selector for an unkown target', async () => {
+			// Add 1st selector
+			route = sampleRoutes[0];
+
+			await (
+				await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+			).wait();
+
+			const targetRoute = await ProxyPerpsV2.getRoute(sampleRoutes[1].selector);
+			assert.equal(targetRoute.selector, '0x00000000');
+			assert.equal(targetRoute.implementation, emptyTarget);
+			assert.equal(targetRoute.isView, false);
+		});
 
 		it('can manage routes', async () => {
 			// Add 1st selector

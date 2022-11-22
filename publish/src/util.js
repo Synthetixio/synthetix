@@ -21,6 +21,7 @@ const {
 		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
+		OFFCHAIN_FEEDS_FILENAME,
 		FUTURES_MARKETS_FILENAME,
 		PERPS_V2_MARKETS_FILENAME,
 	},
@@ -33,6 +34,7 @@ const {
 	getStakingRewards,
 	getVersions,
 	getFeeds,
+	getOffchainFeeds,
 	getShortingRewards,
 } = wrap({
 	path,
@@ -109,6 +111,9 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
 	const feeds = getFeeds({ network, deploymentPath });
 
+	const offchainFeedsFile = path.join(deploymentPath, OFFCHAIN_FEEDS_FILENAME);
+	const offchainFeeds = getOffchainFeeds({ network, deploymentPath });
+
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
 	);
@@ -149,6 +154,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		versionsFile,
 		feeds,
 		feedsFile,
+		offchainFeeds,
+		offchainFeedsFile,
 		shortingRewards,
 		shortingRewardsFile,
 	};

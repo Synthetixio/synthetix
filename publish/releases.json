@@ -745,8 +745,13 @@
 			"released": "both"
 		},
 		{
+			"sip": 279,
+			"layer": "both",
+			"sources": []
+		},
+		{
 			"sip": 280,
-			"layer": "ovm",
+			"layer": "both",
 			"sources": {
 				"base": ["FuturesMarketManager"],
 				"ovm": [
@@ -758,6 +763,16 @@
 					"PerpsV2Market.+"
 				]
 			}
+		},
+		{
+			"sip": 281,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 285,
+			"layer": "both",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1420,6 +1435,25 @@
 			},
 			"sips": [267],
 			"released": true
+		},
+		{
+			"name": "Xxxxx",
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285],
+			"released": false
+		},
+		{
+			"name": "Xxxxx (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285],
+			"released": false
 		}
 	]
 }

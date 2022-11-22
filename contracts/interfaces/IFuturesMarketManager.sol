@@ -11,6 +11,8 @@ interface IFuturesMarketManager {
 
     function numMarkets() external view returns (uint);
 
+    function numMarkets(bool proxiedMarkets) external view returns (uint);
+
     function allMarkets() external view returns (address[] memory);
 
     function allMarkets(bool proxiedMarkets) external view returns (address[] memory);

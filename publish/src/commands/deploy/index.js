@@ -26,6 +26,7 @@ const configureLegacySettings = require('./configure-legacy-settings');
 const configureRewardEscrow = require('./configure-reward-escrow');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
+const configureOffchainPriceFeeds = require('./configure-offchain-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
 const configurePerpsV2 = require('./configure-perpsv2');
@@ -94,6 +95,7 @@ const deploy = async ({
 		ownerActions,
 		ownerActionsFile,
 		feeds,
+		offchainFeeds,
 	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
@@ -405,6 +407,13 @@ const deploy = async ({
 		deployer,
 		runStep,
 		feeds,
+		useOvm,
+	});
+
+	await configureOffchainPriceFeeds({
+		deployer,
+		runStep,
+		offchainFeeds,
 		useOvm,
 	});
 
