@@ -36,6 +36,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATORREWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
 
     // ========== CONSTRUCTOR ==========
 
@@ -179,6 +180,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function _canTransfer(address account, uint value) internal view returns (bool) {
+        // Always allow legacy market to transfer
+        // note if legacy market is not yet available this will just return 0 address and it  will never be true
+        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+        if ((messageSender != address(0) && messageSender == legacyMarketAddress) || account == legacyMarketAddress) {
+            return true;
+        }
+
         if (issuer().debtBalanceOf(account, sUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
@@ -438,6 +446,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
+    }
+
+    /**
+     * @notice allows for migration from v2x to v3 when an account has pending escrow entries
+     */
+    function revokeAllEscrow(address account) external systemActive {
+        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+        require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
+        rewardEscrowV2().revokeFrom(account, msg.sender, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
     }
 
     function exchangeWithTrackingForInitiator(
