@@ -89,6 +89,20 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         return price;
     }
 
+    /*
+     * @dev Checks if the fillPrice does not exceed slippage tolerance.
+     */
+    function _assertPriceSlippage(
+        uint price,
+        uint fillPrice,
+        uint slippage,
+        uint orderFee
+    ) internal view returns (uint) {
+        uint maxSlippagePrice = _maxSlippagePrice(price, slippage, orderFee);
+        _revertIfError(fillPrice > maxSlippagePrice, Status.SlippageToleranceExceeded);
+        return maxSlippagePrice;
+    }
+
     function _recomputeFunding() internal returns (uint lastIndex) {
         uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
@@ -156,6 +170,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     function _trade(address sender, TradeParams memory params) internal {
+        // track the original price as its needed to calculate if slippage is acceptable.
+        uint price = params.price;
+        // update the price of the intended trade to account to the affect to skew.
+        params.price = _fillPrice(params.sizeDelta, price);
+
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({
@@ -169,6 +188,8 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         // Compute the new position after performing the trade
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
+
+        _assertPriceSlippage(price, params.price, params.slippage, fee);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));

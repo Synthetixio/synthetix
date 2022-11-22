@@ -36,6 +36,7 @@ contract('PerpsV2MarketData', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -83,6 +84,8 @@ contract('PerpsV2MarketData', accounts => {
 
 		// Add a couple of additional markets.
 		for (const symbol of ['sETH', 'sLINK']) {
+			let filteredFunctions;
+
 			const assetKey = toBytes32(symbol);
 			const marketKey = toBytes32(symbol + keySuffix);
 			const offchainMarketKey = toBytes32(offchainPrefix + symbol + keySuffix);
@@ -127,15 +130,20 @@ contract('PerpsV2MarketData', accounts => {
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
-			const filteredFunctions = [
-				...getFunctionSignatures(marketViews, excludedFunctions),
-				...getFunctionSignatures(marketDelayedOrder, excludedFunctions),
-			];
-
 			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
 				from: owner,
 			});
-			await market.setTarget(marketImpl.address, { from: owner });
+
+			filteredFunctions = getFunctionSignatures(marketImpl, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketImpl.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
+			filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
 			await Promise.all(
 				filteredFunctions.map(e =>
 					market.addRoute(e.signature, marketViews.address, e.isView, {
@@ -143,12 +151,22 @@ contract('PerpsV2MarketData', accounts => {
 					})
 				)
 			);
+
+			filteredFunctions = getFunctionSignatures(marketDelayedOrder, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketDelayedOrder.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
 			await futuresMarketManager.addProxiedMarkets([market.address], {
 				from: owner,
 			});
 
 			await addressResolver.rebuildCaches(
-				[market.address, marketViews.address, marketDelayedOrder.address],
+				[marketImpl.address, marketViews.address, marketDelayedOrder.address],
 				{
 					from: owner,
 				}
@@ -204,19 +222,19 @@ contract('PerpsV2MarketData', accounts => {
 
 		// The traders take positions on market
 		await futuresMarket.transferMargin(toUnit('1000'), { from: trader1 });
-		await futuresMarket.modifyPosition(toUnit('5'), { from: trader1 });
+		await futuresMarket.modifyPosition(toUnit('5'), slippage, { from: trader1 });
 
 		await futuresMarket.transferMargin(toUnit('750'), { from: trader2 });
-		await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
+		await futuresMarket.modifyPosition(toUnit('-10'), slippage, { from: trader2 });
 
 		await setPrice(baseAsset, toUnit('100'));
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
-		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
+		await futuresMarket.modifyPosition(toUnit('1.25'), slippage, { from: trader3 });
 
 		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), slippage, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 

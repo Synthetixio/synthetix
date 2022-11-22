@@ -49,20 +49,25 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param slippage is a percentage tolerance on fillPrice to be check upon execution
      */
-    function submitOffchainDelayedOrder(int sizeDelta) external onlyProxy {
+    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
         // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
-        _submitDelayedOrder(_marketKey(), sizeDelta, 0, bytes32(0), true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, 0, bytes32(0), true);
     }
 
-    function submitOffchainDelayedOrderWithTracking(int sizeDelta, bytes32 trackingCode) external onlyProxy {
+    function submitOffchainDelayedOrderWithTracking(
+        int sizeDelta,
+        uint slippage,
+        bytes32 trackingCode
+    ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, 0, trackingCode, true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, 0, trackingCode, true);
     }
 
     /**
@@ -118,7 +123,6 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         uint minAge = _offchainDelayedOrderMinAge(_marketKey());
 
         (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
-        uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
 
         require((executionTimestamp > order.intentionTime), "price not updated");
         require((executionTimestamp - order.intentionTime > minAge), "too early");
@@ -127,7 +131,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         _executeDelayedOrder(
             account,
             order,
-            fillPrice,
+            currentPrice,
             0,
             _takerFeeOffchainDelayedOrder(_marketKey()),
             _makerFeeOffchainDelayedOrder(_marketKey())

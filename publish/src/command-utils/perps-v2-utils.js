@@ -13,7 +13,12 @@ const excludedFunctions = [
 	'rebuildCache',
 	'isResolvedCache',
 	// ProxyPerpsV2
+	'addRoute',
+	'removeRoute',
 	'getRoutesPage',
+	'getRoutesLength',
+	'getRoutesPage',
+	'getAllTargets',
 	// PerpsV2MarketBase
 	'marketState',
 ];

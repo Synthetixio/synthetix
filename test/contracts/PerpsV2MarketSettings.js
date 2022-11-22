@@ -49,6 +49,15 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainMarketKey = toBytes32('ocsBTC');
 	const offchainPriceDivergence = toUnit('0.05');
 
+	const marketAbi = {
+		abi: [
+			'function recomputeFunding() view returns (uint)',
+			'function marketSize() view returns (uint128)',
+			'function marketKey() view returns (bytes32)',
+			'function baseAsset() view returns (bytes32)',
+		],
+	};
+
 	before(async () => {
 		({
 			PerpsV2MarketSettings: futuresMarketSettings,
@@ -106,9 +115,8 @@ contract('PerpsV2MarketSettings', accounts => {
 			args: [owner],
 		});
 
-		const filteredFunctions = getFunctionSignatures(mockFuturesMarketBTCImpl, excludedFunctions);
+		const filteredFunctions = getFunctionSignatures(marketAbi, excludedFunctions);
 
-		await mockFuturesMarketBTC.setTarget(mockFuturesMarketBTCImpl.address, { from: owner });
 		await Promise.all(
 			filteredFunctions.map(e =>
 				mockFuturesMarketBTC.addRoute(e.signature, mockFuturesMarketBTCImpl.address, e.isView, {
@@ -483,9 +491,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				args: [owner],
 			});
 
-			const filteredFunctions = getFunctionSignatures(secondBTCMarketImpl, excludedFunctions);
+			const filteredFunctions = getFunctionSignatures(marketAbi, excludedFunctions);
 
-			await secondBTCMarket.setTarget(secondBTCMarketImpl.address, { from: owner });
 			await Promise.all(
 				filteredFunctions.map(e =>
 					secondBTCMarket.addRoute(e.signature, secondBTCMarketImpl.address, e.isView, {

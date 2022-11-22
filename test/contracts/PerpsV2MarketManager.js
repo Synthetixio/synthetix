@@ -6,6 +6,7 @@ const {
 	setupAllContracts,
 	setupContract,
 	excludedFunctions,
+	excludedTestableFunctions,
 	getFunctionSignatures,
 } = require('./setup');
 const { toUnit } = require('../utils')();
@@ -34,7 +35,9 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
+	const otherAddress = accounts[3];
 	const initialMint = toUnit('100000');
+	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -54,7 +57,6 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 		const filteredFunctions = getFunctionSignatures(market, excludedFunctions);
 
-		await proxy.setTarget(market.address, { from: owner });
 		await Promise.all(
 			filteredFunctions.map(e =>
 				proxy.addRoute(e.signature, market.address, e.isView, {
@@ -409,6 +411,80 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				skipPassCheck: false,
 				reason: revertReason,
 			});
+
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketManager.updateMarketsImplementations,
+				args: [[marketProxies[0].address]],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: revertReason,
+			});
+		});
+
+		describe('Update market implememtations', () => {
+			it('reverts attempting to update the nil market', async () => {
+				await assert.revert(
+					futuresMarketManager.updateMarketsImplementations([ZERO_ADDRESS], { from: owner }),
+					'Invalid market'
+				);
+			});
+
+			it('reverts attempting to update an unknown market', async () => {
+				await assert.revert(
+					futuresMarketManager.updateMarketsImplementations([otherAddress], { from: owner }),
+					'Unknown market'
+				);
+			});
+
+			it('can update a market', async () => {
+				const updatedMarketImplementation = await setupContract({
+					accounts,
+					contract: 'MockPerpsV2Market',
+					args: [
+						futuresMarketManager.address,
+						toBytes32('sLINK'),
+						toBytes32('sLINK'),
+						toUnit('1000'),
+						false,
+					],
+					skipPostDeploy: true,
+				});
+
+				const proxyToUpdate = marketProxies[0];
+
+				// Remove old routes
+				const originalFilteredFunctions = getFunctionSignatures(markets[0], excludedFunctions);
+				await Promise.all(
+					originalFilteredFunctions.map(e =>
+						proxyToUpdate.removeRoute(e.signature, {
+							from: owner,
+						})
+					)
+				);
+
+				// Add new routes
+				const filteredFunctions = getFunctionSignatures(
+					updatedMarketImplementation,
+					excludedFunctions
+				);
+
+				await Promise.all(
+					filteredFunctions.map(e =>
+						proxyToUpdate.addRoute(e.signature, updatedMarketImplementation.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
+
+				await futuresMarketManager.updateMarketsImplementations([proxyToUpdate.address], {
+					from: owner,
+				});
+
+				// check new implementation can issue
+				await updatedMarketImplementation.issueSUSD(owner, toUnit('10'));
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('10'));
+			});
 		});
 	});
 
@@ -583,6 +659,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		beforeEach(async () => {
 			// Add v1 markets
 			for (const symbol of assets) {
+				let filteredFunctions;
+
 				const assetKey = toBytes32(symbol);
 				const marketKey = toBytes32('s' + symbol);
 				const offchainMarketKey = toBytes32('oc' + symbol);
@@ -620,10 +698,19 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					args: [marketState.address, owner, addressResolver.address],
 				});
 
-				const filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
+				filteredFunctions = getFunctionSignatures(marketImpl, [
+					...excludedTestableFunctions,
+					...excludedFunctions.filter(e => e !== 'marketState'),
+				]);
+				await Promise.all(
+					filteredFunctions.map(e =>
+						market.addRoute(e.signature, marketImpl.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
 
-				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
-				await market.setTarget(marketImpl.address, { from: owner });
+				filteredFunctions = getFunctionSignatures(marketViews, excludedFunctions);
 				await Promise.all(
 					filteredFunctions.map(e =>
 						market.addRoute(e.signature, marketViews.address, e.isView, {
@@ -632,7 +719,15 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					)
 				);
 
-				await market.setTarget(marketImpl.address, { from: owner });
+				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
+				await Promise.all(
+					filteredFunctions.map(e =>
+						market.addRoute(e.signature, marketViews.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
+
 				await futuresMarketManager.addProxiedMarkets([market.address], {
 					from: owner,
 				});
@@ -643,7 +738,9 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				markets.push(market);
 				marketKeys.push(marketKey);
 
-				await addressResolver.rebuildCaches([market.address, marketViews.address], { from: owner });
+				await addressResolver.rebuildCaches([marketImpl.address, marketViews.address], {
+					from: owner,
+				});
 
 				await setPrice(assetKey, toUnit(1000));
 
@@ -688,10 +785,10 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 			// The traders take positions on market
 			await markets[0].transferMargin(toUnit('1000'), { from: trader });
-			await markets[0].modifyPosition(toUnit('5'), { from: trader });
+			await markets[0].modifyPosition(toUnit('5'), slippage, { from: trader });
 
 			await markets[1].transferMargin(toUnit('3000'), { from: trader });
-			await markets[1].modifyPosition(toUnit('4'), { from: trader });
+			await markets[1].modifyPosition(toUnit('4'), slippage, { from: trader });
 			await setPrice(await markets[1].baseAsset(), toUnit('999'));
 		});
 
