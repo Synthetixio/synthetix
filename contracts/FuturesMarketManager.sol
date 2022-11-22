@@ -118,14 +118,14 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     }
 
     /*
-     * The list of all markets.
+     * The list of all proxied AND legacy markets.
      */
     function allMarkets() public view returns (address[] memory) {
         return _allMarkets.getPage(0, _allMarkets.elements.length);
     }
 
     /*
-     * The list of all markets.
+     * The list of all proxied OR legacy markets.
      */
     function allMarkets(bool proxiedMarkets) public view returns (address[] memory) {
         if (proxiedMarkets) {
@@ -264,7 +264,6 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * Add a set of new markets. Reverts if some market key already has a market.
      */
     function _addMarket(address market, bool isProxied) internal onlyOwner {
-        // address market = marketsToAdd[i];
         require(!_allMarkets.contains(market), "Market already exists");
 
         bytes32 key = IMarketViews(market).marketKey();
@@ -276,7 +275,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
         if (isProxied) {
             _proxiedMarkets.add(market);
-            // if PerpsV2 Market Add implementations
+            // if PerpsV2 market => add implementations
             _addImplementations(market);
         } else {
             _legacyMarkets.add(market);
@@ -297,7 +296,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
             require(marketForKey[key] != address(0), "Unknown market");
 
-            // if PerpsV2 Market Remove implementations
+            // if PerpsV2 market => remove implementations
             if (_proxiedMarkets.contains(market)) {
                 _removeImplementations(market);
                 _proxiedMarkets.remove(market);
@@ -329,7 +328,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         uint numOfMarkets = marketsToUpdate.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToUpdate[i];
-            require(market != address(0), "Unknown market");
+            require(market != address(0), "Invalid market");
+            require(_allMarkets.contains(market), "Unknown market");
 
             // Remove old implementations
             _removeImplementations(market);

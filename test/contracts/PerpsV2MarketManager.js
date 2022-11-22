@@ -35,6 +35,7 @@ contract('FuturesMarketManager', accounts => {
 		addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
+	const otherAddress = accounts[3];
 	const initialMint = toUnit('100000');
 	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
@@ -399,6 +400,80 @@ contract('FuturesMarketManager', accounts => {
 				address: owner,
 				skipPassCheck: false,
 				reason: revertReason,
+			});
+
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketManager.updateMarketsImplementations,
+				args: [[marketProxies[0].address]],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: revertReason,
+			});
+		});
+
+		describe('Update market implememtations', () => {
+			it('reverts attempting to update the nil market', async () => {
+				await assert.revert(
+					futuresMarketManager.updateMarketsImplementations([ZERO_ADDRESS], { from: owner }),
+					'Invalid market'
+				);
+			});
+
+			it('reverts attempting to update an unknown market', async () => {
+				await assert.revert(
+					futuresMarketManager.updateMarketsImplementations([otherAddress], { from: owner }),
+					'Unknown market'
+				);
+			});
+
+			it('can update a market', async () => {
+				const updatedMarketImplementation = await setupContract({
+					accounts,
+					contract: 'MockPerpsV2Market',
+					args: [
+						futuresMarketManager.address,
+						toBytes32('sLINK'),
+						toBytes32('sLINK'),
+						toUnit('1000'),
+						false,
+					],
+					skipPostDeploy: true,
+				});
+
+				const proxyToUpdate = marketProxies[0];
+
+				// Remove old routes
+				const originalFilteredFunctions = getFunctionSignatures(markets[0], excludedFunctions);
+				await Promise.all(
+					originalFilteredFunctions.map(e =>
+						proxyToUpdate.removeRoute(e.signature, {
+							from: owner,
+						})
+					)
+				);
+
+				// Add new routes
+				const filteredFunctions = getFunctionSignatures(
+					updatedMarketImplementation,
+					excludedFunctions
+				);
+
+				await Promise.all(
+					filteredFunctions.map(e =>
+						proxyToUpdate.addRoute(e.signature, updatedMarketImplementation.address, e.isView, {
+							from: owner,
+						})
+					)
+				);
+
+				await futuresMarketManager.updateMarketsImplementations([proxyToUpdate.address], {
+					from: owner,
+				});
+
+				// check new implementation can issue
+				await updatedMarketImplementation.issueSUSD(owner, toUnit('10'));
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('10'));
 			});
 		});
 	});
