@@ -88,7 +88,7 @@ function itCanTrade({ ctx }) {
 
 		describe('position management', () => {
 			let market, assetKey, marketKey, price, balance, posSize1x, debt, slippage;
-			const margin = toUnit('1000');
+			const margin = toUnit('100');
 
 			before('market and conditions', async () => {
 				market = PerpsV2MarketBTC.connect(someUser);
@@ -146,23 +146,46 @@ function itCanTrade({ ctx }) {
 				});
 
 				it('user can modifyPosition to short', async () => {
-					await market.modifyPosition(posSize1x.mul(toBN(-5)), slippage);
+					const size = multiplyDecimal(posSize1x, toUnit('-5'));
+
+					await market.modifyPosition(size, slippage);
 					const position = await market.positions(someUser.address);
-					assert.bnEqual(position.size, posSize1x.mul(toBN(-5))); // right position size
+					assert.bnEqual(position.size, size); // right position size
 
 					// close
 					await market.closePosition(slippage);
 				});
 
 				describe('existing position', () => {
-					before('with max leverage', async () => {
+					before('with slightly under max leverage', async () => {
 						// reset to known margin
 						await market.withdrawAllMargin();
 						await market.transferMargin(margin);
 
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
-						await market.modifyPosition(multiplyDecimal(posSize1x, maxLeverage), slippage);
+
+						// can't use the _full_ max leverage because of slippage. it must be a little below to account
+						// for the premium if this is increasing the skew (which this test case it is).
+						//
+						// maxLeverage = 10x
+						// price       = 1
+						// margin      = 100
+						//
+						// size        = margin * price
+						//             = 100 * 1       (1x) = 100
+						//             = 100 * 1 * 10 (10x) = 1000
+						//
+						// however, opening a position with this will incur a premium of 0.01 (fillPrice = 1.01).
+						//
+						// size = margin * price
+						//      = 100 * 1.01 * 10 (10x)
+						//      = 1010
+						//
+						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
+						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.5')));
+
+						await market.modifyPosition(size, slippage);
 					});
 
 					before('if new aggregator is set and price drops 20%', async () => {
