@@ -182,8 +182,8 @@ function itCanTrade({ ctx }) {
 						//      = 100 * 1.01 * 10 (10x)
 						//      = 1010
 						//
-						// causing a MaxLeverageExceeded error. we lower the multiple by 0.1 to stay within maxLev
-						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.1')));
+						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
+						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.5')));
 
 						await market.modifyPosition(size, slippage);
 					});
