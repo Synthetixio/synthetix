@@ -325,6 +325,16 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return uint(_max(0, remaining));
     }
 
+    /*
+     * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
+     */
+    function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
+        int premium = int(_liquidationPremium(position.size, price));
+        int remaining = _marginPlusProfitFunding(position, price).sub(premium);
+
+        return uint(_max(0, remaining));
+    }
+
     function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
@@ -381,13 +391,38 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return liquidationBuffer.add(_liquidationFee(positionSize, price));
     }
 
+    /**
+     * @dev This is the additional premium we charge upon liquidation.
+     *
+     * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
+     * when we compute as if taking the position from 0 to x. In practice, the premium component of the
+     * liquidation will just be (0.5 * size / skewScale) * price.
+     *
+     * For instance, if size of the liquidation position is 100, oracle price is 1200 and skewScale is 1M then,
+     *
+     *  premium = -100 / 1000000 * 1200 * 0.5
+     *          = 0.06
+     *
+     * @param positionSize Size of the position we want to liquidate
+     * @param currentPrice The current oracle price (not fillPrice)
+     * @return The premium to be paid in sUSD
+     */
+    function _liquidationPremium(int positionSize, uint currentPrice) internal view returns (uint) {
+        if (positionSize == 0) {
+            return 0;
+        }
+
+        // note: this is the same as fillPrice() where the skew is 0.
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(currentPrice) / 2;
+    }
+
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
         // No liquidating empty positions.
         if (position.size == 0) {
             return false;
         }
 
-        return _remainingMargin(position, price) <= _liquidationMargin(int(position.size), price);
+        return _remainingLiquidatableMargin(position, price) <= _liquidationMargin(int(position.size), price);
     }
 
     function _currentLeverage(

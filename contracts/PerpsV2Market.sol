@@ -248,7 +248,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         Position memory position = marketState.positions(account);
 
         // get remaining margin for sending any leftover buffer to fee pool
-        uint remMargin = _remainingMargin(position, price);
+        uint remMargin = _remainingLiquidatableMargin(position, price);
 
         // Record updates to market size and debt.
         int positionSize = position.size;

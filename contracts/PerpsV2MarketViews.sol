@@ -294,19 +294,23 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         // minimum margin beyond which position can be liquidated
         uint liqMargin = _liquidationMargin(positionSize, currentPrice);
 
+        // premium applied if this position were to be liquidated
+        uint liqPremium = _liquidationPremium(positionSize, currentPrice);
+
         // A position can be liquidated whenever:
-        //     remainingMargin <= liquidationMargin
-        // Hence, expanding the definition of remainingMargin the exact price
-        // at which a position can first be liquidated is:
-        //     margin + profitLoss + funding =  liquidationMargin
-        //     substitute with: profitLoss = (price - last-price) * positionSize
-        //     and also with: funding = netFundingPerUnit * positionSize
-        //     we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize =  liquidationMargin
-        //     moving around: price  = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
+        //  remainingMargin <= liquidationMargin
+        //
+        // Hence, expanding the definition of remainingMargin the exact price at which a position can be liquidated is:
+        //
+        //  margin + profitLoss + funding = liquidationMargin
+        //  substitute with: profitLoss = (price - last-price) * positionSize
+        //  and also with: funding = netFundingPerUnit * positionSize
+        //  we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize = liquidationMargin
+        //  moving around: price = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
         int result =
-            int(position.lastPrice).add(int(liqMargin).sub(int(position.margin)).divideDecimal(positionSize)).sub(
-                fundingPerUnit
-            );
+            int(position.lastPrice)
+                .add(int(liqMargin).sub(int(position.margin).sub(int(liqPremium))).divideDecimal(positionSize))
+                .sub(fundingPerUnit);
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
         return uint(_max(0, result));
