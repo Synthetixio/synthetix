@@ -1629,7 +1629,7 @@ contract('PerpsV2Market', accounts => {
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
 			assert.bnEqual(postDetails.size, size);
 			assert.bnEqual(postDetails.price, fillPrice);
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.05550275'));
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.0555527525'));
 			assert.bnEqual(postDetails.fee, fee);
 			assert.equal(postDetails.status, Status.Ok);
 
@@ -4072,7 +4072,7 @@ contract('PerpsV2Market', accounts => {
 				//
 				// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
 				// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
-				// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees)) / pos.size - fundingPerUnit
+				// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees - premium)) / pos.size - fundingPerUnit
 
 				const expectedNetFundingPerUnit = await futuresMarket.netFundingPerUnit(account);
 				const expectedLiquidationFee = BN.max(
@@ -4084,8 +4084,9 @@ contract('PerpsV2Market', accounts => {
 					liqBufferRatio
 				).add(expectedLiquidationFee);
 
+				const premium = await futuresMarket.liquidationPremium(account);
 				return fillPrice
-					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee)), size))
+					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
 					.sub(expectedNetFundingPerUnit);
 			};
 
@@ -4409,7 +4410,7 @@ contract('PerpsV2Market', accounts => {
 				// When price is changed artificially this results in a slightly different
 				// undercorded funding, and slightly different liquidation margin which causes the actual
 				// liquidation price to be slightly different.
-				// A precise calculation would be a) incorrect and b) cubmbersome.
+				// A precise calculation would be a) incorrect and b) cumbersome.
 				// It would be incorrect because it would rely on other assumptions:
 				// 	1) of unrecorded funding not being recorded until liquidation due to
 				//	another tx in the market
@@ -4425,7 +4426,7 @@ contract('PerpsV2Market', accounts => {
 				// not used in transactions and when current price is far from the actual liquidation price.
 				// In actual liquidation scenario and transaction the current price is also the
 				// price which liquidationPrice() uses. So it's exactly correct.
-				// So a keeper querrying canLiquidate() or simulating the liquidation
+				// So a keeper querying canLiquidate() or simulating the liquidation
 				// tx would have the correct liquidation price, and canLiquidate() result.
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				await futuresMarket.liquidatePosition(trader);
@@ -4699,6 +4700,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
+				const premium = await futuresMarket.liquidationPremium(trader);
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4714,7 +4716,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee);
+				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 
@@ -4802,6 +4804,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader3));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
+				const premium = await futuresMarket.liquidationPremium(trader3);
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4817,7 +4820,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee);
+				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 
