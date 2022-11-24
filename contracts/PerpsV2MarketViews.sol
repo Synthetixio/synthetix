@@ -177,8 +177,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      */
     function liquidationPrice(address account) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice();
-        uint liqPrice = _approxLiquidationPrice(marketState.positions(account), aPrice);
-        return (liqPrice, isInvalid);
+        return (_approxLiquidationPrice(marketState.positions(account), aPrice), isInvalid);
     }
 
     /**
@@ -281,22 +280,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
 
     /// helper methods calculates the approximate liquidation price
     function _approxLiquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
-        int positionSize = int(position.size);
-
-        // short circuit
-        if (positionSize == 0) {
+        if (position.size == 0) {
             return 0;
         }
 
-        // price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
-        int fundingPerUnit = _netFundingPerUnit(position.lastFundingIndex);
-
-        // minimum margin beyond which position can be liquidated
-        uint liqMargin = _liquidationMargin(positionSize, currentPrice);
-
-        // premium applied if this position were to be liquidated
-        uint liqPremium = _liquidationPremium(positionSize, currentPrice);
-
+        // fundingPerUnit
+        //  price = lastPrice + (liquidationMargin - margin) / positionSize - netAccrued
+        //
         // A position can be liquidated whenever:
         //  remainingMargin <= liquidationMargin
         //
@@ -306,11 +296,15 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         //  substitute with: profitLoss = (price - last-price) * positionSize
         //  and also with: funding = netFundingPerUnit * positionSize
         //  we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize = liquidationMargin
-        //  moving around: price = lastPrice + (liquidationMargin - margin) / positionSize - netFundingPerUnit
+        //  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
         int result =
             int(position.lastPrice)
-                .add(int(liqMargin).sub(int(position.margin).sub(int(liqPremium))).divideDecimal(positionSize))
-                .sub(fundingPerUnit);
+                .add(
+                int(_liquidationMargin(position.size, currentPrice))
+                    .sub(int(position.margin).sub(int(_liquidationPremium(position.size, currentPrice))))
+                    .divideDecimal(position.size)
+            )
+                .sub(_netFundingPerUnit(position.lastFundingIndex));
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
         return uint(_max(0, result));

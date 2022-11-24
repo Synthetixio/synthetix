@@ -113,7 +113,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		desiredTimeDelta = 60;
 		minDelayTimeDelta = 60;
 		await setPrice(baseAsset, price);
-		fillPrice = (await futuresMarket.fillPrice(size))[0];
+		fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 	});
 
 	describe('submitDelayedOrder()', () => {
@@ -333,7 +333,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			// go to next round
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 			const expectedFee = multiplyDecimal(size, multiplyDecimal(fillPrice, takerFeeDelayedOrder));
 
 			// execute the order
@@ -698,7 +698,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				// size delta as a % is lower post execution.
 				//
 				// e.g. 20 / 100 > 20 / 120
-				const fillPrice = (await futuresMarket.fillPrice(size))[0];
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 				// execute the order
 				const tx = await futuresMarket.executeDelayedOrder(trader, { from: from });
@@ -806,7 +806,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					// check we can execute.
 					//
 					// note the predicate uses `price` and not `targetPrice` because target is never reached
-					const expectedPrice = (await futuresMarket.fillPrice(size))[0];
+					const expectedPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 					await checkExecution(trader, expectedPrice, takerFeeDelayedOrder, spotTradeDetails);
 				});
 
@@ -816,7 +816,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
+							targetFillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 							spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 						});
 
@@ -843,7 +843,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							});
 							// go to next round
 							await setPrice(baseAsset, targetPrice);
-							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
+							targetFillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 							spotTradeDetails = await futuresMarket.postTradeDetails(size, toUnit('0'), trader);
 						});
 
@@ -898,7 +898,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						beforeEach(async () => {
 							// go to next round
 							await setPrice(baseAsset, price);
-							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
+							targetFillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 						});
 
 						it('from account owner', async () => {
@@ -933,7 +933,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 							// go to next round
 							await setPrice(baseAsset, price);
-							targetFillPrice = (await futuresMarket.fillPrice(size))[0];
+							targetFillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 						});
 
 						it('from account owner', async () => {

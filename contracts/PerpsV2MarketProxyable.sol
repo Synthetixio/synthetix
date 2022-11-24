@@ -35,8 +35,8 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         /**
         This method only returns the correction term for the debt calculation of the position, and not it's 
-        debt. This is needed for keeping track of the _marketDebt() in an efficient manner to allow O(1) marketDebt
-        calculation in _marketDebt().
+        debt. This is needed for keeping track of the marketDebt() in an efficient manner to allow O(1) marketDebt
+        calculation in marketDebt().
 
         Explanation of the full market debt calculation from the SIP https://sips.synthetix.io/sips/sip-80/:
 
@@ -56,7 +56,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         The last term: sum( initial-margin - q * ( last-price + initial-funding ) ) being the position debt correction
             that is tracked with each position change using this method. 
         
-        The first term and the full debt calculation using current skew, price, and funding is calculated globally in _marketDebt().
+        The first term and the full debt calculation using current skew, price, and funding is calculated globally in marketDebt().
          */
         return
             int(position.margin).sub(

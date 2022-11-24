@@ -699,7 +699,7 @@ contract('PerpsV2Market', accounts => {
 					await futuresMarket.transferMargin(margin, { from: trader });
 					const notional = multiplyDecimal(margin, leverage.abs());
 					const size = divideDecimal(notional, price);
-					const fillPrice = (await futuresMarket.fillPrice(size))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 					// notional = margin * leverage
 					// size     = notional / price
@@ -720,7 +720,7 @@ contract('PerpsV2Market', accounts => {
 					await setPrice(baseAsset, price);
 
 					const size = multiplyDecimal(leverage, margin).div(price);
-					const fillPrice = (await futuresMarket.fillPrice(size))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 					// skew pushed to one direction. there's size that already exists.
 					await transferMarginAndModifyPosition({
@@ -757,7 +757,7 @@ contract('PerpsV2Market', accounts => {
 					// next trade to have half the size but in the opposite direction (no .neg() on leverage).
 					const margin2 = margin.div(toBN(2));
 					const size2 = divideDecimal(multiplyDecimal(margin2, leverage), price);
-					const fillPrice = (await futuresMarket.fillPrice(size2))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 
 					// expectedFee = size * price * tradingFee (maker/taker) + baseFee
 					//
@@ -850,7 +850,7 @@ contract('PerpsV2Market', accounts => {
 
 					const margin2 = divideDecimal(margin, toUnit('2'));
 					const size2 = multiplyDecimal(margin2, leverage).div(price);
-					const fillPrice = (await futuresMarket.fillPrice(size2))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 
 					// skew is growing. charge the takerFee.
 					const expectedFee = multiplyDecimal(multiplyDecimal(size2, fillPrice), takerFee).abs();
@@ -896,7 +896,7 @@ contract('PerpsV2Market', accounts => {
 					//
 					// this size pushes the skew back to 0. the size trade is only charged the makerFee.
 					const size3 = multiplyDecimal(leverage.neg(), margin).div(toUnit('200'));
-					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size3, 0))[0];
 					const expectedFee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
 
 					assert.bnEqual((await futuresMarket.orderFee(size3))[0], expectedFee);
@@ -997,7 +997,7 @@ contract('PerpsV2Market', accounts => {
 					});
 
 					const size3 = divideDecimal(size2.neg(), toUnit('2'));
-					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size3, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
 					assert.bnEqual((await futuresMarket.orderFee(size3)).fee, fee);
 				});
@@ -1016,7 +1016,7 @@ contract('PerpsV2Market', accounts => {
 					});
 
 					const size2 = size1.neg();
-					const fillPrice = (await futuresMarket.fillPrice(size2))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size2, fillPrice), makerFee).abs();
 					assert.bnEqual((await futuresMarket.orderFee(size2)).fee, fee);
 				});
@@ -1046,7 +1046,7 @@ contract('PerpsV2Market', accounts => {
 					});
 
 					const size3 = size2.neg();
-					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size3, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
 					assert.bnEqual((await futuresMarket.orderFee(size3)).fee, fee);
 				});
@@ -1075,7 +1075,7 @@ contract('PerpsV2Market', accounts => {
 					});
 
 					const size3 = multiplyDecimal(toUnit('-17.5'), sideVar);
-					const fillPrice = (await futuresMarket.fillPrice(size3))[0];
+					const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size3, 0))[0];
 
 					// makerFee because we're in the opposite direction (hence reducing skew).
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
@@ -1380,7 +1380,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('50'); // 10x leverage
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0]; // $205 fillPrice
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0]; // $205 fillPrice
 			const fee = (await futuresMarket.orderFee(size))[0];
 			const tx = await futuresMarket.modifyPosition(size, priceImpactDelta, { from: trader });
 
@@ -1476,7 +1476,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('10');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 			// suspend
 			await systemStatus.suspendSystem('3', { from: owner });
@@ -1501,7 +1501,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('10');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 			// suspend
 			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
@@ -1617,7 +1617,7 @@ contract('PerpsV2Market', accounts => {
 			const size = toUnit('10');
 
 			await setPrice(baseAsset, price);
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 
 			await futuresMarket.transferMargin(minInitialMargin.sub(toUnit('1')), { from: trader });
 			await assert.revert(
@@ -2107,7 +2107,7 @@ contract('PerpsV2Market', accounts => {
 			it('can get position details for new position', async () => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await setPrice(await futuresMarket.baseAsset(), toUnit('240'));
-				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(sizeDelta, 0))[0];
 
 				const postTradeDetails = await futuresMarket.postTradeDetails(
 					sizeDelta,
@@ -2137,7 +2137,7 @@ contract('PerpsV2Market', accounts => {
 					sizeDelta,
 				});
 
-				const fillPrice = (await futuresMarket.fillPrice(sizeDelta))[0];
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(sizeDelta, 0))[0];
 				const postTradeDetails = await futuresMarket.postTradeDetails(
 					sizeDelta,
 					toUnit('0'),
@@ -2175,12 +2175,12 @@ contract('PerpsV2Market', accounts => {
 
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				size1 = toUnit('50');
-				fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0];
 				await futuresMarket.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				await futuresMarket.transferMargin(toUnit('4000'), { from: trader2 });
 				size2 = toUnit('-40');
-				fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				fillPrice2 = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 			});
 
@@ -2607,7 +2607,7 @@ contract('PerpsV2Market', accounts => {
 				await setPrice(baseAsset, price);
 
 				const size1 = toUnit('1000');
-				const fillPrice1 = (await futuresMarket.fillPrice(size1))[0]; // e.g. 100.5
+				const fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0]; // e.g. 100.5
 				const marginDelta1 = multiplyDecimal(fillPrice1, size1);
 
 				await transferMarginAndModifyPosition({
@@ -2883,7 +2883,7 @@ contract('PerpsV2Market', accounts => {
 				from: owner,
 			});
 
-			let fillPrice = (await futuresMarket.fillPrice(toUnit('100')))[0];
+			let fillPrice = (await futuresMarket.fillPriceWithBasePrice(toUnit('100'), 0))[0];
 			assert.bnEqual(fillPrice, toUnit('100.5'));
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
@@ -2893,7 +2893,7 @@ contract('PerpsV2Market', accounts => {
 				sizeDelta: toUnit('100'),
 			});
 
-			fillPrice = (await futuresMarket.fillPrice(toUnit('100')))[0];
+			fillPrice = (await futuresMarket.fillPriceWithBasePrice(toUnit('100'), 0))[0];
 			assert.bnEqual(fillPrice, toUnit('101.5'));
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
@@ -2903,7 +2903,7 @@ contract('PerpsV2Market', accounts => {
 				sizeDelta: toUnit('100'),
 			});
 
-			fillPrice = (await futuresMarket.fillPrice(toUnit('-200')))[0];
+			fillPrice = (await futuresMarket.fillPriceWithBasePrice(toUnit('-200'), 0))[0];
 			assert.bnEqual(fillPrice, toUnit('101'));
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,
@@ -2933,7 +2933,7 @@ contract('PerpsV2Market', accounts => {
 			// fillPrice = ((1200 * (1 + 0)) + (1200 * (1 + 0.001))) / 2
 			//           = 1200.6
 			const size = toUnit('100');
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 			assert.bnEqual(fillPrice, toUnit('1200.6'));
 		});
 
@@ -2969,7 +2969,7 @@ contract('PerpsV2Market', accounts => {
 			// fillPrice = ((1200 * (1 + -0.0005)) + (1200 * (1 + -0.0001))) / 2
 			//           = 1199.64
 			const size = toUnit('40');
-			const fillPrice = (await futuresMarket.fillPrice(size))[0];
+			const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
 			assert.bnEqual(fillPrice, toUnit('1199.64'));
 		});
 	});
@@ -3883,7 +3883,7 @@ contract('PerpsV2Market', accounts => {
 			await setPrice(baseAsset, price1);
 			const size1 = toUnit('50');
 			const margin1 = toUnit('1000');
-			const fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+			const fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0];
 
 			// debtCorrection (so far) = 1000
 			await futuresMarket.transferMargin(margin1, { from: trader });
@@ -3908,7 +3908,7 @@ contract('PerpsV2Market', accounts => {
 			await setPrice(baseAsset, price2);
 			const size2 = toUnit('-35');
 			const margin2 = toUnit('600');
-			const fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+			const fillPrice2 = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 
 			// debtCorrection (so far) = expectedDebtConnection1 + 600
 			await futuresMarket.transferMargin(margin2, { from: trader2 });
@@ -3947,7 +3947,7 @@ contract('PerpsV2Market', accounts => {
 			// const size3 = toBN(position.size).neg();
 			// const margin3 = toBN(position.margin);
 			// const fee3 = (await futuresMarket.orderFee(size3))[0];
-			// const fillPrice3 = (await futuresMarket.fillPrice(size3))[0];
+			// const fillPrice3 = (await futuresMarket.fillPriceWithBasePrice(size3, 0))[0];
 
 			await closePositionAndWithdrawMargin({
 				market: futuresMarket,
@@ -4116,14 +4116,14 @@ contract('PerpsV2Market', accounts => {
 				const margin1 = toUnit('1000');
 				const size1 = toUnit('100');
 				const fee1 = (await futuresMarket.orderFee(size1))[0];
-				const fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				const fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0];
 				await futuresMarket.transferMargin(margin1, { from: trader });
 				await futuresMarket.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1000');
 				const size2 = toUnit('-100');
 				const fee2 = (await futuresMarket.orderFee(size2))[0];
-				const fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				const fillPrice2 = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 				await futuresMarket.transferMargin(margin2, { from: trader2 });
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
@@ -4163,14 +4163,14 @@ contract('PerpsV2Market', accounts => {
 				const margin1 = toUnit('1000');
 				const size1 = toUnit('20');
 				const fee1 = (await futuresMarket.orderFee(size1))[0];
-				const fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				const fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0];
 				await futuresMarket.transferMargin(margin1, { from: trader });
 				await futuresMarket.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1000');
 				const size2 = toUnit('-20');
 				const fee2 = (await futuresMarket.orderFee(size2))[0];
-				const fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				const fillPrice2 = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 				await futuresMarket.transferMargin(margin2, { from: trader2 });
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
@@ -4338,14 +4338,14 @@ contract('PerpsV2Market', accounts => {
 				const margin1 = toUnit('1500');
 				const size1 = toUnit('30');
 				const fee1 = (await futuresMarket.orderFee(size1))[0];
-				const fillPrice1 = (await futuresMarket.fillPrice(size1))[0];
+				const fillPrice1 = (await futuresMarket.fillPriceWithBasePrice(size1, 0))[0];
 				await futuresMarket.transferMargin(margin1, { from: trader });
 				await futuresMarket.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1500');
 				const size2 = toUnit('-10');
 				const fee2 = (await futuresMarket.orderFee(size2))[0];
-				const fillPrice2 = (await futuresMarket.fillPrice(size2))[0];
+				const fillPrice2 = (await futuresMarket.fillPriceWithBasePrice(size2, 0))[0];
 				await futuresMarket.transferMargin(margin2, { from: trader2 });
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
@@ -5293,7 +5293,7 @@ contract('PerpsV2Market', accounts => {
 				const orderSize = toUnit('1');
 
 				// expected fee is dynamic fee + taker fee (both fees are impacted by the fillPrice).
-				const fillPrice = (await futuresMarket.fillPrice(orderSize))[0];
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(orderSize, 0))[0];
 				const expectedFee = multiplyDecimal(fillPrice, expectedRate.add(takerFee));
 
 				// check view

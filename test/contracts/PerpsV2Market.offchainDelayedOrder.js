@@ -206,7 +206,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-			const fillPrice = (await perpsV2Market.fillPrice(size))[0];
+			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0];
 
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, {
 				from: trader,
@@ -373,7 +373,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
-			const fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice);
+			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice))[0];
 			const expectedFee = multiplyDecimal(
 				size,
 				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
@@ -1070,7 +1070,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							//
 							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
 							// set the commitFee here because commitFee was _before_ the submit and price update.
-							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
+							fillPrice = (
+								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+							)[0];
 						});
 
 						it('from account owner', async () => {
@@ -1109,7 +1111,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							spotTradeDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), trader);
 							await setOnchainPrice(baseAsset, targetPrice);
 
-							fillPrice = await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice);
+							fillPrice = (
+								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+							)[0];
 						});
 
 						it('from account owner', async () => {

@@ -96,7 +96,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
-        _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded tolerance";
+        _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded";
     }
 
     /* ---------- External Contracts ---------- */
@@ -158,8 +158,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _proportionalElapsed() internal view returns (int) {
-        int delta = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
-        return delta.divideDecimal(1 days);
+        return int(block.timestamp.sub(marketState.fundingLastRecomputed())).divideDecimal(1 days);
     }
 
     function _currentFundingVelocity() internal view returns (int) {
@@ -197,18 +196,17 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
         //              = 0 + 0.0025 * 0.33564815
         //              = 0.00083912
-        int fundingRate = marketState.fundingRateLastRecomputed();
-        int fundingVelocity = _currentFundingVelocity();
-        int elapsed = _proportionalElapsed();
-        return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
+        return
+            int(marketState.fundingRateLastRecomputed()).add(
+                _currentFundingVelocity().multiplyDecimal(_proportionalElapsed())
+            );
     }
 
     function _unrecordedFunding() internal view returns (int) {
         int nextFundingRate = _currentFundingRate();
         // note the minus sign: funding flows in the opposite direction to the skew.
         int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
-        int elapsed = _proportionalElapsed();
-        return avgFundingRate.multiplyDecimal(elapsed);
+        return avgFundingRate.multiplyDecimal(_proportionalElapsed());
     }
 
     /*
@@ -329,9 +327,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
      */
     function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
-        int premium = int(_liquidationPremium(position.size, price));
-        int remaining = _marginPlusProfitFunding(position, price).sub(premium);
-
+        int remaining = _marginPlusProfitFunding(position, price).sub(int(_liquidationPremium(position.size, price)));
         return uint(_max(0, remaining));
     }
 
