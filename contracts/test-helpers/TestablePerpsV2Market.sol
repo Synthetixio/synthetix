@@ -19,12 +19,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     function proportionalSkew() external view returns (int) {
-        _assetPrice();
         return _proportionalSkew();
-    }
-
-    function maxFundingVelocity() external view returns (uint) {
-        return _maxFundingVelocity(_marketKey());
     }
 
     /*
@@ -41,16 +36,14 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     {
         (, bool invalid) = _assetPrice();
         int sizeLimit = int(_maxMarketValue(_marketKey()));
-        (uint longSize, uint shortSize) = _marketSizes();
+
+        int size = int(marketState.marketSize());
+        int skew = marketState.marketSkew();
+        (uint longSize, uint shortSize) = (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
+
         long = uint(sizeLimit.sub(_min(int(longSize), sizeLimit)));
         short = uint(sizeLimit.sub(_min(int(shortSize), sizeLimit)));
         return (long, short, invalid);
-    }
-
-    function _marketSizes() internal view returns (uint, uint) {
-        int size = int(marketState.marketSize());
-        int skew = marketState.marketSkew();
-        return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
 
     /**
@@ -60,8 +53,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
      */
     function liquidationMargin(address account) external view returns (uint lMargin) {
-        require(marketState.positions(account).size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         (uint price, ) = _assetPrice();
+        require(marketState.positions(account).size != 0, "0 size position"); // reverts because otherwise minKeeperFee is returned
         return _liquidationMargin(int(marketState.positions(account).size), price);
     }
 
@@ -109,21 +102,19 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, false);
     }
 
-    function fillPrice(int size) external view returns (uint price, bool invalid) {
-        (uint price, bool invalid) = _assetPrice();
-        uint fillPrice = _fillPrice(size, price);
-        return (fillPrice, invalid);
-    }
-
     /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
-    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint price) {
-        return _fillPrice(size, basePrice);
+    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint, bool) {
+        uint price = basePrice;
+        bool invalid;
+        if (basePrice == 0) {
+            (price, invalid) = _assetPrice();
+        }
+        return (_fillPrice(size, price), invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
     function netFundingPerUnit(address account) external view returns (int) {
-        Position memory position = marketState.positions(account);
-        return _netFundingPerUnit(position.lastFundingIndex);
+        return _netFundingPerUnit(marketState.positions(account).lastFundingIndex);
     }
 
     function marketSizes() external view returns (uint long, uint short) {
@@ -176,6 +167,11 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, false);
     }
 
+    function liquidationPremium(address account) external view returns (uint) {
+        (uint price, ) = _assetPrice();
+        return _liquidationPremium(marketState.positions(account).size, price);
+    }
+
     function liquidationFee(address account) external view returns (uint) {
         return 0;
     }
@@ -215,13 +211,13 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     function submitDelayedOrder(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         uint desiredTimeDelta
     ) external {}
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external {}
@@ -232,11 +228,11 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     /* ---------- Offchain Delayed Orders ---------- */
 
-    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external {}
+    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {}
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         bytes32 trackingCode
     ) external {}
 

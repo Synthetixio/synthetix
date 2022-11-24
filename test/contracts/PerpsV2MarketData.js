@@ -36,7 +36,7 @@ contract('PerpsV2MarketData', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
-	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -222,19 +222,19 @@ contract('PerpsV2MarketData', accounts => {
 
 		// The traders take positions on market
 		await futuresMarket.transferMargin(toUnit('1000'), { from: trader1 });
-		await futuresMarket.modifyPosition(toUnit('5'), slippage, { from: trader1 });
+		await futuresMarket.modifyPosition(toUnit('5'), priceImpactDelta, { from: trader1 });
 
 		await futuresMarket.transferMargin(toUnit('750'), { from: trader2 });
-		await futuresMarket.modifyPosition(toUnit('-10'), slippage, { from: trader2 });
+		await futuresMarket.modifyPosition(toUnit('-10'), priceImpactDelta, { from: trader2 });
 
 		await setPrice(baseAsset, toUnit('100'));
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
-		await futuresMarket.modifyPosition(toUnit('1.25'), slippage, { from: trader3 });
+		await futuresMarket.modifyPosition(toUnit('1.25'), priceImpactDelta, { from: trader3 });
 
 		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), slippage, { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), priceImpactDelta, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 

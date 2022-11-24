@@ -71,7 +71,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         uint price;
         uint takerFee;
         uint makerFee;
-        uint slippage;
+        uint priceImpactDelta;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -96,7 +96,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
-        _errorMessages[uint8(Status.SlippageToleranceExceeded)] = "Price exceeded slippage tolerance";
+        _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded";
     }
 
     /* ---------- External Contracts ---------- */
@@ -158,8 +158,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _proportionalElapsed() internal view returns (int) {
-        int delta = int(block.timestamp.sub(marketState.fundingLastRecomputed()));
-        return delta.divideDecimal(1 days);
+        return int(block.timestamp.sub(marketState.fundingLastRecomputed())).divideDecimal(1 days);
     }
 
     function _currentFundingVelocity() internal view returns (int) {
@@ -197,18 +196,17 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // funding_rate = 0 + 0.0025 * (29,000 / 86,400)
         //              = 0 + 0.0025 * 0.33564815
         //              = 0.00083912
-        int fundingRate = marketState.fundingRateLastRecomputed();
-        int fundingVelocity = _currentFundingVelocity();
-        int elapsed = _proportionalElapsed();
-        return fundingRate.add(fundingVelocity.multiplyDecimal(elapsed));
+        return
+            int(marketState.fundingRateLastRecomputed()).add(
+                _currentFundingVelocity().multiplyDecimal(_proportionalElapsed())
+            );
     }
 
     function _unrecordedFunding() internal view returns (int) {
         int nextFundingRate = _currentFundingRate();
         // note the minus sign: funding flows in the opposite direction to the skew.
         int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
-        int elapsed = _proportionalElapsed();
-        return avgFundingRate.multiplyDecimal(elapsed);
+        return avgFundingRate.multiplyDecimal(_proportionalElapsed());
     }
 
     /*
@@ -325,6 +323,14 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return uint(_max(0, remaining));
     }
 
+    /*
+     * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
+     */
+    function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
+        int remaining = _marginPlusProfitFunding(position, price).sub(int(_liquidationPremium(position.size, price)));
+        return uint(_max(0, remaining));
+    }
+
     function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
@@ -381,13 +387,38 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return liquidationBuffer.add(_liquidationFee(positionSize, price));
     }
 
+    /**
+     * @dev This is the additional premium we charge upon liquidation.
+     *
+     * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
+     * when we compute as if taking the position from 0 to x. In practice, the premium component of the
+     * liquidation will just be (0.5 * size / skewScale) * price.
+     *
+     * For instance, if size of the liquidation position is 100, oracle price is 1200 and skewScale is 1M then,
+     *
+     *  premium = -100 / 1000000 * 1200 * 0.5
+     *          = 0.06
+     *
+     * @param positionSize Size of the position we want to liquidate
+     * @param currentPrice The current oracle price (not fillPrice)
+     * @return The premium to be paid in sUSD
+     */
+    function _liquidationPremium(int positionSize, uint currentPrice) internal view returns (uint) {
+        if (positionSize == 0) {
+            return 0;
+        }
+
+        // note: this is the same as fillPrice() where the skew is 0.
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(currentPrice) / 2;
+    }
+
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
         // No liquidating empty positions.
         if (position.size == 0) {
             return false;
         }
 
-        return _remainingMargin(position, price) <= _liquidationMargin(int(position.size), price);
+        return _remainingLiquidatableMargin(position, price) <= _liquidationMargin(int(position.size), price);
     }
 
     function _currentLeverage(
@@ -594,39 +625,39 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Given the current oracle price (not fillPrice) and slippage, return the max slippage
-     * price which is a price that is inclusive of the slippage tolerance.
+     * @dev Given the current oracle price (not fillPrice) and priceImpactDelta, return the max priceImpactDelta
+     * price which is a price that is inclusive of the priceImpactDelta tolerance.
      *
-     * For instance, if price ETH is $1000 and slippage is 1% then maxSlippagePrice is $1010. The fillPrice
+     * For instance, if price ETH is $1000 and priceImpactDelta is 1% then maxPriceImpact is $1010. The fillPrice
      * on the trade must be below $1010 for the trade to succeed.
      *
-     * For clarity when slippage is:
+     * For clarity when priceImpactDelta is:
      *  0.1   then 10%
      *  0.01  then 1%
      *  0.001 then 0.1%
      *
-     * When price is $1000 and slippage is:
+     * When price is $1000 and priceImpactDelta is:
      *  0.1   then price * (1 + 0.1)   = 1100
      *  0.01  then price * (1 + 0.01)  = 1010
      *  0.001 then price * (1 + 0.001) = 1001
      *
-     * When slippage is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
+     * When priceImpactDelta is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
      * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
-     * fee on a 10k USD sized trade then the slippagePrice would be 100 + 10000 * 0.0045 = 145.
+     * fee on a 10k USD sized trade then the maxPriceImpact would be 100 + 10000 * 0.0045 = 145
      */
-    function _maxSlippagePrice(
+    function _maxPriceImpact(
         uint price,
-        uint slippage,
+        uint priceImpactDelta,
         uint orderFee
     ) internal pure returns (uint) {
-        // No slippage is specified, use the orderFee for the upper bound.
+        // No priceImpactDelta is specified, use the orderFee for the upper bound.
         //
         // note: We look at orderFee (not maker/taker fee) because orderFee considers the case when a
         // trade with large enough size can flip the skew.
-        if (slippage == 0) {
+        if (priceImpactDelta == 0) {
             return price.add(orderFee);
         }
-        return price.multiplyDecimal(uint(_UNIT).add(slippage));
+        return price.multiplyDecimal(uint(_UNIT).add(priceImpactDelta));
     }
 
     /*

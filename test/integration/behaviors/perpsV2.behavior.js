@@ -87,7 +87,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('position management', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x, debt, slippage;
+			let market, assetKey, marketKey, price, balance, posSize1x, debt, priceImpactDelta;
 			const margin = toUnit('100');
 
 			before('market and conditions', async () => {
@@ -97,7 +97,7 @@ function itCanTrade({ ctx }) {
 				price = await ExchangeRates.rateForCurrency(assetKey);
 				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
-				slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+				priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
@@ -133,7 +133,7 @@ function itCanTrade({ ctx }) {
 				it('user can open and close position', async () => {
 					// open position
 					const initialMargin = (await market.positions(someUser.address)).margin;
-					await market.modifyPosition(posSize1x, slippage);
+					await market.modifyPosition(posSize1x, priceImpactDelta);
 
 					const position = await market.positions(someUser.address);
 					assert.bnGt(initialMargin, position.margin); // fee was taken
@@ -141,19 +141,19 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					await (await market.closePosition(slippage)).wait();
+					await (await market.closePosition(priceImpactDelta)).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
 				it('user can modifyPosition to short', async () => {
 					const size = multiplyDecimal(posSize1x, toUnit('-5'));
 
-					await market.modifyPosition(size, slippage);
+					await market.modifyPosition(size, priceImpactDelta);
 					const position = await market.positions(someUser.address);
 					assert.bnEqual(position.size, size); // right position size
 
 					// close
-					await market.closePosition(slippage);
+					await market.closePosition(priceImpactDelta);
 				});
 
 				describe('existing position', () => {
@@ -165,7 +165,7 @@ function itCanTrade({ ctx }) {
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
 
-						// can't use the _full_ max leverage because of slippage. it must be a little below to account
+						// can't use the _full_ max leverage because of priceImpactDelta. it must be a little below to account
 						// for the premium if this is increasing the skew (which this test case it is).
 						//
 						// maxLeverage = 10x
@@ -185,7 +185,7 @@ function itCanTrade({ ctx }) {
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
 						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.5')));
 
-						await market.modifyPosition(size, slippage);
+						await market.modifyPosition(size, priceImpactDelta);
 					});
 
 					before('if new aggregator is set and price drops 20%', async () => {
@@ -198,10 +198,13 @@ function itCanTrade({ ctx }) {
 						await assert.revert(market.transferMargin(toBN(-1)), 'Insufficient margin');
 
 						// cannot modify
-						await assert.revert(market.modifyPosition(toBN(-1), slippage), 'can be liquidated');
+						await assert.revert(
+							market.modifyPosition(toBN(-1), priceImpactDelta),
+							'can be liquidated'
+						);
 
 						// cannot close
-						await assert.revert(market.closePosition(slippage), 'can be liquidated');
+						await assert.revert(market.closePosition(priceImpactDelta), 'can be liquidated');
 					});
 
 					it('position can be liquidated by another user', async () => {
