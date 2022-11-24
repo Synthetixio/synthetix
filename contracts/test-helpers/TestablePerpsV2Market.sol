@@ -104,8 +104,12 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
 
     /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
     function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint, bool) {
-        (uint price, bool invalid) = _assetPrice();
-        return (_fillPrice(size, basePrice == 0 ? price : basePrice), invalid);
+        uint price = basePrice;
+        bool invalid;
+        if (basePrice == 0) {
+            (price, invalid) = _assetPrice();
+        }
+        return (_fillPrice(size, price), invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
