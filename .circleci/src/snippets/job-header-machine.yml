@@ -4,3 +4,4 @@ machine:
   docker_layer_caching: true
 environment:
   foundry_locked_commit: "3c49efe"
+  breakglass_cache_version: 1

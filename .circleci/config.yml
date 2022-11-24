@@ -35,7 +35,8 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: '3c49efe'
+      foundry_locked_commit: "3c49efe"
+      breakglass_cache_version: 1
     steps:
       - restore_cache:
           keys:
@@ -125,7 +126,8 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: '3c49efe'
+      foundry_locked_commit: "3c49efe"
+      breakglass_cache_version: 1
     resource_class: large
     steps:
       - restore_cache:
@@ -224,7 +226,7 @@ jobs:
       - attach_workspace:
           at: .
       - restore_cache:
-          key: dependencies-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+          key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
       - run:
           name: Set custom npm cache directory
           command: npm config set cache .npm-cache --global
@@ -232,7 +234,7 @@ jobs:
           name: Install dependencies
           command: npm ci --prefer-offline --no-audit
       - save_cache:
-          key: dependencies-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+          key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
           paths:
             - .npm-cache
             - node_modules
@@ -288,7 +290,8 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: '3c49efe'
+      foundry_locked_commit: "3c49efe"
+      breakglass_cache_version: 1
     resource_class: large
     steps:
       - restore_cache:
