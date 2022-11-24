@@ -41,32 +41,32 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param slippage is a percentage tolerance on fillPrice to be check upon execution
+     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
     function submitDelayedOrder(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         uint desiredTimeDelta
     ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, desiredTimeDelta, bytes32(0), false);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, bytes32(0), false);
     }
 
     /// same as submitDelayedOrder but emits an event with the tracking code
     /// to allow volume source fee sharing for integrations
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
     ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, desiredTimeDelta, trackingCode, false);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, false);
     }
 
     /**

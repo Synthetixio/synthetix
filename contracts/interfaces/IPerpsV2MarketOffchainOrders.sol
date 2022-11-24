@@ -2,11 +2,11 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 interface IPerpsV2MarketOffchainOrders {
-    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external;
+    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external;
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         bytes32 trackingCode
     ) external;
 

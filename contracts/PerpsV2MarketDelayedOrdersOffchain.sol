@@ -49,25 +49,25 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param slippage is a percentage tolerance on fillPrice to be check upon execution
+     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
      */
-    function submitOffchainDelayedOrder(int sizeDelta, uint slippage) external onlyProxy {
+    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
         // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
-        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, 0, bytes32(0), true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, bytes32(0), true);
     }
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         bytes32 trackingCode
     ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, slippage, 0, trackingCode, true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
     }
 
     /**

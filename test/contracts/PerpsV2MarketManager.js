@@ -37,7 +37,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	const trader = accounts[2];
 	const otherAddress = accounts[3];
 	const initialMint = toUnit('100000');
-	const slippage = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -785,10 +785,10 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 			// The traders take positions on market
 			await markets[0].transferMargin(toUnit('1000'), { from: trader });
-			await markets[0].modifyPosition(toUnit('5'), slippage, { from: trader });
+			await markets[0].modifyPosition(toUnit('5'), priceImpactDelta, { from: trader });
 
 			await markets[1].transferMargin(toUnit('3000'), { from: trader });
-			await markets[1].modifyPosition(toUnit('4'), slippage, { from: trader });
+			await markets[1].modifyPosition(toUnit('4'), priceImpactDelta, { from: trader });
 			await setPrice(await markets[1].baseAsset(), toUnit('999'));
 		});
 

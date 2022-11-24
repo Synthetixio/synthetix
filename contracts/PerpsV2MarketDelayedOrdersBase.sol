@@ -39,7 +39,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
     function _submitDelayedOrder(
         bytes32 marketKey,
         int sizeDelta,
-        uint slippage,
+        uint priceImpactDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode,
         bool isOffchain
@@ -72,7 +72,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 price: price,
                 takerFee: isOffchain ? _takerFeeOffchainDelayedOrder(marketKey) : _takerFeeDelayedOrder(marketKey),
                 makerFee: isOffchain ? _makerFeeOffchainDelayedOrder(marketKey) : _makerFeeDelayedOrder(marketKey),
-                slippage: slippage,
+                priceImpactDelta: priceImpactDelta,
                 trackingCode: trackingCode
             });
         (, , Status status) = _postTradeDetails(position, params);
@@ -91,7 +91,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             DelayedOrder({
                 isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
-                slippage: uint128(slippage),
+                priceImpactDelta: uint128(priceImpactDelta),
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
@@ -115,7 +115,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             messageSender,
             order.isOffchain,
             order.sizeDelta,
-            order.slippage,
+            order.priceImpactDelta,
             order.targetRoundId,
             order.commitDeposit,
             order.keeperDeposit,
@@ -206,7 +206,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 price: currentPrice, // the funding is applied only from order confirmation time
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
-                slippage: order.slippage,
+                priceImpactDelta: order.priceImpactDelta,
                 trackingCode: order.trackingCode
             })
         );

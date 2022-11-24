@@ -71,7 +71,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         uint price;
         uint takerFee;
         uint makerFee;
-        uint slippage;
+        uint priceImpactDelta;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -96,7 +96,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
-        _errorMessages[uint8(Status.SlippageToleranceExceeded)] = "Price exceeded slippage tolerance";
+        _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded tolerance";
     }
 
     /* ---------- External Contracts ---------- */
@@ -629,39 +629,39 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Given the current oracle price (not fillPrice) and slippage, return the max slippage
-     * price which is a price that is inclusive of the slippage tolerance.
+     * @dev Given the current oracle price (not fillPrice) and priceImpactDelta, return the max priceImpactDelta
+     * price which is a price that is inclusive of the priceImpactDelta tolerance.
      *
-     * For instance, if price ETH is $1000 and slippage is 1% then maxSlippagePrice is $1010. The fillPrice
+     * For instance, if price ETH is $1000 and priceImpactDelta is 1% then maxPriceImpact is $1010. The fillPrice
      * on the trade must be below $1010 for the trade to succeed.
      *
-     * For clarity when slippage is:
+     * For clarity when priceImpactDelta is:
      *  0.1   then 10%
      *  0.01  then 1%
      *  0.001 then 0.1%
      *
-     * When price is $1000 and slippage is:
+     * When price is $1000 and priceImpactDelta is:
      *  0.1   then price * (1 + 0.1)   = 1100
      *  0.01  then price * (1 + 0.01)  = 1010
      *  0.001 then price * (1 + 0.001) = 1001
      *
-     * When slippage is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
+     * When priceImpactDelta is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
      * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
-     * fee on a 10k USD sized trade then the slippagePrice would be 100 + 10000 * 0.0045 = 145.
+     * fee on a 10k USD sized trade then the maxPriceImpact would be 100 + 10000 * 0.0045 = 145
      */
-    function _maxSlippagePrice(
+    function _maxPriceImpact(
         uint price,
-        uint slippage,
+        uint priceImpactDelta,
         uint orderFee
     ) internal pure returns (uint) {
-        // No slippage is specified, use the orderFee for the upper bound.
+        // No priceImpactDelta is specified, use the orderFee for the upper bound.
         //
         // note: We look at orderFee (not maker/taker fee) because orderFee considers the case when a
         // trade with large enough size can flip the skew.
-        if (slippage == 0) {
+        if (priceImpactDelta == 0) {
             return price.add(orderFee);
         }
-        return price.multiplyDecimal(uint(_UNIT).add(slippage));
+        return price.multiplyDecimal(uint(_UNIT).add(priceImpactDelta));
     }
 
     /*

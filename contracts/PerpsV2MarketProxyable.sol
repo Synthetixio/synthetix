@@ -90,17 +90,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     /*
-     * @dev Checks if the fillPrice does not exceed slippage tolerance.
+     * @dev Checks if the fillPrice does not exceed priceImpactDelta tolerance.
      */
-    function _assertPriceSlippage(
+    function _assertPriceImpact(
         uint price,
         uint fillPrice,
-        uint slippage,
+        uint priceImpactDelta,
         uint orderFee
     ) internal view returns (uint) {
-        uint maxSlippagePrice = _maxSlippagePrice(price, slippage, orderFee);
-        _revertIfError(fillPrice > maxSlippagePrice, Status.SlippageToleranceExceeded);
-        return maxSlippagePrice;
+        uint maxPriceImpact = _maxPriceImpact(price, priceImpactDelta, orderFee);
+        _revertIfError(fillPrice > maxPriceImpact, Status.PriceImpactToleranceExceeded);
+        return maxPriceImpact;
     }
 
     function _recomputeFunding() internal returns (uint lastIndex) {
@@ -170,7 +170,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     function _trade(address sender, TradeParams memory params) internal {
-        // track the original price as its needed to calculate if slippage is acceptable.
+        // track the original price as its needed to calculate if priceImpactDelta is acceptable.
         uint price = params.price;
         // update the price of the intended trade to account to the affect to skew.
         params.price = _fillPrice(params.sizeDelta, price);
@@ -189,7 +189,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
-        _assertPriceSlippage(price, params.price, params.slippage, fee);
+        _assertPriceImpact(price, params.price, params.priceImpactDelta, fee);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
