@@ -9,7 +9,7 @@ const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
 const ethers = require('ethers');
 
-describe('staking & claiming integration tests (L1, L2)', () => {
+describe.only('staking & claiming integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
@@ -21,17 +21,22 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 		let Synthetix, SynthsUSD, FeePool;
 		let balancesUSD, debtsUSD;
 
-		before('target contracts and users', async () => {
+		before('target contracts and users', () => {
 			({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
 
 			user = ctx.l1.users.someUser;
+		});
 
+		before('ensure the user has enough SNX', async () => {
 			await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 		});
 
 		describe('when the user issues sUSD', () => {
-			before(async () => {
+			before('record balances', async () => {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
+			});
+
+			before('issue sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
@@ -52,9 +57,11 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				});
 
 				describe('when the fee period closes', () => {
-					before(async () => {
+					before('skip fee period', async () => {
 						await skipFeePeriod({ ctx: ctx.l1 });
+					});
 
+					before('close the current fee period', async () => {
 						FeePool = FeePool.connect(ctx.l1.users.owner);
 
 						const tx = await FeePool.closeCurrentFeePeriod();
@@ -64,7 +71,9 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 					describe('when the user claims rewards', () => {
 						before('record balances', async () => {
 							balancesUSD = await SynthsUSD.balanceOf(user.address);
+						});
 
+						before('claim', async () => {
 							FeePool = FeePool.connect(user);
 
 							const tx = await FeePool.claimFees();
@@ -80,10 +89,15 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 			});
 
 			describe('when the user burns sUSD', () => {
-				before(async () => {
+				before('skip min stake time', async () => {
 					await skipMinimumStakeTime({ ctx: ctx.l1 });
-					debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				});
 
+				before('record debt', async () => {
+					debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				});
+
+				before('burn sUSD', async () => {
 					Synthetix = Synthetix.connect(user);
 
 					const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
