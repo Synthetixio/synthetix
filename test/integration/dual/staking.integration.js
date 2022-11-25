@@ -21,22 +21,17 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 		let Synthetix, SynthsUSD, FeePool;
 		let balancesUSD, debtsUSD;
 
-		before('target contracts and users', () => {
+		before('target contracts and users', async () => {
 			({ Synthetix, SynthsUSD, FeePool } = ctx.l1.contracts);
 
 			user = ctx.l1.users.someUser;
-		});
 
-		before('ensure the user has enough SNX', async () => {
 			await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 		});
 
 		describe('when the user issues sUSD', () => {
-			before('record balances', async () => {
+			before(async () => {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
-			});
-
-			before('issue sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
@@ -51,17 +46,15 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				);
 			});
 
-			describe.skip('claiming', () => {
+			describe('claiming', () => {
 				before('exchange something', async () => {
 					await exchangeSomething({ ctx: ctx.l1 });
 				});
 
 				describe('when the fee period closes', () => {
-					before('skip fee period', async () => {
+					before(async () => {
 						await skipFeePeriod({ ctx: ctx.l1 });
-					});
 
-					before('close the current fee period', async () => {
 						FeePool = FeePool.connect(ctx.l1.users.owner);
 
 						const tx = await FeePool.closeCurrentFeePeriod();
@@ -71,9 +64,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 					describe('when the user claims rewards', () => {
 						before('record balances', async () => {
 							balancesUSD = await SynthsUSD.balanceOf(user.address);
-						});
 
-						before('claim', async () => {
 							FeePool = FeePool.connect(user);
 
 							const tx = await FeePool.claimFees();
@@ -88,16 +79,11 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				});
 			});
 
-			describe.skip('when the user burns sUSD', () => {
-				before('skip min stake time', async () => {
+			describe('when the user burns sUSD', () => {
+				before(async () => {
 					await skipMinimumStakeTime({ ctx: ctx.l1 });
-				});
-
-				before('record debt', async () => {
 					debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
-				});
 
-				before('burn sUSD', async () => {
 					Synthetix = Synthetix.connect(user);
 
 					const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
