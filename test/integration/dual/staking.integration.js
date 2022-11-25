@@ -51,7 +51,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				);
 			});
 
-			describe('claiming', () => {
+			describe.skip('claiming', () => {
 				before('exchange something', async () => {
 					await exchangeSomething({ ctx: ctx.l1 });
 				});
@@ -88,7 +88,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				});
 			});
 
-			describe('when the user burns sUSD', () => {
+			describe.skip('when the user burns sUSD', () => {
 				before('skip min stake time', async () => {
 					await skipMinimumStakeTime({ ctx: ctx.l1 });
 				});
