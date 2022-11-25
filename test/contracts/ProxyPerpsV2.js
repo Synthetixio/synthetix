@@ -9,7 +9,7 @@ const { toBytes32 } = require('../..');
 const TestableAddressSetAbi = artifacts.require('TestableAddressSetProxyable').abi;
 const TestableBytes32SetAbi = artifacts.require('TestableBytes32SetProxyable').abi;
 
-contract('ProxyPerpsV2', async (accounts) => {
+contract('ProxyPerpsV2', async accounts => {
 	// Signers
 	let owner, user;
 
@@ -140,7 +140,7 @@ contract('ProxyPerpsV2', async (accounts) => {
 		const checkEvents = (receipt, events, idx) => {
 			assert.equal(receipt.events.length, events.length);
 			for (const event of events) {
-				const currentEvent = receipt.events.find((e) => e.event === event.event);
+				const currentEvent = receipt.events.find(e => e.event === event.event);
 				assert.exists(currentEvent);
 				assert.exists(currentEvent.args);
 				assert.equal(currentEvent.args.length, event.args.length);
