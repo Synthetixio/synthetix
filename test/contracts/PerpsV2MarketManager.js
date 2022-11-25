@@ -23,7 +23,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
-contract('sssFuturesMarketManager (PerpsV2)', accounts => {
+contract('FuturesMarketManager (PerpsV2)', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
 		systemSettings,

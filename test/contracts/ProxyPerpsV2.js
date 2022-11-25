@@ -9,7 +9,7 @@ const { toBytes32 } = require('../..');
 const TestableAddressSetAbi = artifacts.require('TestableAddressSetProxyable').abi;
 const TestableBytes32SetAbi = artifacts.require('TestableBytes32SetProxyable').abi;
 
-contract('ProxyPerpsV2', async accounts => {
+contract('ProxyPerpsV2', async (accounts) => {
 	// Signers
 	let owner, user;
 
@@ -140,7 +140,7 @@ contract('ProxyPerpsV2', async accounts => {
 		const checkEvents = (receipt, events, idx) => {
 			assert.equal(receipt.events.length, events.length);
 			for (const event of events) {
-				const currentEvent = receipt.events.find(e => e.event === event.event);
+				const currentEvent = receipt.events.find((e) => e.event === event.event);
 				assert.exists(currentEvent);
 				assert.exists(currentEvent.args);
 				assert.equal(currentEvent.args.length, event.args.length);
@@ -365,6 +365,52 @@ contract('ProxyPerpsV2', async accounts => {
 					args: [{ name: 'targetedRoute', value: route.implementation }],
 				},
 			]);
+		});
+
+		describe('getting pages of routes', () => {
+			beforeEach('add some routes', async () => {
+				// Add some selectors
+				route = sampleRoutes[0];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+
+				route = sampleRoutes[1];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+
+				route = sampleRoutes[2];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+			});
+
+			it('gets all the routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(0, currentRoutesLength);
+				assert.equal(currentRoutes.length, currentRoutesLength);
+			});
+			it('gets just the existent routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(0, currentRoutesLength + 10);
+				assert.equal(currentRoutes.length, currentRoutesLength);
+			});
+			it('gets all the routes starting in the 1st element', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(1, currentRoutesLength - 1);
+				assert.equal(currentRoutes.length, currentRoutesLength - 1);
+			});
+			it('gets just the routes starting in the 1st element', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(1, currentRoutesLength + 10);
+				assert.equal(currentRoutes.length, currentRoutesLength - 1);
+			});
+			it('gets no route if start index is larger than max routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(10, currentRoutesLength);
+				assert.equal(currentRoutes.length, 0);
+			});
 		});
 	});
 
