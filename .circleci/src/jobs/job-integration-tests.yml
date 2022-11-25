@@ -8,7 +8,7 @@ steps:
   # get foundry
   - restore_cache:
       keys:
-        - foundry-bin-${foundry_locked_commit}-11
+        - foundry-bin-${cache_version}-${foundry_locked_commit}-11
   - rust/install: {}
   - run: |
       if [ ! -d ~/.foundry ]; then
@@ -19,7 +19,7 @@ steps:
       echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
 
   - save_cache:
-      key: foundry-bin-${foundry_locked_commit}-11
+      key: foundry-bin-${cache_version}-${foundry_locked_commit}-11
       paths:
         - ~/.foundry/bin
 
@@ -28,7 +28,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - v6-optimism-build-{{ checksum "package-lock.json" }}
+        - v6-optimism-build-${cache_version}-{{ checksum "package-lock.json" }}
   - run:
       name: Build docker containers if necessary
       command: |
@@ -36,7 +36,7 @@ steps:
           npx hardhat ops --fresh --build --build-ops
         fi;
   - save_cache:
-      key: v6-optimism-build-{{ checksum "package-lock.json" }}
+      key: v6-optimism-build-${cache_version}-{{ checksum "package-lock.json" }}
       paths:
         - ./optimism
   - run:

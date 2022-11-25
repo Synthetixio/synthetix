@@ -35,12 +35,12 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
+      cache_version: 1
       foundry_locked_commit: "3c49efe"
-      breakglass_cache_version: 1
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${cache_version}-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -50,7 +50,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${cache_version}-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout
@@ -126,13 +126,13 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
+      cache_version: 1
       foundry_locked_commit: "3c49efe"
-      breakglass_cache_version: 1
     resource_class: large
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${cache_version}-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -142,7 +142,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${cache_version}-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout
@@ -150,7 +150,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v6-optimism-build-{{ checksum "package-lock.json" }}
+            - v6-optimism-build-${cache_version}-{{ checksum "package-lock.json" }}
       - run:
           name: Build docker containers if necessary
           command: |
@@ -158,7 +158,7 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v6-optimism-build-{{ checksum "package-lock.json" }}
+          key: v6-optimism-build-${cache_version}-{{ checksum "package-lock.json" }}
           paths:
             - ./optimism
       - run:
@@ -226,7 +226,7 @@ jobs:
       - attach_workspace:
           at: .
       - restore_cache:
-          key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+          key: deps-${cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
       - run:
           name: Set custom npm cache directory
           command: npm config set cache .npm-cache --global
@@ -234,7 +234,7 @@ jobs:
           name: Install dependencies
           command: npm ci --prefer-offline --no-audit
       - save_cache:
-          key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+          key: deps-${cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
           paths:
             - .npm-cache
             - node_modules
@@ -290,13 +290,13 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
+      cache_version: 1
       foundry_locked_commit: "3c49efe"
-      breakglass_cache_version: 1
     resource_class: large
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${cache_version}-${foundry_locked_commit}-11
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -306,7 +306,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${cache_version}-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
       - checkout

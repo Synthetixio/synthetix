@@ -12,7 +12,7 @@ steps:
   - attach_workspace:
       at: .
   - restore_cache:
-      key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+      key: deps-${cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
   - run:
       name: Set custom npm cache directory
       command: npm config set cache .npm-cache --global
@@ -20,7 +20,7 @@ steps:
       name: Install dependencies
       command: npm ci --prefer-offline --no-audit
   - save_cache:
-      key: dependencies-${breakglass_cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
+      key: deps-${cache_version}-{{ checksum "/tmp/node_version" }}-v{{ checksum "/tmp/npm_version" }}-{{ checksum "package-lock.json" }}
       paths:
         - .npm-cache
         - node_modules
