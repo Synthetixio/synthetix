@@ -23,7 +23,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
-contract('FuturesMarketManager (PerpsV2)', accounts => {
+contract('sssFuturesMarketManager (PerpsV2)', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
 		systemSettings,
@@ -31,6 +31,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		circuitBreaker,
 		sUSD,
 		debtCache,
+		feePool,
 		synthetix,
 		addressResolver;
 	const owner = accounts[1];
@@ -76,6 +77,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
 			DebtCache: debtCache,
+			FeePool: feePool,
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
 			SystemSettings: systemSettings,
@@ -561,6 +563,61 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		});
 	});
 
+	describe('Pay fees', () => {
+		let market, proxy;
+		beforeEach(async () => {
+			market = await setupContract({
+				accounts,
+				contract: 'MockPerpsV2Market',
+				args: [
+					futuresMarketManager.address,
+					toBytes32('sLINK'),
+					toBytes32('sLINK'),
+					toUnit('1000'),
+					false,
+				],
+				skipPostDeploy: true,
+			});
+
+			proxy = await putBehindProxy(market);
+			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
+		});
+
+		it('pays fees', async () => {
+			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
+			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
+			await market.payFee(toUnit('10'));
+			assert.bnEqual(await sUSD.balanceOf(FEE_ADDRESS), preBalance.add(toUnit('10')));
+		});
+
+		it('pays fees (with tracking)', async () => {
+			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
+			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
+			await market.methods['payFee(uint256,bytes32)'](toUnit('10'), toBytes32('trackingCode'));
+			assert.bnEqual(await sUSD.balanceOf(FEE_ADDRESS), preBalance.add(toUnit('10')));
+		});
+
+		it('only markets are permitted to pay fees', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketManager.methods['payFee(uint256)'],
+				args: [toUnit('1')],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for market implementations',
+			});
+		});
+
+		it('only markets are permitted to pay fees (with tracking code)', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketManager.methods['payFee(uint256,bytes32)'],
+				args: [toUnit('1'), toBytes32('code')],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Permitted only for market implementations',
+			});
+		});
+	});
+
 	describe('Aggregated Debt', () => {
 		it('futures debt is zero when no markets are deployed', async () => {
 			// check initial debt
@@ -849,6 +906,103 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
+		});
+	});
+
+	describe('Legacy Markets management', () => {
+		const currencies = ['sBTC', 'sETH'];
+		const currencyKeys = currencies.map(toBytes32);
+		let legacyMarkets, legacyMarketsAddress, markets, marketProxies, proxyAddresses;
+		beforeEach(async () => {
+			legacyMarkets = await Promise.all(
+				[...currencies, 'sLINK'].map(k =>
+					setupContract({
+						accounts,
+						contract: 'MockFuturesMarket',
+						args: [
+							futuresMarketManager.address,
+							toBytes32(k),
+							toBytes32(k + 'legacy'),
+							toUnit('1000'),
+							false,
+						],
+						skipPostDeploy: true,
+					})
+				)
+			);
+
+			legacyMarketsAddress = legacyMarkets.map(m => m.address);
+			await futuresMarketManager.addMarkets(legacyMarketsAddress, { from: owner });
+
+			markets = await Promise.all(
+				currencyKeys.map(k =>
+					setupContract({
+						accounts,
+						contract: 'MockPerpsV2Market',
+						args: [futuresMarketManager.address, k, k, toUnit('1000'), false],
+						skipPostDeploy: true,
+					})
+				)
+			);
+
+			marketProxies = await Promise.all(markets.map(market => putBehindProxy(market)));
+
+			proxyAddresses = marketProxies.map(m => m.address);
+			await futuresMarketManager.addProxiedMarkets(proxyAddresses, { from: owner });
+		});
+
+		describe('Combined Markets', () => {
+			it('gets the right number of markets', async () => {
+				assert.bnEqual(await futuresMarketManager.numMarkets(), 5);
+			});
+			it('gets the right markets', async () => {
+				assert.deepEqual(await futuresMarketManager.allMarkets(), [
+					...legacyMarketsAddress,
+					...proxyAddresses,
+				]);
+			});
+			it('gets the paginated markets', async () => {
+				assert.deepEqual(await futuresMarketManager.markets(0, 5), [
+					...legacyMarketsAddress,
+					...proxyAddresses,
+				]);
+			});
+		});
+
+		describe('Only Legacy Markets', () => {
+			it('gets the right number of markets', async () => {
+				assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), 3);
+			});
+			it('gets the right markets', async () => {
+				assert.deepEqual(
+					await futuresMarketManager.methods['allMarkets(bool)'](false),
+					legacyMarketsAddress
+				);
+			});
+			it('gets the paginated markets', async () => {
+				assert.deepEqual(
+					await futuresMarketManager.methods['markets(uint256,uint256,bool)'](0, 3, false),
+					legacyMarketsAddress
+				);
+			});
+		});
+
+		describe('Only PerpsV2 Markets', () => {
+			it('gets the right number of markets', async () => {
+				assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](true), 2);
+			});
+			it('gets the right markets', async () => {
+				assert.deepEqual(
+					await futuresMarketManager.methods['allMarkets(bool)'](true),
+					proxyAddresses
+				);
+			});
+			it('gets the paginated markets', async () => {
+				assert.deepEqual(
+					await futuresMarketManager.methods['markets(uint256,uint256,bool)'](0, 2, true),
+					proxyAddresses
+				);
+			});
 		});
 	});
 });
