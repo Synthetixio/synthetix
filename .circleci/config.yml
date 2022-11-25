@@ -180,10 +180,10 @@ jobs:
           name: Run isolated layer 1 integration tests
           command: |
             npx hardhat --network localhost test:integration:l1 --deploy --provider-port 9545
-      - run:
-          name: Run isolated layer 2 integration tests
-          command: |
-            npx hardhat --network localhost test:integration:l2 --deploy --provider-port 9545
+#      - run:
+#          name: Run isolated layer 2 integration tests
+#          command: |
+#            npx hardhat --network localhost test:integration:l2 --deploy --provider-port 9545
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
