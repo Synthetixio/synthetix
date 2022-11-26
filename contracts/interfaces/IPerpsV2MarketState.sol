@@ -31,6 +31,12 @@ interface IPerpsV2MarketState {
 
     function getPositionAddressesPage(uint, uint) external view returns (address[] memory);
 
+    function getDelayedOrderAddressesPage(uint, uint) external view returns (address[] memory);
+
+    function getPositionAddressesLength() external view returns (uint);
+
+    function getDelayedOrderAddressesLength() external view returns (uint);
+
     function setMarketKey(bytes32) external;
 
     function setBaseAsset(bytes32) external;

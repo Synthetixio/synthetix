@@ -89,4 +89,20 @@ contract MockPerpsV2StateConsumer {
     function deleteDelayedOrder(address account) external {
         marketState.deleteDelayedOrder(account);
     }
+
+    function getPositionAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
+        return marketState.getPositionAddressesPage(index, pageSize);
+    }
+
+    function getDelayedOrderAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
+        return marketState.getDelayedOrderAddressesPage(index, pageSize);
+    }
+
+    function getPositionAddressesLength() external view returns (uint) {
+        return marketState.getPositionAddressesLength();
+    }
+
+    function getDelayedOrderAddressesLength() external view returns (uint) {
+        return marketState.getDelayedOrderAddressesLength();
+    }
 }

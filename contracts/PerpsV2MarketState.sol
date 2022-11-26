@@ -63,6 +63,9 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     // The set of all addresses (positions) .
     AddressSetLib.AddressSet internal _positionAddresses;
 
+    // The set of all addresses (delayedOrders) .
+    AddressSetLib.AddressSet internal _delayedOrderAddresses;
+
     // This increments for each position; zero reflects a position that does not exist.
     uint64 internal _nextPositionId = 1;
 
@@ -103,6 +106,23 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         returns (address[] memory)
     {
         return _positionAddresses.getPage(index, pageSize);
+    }
+
+    function getDelayedOrderAddressesPage(uint index, uint pageSize)
+        external
+        view
+        onlyAssociatedContracts
+        returns (address[] memory)
+    {
+        return _delayedOrderAddresses.getPage(index, pageSize);
+    }
+
+    function getPositionAddressesLength() external view onlyAssociatedContracts returns (uint) {
+        return _positionAddresses.elements.length;
+    }
+
+    function getDelayedOrderAddressesLength() external view onlyAssociatedContracts returns (uint) {
+        return _delayedOrderAddresses.elements.length;
     }
 
     function setMarketKey(bytes32 _marketKey) external onlyAssociatedContracts {
@@ -202,6 +222,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             intentionTime,
             trackingCode
         );
+        _delayedOrderAddresses.add(account);
     }
 
     /**
@@ -218,5 +239,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function deleteDelayedOrder(address account) external onlyAssociatedContracts {
         delete delayedOrders[account];
+        if (_delayedOrderAddresses.contains(account)) {
+            _delayedOrderAddresses.remove(account);
+        }
     }
 }

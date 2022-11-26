@@ -317,4 +317,45 @@ contract('PerpsV2MarketState', accounts => {
 			});
 		});
 	});
+
+	describe('Migration helper', () => {
+		const positionAddresses = [];
+		const delayedOrderAddresses = [];
+
+		beforeEach('add some positions and delayed orders', async () => {
+			for (let i = 0; i < 100; i++) {
+				const newAddress = web3.eth.accounts.create();
+				positionAddresses.push(newAddress);
+				await mockPerpsV2StateConsumer.updatePosition(newAddress.address, i, 2, 3, 4, 5);
+			}
+
+			for (let i = 1000; i < 1050; i++) {
+				const newAddress = web3.eth.accounts.create();
+				delayedOrderAddresses.push(newAddress);
+				await mockPerpsV2StateConsumer.updateDelayedOrder(
+					newAddress.address,
+					true,
+					i,
+					2,
+					3,
+					4,
+					5,
+					6,
+					7,
+					toBytes32('code')
+				);
+			}
+		});
+
+		it('can retrieve paged positions addresses length', async () => {
+			assert.bnEqual(await mockPerpsV2StateConsumer.getPositionAddressesLength(), toBN(100));
+		});
+
+		it('can retrieve paged delayed orders addresses length', async () => {
+			assert.bnEqual(await mockPerpsV2StateConsumer.getDelayedOrderAddressesLength(), toBN(50));
+		});
+
+		it('can retrieve paged positions addresses', async () => {});
+		it('can retrieve paged delayed orders addresses', async () => {});
+	});
 });
