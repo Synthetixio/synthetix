@@ -366,6 +366,52 @@ contract('ProxyPerpsV2', async accounts => {
 				},
 			]);
 		});
+
+		describe('getting pages of routes', () => {
+			beforeEach('add some routes', async () => {
+				// Add some selectors
+				route = sampleRoutes[0];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+
+				route = sampleRoutes[1];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+
+				route = sampleRoutes[2];
+				await (
+					await ProxyPerpsV2.addRoute(route.selector, route.implementation, route.isView)
+				).wait();
+			});
+
+			it('gets all the routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(0, currentRoutesLength);
+				assert.equal(currentRoutes.length, currentRoutesLength);
+			});
+			it('gets just the existent routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(0, currentRoutesLength + 10);
+				assert.equal(currentRoutes.length, currentRoutesLength);
+			});
+			it('gets all the routes starting in the 1st element', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(1, currentRoutesLength - 1);
+				assert.equal(currentRoutes.length, currentRoutesLength - 1);
+			});
+			it('gets just the routes starting in the 1st element', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(1, currentRoutesLength + 10);
+				assert.equal(currentRoutes.length, currentRoutesLength - 1);
+			});
+			it('gets no route if start index is larger than max routes', async () => {
+				const currentRoutesLength = await ProxyPerpsV2.getRoutesLength();
+				const currentRoutes = await ProxyPerpsV2.getRoutesPage(10, currentRoutesLength);
+				assert.equal(currentRoutes.length, 0);
+			});
+		});
 	});
 
 	describe('targets administration (reverts)', async () => {

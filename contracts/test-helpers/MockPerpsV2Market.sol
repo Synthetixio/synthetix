@@ -5,6 +5,10 @@ interface IPerpsV2MarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external;
+
+    function payFee(uint amount) external;
+
+    function payFee(uint amount, bytes32 trackingCode) external;
 }
 
 contract MockPerpsV2Market {
@@ -58,5 +62,13 @@ contract MockPerpsV2Market {
 
     function burnSUSD(address account, uint amount) external {
         manager.burnSUSD(account, amount);
+    }
+
+    function payFee(uint amount) external {
+        manager.payFee(amount);
+    }
+
+    function payFee(uint amount, bytes32 trackingCode) external {
+        manager.payFee(amount, trackingCode);
     }
 }
