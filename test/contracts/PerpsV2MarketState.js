@@ -325,13 +325,13 @@ contract('PerpsV2MarketState', accounts => {
 		beforeEach('add some positions and delayed orders', async () => {
 			for (let i = 0; i < 100; i++) {
 				const newAddress = web3.eth.accounts.create();
-				positionAddresses.push(newAddress);
+				positionAddresses[i] = newAddress.address;
 				await mockPerpsV2StateConsumer.updatePosition(newAddress.address, i, 2, 3, 4, 5);
 			}
 
-			for (let i = 1000; i < 1050; i++) {
+			for (let i = 0; i < 50; i++) {
 				const newAddress = web3.eth.accounts.create();
-				delayedOrderAddresses.push(newAddress);
+				delayedOrderAddresses[i] = newAddress.address;
 				await mockPerpsV2StateConsumer.updateDelayedOrder(
 					newAddress.address,
 					true,
@@ -355,7 +355,13 @@ contract('PerpsV2MarketState', accounts => {
 			assert.bnEqual(await mockPerpsV2StateConsumer.getDelayedOrderAddressesLength(), toBN(50));
 		});
 
-		it('can retrieve paged positions addresses', async () => {});
-		it('can retrieve paged delayed orders addresses', async () => {});
+		it('can retrieve paged positions addresses', async () => {
+			const addresses = await mockPerpsV2StateConsumer.getPositionAddressesPage(0, 100);
+			assert.deepEqual(addresses, positionAddresses);
+		});
+		it('can retrieve paged delayed orders addresses', async () => {
+			const addresses = await mockPerpsV2StateConsumer.getDelayedOrderAddressesPage(0, 50);
+			assert.deepEqual(addresses, delayedOrderAddresses);
+		});
 	});
 });
