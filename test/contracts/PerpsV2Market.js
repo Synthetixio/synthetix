@@ -4183,6 +4183,7 @@ contract('PerpsV2Market', accounts => {
 	describe('Liquidations', () => {
 		describe('Liquidation price', () => {
 			const getExpectedLiquidationPrice = async ({
+				skewScale,
 				margin,
 				size,
 				fillPrice,
@@ -4217,7 +4218,10 @@ contract('PerpsV2Market', accounts => {
 					liqBufferRatio
 				).add(expectedLiquidationFee);
 
-				const premium = await futuresMarket.liquidationPremium(account);
+				const premium = divideDecimal(
+					multiplyDecimal(divideDecimal(size.abs(), skewScale), price),
+					toUnit('2')
+				);
 				return fillPrice
 					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
 					.sub(expectedNetFundingPerUnit);
@@ -4242,6 +4246,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
 				const expectedLiquidationPrice1 = await getExpectedLiquidationPrice({
+					skewScale,
 					margin: margin1,
 					size: size1,
 					fillPrice: fillPrice1,
@@ -4256,6 +4261,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isFalse(liquidationPrice1.invalid);
 
 				const expectedLiquidationPrice2 = await getExpectedLiquidationPrice({
+					skewScale,
 					margin: margin2,
 					size: size2,
 					fillPrice: fillPrice2,
@@ -4291,6 +4297,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4302,6 +4309,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4318,6 +4326,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4330,6 +4339,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4348,6 +4358,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4361,6 +4372,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4380,6 +4392,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4394,6 +4407,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4415,6 +4429,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4429,6 +4444,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4443,7 +4459,8 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Liquidation price is accurate with funding (ff 1 day)', async () => {
-				await futuresMarketSettings.setSkewScale(marketKey, toUnit('1000'), { from: owner });
+				const skewScale = toUnit('1000');
+				await futuresMarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
 
 				const price = toUnit('250');
 				await setPrice(baseAsset, price);
@@ -4476,6 +4493,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4487,6 +4505,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
