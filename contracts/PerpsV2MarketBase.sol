@@ -582,7 +582,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /*
      * @dev SIP-279 fillPrice price at which a trade is executed against accounting for how this position's
-     * size impacts the skew. If the size contracts the skew (reduces) then a discount is apply on the price
+     * size impacts the skew. If the size contracts the skew (reduces) then a discount is applied on the price
      * whereas expanding the skew incurs an additional premium.
      */
     function _fillPrice(int size, uint price) internal view returns (uint) {
