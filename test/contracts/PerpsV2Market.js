@@ -1365,8 +1365,59 @@ contract('PerpsV2Market', accounts => {
 
 	describe('Modifying positions', () => {
 		describe('Price impact', () => {
-			it('should succeed with a reasonable price impact');
-			it('should fail when the fillPrice exceeds the max price impact tolerance');
+			it('should succeed with a reasonable price impact (long)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const size = toUnit('10'); // 2x long
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.5% (50bps)
+				// maxPriceImpact = 200 * (1 + 0.005)
+				//                = 201
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0]; // 200.01
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('should fail when the fillPrice exceeds the max price impact tolerance (long)', async () => {
+				const margin = toUnit('10000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.5% (50bps)
+				// maxPriceImpact = 200 * (1 + 0.0005)
+				//                = 200.1
+				const reasonablePriceImpact = toUnit('0.0005'); // 0.1% (5bps)
+
+				// 8x long, fillPrice = 200.4
+				await assert.revert(
+					futuresMarket.modifyPosition(toUnit('400'), reasonablePriceImpact, {
+						from: trader,
+					}),
+					'Price impact exceeded'
+				);
+			});
+
+			it('should succeed with a reasonable price impact (short)');
+			it('should fail when the fillPrice exceeds the max price impact tolerance (short)');
 			it('should default to the makerFee as priceImpactDelta when nothing is provided');
 			it('should default to the takerFee as priceImpactDelta when nothing is provided');
 			it(
@@ -1431,9 +1482,7 @@ contract('PerpsV2Market', accounts => {
 				size,
 				priceImpactDelta,
 				trackingCode,
-				{
-					from: trader,
-				}
+				{ from: trader }
 			);
 
 			// The relevant events are properly emitted
