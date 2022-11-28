@@ -4719,7 +4719,6 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
-				const premium = await futuresMarket.liquidationPremium(trader);
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4735,7 +4734,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
+				const poolFee = remainingMargin.sub(liquidationFee);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 
@@ -4823,7 +4822,6 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader3));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
-				const premium = await futuresMarket.liquidationPremium(trader3);
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4839,7 +4837,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
+				const poolFee = remainingMargin.sub(liquidationFee);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 
