@@ -1365,10 +1365,126 @@ contract('PerpsV2Market', accounts => {
 
 	describe('Modifying positions', () => {
 		describe('Price impact', () => {
-			it('should succeed with a reasonable price impact');
-			it('should fail when the fillPrice exceeds the max price impact tolerance');
-			it('should default to the makerFee as priceImpactDelta when nothing is provided');
-			it('should default to the takerFee as priceImpactDelta when nothing is provided');
+			it('should succeed with a reasonable price impact (long)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const size = toUnit('10'); // 2x long
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.5% (50bps)
+				// priceImpactLimit = 200 * (1 + 0.005)
+				//                  = 201
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0]; // 200.01
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('should fail when the fillPrice exceeds the max price impact tolerance (long)', async () => {
+				const margin = toUnit('10000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.1% (5bps)
+				// priceImpactLimit = 200 * (1 + 0.0005)
+				//                  = 200.1
+				const reasonablePriceImpact = toUnit('0.0005'); // 0.1% (5bps)
+
+				// 8x long, fillPrice = 200.4
+				await assert.revert(
+					futuresMarket.modifyPosition(toUnit('400'), reasonablePriceImpact, {
+						from: trader,
+					}),
+					'Price impact exceeded'
+				);
+			});
+
+			it('should succeed with a reasonable price impact (short)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const size = toUnit('-30'); // 6x short
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.5% (50bps)
+				// priceImpactLimit = 200 * (1 - 0.005)
+				//                  = 199
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				// 6x short, fillPrice = 199.97
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
+
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('should succeed with a reasonable price impact (short with discount)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				await futuresMarket.transferMargin(margin, { from: trader2 });
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// trader1 has a position (100bps price impact & 6x long).
+				await futuresMarket.modifyPosition(toUnit('30'), toUnit('0.01'), {
+					from: trader,
+				});
+
+				// Price impact:
+				//
+				// priceImpactLimit = 200 * (1 - 0.005)
+				//                  = 199
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				// 4x short, fillPrice = 200.04
+				const size = toUnit('-20');
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
+
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader2,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('should fail when the fillPrice exceeds the max price impact tolerance (short)');
+
 			it(
 				'should fail when no priceImpactDelta is provided and fillPrice exceeds default tolerance'
 			);
@@ -1431,9 +1547,7 @@ contract('PerpsV2Market', accounts => {
 				size,
 				priceImpactDelta,
 				trackingCode,
-				{
-					from: trader,
-				}
+				{ from: trader }
 			);
 
 			// The relevant events are properly emitted
@@ -4069,6 +4183,7 @@ contract('PerpsV2Market', accounts => {
 	describe('Liquidations', () => {
 		describe('Liquidation price', () => {
 			const getExpectedLiquidationPrice = async ({
+				skewScale,
 				margin,
 				size,
 				fillPrice,
@@ -4103,7 +4218,10 @@ contract('PerpsV2Market', accounts => {
 					liqBufferRatio
 				).add(expectedLiquidationFee);
 
-				const premium = await futuresMarket.liquidationPremium(account);
+				const premium = divideDecimal(
+					multiplyDecimal(divideDecimal(size.abs(), skewScale), price),
+					toUnit('2')
+				);
 				return fillPrice
 					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
 					.sub(expectedNetFundingPerUnit);
@@ -4128,6 +4246,7 @@ contract('PerpsV2Market', accounts => {
 				await futuresMarket.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
 				const expectedLiquidationPrice1 = await getExpectedLiquidationPrice({
+					skewScale,
 					margin: margin1,
 					size: size1,
 					fillPrice: fillPrice1,
@@ -4142,6 +4261,7 @@ contract('PerpsV2Market', accounts => {
 				assert.isFalse(liquidationPrice1.invalid);
 
 				const expectedLiquidationPrice2 = await getExpectedLiquidationPrice({
+					skewScale,
 					margin: margin2,
 					size: size2,
 					fillPrice: fillPrice2,
@@ -4177,6 +4297,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4188,6 +4309,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4204,6 +4326,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4216,6 +4339,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4234,6 +4358,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4247,6 +4372,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4266,6 +4392,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4280,6 +4407,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4301,6 +4429,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4315,6 +4444,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4329,7 +4459,8 @@ contract('PerpsV2Market', accounts => {
 			});
 
 			it('Liquidation price is accurate with funding (ff 1 day)', async () => {
-				await futuresMarketSettings.setSkewScale(marketKey, toUnit('1000'), { from: owner });
+				const skewScale = toUnit('1000');
+				await futuresMarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
 
 				const price = toUnit('250');
 				await setPrice(baseAsset, price);
@@ -4362,6 +4493,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin1,
 						size: size1,
 						fillPrice: fillPrice1,
@@ -4373,6 +4505,7 @@ contract('PerpsV2Market', accounts => {
 				assert.bnEqual(
 					(await futuresMarket.liquidationPrice(trader2)).price,
 					await getExpectedLiquidationPrice({
+						skewScale,
 						margin: margin2,
 						size: size2,
 						fillPrice: fillPrice2,
@@ -4719,7 +4852,6 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader)).marginRemaining;
-				const premium = await futuresMarket.liquidationPremium(trader);
 				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4735,7 +4867,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
+				const poolFee = remainingMargin.sub(liquidationFee);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 
@@ -4823,7 +4955,6 @@ contract('PerpsV2Market', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader3));
 
 				const remainingMargin = (await futuresMarket.remainingMargin(trader3)).marginRemaining;
-				const premium = await futuresMarket.liquidationPremium(trader3);
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -4839,7 +4970,7 @@ contract('PerpsV2Market', accounts => {
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
-				const poolFee = remainingMargin.sub(liquidationFee).sub(premium);
+				const poolFee = remainingMargin.sub(liquidationFee);
 				// the price needs to be set in a way that leaves positive margin after fee
 				assert.isTrue(poolFee.gt(toBN(0)));
 

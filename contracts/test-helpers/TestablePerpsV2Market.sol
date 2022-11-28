@@ -167,11 +167,6 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return (0, false);
     }
 
-    function liquidationPremium(address account) external view returns (uint) {
-        (uint price, ) = _assetPrice();
-        return _liquidationPremium(marketState.positions(account).size, price);
-    }
-
     function liquidationFee(address account) external view returns (uint) {
         return 0;
     }
