@@ -636,36 +636,26 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *  0.01  then 1%
      *  0.001 then 0.1%
      *
-     * When price is $1000 and priceImpactDelta is:
+     * When price is $1000, I long, and priceImpactDelta is:
      *  0.1   then price * (1 + 0.1)   = 1100
      *  0.01  then price * (1 + 0.01)  = 1010
      *  0.001 then price * (1 + 0.001) = 1001
      *
-     * When priceImpactDelta is not specified (i.e. 0) then we derive the price by looking at the orderFee as a
-     * percentage of the fillPrice. So assuming no dynamic fees and this is a taker trade with a 0.0045
-     * fee on a 10k USD sized trade then the maxPriceImpact would be 100 + 10000 * 0.0045 = 145
+     * When same but short then,
+     *  0.1   then price * (1 - 0.1)   = 900
+     *  0.01  then price * (1 - 0.01)  = 990
+     *  0.001 then price * (1 - 0.001) = 999
+     *
+     * This forms the limit at which the fillPrice can reach before we revert the trade.
      */
-    function _maxPriceImpact(
+    function _priceImpactLimit(
         uint price,
         uint priceImpactDelta,
-        int sizeDelta,
-        uint orderFee
+        int sizeDelta
     ) internal pure returns (uint) {
-        uint priceImpactUsd;
-
-        // No priceImpactDelta is specified, use the orderFee for the upper bound.
-        //
-        // note: We look at orderFee (not maker/taker fee) because orderFee considers the case when a
-        // trade with large enough size can flip the skew.
-        if (priceImpactDelta == 0) {
-            priceImpactUsd = orderFee;
-        } else {
-            priceImpactUsd = price.multiplyDecimal(priceImpactDelta);
-        }
-
         // A lower price would be less desirable for shorts and a higher price is less desirable for longs. As such
         // we derive the maxPriceImpact based on whether the position is going long/short.
-        return sizeDelta > 0 ? price.add(priceImpactUsd) : price.sub(priceImpactDelta);
+        return price.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT).add(priceImpactDelta) : uint(_UNIT).sub(priceImpactDelta));
     }
 
     /*

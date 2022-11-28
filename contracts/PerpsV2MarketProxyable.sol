@@ -100,15 +100,14 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         uint price,
         uint fillPrice,
         uint priceImpactDelta,
-        int sizeDelta,
-        uint orderFee
+        int sizeDelta
     ) internal view returns (uint) {
-        uint maxPriceImpact = _maxPriceImpact(price, priceImpactDelta, sizeDelta, orderFee);
+        uint priceImpactLimit = _priceImpactLimit(price, priceImpactDelta, sizeDelta);
         _revertIfError(
-            sizeDelta > 0 ? fillPrice > maxPriceImpact : fillPrice < maxPriceImpact,
+            sizeDelta > 0 ? fillPrice > priceImpactLimit : fillPrice < priceImpactLimit,
             Status.PriceImpactToleranceExceeded
         );
-        return maxPriceImpact;
+        return priceImpactLimit;
     }
 
     function _recomputeFunding() internal returns (uint lastIndex) {
@@ -197,7 +196,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
-        _assertPriceImpact(price, params.price, params.priceImpactDelta, params.sizeDelta, fee);
+        _assertPriceImpact(price, params.price, params.priceImpactDelta, params.sizeDelta);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));

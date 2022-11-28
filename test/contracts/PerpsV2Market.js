@@ -1375,8 +1375,8 @@ contract('PerpsV2Market', accounts => {
 				// Price impact:
 				//
 				// 0.5% (50bps)
-				// maxPriceImpact = 200 * (1 + 0.005)
-				//                = 201
+				// priceImpactLimit = 200 * (1 + 0.005)
+				//                  = 201
 				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
 
 				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0]; // 200.01
@@ -1402,9 +1402,9 @@ contract('PerpsV2Market', accounts => {
 
 				// Price impact:
 				//
-				// 0.5% (50bps)
-				// maxPriceImpact = 200 * (1 + 0.0005)
-				//                = 200.1
+				// 0.1% (5bps)
+				// priceImpactLimit = 200 * (1 + 0.0005)
+				//                  = 200.1
 				const reasonablePriceImpact = toUnit('0.0005'); // 0.1% (5bps)
 
 				// 8x long, fillPrice = 200.4
@@ -1416,10 +1416,75 @@ contract('PerpsV2Market', accounts => {
 				);
 			});
 
-			it('should succeed with a reasonable price impact (short)');
+			it('should succeed with a reasonable price impact (short)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				const size = toUnit('-30'); // 6x short
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// Price impact:
+				//
+				// 0.5% (50bps)
+				// priceImpactLimit = 200 * (1 - 0.005)
+				//                  = 199
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				// 6x short, fillPrice = 199.97
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
+
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
+			it('should succeed with a reasonable price impact (short with discount)', async () => {
+				const margin = toUnit('1000');
+				await futuresMarket.transferMargin(margin, { from: trader });
+				await futuresMarket.transferMargin(margin, { from: trader2 });
+				const price = toUnit('200');
+				await setPrice(baseAsset, price);
+
+				// trader1 has a position (100bps price impact & 6x long).
+				await futuresMarket.modifyPosition(toUnit('30'), toUnit('0.01'), {
+					from: trader,
+				});
+
+				// Price impact:
+				//
+				// priceImpactLimit = 200 * (1 - 0.005)
+				//                  = 199
+				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
+
+				// 4x short, fillPrice = 200.04
+				const size = toUnit('-20');
+				const fillPrice = (await futuresMarket.fillPriceWithBasePrice(size, 0))[0];
+
+				const fee = (await futuresMarket.orderFee(size))[0];
+
+				const tx = await futuresMarket.modifyPosition(size, reasonablePriceImpact, {
+					from: trader2,
+				});
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+				decodedEventEqual({
+					event: 'PositionModified',
+					emittedFrom: futuresMarket.address,
+					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					log: decodedLogs[2],
+				});
+			});
+
 			it('should fail when the fillPrice exceeds the max price impact tolerance (short)');
-			it('should default to the makerFee as priceImpactDelta when nothing is provided');
-			it('should default to the takerFee as priceImpactDelta when nothing is provided');
+
 			it(
 				'should fail when no priceImpactDelta is provided and fillPrice exceeds default tolerance'
 			);
