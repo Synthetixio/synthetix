@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
 import "../AddressResolver.sol";
-import "../ProxyERC20.sol";
+import "../Proxy.sol";
 import "../legacy/LegacyTokenState.sol";
 import "../RewardEscrow.sol";
 import "../RewardsDistribution.sol";
@@ -14,33 +14,33 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Alphecca is BaseMigration {
-    // https://goerli.etherscan.io/address/0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
-    address public constant OWNER = 0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
+    // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://goerli.etherscan.io/address/0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB
-    AddressResolver public constant addressresolver_i = AddressResolver(0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB);
-    // https://goerli.etherscan.io/address/0x51f44ca59b867E005e48FA573Cb8df83FC7f7597
-    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0x51f44ca59b867E005e48FA573Cb8df83FC7f7597);
-    // https://goerli.etherscan.io/address/0xe842C91A5D2BCE122d89497f171d81067255Ad0d
-    LegacyTokenState public constant tokenstatesynthetix_i = LegacyTokenState(0xe842C91A5D2BCE122d89497f171d81067255Ad0d);
-    // https://goerli.etherscan.io/address/0x249BCCbFD33FA6653Db02aE2349444EF25E9B41d
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x249BCCbFD33FA6653Db02aE2349444EF25E9B41d);
-    // https://goerli.etherscan.io/address/0x882eaF70e172b8543145811c5fE169d03740ba9a
+    // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
+    // https://etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F
+    Proxy public constant proxysynthetix_i = Proxy(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
+    // https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD
+    LegacyTokenState public constant tokenstatesynthetix_i = LegacyTokenState(0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD);
+    // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
+    RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
+    // https://etherscan.io/address/0x29C295B046a73Cde593f21f63091B072d407e3F2
     RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0x882eaF70e172b8543145811c5fE169d03740ba9a);
+        RewardsDistribution(0x29C295B046a73Cde593f21f63091B072d407e3F2);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://goerli.etherscan.io/address/0xFC0E6442fC16e1caf52baa31f8043D8BE78AEb0D
-    address public constant new_Synthetix_contract = 0xFC0E6442fC16e1caf52baa31f8043D8BE78AEb0D;
-    // https://goerli.etherscan.io/address/0xc656c18721594f9E98B0C805AB9c21Bda5B44f4C
-    address public constant new_Liquidator_contract = 0xc656c18721594f9E98B0C805AB9c21Bda5B44f4C;
+    // https://etherscan.io/address/0x883A0E7b329Df75476d9378462522CF2f78Fab3d
+    address public constant new_Synthetix_contract = 0x883A0E7b329Df75476d9378462522CF2f78Fab3d;
+    // https://etherscan.io/address/0x8e9757479D5ad4E7f9d951B60d39F5220b893d6c
+    address public constant new_Liquidator_contract = 0x8e9757479D5ad4E7f9d951B60d39F5220b893d6c;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -112,16 +112,15 @@ contract Migration_Alphecca is BaseMigration {
     }
 
     function addressresolver_rebuildCaches_1() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](9);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x4300a068B3826aCEFaE7062b411aF467a34Bf3A6);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](8);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xAc86855865CbF31c8f9FBB68C749AD5Bd72802e3);
         addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(new_Liquidator_contract);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x601A1Cf1a34d9cF0020dCCD361c155Fe54CE24fB);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x6Ce575c870ce744e245Ef8400b6d89412C35c328);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x35a3F27736955394ee27Ce5348854670CE8D31DF);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x6eab29a0904d0fd964AdE1F6c3ab1584E36602aE);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x1427Bc44755d9Aa317535B1feE38922760Aa4e65);
-        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0x9B79D6dFe4650d70f35dbb80f7d1EC0Cf7f823Fd);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(new_Synthetix_contract);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xf79603a71144e415730C1A6f57F366E4Ea962C00);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0xaeA0065E146FD75Dc24465961a583827284D405a);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x5810Fc0E79F4323B2dd3c638914083Fd23a941C0);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x39Ea01a0298C315d149a490E34B59Dbf2EC7e48F);
+        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(new_Synthetix_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 }
