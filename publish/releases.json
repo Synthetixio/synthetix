@@ -747,7 +747,8 @@
 		{
 			"sip": 299,
 			"layer": "both",
-			"sources": ["Synthetix", "Liquidator"]
+			"sources": ["Synthetix", "Liquidator"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -1409,6 +1410,25 @@
 				"minor": 78
 			},
 			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Alphecca",
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
+			"released": true
+		},
+		{
+			"name": "Alphecca (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
 			"released": true
 		}
 	]
