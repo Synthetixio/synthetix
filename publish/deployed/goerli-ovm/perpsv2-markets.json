@@ -1,6 +1,6 @@
 [
 	{
-		"marketKey": "BTCPERP",
+		"marketKey": "sBTCPERP",
 		"asset": "sBTC",
 		"makerFee": "0.007",
 		"takerFee": "0.01",
@@ -23,7 +23,7 @@
 		"paused": false
 	},
 	{
-		"marketKey": "ETHPERP",
+		"marketKey": "sETHPERP",
 		"asset": "sETH",
 		"makerFee": "0.007",
 		"takerFee": "0.01",
