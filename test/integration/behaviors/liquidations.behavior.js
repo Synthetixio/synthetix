@@ -162,7 +162,7 @@ function itCanLiquidate({ ctx }) {
 
 						const { gasUsed } = await tx.wait();
 						console.log(
-							`liquidateDelinquentAccount() with no escrow entries gas used: ${Math.round(
+							`    liquidateDelinquentAccount() with no escrow entries gas used: ${Math.round(
 								gasUsed / 1000
 							).toString()}k`
 						);

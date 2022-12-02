@@ -61,7 +61,7 @@ describe('depositAndMigrateEscrow() integration tests (L1, L2)', () => {
 			postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
 		});
 
-		it('should update the L1 escrow state', async () => {
+		it('should update the L1 escrow state', () => {
 			assert.bnEqual(
 				postParametersL1.escrowedBalance,
 				initialParametersL1.escrowedBalance.add(escrowEntriesData.totalEscrowed)

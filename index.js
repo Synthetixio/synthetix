@@ -79,7 +79,9 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	OFFCHAIN_FEEDS_FILENAME: 'offchain-feeds.json',
 	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
+	PERPS_V2_MARKETS_FILENAME: 'perpsv2-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -352,6 +354,25 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 		memo[asset] = Object.assign(assets[asset], entry);
 		return memo;
 	}, {});
+};
+
+const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
+	if (!deploymentPath && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].offchainFeeds;
+	} else {
+		const pathToFeeds = deploymentPath
+			? path.join(deploymentPath, constants.OFFCHAIN_FEEDS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.OFFCHAIN_FEEDS_FILENAME,
+			  });
+		if (!fs.existsSync(pathToFeeds)) {
+			throw Error(`Cannot find off-chain feeds file.`);
+		}
+		return JSON.parse(fs.readFileSync(pathToFeeds));
+	}
 };
 
 /**
@@ -734,6 +755,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getStakingRewards',
 		'getShortingRewards',
 		'getFeeds',
+		'getOffchainFeeds',
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
@@ -766,6 +788,7 @@ module.exports = {
 	getShortingRewards,
 	getSuspensionReasons,
 	getFeeds,
+	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
 	getTarget,

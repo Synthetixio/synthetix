@@ -25,7 +25,9 @@ task('node', 'Run a node')
 			if (network === 'mainnet' && !useOvm) {
 				taskArguments.fork = process.env.PROVIDER_URL_MAINNET;
 			} else {
-				taskArguments.fork = process.env.PROVIDER_URL.replace('network', networkHostReplace);
+				taskArguments.fork = process.env.PROVIDER_URL_FORK
+					? process.env.PROVIDER_URL_FORK
+					: process.env.PROVIDER_URL.replace('network', networkHostReplace);
 			}
 
 			console.log(yellow(`Forking ${network}...`));
