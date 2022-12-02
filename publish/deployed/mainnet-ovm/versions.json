@@ -1449,8 +1449,9 @@
 			},
 			"Synthetix": {
 				"address": "0xF149ABD352f4AB50ca3c161f4F5d0c85AeFA8A9d",
-				"status": "current",
-				"keccak256": "0xcedf9713485ff0f263313c684c02f47a28588a070bce67f32fec53975f86aae7"
+				"status": "replaced",
+				"keccak256": "0xcedf9713485ff0f263313c684c02f47a28588a070bce67f32fec53975f86aae7",
+				"replaced_in": "v2.79.1"
 			},
 			"Issuer": {
 				"address": "0x12120AcBE7d6402104b68a2e86C071Fcdd1034Fe",
@@ -1460,8 +1461,9 @@
 			},
 			"Liquidator": {
 				"address": "0x61C7BC9b335e083c30C8a81b93575c361cdE93E2",
-				"status": "current",
-				"keccak256": "0x0bfcbee94000798a285a5654456e71546e6ffffb6ccd7abc8de236a2e958d231"
+				"status": "replaced",
+				"keccak256": "0x0bfcbee94000798a285a5654456e71546e6ffffb6ccd7abc8de236a2e958d231",
+				"replaced_in": "v2.79.1"
 			},
 			"RewardEscrowV2Storage": {
 				"address": "0x0c2ED9B23BAF9C5f486e175D406728d3bE46d2A6",
@@ -1512,6 +1514,26 @@
 				"address": "0x186c50515e6Ee95cEC381d7f6Fe72C67085dBCb4",
 				"status": "current",
 				"keccak256": "0xa461f2178b2a89520febb03b493fbcccc1b7299fade9826090a391186ce0b36d"
+			}
+		}
+	},
+	"v2.79.1": {
+		"tag": "v2.79.1",
+		"fulltag": "v2.79.1",
+		"release": "Alphecca",
+		"network": "mainnet",
+		"date": "2022-12-01T19:04:44-05:00",
+		"commit": "ae980173c5b531ae709a17d886e855fdc4fa6338",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x49B35BE7D96888C02F342552aB218d859599aCeb",
+				"status": "current",
+				"keccak256": "0x9f4bfdb0f2116bf1dbd405ed4274b169a2b05143012307b0689e4b7d0fea5165"
+			},
+			"Liquidator": {
+				"address": "0xB589Af3f2e3377A9a57da74bE1b6598926479505",
+				"status": "current",
+				"keccak256": "0x04ca15c8a874862ae8997031bbb2330db2fb7ecd489b46b86645f545151ae581"
 			}
 		}
 	}
