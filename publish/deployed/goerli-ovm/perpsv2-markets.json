@@ -2,8 +2,8 @@
 	{
 		"marketKey": "BTCPERP",
 		"asset": "sBTC",
-		"takerFee": "0.003",
-		"makerFee": "0.0025",
+		"makerFee": "0.007",
+		"takerFee": "0.01",
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0005",
 		"takerFeeOffchainDelayedOrder": "0.01",
@@ -25,8 +25,8 @@
 	{
 		"marketKey": "ETHPERP",
 		"asset": "sETH",
-		"takerFee": "0.0035",
-		"makerFee": "0.0030",
+		"makerFee": "0.007",
+		"takerFee": "0.01",
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0005",
 		"takerFeeOffchainDelayedOrder": "0.001",
