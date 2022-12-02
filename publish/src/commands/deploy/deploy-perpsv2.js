@@ -69,12 +69,13 @@ module.exports = async ({
 		let filteredFunctions = [];
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);
-		const marketName = 'PerpsV2Market' + marketConfig.marketKey; // remove s prefix
-		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey; // remove s prefix
-		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey; // remove s prefix
-		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey; // remove s prefix
-		const marketDelayedOrderName = 'PerpsV2DelayedOrder' + marketConfig.marketKey; // remove s prefix
-		const marketOffchainDelayedOrderName = 'PerpsV2OffchainDelayedOrder' + marketConfig.marketKey; // remove s prefix
+		const marketName = 'PerpsV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketDelayedOrderName = 'PerpsV2DelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketOffchainDelayedOrderName =
+			'PerpsV2OffchainDelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		// Deploy contracts
 		// Proxy
