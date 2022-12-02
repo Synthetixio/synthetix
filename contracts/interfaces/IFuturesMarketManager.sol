@@ -3,9 +3,19 @@ pragma solidity ^0.5.16;
 interface IFuturesMarketManager {
     function markets(uint index, uint pageSize) external view returns (address[] memory);
 
+    function markets(
+        uint index,
+        uint pageSize,
+        bool proxiedMarkets
+    ) external view returns (address[] memory);
+
     function numMarkets() external view returns (uint);
 
+    function numMarkets(bool proxiedMarkets) external view returns (uint);
+
     function allMarkets() external view returns (address[] memory);
+
+    function allMarkets(bool proxiedMarkets) external view returns (address[] memory);
 
     function marketForKey(bytes32 marketKey) external view returns (address);
 
