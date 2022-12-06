@@ -15,6 +15,7 @@ const {
 	getSynths,
 	getFeeds,
 	getOffchainFeeds,
+	getPerpsV2ConsolidatedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -221,6 +222,21 @@ program
 	.action(async ({ network, useOvm }) => {
 		const offchainFeeds = getOffchainFeeds({ network, useOvm });
 		console.log(util.inspect(offchainFeeds, false, null, true));
+	});
+
+program
+	.command('perpsv2-markets-abi')
+	.description('Get the PerpsV2 consolidated markets abis')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option(
+		'-d, --deployment-path <value>',
+		'(optional) The deployment file path .',
+		x => x.toLowerCase(),
+		''
+	)
+	.action(async ({ network, deploymentPath }) => {
+		const consolidatedMarkets = getPerpsV2ConsolidatedMarkets({ network, deploymentPath });
+		console.log(util.inspect(consolidatedMarkets, false, null, true));
 	});
 
 program
