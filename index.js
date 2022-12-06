@@ -479,7 +479,7 @@ const getFuturesMarkets = ({
 	});
 };
 
-const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath }) => {
+const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath, path }) => {
 	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, perpsV2Consolidated) => {
 		const proxyPrefix = 'PerpsV2Proxy';
 		const marketPrefix = 'PerpsV2Market';
@@ -546,10 +546,8 @@ const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath
 		}
 	};
 
-	const deploymentFilePath =
-		deploymentPath ||
-		getPathToNetwork({ network, useOvm: false, file: constants.DEPLOYMENT_FILENAME });
-	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
+	const deploymentData = loadDeploymentFile({ network, useOvm: false, path, fs, deploymentPath });
+
 	const targets = Object.keys(deploymentData.targets);
 
 	const perpsV2Consolidated = {};
@@ -562,14 +560,18 @@ const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath
 			contract: target,
 			network,
 			useOvm: false,
-			deploymentFilePath,
+			path,
+			fs,
+			deploymentPath,
 		});
 
 		const sourceData = getSource({
 			contract: targetData.source,
 			network,
 			useOvm: false,
-			deploymentFilePath,
+			path,
+			fs,
+			deploymentPath,
 		});
 
 		_analyzeAndIncludePerpsV2(target, targetData, sourceData, perpsV2Consolidated);

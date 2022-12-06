@@ -235,8 +235,8 @@ program
 		''
 	)
 	.action(async ({ network, deploymentPath }) => {
-		const consolidatedMarkets = getPerpsV2ConsolidatedMarkets({ network, deploymentPath });
-		console.log(util.inspect(consolidatedMarkets, false, null, true));
+		const consolidatedMarkets = getPerpsV2ConsolidatedMarkets({ network, deploymentPath, path });
+		console.log(JSON.stringify(consolidatedMarkets, null, 2));
 	});
 
 program
