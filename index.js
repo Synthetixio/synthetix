@@ -31,13 +31,11 @@ const chainIdMapping = Object.entries({
 		fork: true,
 	},
 
-	// OVM networks: see https://github.com/ethereum-optimism/regenesis/
 	10: {
-		network: 'mainnet',
-		useOvm: true,
+		network: 'mainnet-ovm',
 	},
 	420: {
-		network: 'goerli',
+		network: 'goerli-ovm',
 		useOvm: true,
 	},
 	'-1': {
