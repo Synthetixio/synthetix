@@ -479,6 +479,105 @@ const getFuturesMarkets = ({
 	});
 };
 
+const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath }) => {
+	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, perpsV2Consolidated) => {
+		const proxyPrefix = 'PerpsV2Proxy';
+		const marketPrefix = 'PerpsV2Market';
+		const prefixes = ['PerpsV2MarketViews', 'PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
+
+		if (target.startsWith(proxyPrefix)) {
+			// Is proxy
+			// get name
+			const marketName = target.slice(proxyPrefix.length);
+			if (!perpsV2Consolidated[marketName]) {
+				perpsV2Consolidated[marketName] = {};
+				perpsV2Consolidated[marketName].abi = [];
+			}
+			// get address
+			perpsV2Consolidated[marketName].address = targetData.address;
+		}
+
+		for (const prefix of prefixes) {
+			if (target.startsWith(prefix)) {
+				// Is proxied
+				// get name
+				const marketName = target.slice(prefix.length);
+				if (!perpsV2Consolidated[marketName]) {
+					perpsV2Consolidated[marketName] = {};
+					perpsV2Consolidated[marketName].abi = [];
+				}
+				// add fragments to abi
+				_consolidateAbi(sourceData.abi, perpsV2Consolidated[marketName].abi);
+			}
+		}
+
+		if (
+			target.startsWith(marketPrefix) &&
+			!target.startsWith('PerpsV2MarketViews') &&
+			!target.startsWith('PerpsV2MarketState') &&
+			target !== 'PerpsV2MarketSettings' &&
+			target !== 'PerpsV2MarketData'
+		) {
+			// get name
+			const marketName = target.slice(marketPrefix.length);
+			if (!perpsV2Consolidated[marketName]) {
+				perpsV2Consolidated[marketName] = {};
+				perpsV2Consolidated[marketName].abi = [];
+			}
+			// add fragments to abi
+			_consolidateAbi(sourceData.abi, perpsV2Consolidated[marketName].abi);
+		}
+		// Otherwise do nothing, not proxy/proxied market contract
+	};
+
+	const _consolidateAbi = (currentAbi, consolidatedAbi) => {
+		for (const abiFragment of currentAbi) {
+			if (
+				!consolidatedAbi.find(
+					f =>
+						f.type === abiFragment.type && f.name && abiFragment.name && f.name === abiFragment.name
+				)
+			) {
+				if (abiFragment.type !== 'constructor') {
+					// don't push constructors to the consolidated abi
+					consolidatedAbi.push(abiFragment);
+				}
+			}
+		}
+	};
+
+	const deploymentFilePath =
+		deploymentPath ||
+		getPathToNetwork({ network, useOvm: false, file: constants.DEPLOYMENT_FILENAME });
+	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
+	const targets = Object.keys(deploymentData.targets);
+
+	const perpsV2Consolidated = {};
+
+	for (const target of targets) {
+		if (!target.startsWith('PerpsV2')) {
+			continue;
+		}
+		const targetData = getTarget({
+			contract: target,
+			network,
+			useOvm: false,
+			deploymentFilePath,
+		});
+
+		const sourceData = getSource({
+			contract: targetData.source,
+			network,
+			useOvm: false,
+			deploymentFilePath,
+		});
+
+		_analyzeAndIncludePerpsV2(target, targetData, sourceData, perpsV2Consolidated);
+	}
+
+	return perpsV2Consolidated;
+};
+
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
@@ -759,6 +858,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
+		'getPerpsV2ConsolidatedMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -791,6 +891,7 @@ module.exports = {
 	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
+	getPerpsV2ConsolidatedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
