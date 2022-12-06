@@ -22,7 +22,9 @@ subtask('interact:load-contracts').setAction(async (args, hre, runSuper) => {
 
 	// Derive target build path and retrieve deployment artifacts
 	const file = synthetix.constants.DEPLOYMENT_FILENAME;
-	const deploymentFilePath = getPathToNetwork({ network: hre.network.name, useOvm: false, file });
+
+	const deploymentPath = getPathToNetwork({ network: hre.network.name, useOvm: false });
+	const deploymentFilePath = path.join(deploymentPath, file);
 
 	const deploymentData = JSON.parse(fs.readFileSync(deploymentFilePath));
 	const targets = Object.keys(deploymentData.targets);
@@ -51,7 +53,7 @@ subtask('interact:load-contracts').setAction(async (args, hre, runSuper) => {
 	const perpsV2Consolidated = getPerpsV2ConsolidatedMarkets({
 		network: hre.network.name,
 		fs,
-		deploymentPath: deploymentFilePath,
+		deploymentPath,
 	});
 
 	const perpV2MarketTargets = Object.keys(perpsV2Consolidated);
