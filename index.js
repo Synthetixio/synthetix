@@ -33,6 +33,7 @@ const chainIdMapping = Object.entries({
 
 	10: {
 		network: 'mainnet',
+		useOvm: true,
 	},
 	420: {
 		network: 'goerli',
