@@ -163,4 +163,46 @@ interface IPerpsV2MarketConsolidated {
     function cancelOffchainDelayedOrder(address account) external;
 
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable;
+
+    /* ========== Events ========== */
+
+    event PositionModified(
+        uint indexed id,
+        address indexed account,
+        uint margin,
+        int size,
+        int tradeSize,
+        uint lastPrice,
+        uint fundingIndex,
+        uint fee
+    );
+
+    event MarginTransferred(address indexed account, int marginDelta);
+
+    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+
+    event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
+
+    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+
+    event DelayedOrderRemoved(
+        address indexed account,
+        uint currentRoundId,
+        int sizeDelta,
+        uint targetRoundId,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    );
+
+    event DelayedOrderSubmitted(
+        address indexed account,
+        bool isOffchain,
+        int sizeDelta,
+        uint targetRoundId,
+        uint executableAtTime,
+        uint commitDeposit,
+        uint keeperDeposit,
+        bytes32 trackingCode
+    );
 }
