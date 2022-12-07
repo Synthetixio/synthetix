@@ -32,10 +32,10 @@ const chainIdMapping = Object.entries({
 	},
 
 	10: {
-		network: 'mainnet-ovm',
+		network: 'mainnet',
 	},
 	420: {
-		network: 'goerli-ovm',
+		network: 'goerli',
 		useOvm: true,
 	},
 	'-1': {
