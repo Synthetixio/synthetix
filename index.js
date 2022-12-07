@@ -53,7 +53,7 @@ const chainIdMapping = Object.entries({
 /** @type {(obj: {id: number} | number) => number} */
 const getNetworkFromId = (obj) => {
 	const id = typeof obj === 'number' ? obj : obj.id;
-	chainIdMapping[id];
+	return chainIdMapping[id];
 }
 
 
