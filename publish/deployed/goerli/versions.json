@@ -459,13 +459,15 @@
 			},
 			"Liquidator": {
 				"address": "0xac0BE3b71d0bd224FCF83654e5aC2d2c9e2817BC",
-				"status": "current",
-				"keccak256": "0x0bfcbee94000798a285a5654456e71546e6ffffb6ccd7abc8de236a2e958d231"
+				"status": "replaced",
+				"keccak256": "0x0bfcbee94000798a285a5654456e71546e6ffffb6ccd7abc8de236a2e958d231",
+				"replaced_in": "v2.79.0-alpha"
 			},
 			"Synthetix": {
 				"address": "0x4187a6CecB490F5154c04514410a928191830443",
-				"status": "current",
-				"keccak256": "0xe9be5d93164097c047bf7a1ab9153fc062a40944e005d192b5eb79e91e0c70e3"
+				"status": "replaced",
+				"keccak256": "0xe9be5d93164097c047bf7a1ab9153fc062a40944e005d192b5eb79e91e0c70e3",
+				"replaced_in": "v2.79.0-alpha"
 			},
 			"Issuer": {
 				"address": "0xaD2fE7cd224c58871f541DAE01202F93928FEF72",
@@ -527,6 +529,26 @@
 				"address": "0x79654872398a5C667455058890B29B081Ed47939",
 				"status": "current",
 				"keccak256": "0xa461f2178b2a89520febb03b493fbcccc1b7299fade9826090a391186ce0b36d"
+			}
+		}
+	},
+	"v2.79.0-alpha": {
+		"tag": "v2.79.0-alpha",
+		"fulltag": "v2.79.0-alpha",
+		"release": "Alphecca",
+		"network": "goerli",
+		"date": "2022-11-22T17:13:21-05:00",
+		"commit": "1eb631c2c842afc501158a09b17e61a47e280a3c",
+		"contracts": {
+			"Liquidator": {
+				"address": "0xc656c18721594f9E98B0C805AB9c21Bda5B44f4C",
+				"status": "current",
+				"keccak256": "0x04ca15c8a874862ae8997031bbb2330db2fb7ecd489b46b86645f545151ae581"
+			},
+			"Synthetix": {
+				"address": "0xFC0E6442fC16e1caf52baa31f8043D8BE78AEb0D",
+				"status": "current",
+				"keccak256": "0xc85266777bdc8ba5399b1dc679a738f23c44dc60a40be34ba5a4f16450c52394"
 			}
 		}
 	}

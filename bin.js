@@ -14,6 +14,7 @@ const {
 	getSource,
 	getSynths,
 	getFeeds,
+	getOffchainFeeds,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -231,6 +232,16 @@ program
 	.action(async ({ network, useOvm }) => {
 		const feeds = getFeeds({ network, useOvm });
 		console.log(util.inspect(feeds, false, null, true));
+	});
+
+program
+	.command('offchain-feeds')
+	.description('Get the offchain price feeds')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		const offchainFeeds = getOffchainFeeds({ network, useOvm });
+		console.log(util.inspect(offchainFeeds, false, null, true));
 	});
 
 program

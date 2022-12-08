@@ -18,7 +18,6 @@ const MockExchanger = artifacts.require('MockExchanger');
 contract('FuturesMarketManager', accounts => {
 	let futuresMarketManager,
 		futuresMarketSettings,
-		// perpsSettings,
 		systemSettings,
 		exchangeRates,
 		circuitBreaker,
@@ -43,7 +42,6 @@ contract('FuturesMarketManager', accounts => {
 		({
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketSettings: futuresMarketSettings,
-			// PerpsV2Settings: perpsSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -58,7 +56,6 @@ contract('FuturesMarketManager', accounts => {
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
-				'PerpsV2Settings',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
@@ -90,12 +87,14 @@ contract('FuturesMarketManager', accounts => {
 				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: [
 					'addMarkets',
+					'addProxiedMarkets',
 					'removeMarkets',
 					'removeMarketsByKey',
 					'issueSUSD',
 					'burnSUSD',
 					'payFee',
 					'payFee',
+					'updateMarketsImplementations',
 				],
 			});
 		});
@@ -127,6 +126,10 @@ contract('FuturesMarketManager', accounts => {
 		it('Adding a single market', async () => {
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(markets.length));
+			assert.bnEqual(
+				await futuresMarketManager.methods['numMarkets(bool)'](false),
+				toBN(markets.length)
+			);
 			assert.equal(markets.length, 2);
 			assert.deepEqual(markets, addresses);
 
@@ -144,6 +147,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(3));
 			assert.equal((await futuresMarketManager.markets(2, 1))[0], market.address);
 
 			assert.equal(await futuresMarketManager.marketForKey(toBytes32('sLINK')), market.address);
@@ -164,6 +168,7 @@ contract('FuturesMarketManager', accounts => {
 			const addresses = markets.map(m => m.address);
 			const tx = await futuresMarketManager.addMarkets(addresses, { from: owner });
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(4));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(4));
 			assert.deepEqual(await futuresMarketManager.markets(2, 2), addresses);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(keys), addresses);
 
@@ -231,6 +236,7 @@ contract('FuturesMarketManager', accounts => {
 
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(1));
 			assert.deepEqual(markets, [addresses[1]]);
 
 			assert.equal(await futuresMarketManager.marketForKey(currencyKeys[0]), ZERO_ADDRESS);
@@ -240,6 +246,7 @@ contract('FuturesMarketManager', accounts => {
 			const tx = await futuresMarketManager.removeMarkets(addresses, { from: owner });
 			const markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(0));
 			assert.deepEqual(markets, []);
 			assert.deepEqual(await futuresMarketManager.marketsForKeys(currencyKeys), [
 				ZERO_ADDRESS,
@@ -267,6 +274,7 @@ contract('FuturesMarketManager', accounts => {
 
 			let markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(1));
 			assert.deepEqual(markets, [addresses[0]]);
 
 			const market = await setupContract({
@@ -288,6 +296,7 @@ contract('FuturesMarketManager', accounts => {
 
 			markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(0));
+			assert.bnEqual(await futuresMarketManager.methods['numMarkets(bool)'](false), toBN(0));
 			assert.deepEqual(markets, []);
 		});
 
@@ -419,14 +428,14 @@ contract('FuturesMarketManager', accounts => {
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.burnSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Permitted only for markets',
+				reason: 'Permitted only for market implementations',
 			});
 		});
 	});

@@ -21,7 +21,9 @@ const {
 		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
+		OFFCHAIN_FEEDS_FILENAME,
 		FUTURES_MARKETS_FILENAME,
+		PERPS_V2_MARKETS_FILENAME,
 	},
 	wrap,
 } = require('../..');
@@ -32,6 +34,7 @@ const {
 	getStakingRewards,
 	getVersions,
 	getFeeds,
+	getOffchainFeeds,
 	getShortingRewards,
 } = wrap({
 	path,
@@ -98,11 +101,18 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const futuresMarketsFile = path.join(deploymentPath, FUTURES_MARKETS_FILENAME);
 	const futuresMarkets = JSON.parse(fs.readFileSync(futuresMarketsFile));
 
+	console.log(gray(`Loading the list of perpsv2 markets on ${network.toUpperCase()}...`));
+	const perpsv2MarketsFile = path.join(deploymentPath, PERPS_V2_MARKETS_FILENAME);
+	const perpsv2Markets = JSON.parse(fs.readFileSync(perpsv2MarketsFile));
+
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
 
 	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
 	const feeds = getFeeds({ network, deploymentPath });
+
+	const offchainFeedsFile = path.join(deploymentPath, OFFCHAIN_FEEDS_FILENAME);
+	const offchainFeeds = getOffchainFeeds({ network, deploymentPath });
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -134,6 +144,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		stakingRewardsFile,
 		futuresMarkets,
 		futuresMarketsFile,
+		perpsv2Markets,
+		perpsv2MarketsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,
@@ -142,6 +154,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		versionsFile,
 		feeds,
 		feedsFile,
+		offchainFeeds,
+		offchainFeedsFile,
 		shortingRewards,
 		shortingRewardsFile,
 	};
