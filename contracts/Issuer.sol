@@ -1038,8 +1038,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     modifier onlyTrustedMigrators() {
         address migratorL1 = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
         address migratorL2 = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM);
-        require(msg.sender == migratorL1 || msg.sender == migratorL2, "Issuer: only trusted migrators");
-        // require(migratorL1 == address(0) || migratorL2 == address(0), "Issuer: one migrator must be 0x0");
+        require(msg.sender == migratorL1 || msg.sender == migratorL2, "only trusted migrators");
+        require(migratorL1 == address(0) || migratorL2 == address(0), "one migrator must be 0x0");
         _;
     }
 
