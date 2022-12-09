@@ -633,8 +633,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return rateInvalid;
     }
 
-    // SIP-237: Debt Migration
-    // allows for migration of debt from L1 -> L2
+    /**
+     * SIP-237: Debt Migration
+     * Function used for the one-way migration of all debt and liquid + escrowed SNX from L1 -> L2
+     * @param account The address of the account that is being migrated
+     * @param amount The amount of debt shares moving across layers
+     */
     function modifyDebtSharesForMigration(address account, uint amount) external onlyTrustedMigrators {
         ISynthetixDebtShare sds = synthetixDebtShare();
 
@@ -642,6 +646,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             sds.burnShare(account, amount);
         } else {
             // The only other option is the DebtMigrator on Optimism.
+            // Note: this conditional check needs to be updated if there is any corresponding change to the onlyTrustedMigrators modifier.
             sds.mintShare(account, amount);
         }
     }

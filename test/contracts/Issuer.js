@@ -189,6 +189,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'liquidateAccount',
+				'modifyDebtSharesForMigration',
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',

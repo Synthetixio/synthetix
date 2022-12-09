@@ -1,6 +1,8 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
@@ -16,7 +18,7 @@ import "./interfaces/ISystemStatus.sol";
 
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
+contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -94,7 +96,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     /* ========== MUTATIVE ========== */
 
-    function migrateToL2(address account) external {
+    function migrateToL2(address account) external nonReentrant {
         require(msg.sender == account, "Must be the account owner");
         _migrateToL2(account);
     }
