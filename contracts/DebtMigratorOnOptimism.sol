@@ -9,7 +9,7 @@ import "./interfaces/IDebtMigrator.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
+contract DebtMigratorOnOptimism is MixinResolver, Owned {
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
