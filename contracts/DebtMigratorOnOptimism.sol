@@ -16,6 +16,7 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
 
     /* ========== CONSTRUCTOR ============ */
 
@@ -31,7 +32,12 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
         return requireAndGetAddress(CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM);
     }
 
-    function _relayCall(address target, bytes memory payload) private {
+    function _issuer() private view returns (address) {
+        return requireAndGetAddress(CONTRACT_ISSUER);
+    }
+
+    function _relayCall(bytes memory payload) private {
+        address target = _issuer(); // target is the Issuer contract on Optimism.
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(payload);
 
@@ -60,12 +66,8 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
 
     /* ========== EXTERNAL ========== */
 
-    function finalizeMigration(
-        address account,
-        address target,
-        bytes calldata payload
-    ) external onlyMessengerAndL1DebtMigrator {
-        _relayCall(target, payload);
+    function finalizeMigration(address account, bytes calldata payload) external onlyMessengerAndL1DebtMigrator {
+        _relayCall(payload);
 
         emit MigrationFinalized(account);
     }

@@ -6,9 +6,5 @@ interface IDebtMigrator {
 
     function migrateEntireAccount(address account) external;
 
-    function finalizeMigration(
-        address account,
-        address target,
-        bytes calldata payload
-    ) external;
+    function finalizeMigration(address account, bytes calldata payload) external;
 }

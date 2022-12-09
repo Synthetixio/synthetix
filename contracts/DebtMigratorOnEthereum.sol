@@ -112,8 +112,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
         // remove all SDS
         ISynthetixDebtShare sds = _synthetixDebtShare();
-        uint _amount = sds.balanceOf(_account);
-        _issuer().modifyDebtSharesForMigration(_account, _amount);
+        uint _amountOfDebtShares = sds.balanceOf(_account);
+        if (_amountOfDebtShares > 0) {
+            _issuer().modifyDebtSharesForMigration(_account, _amountOfDebtShares);
+        }
 
         // Deposit the user's non-escrowed SNX to L2.
         // TODO: prioritize the largest 25 escrow entries to save gas and optimize c-ratio.
@@ -129,12 +131,13 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
         // create the data payload to be relayed on L2
         IIssuer issuer;
-        bytes memory payload = abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, _amount);
+        bytes memory _payload =
+            abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, _amountOfDebtShares);
 
         // send message to L2 to finalize the migration
         IDebtMigrator debtMigratorOnOptimism;
         bytes memory messageData =
-            abi.encodeWithSelector(debtMigratorOnOptimism.finalizeMigration.selector, address(_issuer()), payload);
+            abi.encodeWithSelector(debtMigratorOnOptimism.finalizeMigration.selector, _account, _payload);
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
         emit MigrationInitiated(_account);
