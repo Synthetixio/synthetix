@@ -711,7 +711,8 @@
 				"Synthetix",
 				"Liquidator",
 				"RewardEscrowV2Storage"
-			]
+			],
+			"released": "both"
 		},
 		{
 			"sip": 257,
@@ -732,9 +733,59 @@
 			"released": "both"
 		},
 		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeSettlementLib",
+				"ExchangeRates",
+				"Issuer",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
 			"sip": 269,
 			"layer": "ovm",
 			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 279,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 280,
+			"layer": "both",
+			"sources": {
+				"base": ["FuturesMarketManager"],
+				"ovm": [
+					"FuturesMarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
+					"PerpsV2ExchangeRate",
+					"PerpsV2Proxy.+",
+					"PerpsV2Market.+"
+				]
+			}
+		},
+		{
+			"sip": 281,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 285,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 299,
+			"layer": "both",
+			"sources": ["Synthetix", "Liquidator"],
 			"released": "both"
 		}
 	],
@@ -1367,7 +1418,8 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
 		},
 		{
 			"name": "Aspidiske (Optimism)",
@@ -1376,7 +1428,63 @@
 				"major": 2,
 				"minor": 77
 			},
-			"sips": [252]
+			"sips": [252],
+			"released": true
+		},
+		{
+			"name": "Suhail",
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Suhail (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Alphecca",
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
+			"released": true
+		},
+		{
+			"name": "Alphecca (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
+			"released": true
+		},
+		{
+			"name": "Mintaka",
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285]
+		},
+		{
+			"name": "Mintaka (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285]
 		}
 	]
 }

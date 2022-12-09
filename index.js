@@ -79,7 +79,9 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	OFFCHAIN_FEEDS_FILENAME: 'offchain-feeds.json',
 	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
+	PERPS_V2_MARKETS_FILENAME: 'perpsv2-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -354,6 +356,25 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 	}, {});
 };
 
+const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
+	if (!deploymentPath && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].offchainFeeds;
+	} else {
+		const pathToFeeds = deploymentPath
+			? path.join(deploymentPath, constants.OFFCHAIN_FEEDS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.OFFCHAIN_FEEDS_FILENAME,
+			  });
+		if (!fs.existsSync(pathToFeeds)) {
+			throw Error(`Cannot find off-chain feeds file.`);
+		}
+		return JSON.parse(fs.readFileSync(pathToFeeds));
+	}
+};
+
 /**
  * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
@@ -518,7 +539,7 @@ const getShortingRewards = ({
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
-	const testnetOwner = '0x73570075092502472E4b61A7058Df1A4a1DB12f2';
+	const testnetOwner = '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9';
 	const base = {
 		owner: testnetOwner,
 		deployer: testnetOwner,
@@ -531,16 +552,22 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 	const map = {
 		mainnet: Object.assign({}, base, {
 			owner: '0xEb3107117FEAd7de89Cd14D463D340A2E6917769',
-			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
 			marketClosure: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7',
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
-			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
 		}),
-		goerli: Object.assign({}, base),
-		'goerli-ovm': Object.assign({}, base),
+		goerli: Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
+		'goerli-ovm': Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
 		local: Object.assign({}, base, {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -728,6 +755,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getStakingRewards',
 		'getShortingRewards',
 		'getFeeds',
+		'getOffchainFeeds',
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
@@ -760,6 +788,7 @@ module.exports = {
 	getShortingRewards,
 	getSuspensionReasons,
 	getFeeds,
+	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
 	getTarget,

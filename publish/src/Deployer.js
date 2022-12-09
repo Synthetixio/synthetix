@@ -191,15 +191,17 @@ class Deployer {
 			// Any contract after SafeDecimalMath can automatically get linked.
 			// Doing this with bytecode that doesn't require the library is a no-op.
 			let bytecode = compiled.evm.bytecode.object;
-			['SafeDecimalMath', 'Math', 'SystemSettingsLib'].forEach(contractName => {
-				if (this.deployedContracts[contractName]) {
-					bytecode = linker.linkBytecode(bytecode, {
-						[source + '.sol']: {
-							[contractName]: this.deployedContracts[contractName].address,
-						},
-					});
+			['SafeDecimalMath', 'Math', 'SystemSettingsLib', 'ExchangeSettlementLib'].forEach(
+				contractName => {
+					if (this.deployedContracts[contractName]) {
+						bytecode = linker.linkBytecode(bytecode, {
+							[source + '.sol']: {
+								[contractName]: this.deployedContracts[contractName].address,
+							},
+						});
+					}
 				}
-			});
+			);
 
 			compiled.evm.bytecode.linkedObject = bytecode;
 			console.log(

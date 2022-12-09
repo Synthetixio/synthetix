@@ -76,7 +76,7 @@ const liquidatorRewardsRestitution = async ({
 	const RewardEscrowV2 = new ethers.Contract(rewardEscrowV2Address, rewardEscrowABI, signer);
 
 	// Instantiate MultiCall contract
-	const multiCallAddress = ''; // address
+	const multiCallAddress = ''; // PrivateMulticall address
 	const multiCallABI = [
 		{ inputs: [], stateMutability: 'nonpayable', type: 'constructor' },
 		{
@@ -253,8 +253,10 @@ const liquidatorRewardsRestitution = async ({
 		.filter(v => v)
 		.forEach(obj => {
 			if (
-				obj.escrow !== undefined &&
-				ethers.BigNumber.from(obj.escrow).gt(ethers.utils.parseEther(threshold))
+				obj.liquidationReward_with_adjustment_hex !== undefined &&
+				ethers.BigNumber.from(obj.liquidationReward_with_adjustment_hex).gt(
+					ethers.utils.parseEther(threshold)
+				)
 			) {
 				filteredObjects.push(obj);
 			}
@@ -265,7 +267,10 @@ const liquidatorRewardsRestitution = async ({
 		console.log('approving...');
 
 		const txns = [
-			Synthetix.populateTransaction.approve('', ethers.constants.MaxUint256),
+			Synthetix.populateTransaction.approve(
+				'', // deployer address (should be owner of the PrivateMulticall)
+				ethers.constants.MaxUint256
+			),
 			Synthetix.populateTransaction.approve(rewardEscrowV2Address, ethers.constants.MaxUint256),
 		];
 		await readMulticall(
@@ -287,12 +292,14 @@ const liquidatorRewardsRestitution = async ({
 			filteredObjects,
 			a =>
 				RewardEscrowV2.populateTransaction.createEscrowEntry(
-					a.address,
-					ethers.BigNumber.from(a.escrow),
+					a.userAddress,
+					ethers.BigNumber.from(a.liquidationReward_with_adjustment_hex),
 					31536000 // 1 year in seconds
 				),
 			(a, r) => {
-				totalAmountEscrowed = totalAmountEscrowed.add(ethers.BigNumber.from(a.escrow));
+				totalAmountEscrowed = totalAmountEscrowed.add(
+					ethers.BigNumber.from(a.liquidationReward_with_adjustment_hex)
+				);
 			},
 			0,
 			50
@@ -387,7 +394,7 @@ module.exports = {
 			.option(
 				'--threshold <amount>',
 				'Filter out small amounts that are not worth the gas cost',
-				'50'
+				'5'
 			)
 			.option('--csv <file>', 'CSV of all addresses to scan', 'snx.csv')
 			.action(liquidatorRewardsRestitution),

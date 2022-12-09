@@ -61,9 +61,14 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			} else {
-				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
-				await hre.run('cannon:build');
+				await deployInstance({
+					useOvm: false,
+					providerUrl,
+					providerPort: providerPort,
+					buildPath: buildPath,
+				});
 			}
+
 			hre.config.addedSynths = synthsToAdd;
 		}
 
@@ -120,11 +125,11 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 				});
 			} else {
-				await hre.run('cannon:build', { file: 'cannonfile.aggregator.toml' });
-				await hre.run('cannon:build', {
-					file: 'cannonfile.optimism.toml',
-					preset: 'local-ovm',
-					options: ['network=local-ovm'],
+				await deployInstance({
+					useOvm: true,
+					providerUrl,
+					providerPort: providerPortL2,
+					buildPath: buildPath,
 				});
 			}
 			hre.config.addedSynths = synthsToAdd;

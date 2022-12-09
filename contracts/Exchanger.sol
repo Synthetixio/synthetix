@@ -1,10 +1,9 @@
 pragma solidity ^0.5.16;
-
+pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -12,62 +11,15 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/IExchangeState.sol";
-import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ICircuitBreaker.sol";
-import "./interfaces/ISynthetix.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
-import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
+
+import "./ExchangeSettlementLib.sol";
+
 import "./Proxyable.sol";
-
-// Used to have strongly-typed access to internal mutative functions in Synthetix
-interface ISynthetixInternal {
-    function emitExchangeTracking(
-        bytes32 trackingCode,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        uint256 fee
-    ) external;
-
-    function emitSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint fromAmount,
-        bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress
-    ) external;
-
-    function emitAtomicSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint fromAmount,
-        bytes32 toCurrencyKey,
-        uint toAmount,
-        address toAddress
-    ) external;
-
-    function emitExchangeReclaim(
-        address account,
-        bytes32 currencyKey,
-        uint amount
-    ) external;
-
-    function emitExchangeRebate(
-        address account,
-        bytes32 currencyKey,
-        uint amount
-    ) external;
-}
-
-interface IExchangerInternalDebtCache {
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
-
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
-}
 
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
 contract Exchanger is Owned, MixinSystemSettings, IExchanger {
@@ -90,6 +42,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
+    bytes32 private constant CONTRACT_DIRECT_INTEGRATION_MANAGER = "DirectIntegrationManager";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -97,7 +50,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](10);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -108,6 +61,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
         newAddresses[9] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[10] = CONTRACT_DIRECT_INTEGRATION_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -151,8 +105,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
-    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
-        return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
+    function directIntegrationManager() internal view returns (IDirectIntegrationManager) {
+        return IDirectIntegrationManager(requireAndGetAddress(CONTRACT_DIRECT_INTEGRATION_MANAGER));
+    }
+
+    function resolvedAddresses() internal view returns (ExchangeSettlementLib.ResolvedAddresses memory) {
+        return
+            ExchangeSettlementLib.ResolvedAddresses(
+                exchangeState(),
+                exchangeRates(),
+                circuitBreaker(),
+                debtCache(),
+                issuer(),
+                synthetix()
+            );
     }
 
     function waitingPeriodSecs() external view returns (uint) {
@@ -180,115 +146,30 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint numEntries
         )
     {
-        (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
-    }
-
-    // Internal function to aggregate each individual rebate and reclaim entry for a synth
-    function _settlementOwing(address account, bytes32 currencyKey)
-        internal
-        view
-        returns (
-            uint reclaimAmount,
-            uint rebateAmount,
-            uint numEntries,
-            IExchanger.ExchangeEntrySettlement[] memory
-        )
-    {
-        // Need to sum up all reclaim and rebate amounts for the user and the currency key
-        numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
-
-        // For each unsettled exchange
-        IExchanger.ExchangeEntrySettlement[] memory settlements = new IExchanger.ExchangeEntrySettlement[](numEntries);
-        for (uint i = 0; i < numEntries; i++) {
-            uint reclaim;
-            uint rebate;
-            // fetch the entry from storage
-            IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
-
-            // determine the last round ids for src and dest pairs when period ended or latest if not over
-            (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
-
-            // given these round ids, determine what effective value they should have received
-            (uint destinationAmount, , ) =
-                exchangeRates().effectiveValueAndRatesAtRound(
-                    exchangeEntry.src,
-                    exchangeEntry.amount,
-                    exchangeEntry.dest,
-                    srcRoundIdAtPeriodEnd,
-                    destRoundIdAtPeriodEnd
-                );
-
-            // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = _deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
-
-            // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
-            // settle with no reclaim or rebate
-            bool sip65condition =
-                circuitBreaker().isDeviationAboveThreshold(exchangeEntry.amountReceived, amountShouldHaveReceived);
-            if (!sip65condition) {
-                if (exchangeEntry.amountReceived > amountShouldHaveReceived) {
-                    // if they received more than they should have, add to the reclaim tally
-                    reclaim = exchangeEntry.amountReceived.sub(amountShouldHaveReceived);
-                    reclaimAmount = reclaimAmount.add(reclaim);
-                } else if (amountShouldHaveReceived > exchangeEntry.amountReceived) {
-                    // if less, add to the rebate tally
-                    rebate = amountShouldHaveReceived.sub(exchangeEntry.amountReceived);
-                    rebateAmount = rebateAmount.add(rebate);
-                }
-            }
-
-            settlements[i] = IExchanger.ExchangeEntrySettlement({
-                src: exchangeEntry.src,
-                amount: exchangeEntry.amount,
-                dest: exchangeEntry.dest,
-                reclaim: reclaim,
-                rebate: rebate,
-                srcRoundIdAtPeriodEnd: srcRoundIdAtPeriodEnd,
-                destRoundIdAtPeriodEnd: destRoundIdAtPeriodEnd,
-                timestamp: exchangeEntry.timestamp
-            });
-        }
-
-        return (reclaimAmount, rebateAmount, numEntries, settlements);
-    }
-
-    function _getExchangeEntry(
-        address account,
-        bytes32 currencyKey,
-        uint index
-    ) internal view returns (IExchangeState.ExchangeEntry memory) {
-        (
-            bytes32 src,
-            uint amount,
-            bytes32 dest,
-            uint amountReceived,
-            uint exchangeFeeRate,
-            uint timestamp,
-            uint roundIdForSrc,
-            uint roundIdForDest
-        ) = exchangeState().getEntryAt(account, currencyKey, index);
-
-        return
-            IExchangeState.ExchangeEntry({
-                src: src,
-                amount: amount,
-                dest: dest,
-                amountReceived: amountReceived,
-                exchangeFeeRate: exchangeFeeRate,
-                timestamp: timestamp,
-                roundIdForSrc: roundIdForSrc,
-                roundIdForDest: roundIdForDest
-            });
+        (reclaimAmount, rebateAmount, numEntries, ) = ExchangeSettlementLib.settlementOwing(
+            resolvedAddresses(),
+            account,
+            currencyKey,
+            getWaitingPeriodSecs()
+        );
     }
 
     function hasWaitingPeriodOrSettlementOwing(address account, bytes32 currencyKey) external view returns (bool) {
-        if (maxSecsLeftInWaitingPeriod(account, currencyKey) != 0) {
-            return true;
-        }
+        return
+            ExchangeSettlementLib.hasWaitingPeriodOrSettlementOwing(
+                resolvedAddresses(),
+                account,
+                currencyKey,
+                getWaitingPeriodSecs()
+            );
+    }
 
-        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey);
-
-        return reclaimAmount > 0;
+    function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
+        return
+            ExchangeSettlementLib._secsLeftInWaitingPeriodForExchange(
+                exchangeState().getMaxTimestamp(account, currencyKey),
+                getWaitingPeriodSecs()
+            );
     }
 
     /* ========== SETTERS ========== */
@@ -337,11 +218,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
         }
 
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            _exchangeSettings(from, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            _exchangeSettings(from, destinationCurrencyKey);
+
         (amountReceived, fee, vSynth) = _exchange(
             exchangeForAddress,
-            sourceCurrencyKey,
+            sourceSettings,
             sourceAmount,
-            destinationCurrencyKey,
+            destinationSettings,
             destinationAddress,
             virtualSynth
         );
@@ -407,7 +293,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address from,
         bytes32 sourceCurrencyKey
     ) internal returns (uint sourceAmountAfterSettlement) {
-        (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
+        (, uint refunded, uint numEntriesSettled) =
+            ExchangeSettlementLib.internalSettle(
+                resolvedAddresses(),
+                from,
+                sourceCurrencyKey,
+                false,
+                getWaitingPeriodSecs()
+            );
 
         sourceAmountAfterSettlement = sourceAmount;
 
@@ -420,9 +313,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function _exchange(
         address from,
-        bytes32 sourceCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
         uint sourceAmount,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         address destinationAddress,
         bool virtualSynth
     )
@@ -433,39 +326,51 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             IVirtualSynth vSynth
         )
     {
-        if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
+        if (!_ensureCanExchange(sourceSettings.currencyKey, destinationSettings.currencyKey, sourceAmount)) {
             return (0, 0, IVirtualSynth(0));
         }
 
         // Using struct to resolve stack too deep error
         IExchanger.ExchangeEntry memory entry;
+        ExchangeSettlementLib.ResolvedAddresses memory addrs = resolvedAddresses();
 
-        entry.roundIdForSrc = exchangeRates().getCurrentRoundId(sourceCurrencyKey);
-        entry.roundIdForDest = exchangeRates().getCurrentRoundId(destinationCurrencyKey);
+        entry.roundIdForSrc = addrs.exchangeRates.getCurrentRoundId(sourceSettings.currencyKey);
+        entry.roundIdForDest = addrs.exchangeRates.getCurrentRoundId(destinationSettings.currencyKey);
 
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        entry.sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(
+            sourceAmount,
+            from,
+            sourceSettings.currencyKey
+        );
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
+        if (entry.sourceAmountAfterSettlement == 0) {
             return (0, 0, IVirtualSynth(0));
         }
 
-        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = exchangeRates().effectiveValueAndRatesAtRound(
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+        (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = addrs
+            .exchangeRates
+            .effectiveValueAndRatesAtRound(
+            sourceSettings.currencyKey,
+            entry.sourceAmountAfterSettlement,
+            destinationSettings.currencyKey,
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
 
         // rates must also be good for the round we are doing
-        _ensureCanExchangeAtRound(sourceCurrencyKey, destinationCurrencyKey, entry.roundIdForSrc, entry.roundIdForDest);
+        _ensureCanExchangeAtRound(
+            sourceSettings.currencyKey,
+            destinationSettings.currencyKey,
+            entry.roundIdForSrc,
+            entry.roundIdForDest
+        );
 
         bool tooVolatile;
         (entry.exchangeFeeRate, tooVolatile) = _feeRateForExchangeAtRounds(
-            sourceCurrencyKey,
-            destinationCurrencyKey,
+            sourceSettings,
+            destinationSettings,
             entry.roundIdForSrc,
             entry.roundIdForDest
         );
@@ -476,17 +381,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        amountReceived = _deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib._deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
         // Note: `fee` is denominated in the destinationCurrencyKey.
         fee = entry.destinationAmount.sub(amountReceived);
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
         vSynth = _convert(
-            sourceCurrencyKey,
+            sourceSettings.currencyKey,
             from,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+            entry.sourceAmountAfterSettlement,
+            destinationSettings.currencyKey,
             amountReceived,
             destinationAddress,
             virtualSynth
@@ -501,7 +406,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (fee > 0) {
             // Normalize fee to sUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+            fee = addrs.exchangeRates.effectiveValue(destinationSettings.currencyKey, fee, sUSD);
 
             // Remit the fee in sUSDs
             issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
@@ -516,16 +421,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
         _updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
+            [sourceSettings.currencyKey, destinationSettings.currencyKey],
             [entry.sourceRate, entry.destinationRate]
         );
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
+            sourceSettings.currencyKey,
+            entry.sourceAmountAfterSettlement,
+            destinationSettings.currencyKey,
             amountReceived,
             destinationAddress
         );
@@ -533,11 +438,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // iff the waiting period is gt 0
         if (getWaitingPeriodSecs() > 0) {
             // persist the exchange information for the dest key
-            appendExchange(
+            ExchangeSettlementLib.appendExchange(
+                addrs,
                 destinationAddress,
-                sourceCurrencyKey,
-                sourceAmountAfterSettlement,
-                destinationCurrencyKey,
+                sourceSettings.currencyKey,
+                entry.sourceAmountAfterSettlement,
+                destinationSettings.currencyKey,
                 amountReceived,
                 entry.exchangeFeeRate
             );
@@ -587,17 +493,19 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         )
     {
         systemStatus().requireSynthActive(currencyKey);
-        return _internalSettle(from, currencyKey, true);
-    }
-
-    function suspendSynthWithInvalidRate(bytes32 currencyKey) external {
-        systemStatus().requireSystemActive();
-        // SIP-65: Decentralized Circuit Breaker
-        (, bool circuitBroken, ) = exchangeRates().rateWithSafetyChecks(currencyKey);
-        require(circuitBroken, "Synth price is valid");
+        return ExchangeSettlementLib.internalSettle(resolvedAddresses(), from, currencyKey, true, getWaitingPeriodSecs());
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
+
+    // gets the exchange parameters for a given direct integration (returns default params if no overrides exist)
+    function _exchangeSettings(address from, bytes32 currencyKey)
+        internal
+        view
+        returns (IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
+    {
+        settings = directIntegrationManager().getExchangeParameters(from, currencyKey);
+    }
 
     // runs basic checks and calls `rateWithSafetyChecks` (which can trigger circuit breakers)
     // returns if there are any problems found with the rate of the given currencyKey but not reverted
@@ -641,96 +549,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         require(!exchangeRates().anyRateIsInvalidAtRound(synthKeys, roundIds), "src/dest rate stale or flagged");
     }
 
-    function _internalSettle(
-        address from,
-        bytes32 currencyKey,
-        bool updateCache
-    )
-        internal
-        returns (
-            uint reclaimed,
-            uint refunded,
-            uint numEntriesSettled
-        )
-    {
-        require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
-
-        (uint reclaimAmount, uint rebateAmount, uint entries, IExchanger.ExchangeEntrySettlement[] memory settlements) =
-            _settlementOwing(from, currencyKey);
-
-        if (reclaimAmount > rebateAmount) {
-            reclaimed = reclaimAmount.sub(rebateAmount);
-            reclaim(from, currencyKey, reclaimed);
-        } else if (rebateAmount > reclaimAmount) {
-            refunded = rebateAmount.sub(reclaimAmount);
-            refund(from, currencyKey, refunded);
-        }
-
-        // by checking a reclaim or refund we also check that the currency key is still a valid synth,
-        // as the deviation check will return 0 if the synth has been removed.
-        if (updateCache && (reclaimed > 0 || refunded > 0)) {
-            bytes32[] memory key = new bytes32[](1);
-            key[0] = currencyKey;
-            debtCache().updateCachedSynthDebts(key);
-        }
-
-        // emit settlement event for each settled exchange entry
-        for (uint i = 0; i < settlements.length; i++) {
-            emit ExchangeEntrySettled(
-                from,
-                settlements[i].src,
-                settlements[i].amount,
-                settlements[i].dest,
-                settlements[i].reclaim,
-                settlements[i].rebate,
-                settlements[i].srcRoundIdAtPeriodEnd,
-                settlements[i].destRoundIdAtPeriodEnd,
-                settlements[i].timestamp
-            );
-        }
-
-        numEntriesSettled = entries;
-
-        // Now remove all entries, even if no reclaim and no rebate
-        exchangeState().removeEntries(from, currencyKey);
-    }
-
-    function reclaim(
-        address from,
-        bytes32 currencyKey,
-        uint amount
-    ) internal {
-        // burn amount from user
-        issuer().synths(currencyKey).burn(from, amount);
-        ISynthetixInternal(address(synthetix())).emitExchangeReclaim(from, currencyKey, amount);
-    }
-
-    function refund(
-        address from,
-        bytes32 currencyKey,
-        uint amount
-    ) internal {
-        // issue amount to user
-        issuer().synths(currencyKey).issue(from, amount);
-        ISynthetixInternal(address(synthetix())).emitExchangeRebate(from, currencyKey, amount);
-    }
-
-    function secsLeftInWaitingPeriodForExchange(uint timestamp) internal view returns (uint) {
-        uint _waitingPeriodSecs = getWaitingPeriodSecs();
-        if (timestamp == 0 || now >= timestamp.add(_waitingPeriodSecs)) {
-            return 0;
-        }
-
-        return timestamp.add(_waitingPeriodSecs).sub(now);
-    }
-
     /* ========== Exchange Related Fees ========== */
     /// @notice public function to get the total fee rate for a given exchange
     /// @param sourceCurrencyKey The source currency key
     /// @param destinationCurrencyKey The destination currency key
     /// @return The exchange fee rate, and whether the rates are too volatile
     function feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view returns (uint) {
-        (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
+
+        (uint feeRate, bool tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
         require(!tooVolatile, "too volatile");
         return feeRate;
     }
@@ -744,120 +574,125 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         view
         returns (uint feeRate, bool tooVolatile)
     {
-        return _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
+
+        return _dynamicFeeRateForExchange(sourceSettings, destinationSettings);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
-    /// @param sourceCurrencyKey The source currency key
-    /// @param destinationCurrencyKey The destination currency key
+    /// @param sourceSettings The source currency key
+    /// @param destinationSettings The destination currency key
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate and if rates are too volatile
-    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint feeRate, bool tooVolatile)
-    {
+    function _feeRateForExchange(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+    ) internal view returns (uint feeRate, bool tooVolatile) {
         // Get the exchange fee rate as per the source currencyKey and destination currencyKey
-        uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
+        uint baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         uint dynamicFee;
-        (dynamicFee, tooVolatile) = _dynamicFeeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        (dynamicFee, tooVolatile) = _dynamicFeeRateForExchange(sourceSettings, destinationSettings);
         return (baseRate.add(dynamicFee), tooVolatile);
     }
 
     /// @notice Calculate the exchange fee for a given source and destination currency key
-    /// @param sourceCurrencyKey The source currency key
-    /// @param destinationCurrencyKey The destination currency key
+    /// @param sourceSettings The source currency key
+    /// @param destinationSettings The destination currency key
     /// @param roundIdForSrc The round id of the source currency.
     /// @param roundIdForDest The round id of the target currency.
     /// @return The exchange fee rate
     /// @return The exchange dynamic fee rate
     function _feeRateForExchangeAtRounds(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint feeRate, bool tooVolatile) {
         // Get the exchange fee rate as per the source currencyKey and destination currencyKey
-        uint baseRate = getExchangeFeeRate(sourceCurrencyKey).add(getExchangeFeeRate(destinationCurrencyKey));
+        uint baseRate = sourceSettings.exchangeFeeRate.add(destinationSettings.exchangeFeeRate);
         uint dynamicFee;
         (dynamicFee, tooVolatile) = _dynamicFeeRateForExchangeAtRounds(
-            sourceCurrencyKey,
-            destinationCurrencyKey,
+            sourceSettings,
+            destinationSettings,
             roundIdForSrc,
             roundIdForDest
         );
         return (baseRate.add(dynamicFee), tooVolatile);
     }
 
-    function _dynamicFeeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint dynamicFee, bool tooVolatile)
-    {
-        DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrency(destinationCurrencyKey, config);
-        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrency(sourceCurrencyKey, config);
+    function _dynamicFeeRateForExchange(
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings
+    ) internal view returns (uint dynamicFee, bool tooVolatile) {
+        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrency(destinationSettings);
+        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrency(sourceSettings);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? sourceSettings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax || dstVolatile || srcVolatile);
     }
 
     function _dynamicFeeRateForExchangeAtRounds(
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings,
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
-        DynamicFeeConfig memory config = getExchangeDynamicFeeConfig();
-        (uint dynamicFeeDst, bool dstVolatile) =
-            _dynamicFeeRateForCurrencyRound(destinationCurrencyKey, roundIdForDest, config);
-        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceCurrencyKey, roundIdForSrc, config);
+        (uint dynamicFeeDst, bool dstVolatile) = _dynamicFeeRateForCurrencyRound(destinationSettings, roundIdForDest);
+        (uint dynamicFeeSrc, bool srcVolatile) = _dynamicFeeRateForCurrencyRound(sourceSettings, roundIdForSrc);
         dynamicFee = dynamicFeeDst.add(dynamicFeeSrc);
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > sourceSettings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? sourceSettings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax || dstVolatile || srcVolatile);
     }
 
     /// @notice Get dynamic dynamicFee for a given currency key (SIP-184)
-    /// @param currencyKey The given currency key
-    /// @param config dynamic fee calculation configuration params
+    /// @param settings The given currency key
     /// @return The dynamic fee and if it exceeds max dynamic fee set in config
-    function _dynamicFeeRateForCurrency(bytes32 currencyKey, DynamicFeeConfig memory config)
+    function _dynamicFeeRateForCurrency(IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
         internal
         view
         returns (uint dynamicFee, bool tooVolatile)
     {
         // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        if (settings.currencyKey == sUSD || settings.exchangeDynamicFeeRounds <= 1) {
             return (0, false);
         }
-        uint roundId = exchangeRates().getCurrentRoundId(currencyKey);
-        return _dynamicFeeRateForCurrencyRound(currencyKey, roundId, config);
+        uint roundId = exchangeRates().getCurrentRoundId(settings.currencyKey);
+        return _dynamicFeeRateForCurrencyRound(settings, roundId);
     }
 
     /// @notice Get dynamicFee for a given currency key (SIP-184)
-    /// @param currencyKey The given currency key
+    /// @param settings The given currency key
     /// @param roundId The round id
-    /// @param config dynamic fee calculation configuration params
     /// @return The dynamic fee and if it exceeds max dynamic fee set in config
     function _dynamicFeeRateForCurrencyRound(
-        bytes32 currencyKey,
-        uint roundId,
-        DynamicFeeConfig memory config
+        IDirectIntegrationManager.ParameterIntegrationSettings memory settings,
+        uint roundId
     ) internal view returns (uint dynamicFee, bool tooVolatile) {
         // no dynamic dynamicFee for sUSD or too few rounds
-        if (currencyKey == sUSD || config.rounds <= 1) {
+        if (settings.currencyKey == sUSD || settings.exchangeDynamicFeeRounds <= 1) {
             return (0, false);
         }
         uint[] memory prices;
-        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(currencyKey, config.rounds, roundId);
-        dynamicFee = _dynamicFeeCalculation(prices, config.threshold, config.weightDecay);
+        (prices, ) = exchangeRates().ratesAndUpdatedTimeForCurrencyLastNRounds(
+            settings.currencyKey,
+            settings.exchangeDynamicFeeRounds,
+            roundId
+        );
+        dynamicFee = _dynamicFeeCalculation(
+            prices,
+            settings.exchangeDynamicFeeThreshold,
+            settings.exchangeDynamicFeeWeightDecay
+        );
         // cap to maxFee
-        bool overMax = dynamicFee > config.maxFee;
-        dynamicFee = overMax ? config.maxFee : dynamicFee;
+        bool overMax = dynamicFee > settings.exchangeMaxDynamicFee;
+        dynamicFee = overMax ? settings.exchangeMaxDynamicFee : dynamicFee;
         return (dynamicFee, overMax);
     }
 
@@ -921,6 +756,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
+        IDirectIntegrationManager.ParameterIntegrationSettings memory sourceSettings =
+            _exchangeSettings(msg.sender, sourceCurrencyKey);
+        IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
+            _exchangeSettings(msg.sender, destinationCurrencyKey);
+
         require(sourceCurrencyKey == sUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src synth rate invalid");
 
         require(
@@ -937,7 +777,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         systemStatus().requireSynthActive(destinationCurrencyKey);
 
         bool tooVolatile;
-        (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
 
         // check rates volatility result
         require(!tooVolatile, "exchange rates too volatile");
@@ -945,73 +785,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (uint destinationAmount, , ) =
             exchangeRates().effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        amountReceived = ExchangeSettlementLib._deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
-    }
-
-    function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
-        internal
-        pure
-        returns (uint amountReceived)
-    {
-        amountReceived = destinationAmount.multiplyDecimal(SafeDecimalMath.unit().sub(exchangeFeeRate));
-    }
-
-    function appendExchange(
-        address account,
-        bytes32 src,
-        uint amount,
-        bytes32 dest,
-        uint amountReceived,
-        uint exchangeFeeRate
-    ) internal {
-        IExchangeRates exRates = exchangeRates();
-        uint roundIdForSrc = exRates.getCurrentRoundId(src);
-        uint roundIdForDest = exRates.getCurrentRoundId(dest);
-        exchangeState().appendExchangeEntry(
-            account,
-            src,
-            amount,
-            dest,
-            amountReceived,
-            exchangeFeeRate,
-            now,
-            roundIdForSrc,
-            roundIdForDest
-        );
-
-        emit ExchangeEntryAppended(
-            account,
-            src,
-            amount,
-            dest,
-            amountReceived,
-            exchangeFeeRate,
-            roundIdForSrc,
-            roundIdForDest
-        );
-    }
-
-    function getRoundIdsAtPeriodEnd(IExchangeState.ExchangeEntry memory exchangeEntry)
-        internal
-        view
-        returns (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd)
-    {
-        IExchangeRates exRates = exchangeRates();
-        uint _waitingPeriodSecs = getWaitingPeriodSecs();
-
-        srcRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
-            exchangeEntry.src,
-            exchangeEntry.roundIdForSrc,
-            exchangeEntry.timestamp,
-            _waitingPeriodSecs
-        );
-        destRoundIdAtPeriodEnd = exRates.getLastRoundIdBeforeElapsedSecs(
-            exchangeEntry.dest,
-            exchangeEntry.roundIdForDest,
-            exchangeEntry.timestamp,
-            _waitingPeriodSecs
-        );
     }
 
     function _notImplemented() internal pure {
@@ -1030,6 +805,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     // ========== EVENTS ==========
+    // note bot hof these events are actually emitted from `ExchangeSettlementLib`
+    // but they are defined here for interface reasons
     event ExchangeEntryAppended(
         address indexed account,
         bytes32 src,

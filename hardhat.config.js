@@ -82,9 +82,7 @@ module.exports = {
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'goerli-ovm': {
-			url:
-				process.env.PROVIDER_URL?.replace('network', 'optimism-goerli') ||
-				'https://goerli.optimism.io/',
+			url: process.env.OVM_GOERLI_PROVIDER_URL || 'https://goerli.optimism.io/',
 			chainId: 420,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
@@ -120,15 +118,9 @@ module.exports = {
 	},
 	cannon: {
 		publisherPrivateKey: process.env.PRIVATE_KEY,
-		ipfsConnection: {
-			protocol: 'https',
-			host: 'ipfs.infura.io',
-			port: 5001,
-			headers: {
-				authorization: `Basic ${Buffer.from(
-					process.env.INFURA_IPFS_ID + ':' + process.env.INFURA_IPFS_SECRET
-				).toString('base64')}`,
-			},
-		},
+		ipfsEndpoint: 'https://ipfs.infura.io:5001',
+		ipfsAuthorizationHeader: `Basic ${Buffer.from(
+			process.env.INFURA_IPFS_ID + ':' + process.env.INFURA_IPFS_SECRET
+		).toString('base64')}`,
 	},
 };

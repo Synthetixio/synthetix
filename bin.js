@@ -14,6 +14,7 @@ const {
 	getSource,
 	getSynths,
 	getFeeds,
+	getOffchainFeeds,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -176,15 +177,20 @@ program
 		const decodedRelayed = [];
 		for (let i = 0; i < targets.length; i++) {
 			const target = targets[i];
-			const payload = decode({
-				network,
-				data: payloads[i],
-				target,
-				useOvm: true,
-				decodeMigration: false,
-				enhanceDecode,
-			});
-			decodedRelayed.push({ index: i, target, payload });
+			try {
+				const payload = decode({
+					network,
+					data: payloads[i],
+					target,
+					useOvm: true,
+					decodeMigration: false,
+					enhanceDecode,
+				});
+				decodedRelayed.push({ index: i, target, payload });
+			} catch (e) {
+				// unable to decode.
+				decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
+			}
 		}
 
 		console.log(util.inspect(decodedRelayed, false, null, true));
@@ -226,6 +232,16 @@ program
 	.action(async ({ network, useOvm }) => {
 		const feeds = getFeeds({ network, useOvm });
 		console.log(util.inspect(feeds, false, null, true));
+	});
+
+program
+	.command('offchain-feeds')
+	.description('Get the offchain price feeds')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		const offchainFeeds = getOffchainFeeds({ network, useOvm });
+		console.log(util.inspect(offchainFeeds, false, null, true));
 	});
 
 program

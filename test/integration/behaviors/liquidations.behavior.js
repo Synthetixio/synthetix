@@ -5,9 +5,6 @@ const { getRate, addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
 const { skipLiquidationDelay } = require('../utils/skip');
 
-// convenience methods
-const toUnit = v => ethers.utils.parseUnits(v.toString());
-
 function itCanLiquidate({ ctx }) {
 	describe('liquidating', () => {
 		let user7, user8;
@@ -165,7 +162,7 @@ function itCanLiquidate({ ctx }) {
 
 						const { gasUsed } = await tx.wait();
 						console.log(
-							`liquidateDelinquentAccount() with no escrow entries gas used: ${Math.round(
+							`    liquidateDelinquentAccount() with no escrow entries gas used: ${Math.round(
 								gasUsed / 1000
 							).toString()}k`
 						);
@@ -209,18 +206,13 @@ function itCanLiquidate({ ctx }) {
 						);
 					});
 
-					it('transfers the remaining SNX to LiquidatorRewards', async () => {
+					it('transfers the redeemed SNX to LiquidatorRewards', async () => {
 						const { events } = await tx.wait();
 						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 						const snxRedeemed = liqEvent.args.snxRedeemed;
-
-						const flagReward = await Liquidator.flagReward();
-						const liquidateReward = await Liquidator.liquidateReward();
-						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
-						assert.bnNotEqual(remainingReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(LiquidatorRewards.address),
-							beforeRemainingRewardCredittedSnx.add(remainingReward)
+							beforeRemainingRewardCredittedSnx.add(snxRedeemed)
 						);
 					});
 
@@ -295,12 +287,16 @@ function itCanLiquidate({ ctx }) {
 				describe('getting liquidated', () => {
 					let tx, viewResults;
 					let collateralBefore;
+					let flagReward, liquidateReward;
 					let beforeDebtShares, beforeSharesSupply, beforeDebtBalance;
 					let beforeFlagRewardCredittedSnx,
 						beforeLiquidateRewardCredittedSnx,
 						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
+						flagReward = await Liquidator.flagReward();
+						liquidateReward = await Liquidator.liquidateReward();
+
 						collateralBefore = await Synthetix.collateral(user7.address);
 						beforeDebtShares = await SynthetixDebtShare.balanceOf(user7.address);
 						beforeSharesSupply = await SynthetixDebtShare.totalSupply();
@@ -316,7 +312,10 @@ function itCanLiquidate({ ctx }) {
 					});
 
 					it('results correspond to view before liquidation', async () => {
-						assert.bnEqual(viewResults.totalRedeemed, collateralBefore);
+						assert.bnEqual(
+							viewResults.totalRedeemed,
+							collateralBefore.sub(flagReward.add(liquidateReward))
+						);
 						assert.bnEqual(viewResults.escrowToLiquidate, 0);
 						assert.bnEqual(viewResults.initialDebtBalance, beforeDebtBalance);
 						// debt per debt share changes a bit
@@ -327,7 +326,10 @@ function itCanLiquidate({ ctx }) {
 						const collateralAfter = await Synthetix.collateral(user7.address);
 						assert.bnLt(collateralAfter, collateralBefore);
 						assert.bnEqual(await Synthetix.balanceOf(user7.address), '0');
-						assert.bnEqual(viewResults.totalRedeemed, collateralBefore);
+						assert.bnEqual(
+							viewResults.totalRedeemed,
+							collateralBefore.sub(flagReward.add(liquidateReward))
+						);
 					});
 
 					it('reduces the total supply of debt shares by the amount of liquidated debt shares', async () => {
@@ -359,18 +361,13 @@ function itCanLiquidate({ ctx }) {
 						);
 					});
 
-					it('transfers the remaining SNX to LiquidatorRewards', async () => {
+					it('transfers the redeemed SNX to LiquidatorRewards', async () => {
 						const { events } = await tx.wait();
 						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 						const snxRedeemed = liqEvent.args.snxRedeemed;
-
-						const flagReward = await Liquidator.flagReward();
-						const liquidateReward = await Liquidator.liquidateReward();
-						const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
-						assert.bnNotEqual(remainingReward, '0');
 						assert.bnEqual(
 							await Synthetix.balanceOf(LiquidatorRewards.address),
-							beforeRemainingRewardCredittedSnx.add(remainingReward)
+							beforeRemainingRewardCredittedSnx.add(snxRedeemed)
 						);
 					});
 
@@ -397,12 +394,24 @@ function itCanLiquidate({ ctx }) {
 
 		describe('full liquidation with a majority of collateral in escrow', () => {
 			let tx, viewResults;
+			let flagReward, liquidateReward;
 			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
 			let beforeSnxBalance, beforeRewardsCredittedSnx;
-			const snxRate = toUnit(0.3); // 30 cents
+
+			before('ensure exchange rate is set', async () => {
+				exchangeRate = await getRate({ ctx, symbol: 'SNX' });
+				await addAggregatorAndSetRate({
+					ctx,
+					currencyKey: toBytes32('SNX'),
+					rate: '6000000000000000000', // $6
+				});
+			});
 
 			before('ensure user8 has alot of escrowed SNX', async () => {
+				flagReward = await Liquidator.flagReward();
+				liquidateReward = await Liquidator.liquidateReward();
+
 				await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
 
 				// 100 entries is a somewhat realistic estimate for an account which as been escrowing for a while and
@@ -424,7 +433,7 @@ function itCanLiquidate({ ctx }) {
 				await addAggregatorAndSetRate({
 					ctx,
 					currencyKey: toBytes32('SNX'),
-					rate: snxRate,
+					rate: '300000000000000000', // $0.30
 				});
 			});
 
@@ -490,7 +499,10 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			it('results correspond to view before liquidation', async () => {
-				assert.bnEqual(viewResults.totalRedeemed, beforeSnxBalance.add(beforeEscrowBalance));
+				assert.bnEqual(
+					viewResults.totalRedeemed,
+					beforeSnxBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
+				);
 				assert.bnEqual(viewResults.escrowToLiquidate, beforeEscrowBalance);
 				assert.bnEqual(viewResults.initialDebtBalance, beforeDebtBalance);
 				// debt per debt share changes a bit
@@ -504,7 +516,10 @@ function itCanLiquidate({ ctx }) {
 				const amountLiquidated = liqEvent.args.amountLiquidated;
 				const snxRedeemed = liqEvent.args.snxRedeemed;
 
-				assert.bnEqual(snxRedeemed, beforeSnxBalance.add(beforeEscrowBalance));
+				assert.bnEqual(
+					snxRedeemed,
+					beforeSnxBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
+				);
 				assert.bnEqual(amountLiquidated.toString(), beforeDebtBalance.toString()); // the variance is due to a rounding error as a result of multiplication of the SNX rate
 			});
 
@@ -521,18 +536,13 @@ function itCanLiquidate({ ctx }) {
 				assert.bnEqual(await Liquidator.getLiquidationDeadlineForAccount(user8.address), 0);
 			});
 
-			it('transfers the remaining SNX + escrow to LiquidatorRewards', async () => {
+			it('transfers the redeemed SNX + escrow to LiquidatorRewards', async () => {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const snxRedeemed = liqEvent.args.snxRedeemed;
-
-				const flagReward = await Liquidator.flagReward();
-				const liquidateReward = await Liquidator.liquidateReward();
-				const remainingReward = snxRedeemed.sub(flagReward.add(liquidateReward));
-				assert.bnNotEqual(remainingReward, '0');
 				assert.bnEqual(
 					await Synthetix.balanceOf(LiquidatorRewards.address),
-					beforeRewardsCredittedSnx.add(remainingReward)
+					beforeRewardsCredittedSnx.add(snxRedeemed)
 				);
 			});
 

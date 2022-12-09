@@ -290,7 +290,7 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
-						(await ExchangeRates.atomicTwapWindow()).toString(),
+						(await SystemSettings.atomicTwapWindow()).toString(),
 						ATOMIC_TWAP_WINDOW
 					);
 					assert.strictEqual(
@@ -452,7 +452,7 @@ describe('publish scripts', () => {
 								newRateStalePeriod
 							);
 							assert.strictEqual(
-								(await ExchangeRates.atomicTwapWindow()).toString(),
+								(await SystemSettings.atomicTwapWindow()).toString(),
 								newAtomicTwapWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
@@ -823,10 +823,6 @@ describe('publish scripts', () => {
 								describe('when one synth has a price well outside of range, triggering price deviation', () => {
 									beforeEach(async () => {
 										CircuitBreaker = getContract({ target: 'CircuitBreaker' });
-										console.error(
-											'BUHFORE',
-											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
-										);
 										await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 									});
 									it('when exchange occurs into that synth, the synth is suspended', async () => {
@@ -837,10 +833,6 @@ describe('publish scripts', () => {
 											overrides
 										);
 										await tx.wait();
-										console.error(
-											'AFTA',
-											(await CircuitBreaker.lastValue(aggregators['ETH'].address)).toString()
-										);
 
 										const suspended = await CircuitBreaker.circuitBroken(
 											aggregators['ETH'].address
