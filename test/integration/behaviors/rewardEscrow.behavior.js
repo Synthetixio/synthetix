@@ -157,57 +157,6 @@ function itDoesRewardEscrow({ ctx, contract }) {
 				assert.bnEqual(escrowBefore.sub(escrowAfter), fakeAmount);
 			});
 		});
-
-		// old escrow should be basically immutable
-		describe('migration replay to check vesting reverts', () => {
-			let fakeEscrowEntryId;
-
-			before('undo migration, add vesting entry, and redo migration', async () => {
-				/// UNDO the migration
-
-				// switch the contracts to move the balance back into the frozen
-				await AddressResolver.connect(owner).importAddresses(
-					['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
-					[RewardEscrowV2Frozen.address, RewardEscrowV2.address]
-				);
-				// move the balance back (otherwise createEscrowEntry fails)
-				await Synthetix.connect(owner).migrateEscrowContractBalance();
-				await RewardEscrowV2Frozen.connect(owner).rebuildCache(); // it should have the correct SNX address
-				await Synthetix.connect(owner).rebuildCache(); // for transfers to work
-
-				// create fake entries on old contract
-				await RewardEscrowV2Frozen.connect(owner).createEscrowEntry(
-					otherUser.address,
-					fakeAmount,
-					1
-				);
-
-				// note that since this is happening after the deployment of new RewardEscrowV2 and RewardEscrowV2Storage
-				// these new entries aren't available to it, because they are after the fallbackId of the migration
-				fakeEscrowEntryId = await RewardEscrowV2Frozen.accountVestingEntryIDs(otherUser.address, 0);
-
-				/// REDO the migration
-				await AddressResolver.connect(owner).importAddresses(
-					['RewardEscrowV2', 'RewardEscrowV2Frozen'].map(toBytes32),
-					[RewardEscrowV2.address, RewardEscrowV2Frozen.address]
-				);
-				await Synthetix.connect(owner).rebuildCache(); // for transfers to work
-
-				// transfer all rewards to the new contract
-				await Synthetix.connect(owner).migrateEscrowContractBalance();
-
-				// skip a small amount of time so that in optimism ops tool (CI L2 integration tests) entries are vestable
-				// this is because time passage when using the ops tools is only done via L1 time
-				await skipLiquidationDelay({ ctx });
-			});
-
-			it('RewardEscrowV2Frozen reverts on call to vest', async () => {
-				await assert.revert(
-					RewardEscrowV2Frozen.connect(otherUser).vest([fakeEscrowEntryId]),
-					'Only the proxy can call'
-				);
-			});
-		});
 	});
 }
 
