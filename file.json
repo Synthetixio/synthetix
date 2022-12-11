@@ -1,0 +1,137 @@
+[
+	{
+		"inputs": [
+			{ "internalType": "uint256", "name": "atStep", "type": "uint256" }
+		],
+		"name": "ExecutionFailed",
+		"type": "error"
+	},
+	{ "inputs": [], "name": "InvalidAmount", "type": "error" },
+	{
+		"inputs": [
+			{ "internalType": "uint256", "name": "sUSDAmount", "type": "uint256" },
+			{
+				"internalType": "uint256",
+				"name": "lusdAmountBefore",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lusdAmountAfter",
+				"type": "uint256"
+			}
+		],
+		"name": "InvalidAmounts",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{ "internalType": "address", "name": "sender", "type": "address" }
+		],
+		"name": "InvalidSender",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "sUSDAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "lusdAmountBefore",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "lusdAmountAfter",
+				"type": "uint256"
+			}
+		],
+		"name": "Burnt",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "NAME",
+		"outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "RETRIEVE_ALL",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "RETRIEVE_ETH",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "RETRIEVE_LUSD",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "RETRIEVE_SUSD",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "VERSION",
+		"outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "uint256", "name": "susdToBurn", "type": "uint256" }
+		],
+		"name": "burnFromWrapper",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{ "internalType": "uint256", "name": "kind", "type": "uint256" }
+		],
+		"name": "retrievePendingBalance",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]
