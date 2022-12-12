@@ -40,13 +40,19 @@ contract('PerpsV2ExchangeRate', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsV2ExchangeRate.abi,
 				ignoreParents: ['MixinSystemSettings', 'Owned'],
-				expected: ['setOffchainOracle', 'setOffchainPriceFeedId', 'updatePythPrice'],
+				expected: [
+					'setOffchainOracle',
+					'setOffchainPriceFeedId',
+					'updatePythPrice',
+					'addAssociatedContracts',
+					'removeAssociatedContracts',
+				],
 			});
 		});
 	});
 
 	describe('Contract access', () => {
-		it('Only owner functions', async () => {
+		it('Only owner functions - oracle and priceFeeds', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsV2ExchangeRate.setOffchainOracle,
 				args: [fakeAddress],
@@ -58,6 +64,27 @@ contract('PerpsV2ExchangeRate', accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: perpsV2ExchangeRate.setOffchainPriceFeedId,
 				args: [toBytes32('key'), toBytes32('feedId')],
+				accounts: [user1, user2],
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('Only owner functions - access control', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: perpsV2ExchangeRate.addAssociatedContracts,
+				args: [[fakeAddress]],
+				accounts: [user1, user2],
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
+
+			// Add one associated contract to remove
+			await perpsV2ExchangeRate.addAssociatedContracts([fakeAddress], { from: owner });
+			await onlyGivenAddressCanInvoke({
+				fnc: perpsV2ExchangeRate.removeAssociatedContracts,
+				args: [[fakeAddress]],
 				accounts: [user1, user2],
 				address: owner,
 				reason: 'Only the contract owner may perform this action',
@@ -196,6 +223,51 @@ contract('PerpsV2ExchangeRate', accounts => {
 				});
 			});
 		});
+
+		describe('associated contract management', () => {
+			beforeEach('setup a mock oracle', async () => {
+				tx = await perpsV2ExchangeRate.addAssociatedContracts([user1], { from: owner });
+			});
+
+			it('emits a log', async () => {
+				// The relevant events are properly emitted
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [perpsV2ExchangeRate],
+				});
+				assert.equal(decodedLogs.length, 1);
+
+				// Associated contract added
+				decodedEventEqual({
+					event: 'AssociatedContractAdded',
+					emittedFrom: perpsV2ExchangeRate.address,
+					args: [user1],
+					log: decodedLogs[0],
+				});
+			});
+
+			it('gets the list of associated contracts', async () => {
+				const associatedContracts = await perpsV2ExchangeRate.associatedContracts();
+				assert.isArray(associatedContracts);
+				assert.equal(associatedContracts.length, 1);
+				assert.equal(associatedContracts[0], user1);
+			});
+
+			it('adds new associated contracts', async () => {
+				tx = await perpsV2ExchangeRate.addAssociatedContracts([fakeAddress], { from: owner });
+
+				const associatedContracts = await perpsV2ExchangeRate.associatedContracts();
+				assert.equal(associatedContracts.length, 2);
+				assert.equal(associatedContracts[1], fakeAddress);
+			});
+
+			it('removes an associated contract', async () => {
+				tx = await perpsV2ExchangeRate.removeAssociatedContracts([user1], { from: owner });
+
+				const associatedContracts = await perpsV2ExchangeRate.associatedContracts();
+				assert.equal(associatedContracts.length, 0);
+			});
+		});
 	});
 
 	describe('Contract operations', () => {
@@ -238,6 +310,7 @@ contract('PerpsV2ExchangeRate', accounts => {
 		}
 
 		beforeEach('setup a mock oracle and feeds', async () => {
+			await perpsV2ExchangeRate.addAssociatedContracts([user1], { from: owner });
 			await perpsV2ExchangeRate.setOffchainOracle(mockPyth.address, { from: owner });
 			await perpsV2ExchangeRate.setOffchainPriceFeedId(feeds[0].assetId, feeds[0].feedId, {
 				from: owner,

@@ -5,18 +5,23 @@ import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
-// Internal references
-
 // Inheritance
 import "./interfaces/IPyth.sol";
 import "./interfaces/PythStructs.sol";
 
+// Libraries
+import "./AddressSetLib.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2ExchangeRate
 contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
+    using AddressSetLib for AddressSetLib.AddressSet;
+
     bytes32 public constant CONTRACT_NAME = "PerpsV2ExchangeRate";
 
     bytes32 internal constant SETTING_OFFCHAIN_ORACLE = "offchainOracle";
     bytes32 internal constant SETTING_OFFCHAIN_PRICE_FEED_ID = "priceFeedId";
+
+    AddressSetLib.AddressSet internal _associatedContracts;
 
     /* ========== CONSTRUCTOR ========== */
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -37,6 +42,32 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
         emit OffchainPriceFeedIdUpdated(assetId, priceFeedId);
     }
 
+    /* ========== ACCESS CONTROL ========== */
+
+    // Add associated contracts
+    function addAssociatedContracts(address[] calldata associatedContracts) external onlyOwner {
+        for (uint i = 0; i < associatedContracts.length; i++) {
+            if (!_associatedContracts.contains(associatedContracts[i])) {
+                _associatedContracts.add(associatedContracts[i]);
+                emit AssociatedContractAdded(associatedContracts[i]);
+            }
+        }
+    }
+
+    // Remove associated contracts
+    function removeAssociatedContracts(address[] calldata associatedContracts) external onlyOwner {
+        for (uint i = 0; i < associatedContracts.length; i++) {
+            if (_associatedContracts.contains(associatedContracts[i])) {
+                _associatedContracts.remove(associatedContracts[i]);
+                emit AssociatedContractRemoved(associatedContracts[i]);
+            }
+        }
+    }
+
+    function associatedContracts() external view returns (address[] memory) {
+        return _associatedContracts.getPage(0, _associatedContracts.elements.length);
+    }
+
     /* ========== VIEWS ========== */
 
     function offchainOracle() public view returns (IPyth) {
@@ -53,7 +84,12 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
 
     /* ---------- priceFeeds mutation ---------- */
 
-    function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable nonReentrant {
+    function updatePythPrice(address sender, bytes[] calldata priceUpdateData)
+        external
+        payable
+        nonReentrant
+        onlyAssociatedContracts
+    {
         // Get fee amount to pay to Pyth
         uint fee = offchainOracle().getUpdateFee(priceUpdateData);
         require(msg.value >= fee, "Not enough eth for paying the fee");
@@ -118,6 +154,18 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
         price = _calculatePrice(retrievedPrice);
         publishTime = retrievedPrice.publishTime;
     }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier onlyAssociatedContracts {
+        require(_associatedContracts.contains(msg.sender), "Only an associated contract can perform this action");
+        _;
+    }
+
+    /* ========== EVENTS ========== */
+
+    event AssociatedContractAdded(address associatedContract);
+    event AssociatedContractRemoved(address associatedContract);
 
     event OffchainOracleUpdated(address offchainOracle);
     event OffchainPriceFeedIdUpdated(bytes32 assetId, bytes32 priceFeedId);
