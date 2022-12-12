@@ -268,9 +268,9 @@ contract('PerpsV2MarketState', accounts => {
 		});
 
 		describe('can set marketKey and baseAsset if unset', () => {
-			let anotherperpsV2MarketState, anotherMarketStateConsumer;
+			let anotherPerpsV2MarketState, anotherMarketStateConsumer;
 			beforeEach('setup new unset contracts', async () => {
-				anotherperpsV2MarketState = await setupContract({
+				anotherPerpsV2MarketState = await setupContract({
 					accounts,
 					contract: 'PerpsV2MarketState',
 					args: [owner, [owner], toBytes32(''), toBytes32('')],
@@ -280,15 +280,15 @@ contract('PerpsV2MarketState', accounts => {
 				anotherMarketStateConsumer = await setupContract({
 					accounts,
 					contract: 'MockPerpsV2StateConsumer',
-					args: [anotherperpsV2MarketState.address],
+					args: [anotherPerpsV2MarketState.address],
 					skipPostDeploy: true,
 				});
 
-				await anotherperpsV2MarketState.removeAssociatedContracts([owner], {
+				await anotherPerpsV2MarketState.removeAssociatedContracts([owner], {
 					from: owner,
 				});
 
-				await anotherperpsV2MarketState.addAssociatedContracts(
+				await anotherPerpsV2MarketState.addAssociatedContracts(
 					[anotherMarketStateConsumer.address],
 					{
 						from: owner,
@@ -301,7 +301,7 @@ contract('PerpsV2MarketState', accounts => {
 					'marketKey',
 					toBytes32('someFancyMarketKey'),
 					user,
-					anotherperpsV2MarketState,
+					anotherPerpsV2MarketState,
 					anotherMarketStateConsumer
 				);
 			});
@@ -311,7 +311,7 @@ contract('PerpsV2MarketState', accounts => {
 					'baseAsset',
 					toBytes32('someFancyBaseAsset'),
 					user,
-					anotherperpsV2MarketState,
+					anotherPerpsV2MarketState,
 					anotherMarketStateConsumer
 				);
 			});
