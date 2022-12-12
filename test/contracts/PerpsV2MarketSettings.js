@@ -268,12 +268,22 @@ contract('PerpsV2MarketSettings', accounts => {
 								contracts: [futuresMarketSettings],
 							});
 							assert.equal(decodedLogs.length, 2);
-							decodedEventEqual({
-								event: 'ParameterUpdated',
-								emittedFrom: futuresMarketSettings.address,
-								args: [marketKey, param, value],
-								log: decodedLogs[1],
-							});
+							if (p[0] === 'offchainMarketKey') {
+								// offchainMarketKey value is type bytes32 => uses another event name
+								decodedEventEqual({
+									event: 'ParameterUpdatedBytes32',
+									emittedFrom: futuresMarketSettings.address,
+									args: [marketKey, param, value],
+									log: decodedLogs[1],
+								});
+							} else {
+								decodedEventEqual({
+									event: 'ParameterUpdated',
+									emittedFrom: futuresMarketSettings.address,
+									args: [marketKey, param, value],
+									log: decodedLogs[1],
+								});
+							}
 
 							// And the parameter was actually set properly
 							assert.bnEqual(await getter(marketKey), value.toString());

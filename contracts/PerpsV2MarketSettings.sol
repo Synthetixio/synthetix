@@ -325,7 +325,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
             keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY)),
             _offchainMarketKey
         );
-        emit ParameterUpdated(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY, _offchainMarketKey);
+        emit ParameterUpdatedBytes32(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY, _offchainMarketKey);
     }
 
     /*
@@ -382,7 +382,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
-    event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, bytes32 value);
+    event ParameterUpdatedBytes32(bytes32 indexed marketKey, bytes32 indexed parameter, bytes32 value);
     event MinKeeperFeeUpdated(uint sUSD);
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);
