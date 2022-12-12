@@ -229,13 +229,14 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
+        uint intentionTime,
         uint executableAtTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERSUBMITTED_SIG =
-        keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,bytes32)");
+        keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderSubmitted(address account, DelayedOrder memory order) internal {
         proxy._emit(
@@ -243,6 +244,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 order.isOffchain,
                 order.sizeDelta,
                 order.targetRoundId,
+                order.intentionTime,
                 order.executableAtTime,
                 order.commitDeposit,
                 order.keeperDeposit,

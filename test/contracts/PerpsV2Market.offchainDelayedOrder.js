@@ -241,7 +241,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [trader, true, size, roundId.add(toBN(1)), expectedExecutableAt, spotFee, keeperFee],
+				args: [
+					trader,
+					true,
+					size,
+					roundId.add(toBN(1)),
+					txBlock.timestamp,
+					expectedExecutableAt,
+					spotFee,
+					keeperFee,
+				],
 				log: decodedLogs[2],
 			});
 		});
@@ -339,6 +348,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					true,
 					size,
 					roundId.add(toBN(1)),
+					txBlock.timestamp,
 					txBlock.timestamp + 60,
 					spotFee,
 					keeperFee,
