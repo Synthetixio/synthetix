@@ -8,13 +8,15 @@ import "./PerpsV2MarketProxyable.sol";
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
- Contract that implements DelayedOrders (base for onchain and offchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (base for on-chain and off-chain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
  the risk to the debt pool, and funding rate for traders.
+
  The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
  is less of a risk when committing to next price.
+
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
@@ -100,16 +102,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 trackingCode: trackingCode
             });
         // emit event
-        emitDelayedOrderSubmitted(
-            messageSender,
-            order.isOffchain,
-            order.sizeDelta,
-            order.targetRoundId,
-            order.executableAtTime,
-            order.commitDeposit,
-            order.keeperDeposit,
-            order.trackingCode
-        );
+        emitDelayedOrderSubmitted(messageSender, order);
         // store order
         marketState.updateDelayedOrder(
             messageSender,
@@ -154,15 +147,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         // important!! position of the account, not the msg.sender
         marketState.deleteDelayedOrder(account);
         // emit event
-        emitDelayedOrderRemoved(
-            account,
-            currentRoundId,
-            order.sizeDelta,
-            order.targetRoundId,
-            order.commitDeposit,
-            order.keeperDeposit,
-            order.trackingCode
-        );
+        emitDelayedOrderRemoved(account, currentRoundId, order);
     }
 
     function _executeDelayedOrder(
@@ -214,15 +199,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         // remove stored order
         marketState.deleteDelayedOrder(account);
         // emit event
-        emitDelayedOrderRemoved(
-            account,
-            currentRoundId,
-            order.sizeDelta,
-            order.targetRoundId,
-            order.commitDeposit,
-            order.keeperDeposit,
-            order.trackingCode
-        );
+        emitDelayedOrderRemoved(account, currentRoundId, order);
     }
 
     function _confirmCanCancel(
@@ -252,26 +229,27 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
+        uint intentionTime,
         uint executableAtTime,
         uint commitDeposit,
         uint keeperDeposit,
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERSUBMITTED_SIG =
-        keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,bytes32)");
+        keccak256("DelayedOrderSubmitted(address,bool,int256,uint256,uint256,uint256,uint256,uint256,bytes32)");
 
-    function emitDelayedOrderSubmitted(
-        address account,
-        bool isOffchain,
-        int sizeDelta,
-        uint targetRoundId,
-        uint executableAtTime,
-        uint commitDeposit,
-        uint keeperDeposit,
-        bytes32 trackingCode
-    ) internal {
+    function emitDelayedOrderSubmitted(address account, DelayedOrder memory order) internal {
         proxy._emit(
-            abi.encode(isOffchain, sizeDelta, targetRoundId, executableAtTime, commitDeposit, keeperDeposit, trackingCode),
+            abi.encode(
+                order.isOffchain,
+                order.sizeDelta,
+                order.targetRoundId,
+                order.intentionTime,
+                order.executableAtTime,
+                order.commitDeposit,
+                order.keeperDeposit,
+                order.trackingCode
+            ),
             2,
             DELAYEDORDERSUBMITTED_SIG,
             addressToBytes32(account),
@@ -282,6 +260,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
     event DelayedOrderRemoved(
         address indexed account,
+        bool isOffchain,
         uint currentRoundId,
         int sizeDelta,
         uint targetRoundId,
@@ -290,19 +269,23 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         bytes32 trackingCode
     );
     bytes32 internal constant DELAYEDORDERREMOVED_SIG =
-        keccak256("DelayedOrderRemoved(address,uint256,int256,uint256,uint256,uint256,bytes32)");
+        keccak256("DelayedOrderRemoved(address,bool,uint256,int256,uint256,uint256,uint256,bytes32)");
 
     function emitDelayedOrderRemoved(
         address account,
         uint currentRoundId,
-        int sizeDelta,
-        uint targetRoundId,
-        uint commitDeposit,
-        uint keeperDeposit,
-        bytes32 trackingCode
+        DelayedOrder memory order
     ) internal {
         proxy._emit(
-            abi.encode(currentRoundId, sizeDelta, targetRoundId, commitDeposit, keeperDeposit, trackingCode),
+            abi.encode(
+                order.isOffchain,
+                currentRoundId,
+                order.sizeDelta,
+                order.targetRoundId,
+                order.commitDeposit,
+                order.keeperDeposit,
+                order.trackingCode
+            ),
             2,
             DELAYEDORDERREMOVED_SIG,
             addressToBytes32(account),
