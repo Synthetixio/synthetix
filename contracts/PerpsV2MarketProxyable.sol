@@ -209,7 +209,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emitFuturesTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
+                emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
             }
         }
 
@@ -333,16 +333,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         proxy._emit(abi.encode(funding, fundingRate, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
     }
 
-    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
-    bytes32 internal constant FUTURESTRACKING_SIG = keccak256("FuturesTracking(bytes32,bytes32,bytes32,int256,uint256)");
+    event PerpsTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+    bytes32 internal constant PERPSTRACKING_SIG = keccak256("PerpsTracking(bytes32,bytes32,bytes32,int256,uint256)");
 
-    function emitFuturesTracking(
+    function emitPerpsTracking(
         bytes32 trackingCode,
         bytes32 baseAsset,
         bytes32 marketKey,
         int sizeDelta,
         uint fee
     ) internal {
-        proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, FUTURESTRACKING_SIG, trackingCode, 0, 0);
+        proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, PERPSTRACKING_SIG, trackingCode, 0, 0);
     }
 }

@@ -241,7 +241,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [trader, true, size, roundId.add(toBN(1)), expectedExecutableAt, spotFee, keeperFee],
+				args: [
+					trader,
+					true,
+					size,
+					roundId.add(toBN(1)),
+					txBlock.timestamp,
+					expectedExecutableAt,
+					spotFee,
+					keeperFee,
+				],
 				log: decodedLogs[2],
 			});
 		});
@@ -339,6 +348,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					true,
 					size,
 					roundId.add(toBN(1)),
+					txBlock.timestamp,
 					txBlock.timestamp + 60,
 					spotFee,
 					keeperFee,
@@ -390,7 +400,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			});
 
 			decodedEventEqual({
-				event: 'FuturesTracking',
+				event: 'PerpsTracking',
 				emittedFrom: perpsV2Market.address,
 				args: [trackingCode, baseAsset, marketKey, size, expectedFee],
 				log: decodedLogs[6],
@@ -463,11 +473,11 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					args: [await feePool.FEE_ADDRESS(), spotFee],
 					log: decodedLogs.slice(-2, -1)[0], // [-2]
 				});
-				// DelayedOrderRemoved
+
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
+					args: [trader, true, roundId, size, roundId.add(toBN(1)), spotFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
@@ -1023,7 +1033,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
+					args: [trader, true, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
