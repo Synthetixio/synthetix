@@ -201,6 +201,7 @@ interface IPerpsV2MarketConsolidated {
         bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
+        uint intentionTime,
         uint executableAtTime,
         uint commitDeposit,
         uint keeperDeposit,
