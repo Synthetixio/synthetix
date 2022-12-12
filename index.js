@@ -677,28 +677,64 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 };
 
 const enhanceDecodedData = decoded => {
+	const decodedBytes32 = p => {
+		try {
+			return { ascii: fromBytes32(p).replaceAll('\x00', '') };
+		} catch (e) {
+			return { ascii: '\\error decoding\\' };
+		}
+	};
+	const formatDecimals = number => {
+		const exp = /(\d)(?=(\d{3})+(?!\d))/g;
+		const rep = '$1,';
+		return number.toString().replace(exp, rep);
+	};
+	const decodeUint = p => {
+		try {
+			const value = w3utils.toBN(p);
+			return {
+				bp: value.div(w3utils.toBN(1e14)).toString(),
+				decimal: formatDecimals(value.div(w3utils.toBN(1e18)).toString()),
+				number: formatDecimals(value.toString()),
+			};
+		} catch (e) {
+			return { ascii: '\\error decoding\\' };
+		}
+	};
+
 	const enhancedParams = decoded.method.params.map(p => {
 		if (p.type === 'bytes32') {
-			try {
-				return { ...p, enhanced: { ascii: fromBytes32(p.value).replaceAll('\x00', '') } };
-			} catch (e) {
-				return p;
-			}
+			return { ...p, enhanced: decodedBytes32(p.value) };
 		}
 
-		if (p.type === 'uint256') {
-			try {
-				const value = w3utils.toBN(p.value);
-				return {
-					...p,
-					enhanced: {
-						bp: value.div(w3utils.toBN(1e14)).toString(),
-						decimal: value.div(w3utils.toBN(1e18)).toString(),
-					},
-				};
-			} catch (e) {
-				return p;
+		if (p.type === 'bytes32[]') {
+			p.value = p.value.map(original => {
+				return { original, enhanced: decodedBytes32(original) };
+			});
+		}
+
+		if (/u?int[1-3][0-9]?./.test(p.type)) {
+			return { ...p, enhanced: decodeUint(p.value) };
+		}
+
+		if (p.type === 'tuple') {
+			const keys = Object.keys(p.value).filter(v => isNaN(v));
+			const values = [];
+
+			for (const key of keys) {
+				if (p.value[key].startsWith('0x')) {
+					if (p.value[key].length === 66) {
+						values[key] = { original: p.value[key], enhanced: decodedBytes32(p.value[key]) };
+						continue;
+					}
+					values[key] = p.value[key];
+					continue;
+				}
+
+				values[key] = { original: p.value[key], enhanced: decodeUint(p.value[key]) };
 			}
+
+			p.value = values;
 		}
 
 		return p;
