@@ -297,6 +297,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					'Market suspended'
 				);
 			});
+
+			it('if oc virtual market is suspended', async () => {
+				const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
+				await systemStatus.suspendFuturesMarket(ocMarketKet, '0', { from: owner });
+				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
+				await assert.revert(
+					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
+					'Market suspended'
+				);
+			});
 		});
 	});
 
