@@ -18,17 +18,7 @@ interface IPerpsV2MarketViews {
 
     function fundingSequence(uint index) external view returns (int128 netFunding);
 
-    function positions(address account)
-        external
-        view
-        returns (
-            IPerpsV2MarketBaseTypes.Position memory
-            // uint64 id,
-            // uint64 lastFundingIndex,
-            // uint128 margin,
-            // uint128 lastPrice,
-            // int128 size
-        );
+    function positions(address account) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
     function assetPrice() external view returns (uint price, bool invalid);
 

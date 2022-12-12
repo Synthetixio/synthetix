@@ -55,7 +55,7 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
 
     function updatePythPrice(address sender, bytes[] calldata priceUpdateData) external payable nonReentrant {
         // Get fee amount to pay to Pyth
-        uint fee = offchainOracle().getUpdateFee(priceUpdateData.length);
+        uint fee = offchainOracle().getUpdateFee(priceUpdateData);
         require(msg.value >= fee, "Not enough eth for paying the fee");
 
         // Update the price data (and pay the fee)
@@ -100,13 +100,11 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
         // Adjust exponent (using base as 18 decimals)
         uint baseConvertion = 10**uint(int(18) + retrievedPrice.expo);
 
-        // TODO use the confidence?
         price = uint(retrievedPrice.price * int(baseConvertion));
     }
 
     function _getPythPriceUnsafe(bytes32 priceFeedId) internal view returns (uint price, uint publishTime) {
-        // TODO check if getPrice failed (reverted) and fallback to CL
-        // It shouldn't revert since it was updated before... but...
+        // It will revert if there's no price for the priceFeedId
         PythStructs.Price memory retrievedPrice = offchainOracle().getPriceUnsafe(priceFeedId);
 
         price = _calculatePrice(retrievedPrice);
@@ -114,8 +112,7 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
     }
 
     function _getPythPrice(bytes32 priceFeedId, uint maxAge) internal view returns (uint price, uint publishTime) {
-        // TODO check if getPrice failed (reverted) and fallback to CL
-        // It shouldn't revert since it was updated before... but...
+        // It will revert if the price is older than maxAge
         PythStructs.Price memory retrievedPrice = offchainOracle().getPriceNoOlderThan(priceFeedId, maxAge);
 
         price = _calculatePrice(retrievedPrice);
