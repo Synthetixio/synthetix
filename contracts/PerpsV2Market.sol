@@ -153,7 +153,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _transferMargin(marginDelta, price, messageSender);
     }
@@ -164,7 +164,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      */
     function withdrawAllMargin() external onlyProxy {
         address sender = messageSender;
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         int marginDelta = -int(_accessibleMargin(marketState.positions(sender), price));
         _transferMargin(marginDelta, price, sender);
@@ -195,7 +195,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         uint priceImpactDelta,
         bytes32 trackingCode
     ) internal onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _trade(
             messageSender,
@@ -225,7 +225,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     function _closePosition(uint priceImpactDelta, bytes32 trackingCode) internal onlyProxy {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _trade(
             messageSender,
@@ -287,7 +287,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
     function liquidatePosition(address account) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);

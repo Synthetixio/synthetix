@@ -132,7 +132,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         );
 
         // price depends on whether the delay or price update has reached/occurred first
-        uint currentPrice = _assetPriceRequireSystemChecks();
+        uint currentPrice = _assetPriceRequireSystemChecks(false);
         _executeDelayedOrder(
             account,
             order,

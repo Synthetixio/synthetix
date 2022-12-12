@@ -70,11 +70,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      * This is mutative because the circuit breaker stores the last price on every invocation.
      */
-    function _assetPriceRequireSystemChecks() internal returns (uint) {
+    function _assetPriceRequireSystemChecks(bool checkOffchainMarket) internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(_baseAsset());
+
+        if (checkOffchainMarket) {
+            // offchain PerpsV2 virtual market
+            _systemStatus().requireFuturesMarketActive(_offchainMarketKey(_marketKey()));
+        }
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
         // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
