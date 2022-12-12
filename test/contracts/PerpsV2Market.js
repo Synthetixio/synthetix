@@ -2714,7 +2714,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await withdrawAccessibleAndValidate(trader2);
 			});
 
-			// TODO: ADD THIS BACK AFTER FUTURESV2 MERGE!
+			// TODO: ADD THIS BACK AFTER PERPSV2 MERGE!
 			it.skip('Larger position', async () => {
 				const price = toUnit('100');
 				await setPrice(baseAsset, price);
