@@ -183,10 +183,11 @@ interface IPerpsV2MarketConsolidated {
 
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
 
-    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+    event PerpsTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
 
     event DelayedOrderRemoved(
         address indexed account,
+        bool isOffchain,
         uint currentRoundId,
         int sizeDelta,
         uint targetRoundId,
@@ -200,6 +201,7 @@ interface IPerpsV2MarketConsolidated {
         bool isOffchain,
         int sizeDelta,
         uint targetRoundId,
+        uint intentionTime,
         uint executableAtTime,
         uint commitDeposit,
         uint keeperDeposit,
