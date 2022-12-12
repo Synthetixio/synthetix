@@ -3,7 +3,8 @@ const { toBytes32 } = require('../..');
 const { toUnit, multiplyDecimal, currentTime, fastForward } = require('../utils')();
 const { toBN } = web3.utils;
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2MarketHelper = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const { setupAllContracts, setupContract } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -12,6 +13,7 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
+		perpsV2MarketHelper,
 		perpsV2DelayedOrder,
 		perpsV2MarketState,
 		perpsV2ExchangeRate,
@@ -155,6 +157,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 		// use implementation ABI on the proxy address to simplify calling
 		perpsV2Market = await PerpsV2Market.at(perpsV2Market.address);
+		perpsV2MarketHelper = await PerpsV2MarketHelper.at(perpsV2Market.address);
 
 		// Setup mock pyth and perpsV2ExchangeRage
 		mockPyth = await setupContract({
@@ -206,7 +209,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0];
+			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, 0))[0];
 
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, {
 				from: trader,
@@ -373,7 +376,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
-			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice))[0];
+			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, offChainPrice))[0];
 			const expectedFee = multiplyDecimal(
 				size,
 				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
@@ -1071,7 +1074,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
 							// set the commitFee here because commitFee was _before_ the submit and price update.
 							fillPrice = (
-								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
 							)[0];
 						});
 
@@ -1112,7 +1115,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							await setOnchainPrice(baseAsset, targetPrice);
 
 							fillPrice = (
-								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
 							)[0];
 						});
 

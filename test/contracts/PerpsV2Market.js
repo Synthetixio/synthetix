@@ -36,7 +36,7 @@ const Status = {
 	PriceTooVolatile: 11,
 };
 
-contract('PerpsV2Market', accounts => {
+contract('PerpsV2Market PerpsV2Market', accounts => {
 	let futuresMarketSettings,
 		futuresMarketManager,
 		futuresMarketProxy,
@@ -144,7 +144,6 @@ contract('PerpsV2Market', accounts => {
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
 				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
-				// 'TestablePerpsV2MarketBTC',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FeePool',
