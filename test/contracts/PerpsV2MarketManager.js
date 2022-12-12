@@ -619,7 +619,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	});
 
 	describe('Aggregated Debt', () => {
-		it('futures debt is zero when no markets are deployed', async () => {
+		it('perpsV2 debt is zero when no markets are deployed', async () => {
 			// check initial debt
 			const initialSystemDebt = (await debtCache.currentDebt())[0];
 			// issue some sUSD

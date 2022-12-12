@@ -39,42 +39,42 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /* ---------- Getters ---------- */
 
     /*
-     * The fee charged when opening a position on the heavy side of a futures market.
+     * The fee charged when opening a position on the heavy side of a perpsV2 market.
      */
     function takerFee(bytes32 _marketKey) external view returns (uint) {
         return _takerFee(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the light side of a futures market.
+     * The fee charged when opening a position on the light side of a perpsV2 market.
      */
     function makerFee(bytes32 _marketKey) public view returns (uint) {
         return _makerFee(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the heavy side of a futures market using delayed order mechanism.
+     * The fee charged when opening a position on the heavy side of a perpsV2 market using delayed order mechanism.
      */
     function takerFeeDelayedOrder(bytes32 _marketKey) external view returns (uint) {
         return _takerFeeDelayedOrder(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the light side of a futures market using delayed order mechanism.
+     * The fee charged when opening a position on the light side of a perpsV2 market using delayed order mechanism.
      */
     function makerFeeDelayedOrder(bytes32 _marketKey) public view returns (uint) {
         return _makerFeeDelayedOrder(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the heavy side of a futures market using offchain delayed order mechanism.
+     * The fee charged when opening a position on the heavy side of a perpsV2 market using offchain delayed order mechanism.
      */
     function takerFeeOffchainDelayedOrder(bytes32 _marketKey) external view returns (uint) {
         return _takerFeeOffchainDelayedOrder(_marketKey);
     }
 
     /*
-     * The fee charged when opening a position on the light side of a futures market using offchain delayed order mechanism.
+     * The fee charged when opening a position on the light side of a perpsV2 market using offchain delayed order mechanism.
      */
     function makerFeeOffchainDelayedOrder(bytes32 _marketKey) public view returns (uint) {
         return _makerFeeOffchainDelayedOrder(_marketKey);

@@ -282,7 +282,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				);
 			});
 
-			it('if futures markets are suspended', async () => {
+			it('if perpsV2 markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
@@ -496,7 +496,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				);
 			});
 
-			it('cannot cancel if futures markets are suspended', async () => {
+			it('cannot cancel if perpsV2 markets are suspended', async () => {
 				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
@@ -1142,7 +1142,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						});
 					});
 
-					it('reverts if futures markets are suspended', async () => {
+					it('reverts if perpsV2 markets are suspended', async () => {
 						await setOnchainPrice(baseAsset, targetPrice);
 						await systemStatus.suspendFutures(toUnit(0), { from: owner });
 						await assert.revert(

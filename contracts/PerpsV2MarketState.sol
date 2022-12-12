@@ -13,7 +13,7 @@ import "./AddressSetLib.sol";
 contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
-    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // The market identifier in the perpsV2 system (manager + settings). Multiple markets can co-exist
     // for the same asset in order to allow migrations.
     bytes32 public marketKey;
 

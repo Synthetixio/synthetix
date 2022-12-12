@@ -10,7 +10,7 @@ import "./interfaces/IPerpsV2Market.sol";
  * =================
  *
  * PerpsV2 markets allow users leveraged exposure to an asset, long or short.
- * A user must post some margin in order to open a futures account, and profits/losses are
+ * A user must post some margin in order to open a perpsV2 account, and profits/losses are
  * continually tallied against this margin. If a user's margin runs out, then their position is closed
  * by a liquidation keeper, which is rewarded with a flat fee extracted from the margin.
  *
@@ -31,7 +31,7 @@ import "./interfaces/IPerpsV2Market.sol";
  * The contract architecture is as follows:
  *
  *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
- *                                  futures markets and the rest of the system. It accumulates the total debt
+ *                                  futures and perpsV2 markets and the rest of the system. It accumulates the total debt
  *                                  over all markets, and issues and burns sUSD on each market's behalf.
  *
  *     - PerpsV2MarketSettings.sol: Holds the settings for each market in the global FlexibleStorage instance used

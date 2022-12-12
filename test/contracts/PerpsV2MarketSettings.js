@@ -295,7 +295,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	});
 
 	describe('setMinInitialMargin()', () => {
-		it('should be able to change the futures min initial margin', async () => {
+		it('should be able to change the perpsV2 min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
 			const originalInitialMargin = await futuresMarketSettings.minInitialMargin.call();
@@ -305,7 +305,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
 		});
 
-		it('only owner is permitted to change the futures min initial margin', async () => {
+		it('only owner is permitted to change the perpsV2 min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
 			await onlyGivenAddressCanInvoke({
@@ -334,7 +334,7 @@ contract('PerpsV2MarketSettings', accounts => {
 		beforeEach(async () => {
 			minInitialMargin = await futuresMarketSettings.minInitialMargin.call();
 		});
-		it('should be able to change the futures liquidation fee', async () => {
+		it('should be able to change the perpsV2 liquidation fee', async () => {
 			// fee <= minInitialMargin
 			const minKeeperFee = minInitialMargin;
 
@@ -345,7 +345,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
 		});
 
-		it('only owner is permitted to change the futures liquidation fee', async () => {
+		it('only owner is permitted to change the perpsV2 liquidation fee', async () => {
 			const minKeeperFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({

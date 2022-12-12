@@ -243,7 +243,7 @@ contract('PerpsV2MarketData', accounts => {
 	});
 
 	describe('Globals', () => {
-		it('Global futures settings are properly fetched', async () => {
+		it('Global perpsV2 settings are properly fetched', async () => {
 			const globals = await futuresMarketData.globals();
 
 			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
