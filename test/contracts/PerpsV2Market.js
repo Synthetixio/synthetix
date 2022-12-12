@@ -1554,11 +1554,11 @@ contract('PerpsV2Market', accounts => {
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 			assert.deepEqual(
 				decodedLogs.map(({ name }) => name),
-				['FundingRecomputed', 'Issued', 'FuturesTracking', 'PositionModified']
+				['FundingRecomputed', 'Issued', 'PerpsTracking', 'PositionModified']
 			);
 			assert.equal(decodedLogs.length, 4);
 			decodedEventEqual({
-				event: 'FuturesTracking',
+				event: 'PerpsTracking',
 				emittedFrom: futuresMarket.address,
 				args: [trackingCode, baseAsset, marketKey, size, fee],
 				log: decodedLogs[2],
@@ -2018,13 +2018,13 @@ contract('PerpsV2Market', accounts => {
 				});
 				assert.deepEqual(
 					decodedLogs.map(({ name }) => name),
-					['FundingRecomputed', 'Issued', 'FuturesTracking', 'PositionModified']
+					['FundingRecomputed', 'Issued', 'PerpsTracking', 'PositionModified']
 				);
 				assert.equal(decodedLogs.length, 4);
 				const fee = multiplyDecimal(toUnit(2000), makerFee);
 
 				decodedEventEqual({
-					event: 'FuturesTracking',
+					event: 'PerpsTracking',
 					emittedFrom: futuresMarket.address,
 					args: [trackingCode, baseAsset, marketKey, size.neg(), fee],
 					log: decodedLogs[2],
