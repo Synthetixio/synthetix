@@ -60,6 +60,7 @@ interface IPerpsV2MarketViews {
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external

@@ -86,6 +86,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Status.InvalidOrderType)] = "Invalid order type";
         _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Status.CanLiquidate)] = "Position can be liquidated";
         _errorMessages[uint8(Status.CannotLiquidate)] = "Position cannot be liquidated";

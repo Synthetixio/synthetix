@@ -49,9 +49,9 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         return _assetPrice();
     }
 
-    function fillPrice(int size) external view returns (uint price, bool invalid) {
+    function fillPrice(int sizeDelta) external view returns (uint price, bool invalid) {
         (uint price, bool invalid) = _assetPrice();
-        return (_fillPrice(size, price), invalid);
+        return (_fillPrice(sizeDelta, price), invalid);
     }
 
     /*
@@ -226,21 +226,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
 
         bytes32 marketKey = _marketKey();
-        uint makerFee;
-        uint takerFee;
-
-        // Infer the maker/taker fee based on orderType. In the event an unsupported orderType is
-        // provided then orderFee of 0 is returned with an invalid price bool.
-        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
-            makerFee = _makerFee(marketKey);
-            takerFee = _takerFee(marketKey);
-        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Delayed) {
-            makerFee = _makerFeeDelayedOrder(marketKey);
-            takerFee = _takerFeeDelayedOrder(marketKey);
-        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
-            makerFee = _makerFeeOffchainDelayedOrder(marketKey);
-            takerFee = _takerFeeOffchainDelayedOrder(marketKey);
-        } else {
+        (uint makerFee, uint takerFee, bool invalid) = _makerTakeFeesByOrderType(orderType);
+        if (invalid) {
             return (0, true);
         }
 
@@ -263,11 +250,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      *
      * @param sizeDelta The size of the next trade
      * @param tradePrice An arbitrary price to simulate on. When price is 0 then the current price will be used
+     * @param orderType OrderType enum to simulate fees against (e.g. Atomic, Delayed, Offchain)
      * @param sender The user holding the position we would like to simulate
      */
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external
@@ -281,20 +270,29 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             Status status
         )
     {
-        if (tradePrice == 0) {
-            (uint exchangePrice, bool invalid) = _assetPrice();
+        uint makerFee;
+        uint takerFee;
+
+        // stack too deep
+        {
+            bool invalid;
+            (makerFee, takerFee, invalid) = _makerTakeFeesByOrderType(orderType);
+            if (invalid) {
+                return (0, 0, 0, 0, 0, Status.InvalidOrderType);
+            }
+
+            (tradePrice, invalid) = _simulationTradePrice(tradePrice);
             if (invalid) {
                 return (0, 0, 0, 0, 0, Status.InvalidPrice);
             }
-            tradePrice = exchangePrice;
         }
 
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: _fillPrice(sizeDelta, tradePrice), // we use fillPrice here as we're not actually calling _trade.
-                takerFee: _takerFee(_marketKey()),
-                makerFee: _makerFee(_marketKey()),
+                makerFee: makerFee,
+                takerFee: takerFee,
                 priceImpactDelta: 0,
                 trackingCode: bytes32(0)
             });
@@ -302,6 +300,46 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
 
         liqPrice = _approxLiquidationPrice(newPosition, newPosition.lastPrice);
         return (newPosition.margin, newPosition.size, newPosition.lastPrice, liqPrice, fee_, status_);
+    }
+
+    function _simulationTradePrice(uint tradePrice) internal view returns (uint, bool) {
+        if (tradePrice != 0) {
+            return (tradePrice, false);
+        }
+        return _assetPrice();
+    }
+
+    /// helper to fetch the orderFee (maker/taker) bps by order type (Atomic, Delayed, Offchain).
+    function _makerTakeFeesByOrderType(IPerpsV2MarketBaseTypes.OrderType orderType)
+        internal
+        view
+        returns (
+            uint makerFee,
+            uint takerFee,
+            bool invalid
+        )
+    {
+        bytes32 marketKey = _marketKey();
+        invalid = false;
+
+        // Infer the maker/taker fee based on orderType. In the event an unsupported orderType is
+        // provided then orderFee of 0 is returned with an invalid price bool.
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
+            makerFee = _makerFee(marketKey);
+            takerFee = _takerFee(marketKey);
+        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Delayed) {
+            makerFee = _makerFeeDelayedOrder(marketKey);
+            takerFee = _takerFeeDelayedOrder(marketKey);
+        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
+            makerFee = _makerFeeOffchainDelayedOrder(marketKey);
+            takerFee = _takerFeeOffchainDelayedOrder(marketKey);
+        } else {
+            makerFee = 0;
+            takerFee = 0;
+            invalid = true;
+        }
+
+        return (makerFee, takerFee, invalid);
     }
 
     /// helper methods calculates the approximate liquidation price

@@ -8,6 +8,7 @@ interface IPerpsV2MarketBaseTypes {
     enum Status {
         Ok,
         InvalidPrice,
+        InvalidOrderType,
         PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
