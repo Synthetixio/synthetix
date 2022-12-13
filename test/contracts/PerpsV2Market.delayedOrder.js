@@ -14,7 +14,7 @@ const {
 	updateAggregatorRates,
 } = require('./helpers');
 
-contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
+contract('PerpsV2Market PerpsV2MarketDelayedOrders (TEST)', accounts => {
 	let futuresMarketSettings,
 		futuresMarket,
 		futuresDelayedOrder,
