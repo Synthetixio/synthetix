@@ -100,11 +100,13 @@ module.exports = async ({
 			offchainMarketKey,
 			offchainPriceDivergence,
 			paused,
+			offchainPaused,
 		} = market;
 
-		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
+		console.log(gray(`\n   --- MARKET ${asset} / ${marketKey} ---\n`));
 
 		const marketKeyBytes = toBytes32(marketKey);
+		const offchainMarketKeyBytes = toBytes32(offchainMarketKey);
 
 		const settings = {
 			takerFee: w3utils.toWei(takerFee),
@@ -117,13 +119,13 @@ module.exports = async ({
 			delayedOrderConfirmWindow: delayedOrderConfirmWindow,
 			minDelayTimeDelta: minDelayTimeDelta,
 			maxDelayTimeDelta: maxDelayTimeDelta,
-			offchainDelayedOrderMinAge: w3utils.toWei(offchainDelayedOrderMinAge),
-			offchainDelayedOrderMaxAge: w3utils.toWei(offchainDelayedOrderMaxAge),
+			offchainDelayedOrderMinAge: offchainDelayedOrderMinAge,
+			offchainDelayedOrderMaxAge: offchainDelayedOrderMaxAge,
 			maxLeverage: w3utils.toWei(maxLeverage),
 			maxMarketValue: w3utils.toWei(maxMarketValue),
 			maxFundingVelocity: w3utils.toWei(maxFundingVelocity),
 			skewScale: w3utils.toWei(skewScale),
-			offchainMarketKey: toBytes32(offchainMarketKey),
+			offchainMarketKey: offchainMarketKeyBytes,
 			offchainPriceDivergence: w3utils.toWei(offchainPriceDivergence),
 		};
 
@@ -143,6 +145,13 @@ module.exports = async ({
 		}
 
 		// pause or resume market according to config
+		await setPausedMode(paused, marketKeyBytes, marketKey);
+
+		// pause or resume offchain market according to config
+		await setPausedMode(offchainPaused, offchainMarketKeyBytes, offchainMarketKey);
+	}
+
+	async function setPausedMode(paused, marketKeyBytes, marketKey) {
 		const shouldPause = paused; // config value
 		const isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
 
