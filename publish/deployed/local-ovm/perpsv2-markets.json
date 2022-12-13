@@ -1,6 +1,6 @@
 [
 	{
-		"marketKey": "pBTC",
+		"marketKey": "sBTCPERP",
 		"asset": "sBTC",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
@@ -19,10 +19,10 @@
 		"maxFundingVelocity": "0.1",
 		"skewScale": "50000",
 		"offchainPriceDivergence": "0.05",
-		"offchainMarketKey": "ocpBTC"
+		"offchainMarketKey": "ocBTCPERP"
 	},
 	{
-		"marketKey": "pETH",
+		"marketKey": "sETHPERP",
 		"asset": "sETH",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
@@ -41,6 +41,6 @@
 		"maxFundingVelocity": "0.1",
 		"skewScale": "1000000",
 		"offchainPriceDivergence": "0.05",
-		"offchainMarketKey": "ocpETH"
+		"offchainMarketKey": "ocETHPERP"
 	}
 ]
