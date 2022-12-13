@@ -85,7 +85,7 @@ contract('PerpsV2Market', accounts => {
 	const maxDelayTimeDelta = 120;
 	const offchainMinAge = 15;
 	const offchainMaxAge = 60;
-	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated   tests)
 
 	const initialFundingIndex = toBN(0);
 
@@ -159,7 +159,7 @@ contract('PerpsV2Market', accounts => {
 			],
 		}));
 
-		// Update the rate so that it is not invalid
+		// Update the rate so that it is not invalid llll
 		await setPrice(baseAsset, initialPrice);
 
 		// disable dynamic fee for most tests
