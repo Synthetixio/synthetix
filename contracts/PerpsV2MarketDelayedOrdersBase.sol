@@ -104,6 +104,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 intentionTime: block.timestamp,
                 trackingCode: trackingCode
             });
+
         emitDelayedOrderSubmitted(messageSender, order);
         marketState.updateDelayedOrder(
             messageSender,

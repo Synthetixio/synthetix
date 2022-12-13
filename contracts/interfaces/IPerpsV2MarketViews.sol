@@ -62,7 +62,10 @@ interface IPerpsV2MarketViews {
 
     function canLiquidate(address account) external view returns (bool);
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid);
 
     function postTradeDetails(
         int sizeDelta,

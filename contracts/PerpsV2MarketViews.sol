@@ -211,19 +211,45 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
      * expensive than ones that decrease it. Dynamic fee is added according to the recent volatility
      * according to SIP-184.
+     *
      * @param sizeDelta size of the order in baseAsset units (negative numbers for shorts / selling)
+     * @param orderType the type of order to calc fees against (e.g. Delayed, Offchain, Atomic).
      * @return fee in sUSD decimal, and invalid boolean flag for invalid rates or dynamic fee that is
      * too high due to recent volatility.
      */
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid)
+    {
         (uint price, bool isInvalid) = _assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
+
+        bytes32 marketKey = _marketKey();
+        uint makerFee;
+        uint takerFee;
+
+        // Infer the maker/taker fee based on orderType. In the event an unsupported orderType is
+        // provided then orderFee of 0 is returned with an invalid price bool.
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
+            makerFee = _makerFee(marketKey);
+            takerFee = _takerFee(marketKey);
+        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Delayed) {
+            makerFee = _makerFeeDelayedOrder(marketKey);
+            takerFee = _takerFeeDelayedOrder(marketKey);
+        } else if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
+            makerFee = _makerFeeOffchainDelayedOrder(marketKey);
+            takerFee = _takerFeeOffchainDelayedOrder(marketKey);
+        } else {
+            return (0, true);
+        }
+
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 price: _fillPrice(sizeDelta, price),
-                takerFee: _takerFee(_marketKey()),
-                makerFee: _makerFee(_marketKey()),
+                makerFee: makerFee,
+                takerFee: takerFee,
                 priceImpactDelta: 0, // price impact is not needed to calculate order fees.
                 trackingCode: bytes32(0)
             });
