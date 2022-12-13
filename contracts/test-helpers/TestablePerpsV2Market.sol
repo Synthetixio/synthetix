@@ -3,10 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "../PerpsV2Market.sol";
 import "../interfaces/IPerpsV2MarketViews.sol";
-import "../interfaces/IPerpsV2MarketDelayedOrders.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
-contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2MarketDelayedOrders {
+contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -197,41 +196,4 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     {
         return (0, 0, 0, 0, 0, IPerpsV2MarketBaseTypes.Status.Ok);
     }
-
-    /* ---------- Delayed Orders ---------- */
-
-    function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, 0, bytes32(0));
-    }
-
-    function submitDelayedOrder(
-        int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
-    ) external {}
-
-    function submitDelayedOrderWithTracking(
-        int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta,
-        bytes32 trackingCode
-    ) external {}
-
-    function cancelDelayedOrder(address account) external {}
-
-    function executeDelayedOrder(address account) external {}
-
-    /* ---------- Offchain Delayed Orders ---------- */
-
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {}
-
-    function submitOffchainDelayedOrderWithTracking(
-        int sizeDelta,
-        uint priceImpactDelta,
-        bytes32 trackingCode
-    ) external {}
-
-    function cancelOffchainDelayedOrder(address account) external {}
-
-    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
 }

@@ -17,7 +17,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
 
     /* ---------- Market Details ---------- */
 
-    // The market identifier in the futures system (manager + settings). Multiple markets can co-exist
+    // The market identifier in the perpsV2 system (manager + settings). Multiple markets can co-exist
     // for the same asset in order to allow migrations.
     function marketKey() external view returns (bytes32 key) {
         return _marketKey();

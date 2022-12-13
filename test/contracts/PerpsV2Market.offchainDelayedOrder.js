@@ -3,7 +3,8 @@ const { toBytes32 } = require('../..');
 const { toUnit, multiplyDecimal, currentTime, fastForward } = require('../utils')();
 const { toBN } = web3.utils;
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2MarketHelper = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const { setupAllContracts, setupContract } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -12,7 +13,8 @@ const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./
 contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
-		perpsV2DelayedOrder,
+		perpsV2MarketHelper,
+		perpsV2OffchainDelayedOrder,
 		perpsV2MarketState,
 		perpsV2ExchangeRate,
 		mockPyth,
@@ -93,25 +95,15 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		);
 	}
 
-	// function decimalToFeedBaseUNIT(price, feedExpo = defaultFeedExpo) {
-	// 	// feedExpo should be negative
-	// 	return toBN(price * 10 ** -feedExpo).mul(toBN(10 ** (18 + feedExpo)));
-	// }
-
 	function feedBaseFromUNIT(price, feedExpo = defaultFeedExpo) {
 		return toBN(price).div(toBN(10 ** (18 + feedExpo)));
 	}
-
-	// function decimalFromFeedBaseWei(price, feedExpo = defaultFeedExpo) {
-	// 	// feedExpo should be negative
-	// 	return toBN(price).div(toBN(10 ** (18 + feedExpo))) / 10 ** -feedExpo;
-	// }
 
 	before(async () => {
 		({
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
-			PerpsV2DelayedOrderBTC: perpsV2DelayedOrder,
+			PerpsV2OffchainOrderBTC: perpsV2OffchainDelayedOrder,
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			PerpsV2ExchangeRate: perpsV2ExchangeRate,
 			ExchangeRates: exchangeRates,
@@ -155,6 +147,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 		// use implementation ABI on the proxy address to simplify calling
 		perpsV2Market = await PerpsV2Market.at(perpsV2Market.address);
+		perpsV2MarketHelper = await PerpsV2MarketHelper.at(perpsV2Market.address);
 
 		// Setup mock pyth and perpsV2ExchangeRage
 		mockPyth = await setupContract({
@@ -164,6 +157,14 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 
 		await perpsV2ExchangeRate.setOffchainOracle(mockPyth.address, { from: owner });
+
+		// Authorize markets (and users that call the function) to call updatePythPrice
+		await perpsV2ExchangeRate.addAssociatedContracts(
+			[perpsV2OffchainDelayedOrder.address, owner, trader],
+			{
+				from: owner,
+			}
+		);
 
 		for (const feed of feeds) {
 			await perpsV2ExchangeRate.setOffchainPriceFeedId(feed.assetId, feed.feedId, {
@@ -206,7 +207,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const spotFee = (await perpsV2Market.orderFee(size))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0];
+			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, 0))[0];
 
 			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, {
 				from: trader,
@@ -229,7 +230,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [perpsV2Market, perpsV2DelayedOrder],
+				contracts: [perpsV2Market, perpsV2OffchainDelayedOrder],
 			});
 			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
@@ -288,7 +289,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				);
 			});
 
-			it('if futures markets are suspended', async () => {
+			it('if perpsV2 markets are suspended', async () => {
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
@@ -297,6 +298,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			});
 
 			it('if market is suspended', async () => {
+				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
+				await assert.revert(
+					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
+					'Market suspended'
+				);
+			});
+
+			it('if oc virtual market is suspended', async () => {
+				const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
+				await systemStatus.suspendFuturesMarket(ocMarketKet, '0', { from: owner });
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
 				await assert.revert(
 					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
@@ -336,7 +347,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
 			});
 
 			// OffchainDelayedOrderSubmitted
@@ -383,7 +394,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
-			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, offChainPrice))[0];
+			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, offChainPrice))[0];
 			const expectedFee = multiplyDecimal(
 				size,
 				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
@@ -396,7 +407,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
 			});
 
 			decodedEventEqual({
@@ -441,7 +452,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
 				});
 
 				if (from === trader) {
@@ -503,7 +514,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				);
 			});
 
-			it('cannot cancel if futures markets are suspended', async () => {
+			it('cannot cancel if perpsV2 markets are suspended', async () => {
 				await fastForward(offchainDelayedOrderMaxAge * 2);
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
 				await assert.revert(
@@ -982,7 +993,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2DelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
 				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded
@@ -1081,7 +1092,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
 							// set the commitFee here because commitFee was _before_ the submit and price update.
 							fillPrice = (
-								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
 							)[0];
 						});
 
@@ -1122,7 +1133,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							await setOnchainPrice(baseAsset, targetPrice);
 
 							fillPrice = (
-								await perpsV2Market.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
 							)[0];
 						});
 
@@ -1149,7 +1160,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						});
 					});
 
-					it('reverts if futures markets are suspended', async () => {
+					it('reverts if perpsV2 markets are suspended', async () => {
 						await setOnchainPrice(baseAsset, targetPrice);
 						await systemStatus.suspendFutures(toUnit(0), { from: owner });
 						await assert.revert(

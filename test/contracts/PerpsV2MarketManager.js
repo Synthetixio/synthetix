@@ -25,7 +25,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager (PerpsV2)', accounts => {
 	let futuresMarketManager,
-		futuresMarketSettings,
+		perpsV2MarketSettings,
 		systemSettings,
 		exchangeRates,
 		circuitBreaker,
@@ -72,7 +72,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	before(async () => {
 		({
 			FuturesMarketManager: futuresMarketManager,
-			PerpsV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -619,7 +619,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	});
 
 	describe('Aggregated Debt', () => {
-		it('futures debt is zero when no markets are deployed', async () => {
+		it('perpsV2 debt is zero when no markets are deployed', async () => {
 			// check initial debt
 			const initialSystemDebt = (await debtCache.currentDebt())[0];
 			// issue some sUSD
@@ -802,7 +802,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				await setPrice(assetKey, toUnit(1000));
 
 				// Now that the market exists we can set the all its parameters
-				await futuresMarketSettings.setParameters(
+				await perpsV2MarketSettings.setParameters(
 					marketKey,
 					[
 						toUnit('0.005'), // 0.5% taker fee

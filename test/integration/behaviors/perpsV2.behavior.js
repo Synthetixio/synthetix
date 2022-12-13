@@ -118,7 +118,7 @@ function itCanTrade({ ctx }) {
 					await (await market.transferMargin(largerMargin)).wait();
 				});
 
-				it('futures debt increases roughly by the margin deposit', async () => {
+				it('perpsV2 debt increases roughly by the margin deposit', async () => {
 					const res = await FuturesMarketManager.totalDebt();
 					assert.bnClose(
 						res.debt.toString(),
@@ -236,7 +236,7 @@ function itCanTrade({ ctx }) {
 				allMarkets = [];
 				for (const marketAddress of allMarketsAddresses) {
 					// this assumes all markets have the same source and abi, which
-					// may not be true when a migration to new futures version happens
+					// may not be true when a migration to new perpsV2 version happens
 					allMarkets.push(
 						new ethers.Contract(marketAddress, PerpsV2MarketBTC.interface, ctx.provider)
 					);
@@ -261,7 +261,7 @@ function itCanTrade({ ctx }) {
 
 			it('assets are unique and have valid rates', async () => {
 				// ensure all assets are unique, this will not be true in case of migration to
-				// newer version of futures markets, but is a good check for all cases
+				// newer version of perpsV2 markets, but is a good check for all cases
 				// to ensure no market is being duplicated / redeployed etc
 				// assert.ok(new Set(assetKeys).size === assetKeys.length);
 

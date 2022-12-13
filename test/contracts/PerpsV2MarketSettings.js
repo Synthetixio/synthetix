@@ -21,9 +21,9 @@ const {
 const BN = require('bn.js');
 
 contract('PerpsV2MarketSettings', accounts => {
-	let futuresMarketManager, futuresMarketSettings;
+	let futuresMarketManager, perpsV2MarketSettings;
 
-	let mockFuturesMarketBTCImpl, mockFuturesMarketBTC;
+	let mockPerpsV2MarketBTCImpl, mockPerpsV2MarketBTC;
 
 	const owner = accounts[1];
 
@@ -60,7 +60,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 	before(async () => {
 		({
-			PerpsV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketSettings: perpsV2MarketSettings,
 			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
@@ -79,37 +79,37 @@ contract('PerpsV2MarketSettings', accounts => {
 			],
 		}));
 
-		mockFuturesMarketBTCImpl = await artifacts.require('GenericMock').new();
+		mockPerpsV2MarketBTCImpl = await artifacts.require('GenericMock').new();
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTCImpl,
+			instance: mockPerpsV2MarketBTCImpl,
 			mock: 'PerpsV2Market',
 			fncName: 'recomputeFunding',
 			returns: ['0'],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTCImpl,
+			instance: mockPerpsV2MarketBTCImpl,
 			mock: 'PerpsV2MarketViews',
 			fncName: 'marketSize',
 			returns: ['1'],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTCImpl,
+			instance: mockPerpsV2MarketBTCImpl,
 			mock: 'PerpsV2MarketViews',
 			fncName: 'baseAsset',
 			returns: [toBytes32('sBTC')],
 		});
 
 		await mockGenericContractFnc({
-			instance: mockFuturesMarketBTCImpl,
+			instance: mockPerpsV2MarketBTCImpl,
 			mock: 'PerpsV2MarketViews',
 			fncName: 'marketKey',
 			returns: [toBytes32('sBTC')],
 		});
 
-		mockFuturesMarketBTC = await setupContract({
+		mockPerpsV2MarketBTC = await setupContract({
 			accounts,
 			contract: 'ProxyPerpsV2',
 			args: [owner],
@@ -119,19 +119,19 @@ contract('PerpsV2MarketSettings', accounts => {
 
 		await Promise.all(
 			filteredFunctions.map(e =>
-				mockFuturesMarketBTC.addRoute(e.signature, mockFuturesMarketBTCImpl.address, e.isView, {
+				mockPerpsV2MarketBTC.addRoute(e.signature, mockPerpsV2MarketBTCImpl.address, e.isView, {
 					from: owner,
 				})
 			)
 		);
 
 		// add the market
-		await futuresMarketManager.addProxiedMarkets([mockFuturesMarketBTC.address], { from: owner });
+		await futuresMarketManager.addProxiedMarkets([mockPerpsV2MarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: futuresMarketSettings.abi,
+			abi: perpsV2MarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'setDelayedOrderConfirmWindow',
@@ -183,14 +183,14 @@ contract('PerpsV2MarketSettings', accounts => {
 				offchainPriceDivergence,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
-				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];
+				return [key, val, perpsV2MarketSettings[`set${capKey}`], perpsV2MarketSettings[`${key}`]];
 			});
 		});
 
 		describe('bounds checking', async () => {
 			it('should revert if maker fee is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFee(marketKey, toUnit('1').add(new BN(1)), {
+					perpsV2MarketSettings.setMakerFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -199,7 +199,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if taker fee is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFee(marketKey, toUnit('1').add(new BN(1)), {
+					perpsV2MarketSettings.setTakerFee(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -208,7 +208,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if maker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setMakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
+					perpsV2MarketSettings.setMakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'maker fee greater than 1'
@@ -217,7 +217,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if taker fee next price is greater than 1', async () => {
 				await assert.revert(
-					futuresMarketSettings.setTakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
+					perpsV2MarketSettings.setTakerFeeDelayedOrder(marketKey, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
@@ -226,7 +226,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 			it('should revert if setSkewScale is 0', async () => {
 				await assert.revert(
-					futuresMarketSettings.setSkewScale(marketKey, 0, {
+					perpsV2MarketSettings.setSkewScale(marketKey, 0, {
 						from: owner,
 					}),
 					'cannot set skew scale 0'
@@ -265,15 +265,25 @@ contract('PerpsV2MarketSettings', accounts => {
 
 							const decodedLogs = await getDecodedLogs({
 								hash: tx.tx,
-								contracts: [futuresMarketSettings],
+								contracts: [perpsV2MarketSettings],
 							});
 							assert.equal(decodedLogs.length, 2);
-							decodedEventEqual({
-								event: 'ParameterUpdated',
-								emittedFrom: futuresMarketSettings.address,
-								args: [marketKey, param, value],
-								log: decodedLogs[1],
-							});
+							if (p[0] === 'offchainMarketKey') {
+								// offchainMarketKey value is type bytes32 => uses another event name
+								decodedEventEqual({
+									event: 'ParameterUpdatedBytes32',
+									emittedFrom: perpsV2MarketSettings.address,
+									args: [marketKey, param, value],
+									log: decodedLogs[1],
+								});
+							} else {
+								decodedEventEqual({
+									event: 'ParameterUpdated',
+									emittedFrom: perpsV2MarketSettings.address,
+									args: [marketKey, param, value],
+									log: decodedLogs[1],
+								});
+							}
 
 							// And the parameter was actually set properly
 							assert.bnEqual(await getter(marketKey), value.toString());
@@ -285,21 +295,21 @@ contract('PerpsV2MarketSettings', accounts => {
 	});
 
 	describe('setMinInitialMargin()', () => {
-		it('should be able to change the futures min initial margin', async () => {
+		it('should be able to change the perpsV2 min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
-			const originalInitialMargin = await futuresMarketSettings.minInitialMargin.call();
-			await futuresMarketSettings.setMinInitialMargin(initialMargin, { from: owner });
-			const newInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+			const originalInitialMargin = await perpsV2MarketSettings.minInitialMargin.call();
+			await perpsV2MarketSettings.setMinInitialMargin(initialMargin, { from: owner });
+			const newInitialMargin = await perpsV2MarketSettings.minInitialMargin.call();
 			assert.bnEqual(newInitialMargin, initialMargin);
 			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
 		});
 
-		it('only owner is permitted to change the futures min initial margin', async () => {
+		it('only owner is permitted to change the perpsV2 min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setMinInitialMargin,
+				fnc: perpsV2MarketSettings.setMinInitialMargin,
 				args: [initialMargin.toString()],
 				address: owner,
 				accounts,
@@ -310,7 +320,7 @@ contract('PerpsV2MarketSettings', accounts => {
 		it('should emit event on successful min initial margin change', async () => {
 			const initialMargin = toUnit('250');
 
-			const txn = await futuresMarketSettings.setMinInitialMargin(initialMargin, {
+			const txn = await perpsV2MarketSettings.setMinInitialMargin(initialMargin, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'MinInitialMarginUpdated', {
@@ -322,24 +332,24 @@ contract('PerpsV2MarketSettings', accounts => {
 	describe('setMinKeeperFee()', () => {
 		let minInitialMargin;
 		beforeEach(async () => {
-			minInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+			minInitialMargin = await perpsV2MarketSettings.minInitialMargin.call();
 		});
-		it('should be able to change the futures liquidation fee', async () => {
+		it('should be able to change the perpsV2 liquidation fee', async () => {
 			// fee <= minInitialMargin
 			const minKeeperFee = minInitialMargin;
 
-			const originalLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
-			await futuresMarketSettings.setMinKeeperFee(minKeeperFee, { from: owner });
-			const newLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
+			const originalLiquidationFee = await perpsV2MarketSettings.minKeeperFee.call();
+			await perpsV2MarketSettings.setMinKeeperFee(minKeeperFee, { from: owner });
+			const newLiquidationFee = await perpsV2MarketSettings.minKeeperFee.call();
 			assert.bnEqual(newLiquidationFee, minKeeperFee);
 			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
 		});
 
-		it('only owner is permitted to change the futures liquidation fee', async () => {
+		it('only owner is permitted to change the perpsV2 liquidation fee', async () => {
 			const minKeeperFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setMinKeeperFee,
+				fnc: perpsV2MarketSettings.setMinKeeperFee,
 				args: [minKeeperFee.toString()],
 				address: owner,
 				accounts,
@@ -349,15 +359,15 @@ contract('PerpsV2MarketSettings', accounts => {
 
 		it('should revert if the fee is greater than the min initial margin', async () => {
 			await assert.revert(
-				futuresMarketSettings.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
+				perpsV2MarketSettings.setMinKeeperFee(minInitialMargin.add(new BN(1)), {
 					from: owner,
 				}),
 				'min margin < liquidation fee'
 			);
 
-			const currentLiquidationFee = await futuresMarketSettings.minKeeperFee.call();
+			const currentLiquidationFee = await perpsV2MarketSettings.minKeeperFee.call();
 			await assert.revert(
-				futuresMarketSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
+				perpsV2MarketSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
 					from: owner,
 				}),
 				'min margin < liquidation fee'
@@ -368,7 +378,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			// fee <= minInitialMargin
 			const minKeeperFee = minInitialMargin.sub(new BN(1));
 
-			const txn = await futuresMarketSettings.setMinKeeperFee(minKeeperFee, {
+			const txn = await perpsV2MarketSettings.setMinKeeperFee(minKeeperFee, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'MinKeeperFeeUpdated', {
@@ -380,20 +390,20 @@ contract('PerpsV2MarketSettings', accounts => {
 	describe('setLiquidationFeeRatio()', () => {
 		let liquidationFeeRatio;
 		beforeEach(async () => {
-			liquidationFeeRatio = await futuresMarketSettings.liquidationFeeRatio();
+			liquidationFeeRatio = await perpsV2MarketSettings.liquidationFeeRatio();
 		});
 		it('should be able to change liquidationFeeRatio', async () => {
-			const originalValue = await futuresMarketSettings.liquidationFeeRatio();
-			await futuresMarketSettings.setLiquidationFeeRatio(originalValue.mul(toUnit(0.0002)), {
+			const originalValue = await perpsV2MarketSettings.liquidationFeeRatio();
+			await perpsV2MarketSettings.setLiquidationFeeRatio(originalValue.mul(toUnit(0.0002)), {
 				from: owner,
 			});
-			const newValue = await futuresMarketSettings.liquidationFeeRatio.call();
+			const newValue = await perpsV2MarketSettings.liquidationFeeRatio.call();
 			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
 		});
 
 		it('only owner is permitted to change liquidationFeeRatio', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setLiquidationFeeRatio,
+				fnc: perpsV2MarketSettings.setLiquidationFeeRatio,
 				args: [liquidationFeeRatio.toString()],
 				address: owner,
 				accounts,
@@ -403,7 +413,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 		it('should emit event on successful liquidationFeeRatio change', async () => {
 			const newValue = toUnit(0.01);
-			const txn = await futuresMarketSettings.setLiquidationFeeRatio(newValue, {
+			const txn = await perpsV2MarketSettings.setLiquidationFeeRatio(newValue, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'LiquidationFeeRatioUpdated', {
@@ -415,20 +425,20 @@ contract('PerpsV2MarketSettings', accounts => {
 	describe('setLiquidationBufferRatio()', () => {
 		let liquidationBufferRatio;
 		beforeEach(async () => {
-			liquidationBufferRatio = await futuresMarketSettings.liquidationBufferRatio();
+			liquidationBufferRatio = await perpsV2MarketSettings.liquidationBufferRatio();
 		});
 		it('should be able to change liquidationBufferRatio', async () => {
-			const originalValue = await futuresMarketSettings.liquidationBufferRatio();
-			await futuresMarketSettings.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
+			const originalValue = await perpsV2MarketSettings.liquidationBufferRatio();
+			await perpsV2MarketSettings.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
 				from: owner,
 			});
-			const newValue = await futuresMarketSettings.liquidationBufferRatio.call();
+			const newValue = await perpsV2MarketSettings.liquidationBufferRatio.call();
 			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
 		});
 
 		it('only owner is permitted to change liquidationBufferRatio', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setLiquidationBufferRatio,
+				fnc: perpsV2MarketSettings.setLiquidationBufferRatio,
 				args: [liquidationBufferRatio.toString()],
 				address: owner,
 				accounts,
@@ -438,7 +448,7 @@ contract('PerpsV2MarketSettings', accounts => {
 
 		it('should emit event on successful liquidationBufferRatio change', async () => {
 			const newValue = toBN(100);
-			const txn = await futuresMarketSettings.setLiquidationBufferRatio(newValue, {
+			const txn = await perpsV2MarketSettings.setLiquidationBufferRatio(newValue, {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
@@ -508,10 +518,10 @@ contract('PerpsV2MarketSettings', accounts => {
 		it('should be able to change parameters for both markets independently', async () => {
 			const val1 = toUnit(0.1);
 			const val2 = toUnit(0.5);
-			await futuresMarketSettings.setMaxFundingVelocity(firstMarketKey, val1, { from: owner });
-			await futuresMarketSettings.setMaxFundingVelocity(secondMarketKey, val2, { from: owner });
-			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(firstMarketKey), val1);
-			assert.bnEqual(await futuresMarketSettings.maxFundingVelocity(secondMarketKey), val2);
+			await perpsV2MarketSettings.setMaxFundingVelocity(firstMarketKey, val1, { from: owner });
+			await perpsV2MarketSettings.setMaxFundingVelocity(secondMarketKey, val2, { from: owner });
+			assert.bnEqual(await perpsV2MarketSettings.maxFundingVelocity(firstMarketKey), val1);
+			assert.bnEqual(await perpsV2MarketSettings.maxFundingVelocity(secondMarketKey), val2);
 		});
 	});
 });
