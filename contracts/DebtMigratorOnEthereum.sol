@@ -12,6 +12,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDebtMigrator.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ILiquidatorRewards.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -27,6 +28,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
     bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
+    bytes32 private constant CONTRACT_REWARD_ESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -52,6 +54,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
     function _liquidatorRewards() internal view returns (ILiquidatorRewards) {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATOR_REWARDS));
+    }
+
+    function _rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARD_ESCROW_V2));
     }
 
     function _synthetixBridgeToOptimism() internal view returns (ISynthetixBridgeToOptimism) {
@@ -83,53 +89,54 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](8);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
         newAddresses[2] = CONTRACT_ISSUER;
         newAddresses[3] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[4] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
-        newAddresses[5] = CONTRACT_SYNTHETIX_DEBT_SHARE;
-        newAddresses[6] = CONTRACT_SYSTEM_STATUS;
+        newAddresses[4] = CONTRACT_REWARD_ESCROW_V2;
+        newAddresses[5] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
+        newAddresses[6] = CONTRACT_SYNTHETIX_DEBT_SHARE;
+        newAddresses[7] = CONTRACT_SYSTEM_STATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== MUTATIVE ========== */
 
-    function migrateToL2(address account) external nonReentrant {
+    // Ideally, the account should call vest on their escrow before invoking the migration to L2.
+    function migrateToL2(address account, uint256[][] memory entryIDs) public nonReentrant {
         require(msg.sender == account, "Must be the account owner");
-        _migrateToL2(account);
+        _migrateToL2(account, entryIDs);
     }
 
-    function migrateToL2OnBehalf(address account) external onlyOwner {
-        _migrateToL2(account);
+    function migrateToL2OnBehalf(address account, uint256[][] memory entryIDs) public onlyOwner {
+        _migrateToL2(account, entryIDs);
     }
 
-    function _migrateToL2(address _account) internal {
+    function _migrateToL2(address _account, uint256[][] memory _entryIDs) internal {
         _systemStatus().requireSystemActive();
 
         // important: this has to happen before any updates to user's debt shares
-        _liquidatorRewards().updateEntry(_account);
         _liquidatorRewards().getReward(_account);
 
-        // remove all SDS
+        // First, remove all debt shares
         ISynthetixDebtShare sds = _synthetixDebtShare();
         uint _amountOfDebtShares = sds.balanceOf(_account);
         if (_amountOfDebtShares > 0) {
             _issuer().modifyDebtSharesForMigration(_account, _amountOfDebtShares);
         }
 
-        // Deposit the user's non-escrowed SNX to L2.
-        // TODO: prioritize the largest 25 escrow entries to save gas and optimize c-ratio.
-        // Another tx may be required to migrate the user's remaining escrow entries.
+        // Get the user's liquid SNX balance.
         uint _spotBalance = _synthetixERC20().balanceOf(_account);
-        uint256[][] memory sortedEntryIds;
-        _synthetixBridgeToOptimism().depositAndMigrateEscrow(_spotBalance, sortedEntryIds);
+
+        // Deposit the user's liquid and escrowed SNX to L2.
+        _synthetixBridgeToOptimism().depositAndMigrateEscrow(_spotBalance, _entryIDs);
 
         // require zeroed balances
-        require(_synthetixERC20().balanceOf(_account) == 0, "SNX balance is not zero");
-        require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
         require(_synthetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
+        require(_synthetixERC20().balanceOf(_account) == 0, "SNX balance is not zero");
+        require(_rewardEscrowV2().balanceOf(_account) == 0, "Escrow balanace is not zero");
+        require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
 
         // create the data payload to be relayed on L2
         IIssuer issuer;

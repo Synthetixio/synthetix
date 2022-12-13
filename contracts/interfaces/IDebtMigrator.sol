@@ -2,9 +2,9 @@ pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
 interface IDebtMigrator {
-    function migrateEntireAccountOnBehalf(address account) external;
+    function migrateToL2OnBehalf(address account, uint256[][] calldata entryIDs) external;
 
-    function migrateEntireAccount(address account) external;
+    function migrateToL2(address account, uint256[][] calldata entryIDs) external;
 
     function finalizeMigration(address account, bytes calldata payload) external;
 }
