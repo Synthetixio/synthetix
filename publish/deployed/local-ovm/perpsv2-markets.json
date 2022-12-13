@@ -19,7 +19,9 @@
 		"maxFundingVelocity": "0.1",
 		"skewScale": "50000",
 		"offchainPriceDivergence": "0.05",
-		"offchainMarketKey": "ocBTCPERP"
+		"offchainMarketKey": "ocBTCPERP",
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sETHPERP",
@@ -41,6 +43,8 @@
 		"maxFundingVelocity": "0.1",
 		"skewScale": "1000000",
 		"offchainPriceDivergence": "0.05",
-		"offchainMarketKey": "ocETHPERP"
+		"offchainMarketKey": "ocETHPERP",
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
