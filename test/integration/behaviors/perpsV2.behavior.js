@@ -42,11 +42,11 @@ function itCanTrade({ ctx }) {
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
 			PerpsV2MarketBTC,
-			PerpsV2MarketImplBTCPERP,
-			PerpsV2DelayedOrderBTCPERP,
-			PerpsV2OffchainDelayedOrderBTCPERP,
-			PerpsV2MarketViewsBTCPERP,
-			PerpsV2ProxyBTCPERP,
+			PerpsV2MarketImplETHPERP,
+			PerpsV2DelayedOrderETHPERP,
+			PerpsV2OffchainDelayedOrderETHPERP,
+			PerpsV2MarketViewsETHPERP,
+			PerpsV2ProxyETHPERP,
 			FuturesMarketBTC,
 			ExchangeRates,
 			SynthsUSD;
@@ -57,11 +57,11 @@ function itCanTrade({ ctx }) {
 				FuturesMarketSettings,
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
-				PerpsV2MarketBTCPERP: PerpsV2MarketImplBTCPERP,
-				PerpsV2DelayedOrderBTCPERP,
-				PerpsV2OffchainDelayedOrderBTCPERP,
-				PerpsV2MarketViewsBTCPERP,
-				PerpsV2ProxyBTCPERP,
+				PerpsV2MarketETHPERP: PerpsV2MarketImplETHPERP,
+				PerpsV2DelayedOrderETHPERP,
+				PerpsV2OffchainDelayedOrderETHPERP,
+				PerpsV2MarketViewsETHPERP,
+				PerpsV2ProxyETHPERP,
 				FuturesMarketBTC,
 				ExchangeRates,
 				SynthsUSD,
@@ -72,13 +72,13 @@ function itCanTrade({ ctx }) {
 			otherUser = ctx.users.otherUser;
 
 			const unifiedAbis = unifyAbis([
-				PerpsV2MarketImplBTCPERP,
-				PerpsV2MarketViewsBTCPERP,
-				PerpsV2DelayedOrderBTCPERP,
-				PerpsV2OffchainDelayedOrderBTCPERP,
+				PerpsV2MarketImplETHPERP,
+				PerpsV2MarketViewsETHPERP,
+				PerpsV2DelayedOrderETHPERP,
+				PerpsV2OffchainDelayedOrderETHPERP,
 			]);
-			if (unifiedAbis && PerpsV2ProxyBTCPERP) {
-				PerpsV2MarketBTC = proxiedContract(PerpsV2ProxyBTCPERP, unifiedAbis, someUser);
+			if (unifiedAbis && PerpsV2ProxyETHPERP) {
+				PerpsV2MarketBTC = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
 			}
 		});
 
