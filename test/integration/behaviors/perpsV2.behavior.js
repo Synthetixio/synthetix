@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 
 const { addAggregatorAndSetRate } = require('../utils/rates');
@@ -270,6 +271,15 @@ function itCanTrade({ ctx }) {
 				allMarketsAddresses = await FuturesMarketManager['allMarkets(bool)'](true);
 				allSummaries = await PerpsV2MarketData.allMarketSummaries();
 
+				if (allMarketsAddresses.length === 0) {
+					console.log(
+						chalk.yellow(
+							'> Skipping markets and parameters since no perpsV2 markets were deployed.'
+						)
+					);
+					this.skip();
+				}
+
 				// get market contracts
 				allMarkets = [];
 				for (const marketAddress of allMarketsAddresses) {
@@ -292,10 +302,6 @@ function itCanTrade({ ctx }) {
 			});
 
 			it('number of markets and summaries', async () => {
-				if (allMarketsAddresses.length === 0) {
-					// no perpsV2 markets deployed on mainnet-ovm
-					this.skipTest();
-				}
 				assert.ok(allMarketsAddresses.length >= 1);
 				assert.ok(allMarketsAddresses.length === allSummaries.length);
 			});
