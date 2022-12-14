@@ -35,7 +35,7 @@ module.exports = async ({
 		expected: input => input === FUTURES_MIN_INITIAL_MARGIN,
 		write: 'setMinInitialMargin',
 		writeArg: FUTURES_MIN_INITIAL_MARGIN,
-		comment: 'Set the minimum margin to open a futures position (SIP-80)',
+		comment: 'Set the minimum margin to open a perpsV2 position (SIP-80)',
 	});
 
 	const FUTURES_LIQUIDATION_FEE_RATIO = await getDeployParameter('FUTURES_LIQUIDATION_FEE_RATIO');
@@ -46,7 +46,7 @@ module.exports = async ({
 		expected: input => input === FUTURES_LIQUIDATION_FEE_RATIO,
 		write: 'setLiquidationFeeRatio',
 		writeArg: FUTURES_LIQUIDATION_FEE_RATIO,
-		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+		comment: 'Set the reward for liquidating a perpsV2 position (SIP-80)',
 	});
 
 	const FUTURES_LIQUIDATION_BUFFER_RATIO = await getDeployParameter(
@@ -59,7 +59,7 @@ module.exports = async ({
 		expected: input => input === FUTURES_LIQUIDATION_BUFFER_RATIO,
 		write: 'setLiquidationBufferRatio',
 		writeArg: FUTURES_LIQUIDATION_BUFFER_RATIO,
-		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+		comment: 'Set the reward for liquidating a perpsV2 position (SIP-80)',
 	});
 
 	const FUTURES_MIN_KEEPER_FEE = await getDeployParameter('FUTURES_MIN_KEEPER_FEE');
@@ -70,7 +70,7 @@ module.exports = async ({
 		expected: input => input === FUTURES_MIN_KEEPER_FEE,
 		write: 'setMinKeeperFee',
 		writeArg: FUTURES_MIN_KEEPER_FEE,
-		comment: 'Set the minimum reward for liquidating a futures position (SIP-80)',
+		comment: 'Set the minimum reward for liquidating a perpsV2 position (SIP-80)',
 	});
 
 	//
@@ -161,10 +161,10 @@ module.exports = async ({
 				target: SystemStatus,
 				write: 'suspendFuturesMarket',
 				writeArg: [marketKeyBytes, 80],
-				comment: 'Ensure futures market is paused according to config',
+				comment: 'Ensure perpsV2 market is paused according to config',
 			});
 			if (generateSolidity) {
-				migrationContractNoACLWarning(`pause ${marketKey} futures market`);
+				migrationContractNoACLWarning(`pause ${marketKey} perpsV2 market`);
 			}
 		} else if (isPaused & !shouldPause) {
 			let resume;
@@ -196,10 +196,10 @@ module.exports = async ({
 					target: SystemStatus,
 					write: 'resumeFuturesMarket',
 					writeArg: [marketKeyBytes],
-					comment: 'Ensure futures market is un-paused according to config',
+					comment: 'Ensure perpsV2 market is un-paused according to config',
 				});
 				if (generateSolidity) {
-					migrationContractNoACLWarning(`unpause ${marketKey} futures market`);
+					migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
 				}
 			}
 		}
