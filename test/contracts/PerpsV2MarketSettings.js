@@ -34,6 +34,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
 	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
+	const overrideCommitFee = toUnit('0');
 
 	const nextPriceConfirmWindow = toBN('2');
 
@@ -153,6 +154,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 				'setTakerFeeOffchainDelayedOrder',
+				'setOverrideCommitFee',
 				'setOffchainDelayedOrderMinAge',
 				'setOffchainDelayedOrderMaxAge',
 				'setOffchainMarketKey',
@@ -168,6 +170,7 @@ contract('PerpsV2MarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
+				overrideCommitFee,
 				takerFeeDelayedOrder,
 				makerFeeDelayedOrder,
 				takerFeeOffchainDelayedOrder,

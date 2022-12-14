@@ -68,6 +68,7 @@ contract PerpsV2MarketData {
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
+        uint overrideCommitFee;
     }
 
     struct FundingDetails {
@@ -172,7 +173,8 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder
+                    params.makerFeeOffchainDelayedOrder,
+                    params.overrideCommitFee
                 )
             );
         }
@@ -224,7 +226,8 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder
+                    params.makerFeeOffchainDelayedOrder,
+                    params.overrideCommitFee
                 ),
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),

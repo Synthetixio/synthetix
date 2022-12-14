@@ -85,7 +85,8 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         // commitDeposit is simply the maker/taker fee. note the dynamic fee rate is 0 since for the purposes of the
         // commitment deposit it is not important since at the time of the order execution it will be refunded and the
         // correct dynamic fee will be charged.
-        uint commitDeposit = _orderFee(params, 0);
+        // If the overrideCommitFee is set (value > 0) use this one instead.
+        uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
         _updatePositionMargin(messageSender, position, price, -int(commitDeposit + keeperDeposit));

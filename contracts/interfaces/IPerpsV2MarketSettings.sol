@@ -5,6 +5,7 @@ interface IPerpsV2MarketSettings {
     struct Parameters {
         uint takerFee;
         uint makerFee;
+        uint overrideCommitFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
