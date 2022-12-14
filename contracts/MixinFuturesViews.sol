@@ -36,6 +36,14 @@ contract MixinFuturesViews is FuturesMarketBase {
     }
 
     /*
+     * A stub in the legacy FuturesV1 markets to allow the same FuturesManager to manage both FuturesV1 and
+     * PerpsV2. Note that velocity is _not_ a concept in FuturesV1.
+     */
+    function currentFundingVelocity() external view returns (int) {
+        return 0;
+    }
+
+    /*
      * The funding per base unit accrued since the funding rate was last recomputed, which has not yet
      * been persisted in the funding sequence.
      */
