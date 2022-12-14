@@ -57,7 +57,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         return 0;
     }
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+    function currentFundingVelocity() external view returns (int fundingVelocity) {
         return 0;
     }
 

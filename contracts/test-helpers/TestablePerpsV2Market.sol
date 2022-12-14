@@ -128,7 +128,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
         return 0;
     }
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+    function currentFundingVelocity() external view returns (int fundingVelocity) {
         return 0;
     }
 
