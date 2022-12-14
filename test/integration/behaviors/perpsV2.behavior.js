@@ -269,8 +269,8 @@ function itCanTrade({ ctx }) {
 			let skipTest;
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await FuturesMarketManager['allMarkets(bool)'](true);
-				allSummaries = await PerpsV2MarketData.allMarketSummaries();
+				allMarketsAddresses = await FuturesMarketManager['allMarkets(bool)'](true); // only fetch proxied
+				allSummaries = await PerpsV2MarketData.allProxiedMarketSummaries();
 
 				if (allMarketsAddresses.length === 0) {
 					console.log(

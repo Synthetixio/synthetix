@@ -191,6 +191,10 @@ contract PerpsV2MarketData {
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_futuresMarketManager().allMarkets());
+    }
+
+    function allProxiedMarketSummaries() external view returns (MarketSummary[] memory) {
         return _marketSummaries(_futuresMarketManager().allMarkets(true));
     }
 
