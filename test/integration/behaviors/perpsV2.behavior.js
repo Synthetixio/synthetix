@@ -266,6 +266,7 @@ function itCanTrade({ ctx }) {
 		describe('markets and parameters', () => {
 			let allMarketsAddresses, allSummaries, allMarkets, assetKeys, marketKeys;
 			const marketKeyIsV2 = [];
+			let skipTest;
 
 			before('market and conditions', async () => {
 				allMarketsAddresses = await FuturesMarketManager['allMarkets(bool)'](true);
@@ -277,7 +278,8 @@ function itCanTrade({ ctx }) {
 							'> Skipping markets and parameters since no perpsV2 markets were deployed.'
 						)
 					);
-					this.skip();
+					skipTest = true;
+					return;
 				}
 
 				// get market contracts
@@ -302,11 +304,19 @@ function itCanTrade({ ctx }) {
 			});
 
 			it('number of markets and summaries', async () => {
+				if (skipTest) {
+					return;
+				}
+
 				assert.ok(allMarketsAddresses.length >= 1);
 				assert.ok(allMarketsAddresses.length === allSummaries.length);
 			});
 
 			it('assets are unique and have valid rates', async () => {
+				if (skipTest) {
+					return;
+				}
+
 				// ensure all assets are unique, this will not be true in case of migration to
 				// newer version of perpsV2 markets, but is a good check for all cases
 				// to ensure no market is being duplicated / redeployed etc
@@ -323,6 +333,10 @@ function itCanTrade({ ctx }) {
 			});
 
 			it(`per market parameters make sense`, async () => {
+				if (skipTest) {
+					return;
+				}
+
 				for (const marketKey of marketKeys) {
 					// leverage
 					const maxLeverage = marketKeyIsV2[marketKey]
