@@ -334,7 +334,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
-        // This should guarantee that the value returned here can always been withdrawn, but there may be
+        // This should guarantee that the value returned here can always be withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(_marketKey()).sub(milli));
