@@ -157,13 +157,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
-            //     * they have sufficient margin to do so
-            //     * the resulting margin would not be lower than the liquidation margin or min initial margin
-            //     * the resulting leverage is lower than the maximum leverage
+            //   * they have sufficient margin to do so
+            //   * the resulting margin would not be lower than the liquidation margin or min initial margin
+            //     * liqMargin accounting for the liqPremium
+            //   * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
+                // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
+                uint liqPremium = _liquidationPremium(position.size, price);
+                uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
                 _revertIfError(
                     (margin < _minInitialMargin()) ||
-                        (margin <= _liquidationMargin(position.size, price)) ||
+                        (margin <= liqMargin) ||
                         (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
