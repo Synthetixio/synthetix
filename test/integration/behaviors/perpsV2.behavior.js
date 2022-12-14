@@ -292,6 +292,10 @@ function itCanTrade({ ctx }) {
 			});
 
 			it('number of markets and summaries', async () => {
+				if (allMarketsAddresses.length === 0) {
+					// no perpsV2 markets deployed on mainnet-ovm
+					this.skipTest();
+				}
 				assert.ok(allMarketsAddresses.length >= 1);
 				assert.ok(allMarketsAddresses.length === allSummaries.length);
 			});
