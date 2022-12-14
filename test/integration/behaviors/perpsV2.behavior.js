@@ -267,7 +267,7 @@ function itCanTrade({ ctx }) {
 			const marketKeyIsV2 = [];
 
 			before('market and conditions', async () => {
-				allMarketsAddresses = await FuturesMarketManager['allMarkets()']();
+				allMarketsAddresses = await FuturesMarketManager['allMarkets()'](true);
 				allSummaries = await PerpsV2MarketData.allMarketSummaries();
 
 				// get market contracts
