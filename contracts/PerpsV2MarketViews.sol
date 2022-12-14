@@ -226,7 +226,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
 
         bytes32 marketKey = _marketKey();
-        (uint makerFee, uint takerFee, bool invalid) = _makerTakeFeesByOrderType(orderType);
+        (uint makerFee, uint takerFee, bool invalid) = _makerTakeFeeByOrderType(orderType);
         if (invalid) {
             return (0, true);
         }
@@ -276,7 +276,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         // stack too deep
         {
             bool invalid;
-            (makerFee, takerFee, invalid) = _makerTakeFeesByOrderType(orderType);
+            (makerFee, takerFee, invalid) = _makerTakeFeeByOrderType(orderType);
             if (invalid) {
                 return (0, 0, 0, 0, 0, Status.InvalidOrderType);
             }
@@ -310,7 +310,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /// helper to fetch the orderFee (maker/taker) bps by order type (Atomic, Delayed, Offchain).
-    function _makerTakeFeesByOrderType(IPerpsV2MarketBaseTypes.OrderType orderType)
+    function _makerTakeFeeByOrderType(IPerpsV2MarketBaseTypes.OrderType orderType)
         internal
         view
         returns (
