@@ -542,9 +542,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // check that new position margin is above liquidation margin
         // (above, in _recomputeMarginWithDelta() we checked the old position, here we check the new one)
-        // Liquidation margin is considered without a fee, because it wouldn't make sense to allow
+        //
+        // Liquidation margin is considered without a fee (but including premium), because it wouldn't make sense to allow
         // a trade that will make the position liquidatable.
-        if (newMargin <= _liquidationMargin(newPos.size, params.price)) {
+        uint liqPremium = _liquidationPremium(newPos.size, params.price);
+        uint liqMargin = _liquidationMargin(newPos.size, params.price).add(liqPremium);
+        if (newMargin <= liqMargin) {
             return (newPos, 0, Status.CanLiquidate);
         }
 
