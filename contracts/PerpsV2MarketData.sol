@@ -165,8 +165,7 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                0,
-//                market.currentFundingVelocity(),
+                market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,
@@ -190,7 +189,7 @@ contract PerpsV2MarketData {
     }
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
-        return _marketSummaries(_futuresMarketManager().allMarkets());
+        return _marketSummaries(_futuresMarketManager().allMarkets(true));
     }
 
     function _fundingParameters(IPerpsV2MarketSettings.Parameters memory params)
