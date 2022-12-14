@@ -38,6 +38,8 @@ interface IFuturesMarket {
 
     function currentFundingRate() external view returns (int fundingRate);
 
+    function currentFundingVelocity() external view returns (int fundingVelocity);
+
     function unrecordedFunding() external view returns (int funding, bool invalid);
 
     function fundingSequenceLength() external view returns (uint length);
