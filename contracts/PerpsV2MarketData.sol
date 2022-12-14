@@ -165,7 +165,8 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                market.currentFundingVelocity(),
+                0,
+//                market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,
