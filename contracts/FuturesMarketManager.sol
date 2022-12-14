@@ -32,7 +32,7 @@ interface IMarketViews {
 
     function currentFundingRate() external view returns (int fundingRate);
 
-    // TODO add details for FundingVelocity after SIP-279 p/d is included
+    function currentFundingVelocity() external view returns (int fundingVelocity);
 
     // only supported by PerpsV2 Markets (and implemented in ProxyPerpsV2)
     function getAllTargets() external view returns (address[] memory);
@@ -186,9 +186,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         int marketSkew;
         uint marketDebt;
         int currentFundingRate;
+        int currentFundingVelocity;
         bool priceInvalid;
         bool proxied;
-        // TODO add details for FundingVelocity after SIP-279 p/d is included
     }
 
     function _marketSummaries(address[] memory addresses) internal view returns (MarketSummary[] memory) {
@@ -211,6 +211,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
                 marketSkew: market.marketSkew(),
                 marketDebt: debt,
                 currentFundingRate: market.currentFundingRate(),
+                currentFundingVelocity: market.currentFundingVelocity(),
                 priceInvalid: invalid,
                 proxied: _proxiedMarkets.contains(addresses[i])
             });

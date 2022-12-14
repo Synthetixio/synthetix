@@ -30,6 +30,7 @@ contract PerpsV2MarketData {
         int marketSkew;
         uint marketDebt;
         int currentFundingRate;
+        int currentFundingVelocity;
         FeeRates feeRates;
     }
 
@@ -164,6 +165,7 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
+                market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,

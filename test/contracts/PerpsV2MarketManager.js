@@ -864,6 +864,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(summary.marketSize, await market.marketSize());
 			assert.equal(summary.marketSkew, await market.marketSkew());
 			assert.equal(summary.currentFundingRate, await market.currentFundingRate());
+			assert.equal(summary.currentFundingVelocity, await market.currentFundingVelocity());
 		});
 
 		it('For market keys', async () => {
@@ -891,6 +892,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
 			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
+			assert.equal(btcSummary.currentFundingVelocity, await markets[0].currentFundingVelocity());
 
 			assert.equal(ethSummary.market, markets[1].address);
 			assert.equal(ethSummary.asset, toBytes32(assets[1]));
@@ -899,6 +901,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
+			assert.equal(ethSummary.currentFundingVelocity, await markets[1].currentFundingVelocity());
 
 			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.asset, toBytes32('LINK'));
@@ -906,6 +909,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
+			assert.equal(linkSummary.currentFundingVelocity, toUnit(0));
 		});
 	});
 

@@ -367,6 +367,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
+			assert.equal(sETHSummary.currentFundingVelocity, await sethMarket.currentFundingVelocity());
 			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
@@ -409,6 +410,10 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sBTCSummary.marketSize, await perpsV2Market.marketSize());
 			assert.equal(sBTCSummary.marketSkew, await perpsV2Market.marketSkew());
 			assert.equal(sBTCSummary.currentFundingRate, await perpsV2Market.currentFundingRate());
+			assert.equal(
+				sBTCSummary.currentFundingVelocity,
+				await perpsV2Market.currentFundingVelocity()
+			);
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
@@ -455,6 +460,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.marketSize, toUnit(0));
 			assert.equal(sLINKSummary.marketSkew, toUnit(0));
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
+			assert.equal(sLINKSummary.currentFundingVelocity, toUnit(0));
 			assert.equal(sLINKSummary.feeRates.takerFee, toUnit('0.005'));
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
 			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
