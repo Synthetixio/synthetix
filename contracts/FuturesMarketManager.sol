@@ -32,6 +32,7 @@ interface IMarketViews {
 
     function currentFundingRate() external view returns (int fundingRate);
 
+    // v1 does not have a this so we never call it but this is here for v2.
     function currentFundingVelocity() external view returns (int fundingVelocity);
 
     // only supported by PerpsV2 Markets (and implemented in ProxyPerpsV2)
@@ -202,6 +203,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             (uint price, bool invalid) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
+            bool proxied = _proxiedMarkets.contains(addresses[i]);
             summaries[i] = MarketSummary({
                 market: address(market),
                 asset: baseAsset,
@@ -211,9 +213,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
                 marketSkew: market.marketSkew(),
                 marketDebt: debt,
                 currentFundingRate: market.currentFundingRate(),
-                currentFundingVelocity: market.currentFundingVelocity(),
+                currentFundingVelocity: proxied ? market.currentFundingVelocity() : 0, // v1 does not have velocity.
                 priceInvalid: invalid,
-                proxied: _proxiedMarkets.contains(addresses[i])
+                proxied: proxied
             });
         }
 
