@@ -232,7 +232,13 @@ async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {
 
 function _getTokenFromSymbol({ ctx, symbol }) {
 	if (symbol === 'SNX') {
-		return ctx.contracts.Synthetix;
+		const { ProxySynthetix } = ctx.contracts;
+		let { Synthetix } = ctx.contracts;
+
+		// connect via proxy
+		Synthetix = new ethers.Contract(ProxySynthetix.address, Synthetix.interface, ctx.provider);
+
+		return Synthetix;
 	} else if (symbol === 'WETH') {
 		return ctx.contracts.WETH;
 	} else {

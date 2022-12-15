@@ -25,7 +25,7 @@ describe('relayBatch integration tests (L1, L2)', () => {
 		ownerL2 = ctx.l2.users.owner;
 	});
 
-	before('retrieve all contracts that are ownable on L2', async () => {
+	before('retrieve all contracts that are ownable on L2', () => {
 		Object.values(ctx.l2.contracts).map(contract => {
 			if (contract.functions.owner) {
 				contractsToBeOwned.push(contract);

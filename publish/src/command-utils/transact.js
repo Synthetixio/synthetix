@@ -39,9 +39,16 @@ const performTransactionalStep = async ({
 	useFork,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
-	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		typeof arg === 'string' && arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
-	)})`;
+	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg => {
+		let parsedArg = arg;
+		// bytes32 that are not string representation throw an error
+		if (typeof arg === 'string' && arg.length === 66) {
+			try {
+				parsedArg = ethers.utils.toUtf8String(arg);
+			} catch (e) {}
+		}
+		return parsedArg;
+	})})`;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));

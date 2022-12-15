@@ -745,6 +745,36 @@
 			"released": "both"
 		},
 		{
+			"sip": 279,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 280,
+			"layer": "both",
+			"sources": {
+				"base": ["FuturesMarketManager"],
+				"ovm": [
+					"FuturesMarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
+					"PerpsV2ExchangeRate",
+					"PerpsV2Proxy.+",
+					"PerpsV2Market.+"
+				]
+			}
+		},
+		{
+			"sip": 281,
+			"layer": "both",
+			"sources": []
+		},
+		{
+			"sip": 285,
+			"layer": "both",
+			"sources": []
+		},
+		{
 			"sip": 299,
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
@@ -1430,6 +1460,23 @@
 			},
 			"sips": [299],
 			"released": true
+		},
+		{
+			"name": "Mintaka",
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285]
+		},
+		{
+			"name": "Mintaka (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285]
 		}
 	]
 }
