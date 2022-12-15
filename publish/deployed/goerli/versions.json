@@ -563,6 +563,22 @@
 		"contracts": {
 			"FuturesMarketManager": {
 				"address": "0x2396748C446125754A12f0D167477eC6eB70EA90",
+				"status": "replaced",
+				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51",
+				"replaced_in": "v2.80.1-alpha"
+			}
+		}
+	},
+	"v2.80.1-alpha": {
+		"tag": "v2.80.1-alpha",
+		"fulltag": "v2.80.1-alpha",
+		"release": "Mintaka",
+		"network": "goerli",
+		"date": "2022-12-15T15:45:14-05:00",
+		"commit": "09dae90318aa19fbe017d4200385b2ef6ccb2803",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0x1F3063a77111a379C61cD9967375d1C9b6eaE5Af",
 				"status": "current",
 				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51"
 			}
