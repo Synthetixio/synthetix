@@ -470,5 +470,21 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.feeRates.takerFeeOffchainDelayedOrder, toUnit('0.00005'));
 			assert.equal(sLINKSummary.feeRates.makerFeeOffchainDelayedOrder, toUnit('0'));
 		});
+
+		it('All proxied market summaries', async () => {
+			const summaries = await perpsV2MarketData.allProxiedMarketSummaries();
+
+			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
+			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
+			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
+
+			// A simplified version of allMarketSummaries test. All markets are considered proxied here.
+			assert.equal(sBTCSummary.market, perpsV2Market.address);
+			assert.equal(sETHSummary.market, sethMarket.address);
+			assert.equal(
+				sLINKSummary.market,
+				await futuresMarketManager.marketForKey(toBytes32('sLINK' + keySuffix))
+			);
+		});
 	});
 });
