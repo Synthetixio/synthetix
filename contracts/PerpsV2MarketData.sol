@@ -30,6 +30,7 @@ contract PerpsV2MarketData {
         int marketSkew;
         uint marketDebt;
         int currentFundingRate;
+        int currentFundingVelocity;
         FeeRates feeRates;
     }
 
@@ -67,6 +68,7 @@ contract PerpsV2MarketData {
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
+        uint overrideCommitFee;
     }
 
     struct FundingDetails {
@@ -164,13 +166,15 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
+                market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder
+                    params.makerFeeOffchainDelayedOrder,
+                    params.overrideCommitFee
                 )
             );
         }
@@ -188,6 +192,10 @@ contract PerpsV2MarketData {
 
     function allMarketSummaries() external view returns (MarketSummary[] memory) {
         return _marketSummaries(_futuresMarketManager().allMarkets());
+    }
+
+    function allProxiedMarketSummaries() external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_futuresMarketManager().allMarkets(true));
     }
 
     function _fundingParameters(IPerpsV2MarketSettings.Parameters memory params)
@@ -222,7 +230,8 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder
+                    params.makerFeeOffchainDelayedOrder,
+                    params.overrideCommitFee
                 ),
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),

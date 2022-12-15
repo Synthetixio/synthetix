@@ -81,13 +81,17 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         _revertIfError(status);
 
         // deduct fees from margin
-        uint commitDeposit = _delayedOrderCommitDeposit(params);
+        //
+        // commitDeposit is simply the maker/taker fee. note the dynamic fee rate is 0 since for the purposes of the
+        // commitment deposit it is not important since at the time of the order execution it will be refunded and the
+        // correct dynamic fee will be charged.
+        // If the overrideCommitFee is set (value > 0) use this one instead.
+        uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
+
         _updatePositionMargin(messageSender, position, price, -int(commitDeposit + keeperDeposit));
-        // emit event for modifying the position (subtracting the fees from margin)
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
 
-        // create order
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
             DelayedOrder({
@@ -101,9 +105,8 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 intentionTime: block.timestamp,
                 trackingCode: trackingCode
             });
-        // emit event
+
         emitDelayedOrderSubmitted(messageSender, order);
-        // store order
         marketState.updateDelayedOrder(
             messageSender,
             order.isOffchain,
@@ -143,10 +146,8 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         // pay the commitDeposit as fee to the FeePool
         _manager().payFee(order.commitDeposit);
 
-        // remove stored order
         // important!! position of the account, not the msg.sender
         marketState.deleteDelayedOrder(account);
-        // emit event
         emitDelayedOrderRemoved(account, currentRoundId, order);
     }
 
@@ -207,21 +208,6 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         DelayedOrder memory order,
         uint currentRoundId
     ) internal {}
-
-    ///// Internal views
-
-    // calculate the commitFee, which is the fee that would be charged on the order if it was spot
-    function _delayedOrderCommitDeposit(TradeParams memory params) internal view returns (uint) {
-        // modify params to spot fee
-        params.takerFee = _takerFee(_marketKey());
-        params.makerFee = _makerFee(_marketKey());
-        // Commit fee is equal to the spot fee that would be paid.
-        // This is to prevent free cancellation manipulations (by e.g. withdrawing the margin).
-        // The dynamic fee rate is passed as 0 since for the purposes of the commitment deposit
-        // it is not important since at the time of order execution it will be refunded and the correct
-        // dynamic fee will be charged.
-        return _orderFee(params, 0);
-    }
 
     ///// Events
     event DelayedOrderSubmitted(

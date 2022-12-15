@@ -57,7 +57,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         return 0;
     }
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+    function currentFundingVelocity() external view returns (int fundingVelocity) {
         return 0;
     }
 
@@ -111,7 +111,11 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         return false;
     }
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid)
+    {
         sizeDelta;
         return (0, false);
     }
@@ -119,6 +123,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external

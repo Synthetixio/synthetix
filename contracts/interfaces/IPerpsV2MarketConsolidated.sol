@@ -1,13 +1,18 @@
 pragma solidity ^0.5.16;
+
+import "./IPerpsV2MarketBaseTypes.sol";
 pragma experimental ABIEncoderV2;
 
 // Helper Interface, only used in tests and to provide a consolidated interface to PerpsV2 users/integrators
 
 interface IPerpsV2MarketConsolidated {
     /* ========== TYPES ========== */
+    enum OrderType {Atomic, Delayed, Offchain}
+
     enum Status {
         Ok,
         InvalidPrice,
+        InvalidOrderPrice,
         PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
@@ -70,7 +75,7 @@ interface IPerpsV2MarketConsolidated {
 
     function currentFundingRate() external view returns (int fundingRate);
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity);
+    function currentFundingVelocity() external view returns (int fundingVelocity);
 
     function unrecordedFunding() external view returns (int funding, bool invalid);
 
@@ -94,11 +99,15 @@ interface IPerpsV2MarketConsolidated {
 
     function canLiquidate(address account) external view returns (bool);
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid);
 
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external

@@ -24,19 +24,20 @@ const MockExchanger = artifacts.require('MockExchanger');
 const Status = {
 	Ok: 0,
 	InvalidPrice: 1,
-	PriceOutOfBounds: 2,
-	CanLiquidate: 3,
-	CannotLiquidate: 4,
-	MaxMarketSizeExceeded: 5,
-	MaxLeverageExceeded: 6,
-	InsufficientMargin: 7,
-	NotPermitted: 8,
-	NilOrder: 9,
-	NoPositionOpen: 10,
-	PriceTooVolatile: 11,
+	InvalidOrderType: 2,
+	PriceOutOfBounds: 3,
+	CanLiquidate: 4,
+	CannotLiquidate: 5,
+	MaxMarketSizeExceeded: 6,
+	MaxLeverageExceeded: 7,
+	InsufficientMargin: 8,
+	NotPermitted: 9,
+	NilOrder: 10,
+	NoPositionOpen: 11,
+	PriceTooVolatile: 12,
 };
 
-contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
+contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	let perpsV2MarketSettings,
 		futuresMarketManager,
 		perpsV2MarketProxy,
@@ -86,6 +87,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 	const offchainMinAge = 15;
 	const offchainMaxAge = 60;
 	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+	const orderType = 0; // 0-Atomic, 1-Delayed, 2-Offchain
 
 	const initialFundingIndex = toBN(0);
 
@@ -656,7 +658,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 					const fee = toUnit('14');
 					await perpsV2Market.transferMargin(t1Margin.mul(toBN(2)), { from: trader });
-					assert.bnEqual((await perpsV2Market.orderFee(t1size.mul(toBN(2)))).fee, fee);
+					assert.bnEqual((await perpsV2Market.orderFee(t1size.mul(toBN(2)), orderType)).fee, fee);
 
 					const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 
@@ -711,7 +713,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					//
 					// note: baseFee is the dynamicFee (which is disabled).
 					const expectedFee = multiplyDecimal(multiplyDecimal(size, fillPrice), takerFee);
-					assert.bnEqual((await perpsV2Market.orderFee(size))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size, orderType))[0], expectedFee);
 				});
 
 				it('Submit a fresh order on the same side as the skew', async () => {
@@ -733,7 +735,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					await perpsV2Market.transferMargin(margin, { from: trader });
 					const expectedFee = multiplyDecimal(multiplyDecimal(size, fillPrice), takerFee).abs();
 
-					assert.bnEqual((await perpsV2Market.orderFee(size))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size, orderType))[0], expectedFee);
 				});
 
 				it(`Submit a fresh order on the opposite side to the skew smaller than the skew`, async () => {
@@ -764,7 +766,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const expectedFee = multiplyDecimal(multiplyDecimal(size2, fillPrice), makerFee).abs();
 					await perpsV2Market.transferMargin(margin2, { from: trader });
 
-					assert.bnEqual((await perpsV2Market.orderFee(size2))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size2, orderType))[0], expectedFee);
 				});
 
 				it('Submit a fresh order on the opposite side to the skew larger than the skew', async () => {
@@ -831,7 +833,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					//
 					// note: price is actually fillPrice (however in the case fillPrice = price = 100)
 					const expectedFee = toUnit('7');
-					assert.bnEqual((await perpsV2Market.orderFee(size2))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size2, orderType))[0], expectedFee);
 				});
 
 				it('Increase an existing position on the side of the skew', async () => {
@@ -854,7 +856,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					// skew is growing. charge the takerFee.
 					const expectedFee = multiplyDecimal(multiplyDecimal(size2, fillPrice), takerFee).abs();
 
-					assert.bnEqual((await perpsV2Market.orderFee(size2))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size2, orderType))[0], expectedFee);
 				});
 
 				it('Increase an existing position opposite to the skew smaller than the skew', async () => {
@@ -898,7 +900,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size3, 0))[0];
 					const expectedFee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
 
-					assert.bnEqual((await perpsV2Market.orderFee(size3))[0], expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(size3, orderType))[0], expectedFee);
 				});
 
 				it('Increase an existing position opposite to the skew larger than the skew', async () => {
@@ -948,7 +950,8 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					assert.bnEqual(
 						(
 							await perpsV2Market.orderFee(
-								multiplyDecimal(leverage.neg(), margin.mul(toBN(2))).div(toBN(100))
+								multiplyDecimal(leverage.neg(), margin.mul(toBN(2))).div(toBN(100)),
+								orderType
 							)
 						)[0],
 						fee
@@ -969,7 +972,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const adjustSize = sizeDelta.div(toBN(2)).neg();
 					const expectedFee = multiplyDecimal(multiplyDecimal(adjustSize.abs(), price), makerFee);
 
-					assert.bnEqual((await perpsV2Market.orderFee(adjustSize)).fee, expectedFee);
+					assert.bnEqual((await perpsV2Market.orderFee(adjustSize, orderType)).fee, expectedFee);
 				});
 
 				it('Reduce an existing position opposite to the skew', async () => {
@@ -998,7 +1001,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const size3 = divideDecimal(size2.neg(), toUnit('2'));
 					const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size3, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
-					assert.bnEqual((await perpsV2Market.orderFee(size3)).fee, fee);
+					assert.bnEqual((await perpsV2Market.orderFee(size3, orderType)).fee, fee);
 				});
 
 				it('Close an existing position on the side of the skew', async () => {
@@ -1017,7 +1020,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const size2 = size1.neg();
 					const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size2, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size2, fillPrice), makerFee).abs();
-					assert.bnEqual((await perpsV2Market.orderFee(size2)).fee, fee);
+					assert.bnEqual((await perpsV2Market.orderFee(size2, orderType)).fee, fee);
 				});
 
 				it('Close an existing position opposite to the skew', async () => {
@@ -1047,7 +1050,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 					const size3 = size2.neg();
 					const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size3, 0))[0];
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), takerFee).abs();
-					assert.bnEqual((await perpsV2Market.orderFee(size3)).fee, fee);
+					assert.bnEqual((await perpsV2Market.orderFee(size3, orderType)).fee, fee);
 				});
 
 				it('Updated order, opposite and smaller than the skew, on opposite side of an existing position', async () => {
@@ -1078,7 +1081,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 					// makerFee because we're in the opposite direction (hence reducing skew).
 					const fee = multiplyDecimal(multiplyDecimal(size3, fillPrice), makerFee).abs();
-					assert.bnEqual((await perpsV2Market.orderFee(size3))[0], fee);
+					assert.bnEqual((await perpsV2Market.orderFee(size3, orderType))[0], fee);
 				});
 			});
 		}
@@ -1379,7 +1382,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				const reasonablePriceImpact = toUnit('0.005'); // 0.5% (50bps)
 
 				const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0]; // 200.01
-				const fee = (await perpsV2Market.orderFee(size))[0];
+				const fee = (await perpsV2Market.orderFee(size, orderType))[0];
 
 				const tx = await perpsV2Market.modifyPosition(size, reasonablePriceImpact, {
 					from: trader,
@@ -1432,7 +1435,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				// 6x short, fillPrice = 199.97
 				const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0];
 
-				const fee = (await perpsV2Market.orderFee(size))[0];
+				const fee = (await perpsV2Market.orderFee(size, orderType))[0];
 
 				const tx = await perpsV2Market.modifyPosition(size, reasonablePriceImpact, {
 					from: trader,
@@ -1468,7 +1471,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				const size = toUnit('-20');
 				const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0];
 
-				const fee = (await perpsV2Market.orderFee(size))[0];
+				const fee = (await perpsV2Market.orderFee(size, orderType))[0];
 
 				const tx = await perpsV2Market.modifyPosition(size, reasonablePriceImpact, {
 					from: trader2,
@@ -1496,7 +1499,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 			const fillPrice = (await perpsV2Market.fillPriceWithBasePrice(size, 0))[0]; // $205 fillPrice
-			const fee = (await perpsV2Market.orderFee(size))[0];
+			const fee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const tx = await perpsV2Market.modifyPosition(size, priceImpactDelta, { from: trader });
 
 			const position = await perpsV2Market.positions(trader);
@@ -1540,7 +1543,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 			const size = toUnit('50');
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fee = (await perpsV2Market.orderFee(size))[0];
+			const fee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const trackingCode = toBytes32('code');
 			const tx = await perpsV2Market.modifyPositionWithTracking(
 				size,
@@ -1574,7 +1577,12 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			const postDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), trader);
+			const postDetails = await perpsV2Market.postTradeDetails(
+				size,
+				toUnit('0'),
+				orderType,
+				trader
+			);
 			assert.equal(postDetails.status, Status.InvalidPrice);
 
 			await assert.revert(
@@ -1640,7 +1648,12 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				perpsV2Market.modifyPosition(toBN('0'), priceImpactDelta, { from: trader }),
 				'Cannot submit empty order'
 			);
-			const postDetails = await perpsV2Market.postTradeDetails(toBN('0'), toUnit('0'), trader);
+			const postDetails = await perpsV2Market.postTradeDetails(
+				toBN('0'),
+				toUnit('0'),
+				orderType,
+				trader
+			);
 			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
@@ -1657,7 +1670,12 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
 
 			const sizeDelta = toUnit('-50');
-			const postDetails = await perpsV2Market.postTradeDetails(sizeDelta, toUnit('0'), trader);
+			const postDetails = await perpsV2Market.postTradeDetails(
+				sizeDelta,
+				toUnit('0'),
+				orderType,
+				trader
+			);
 			assert.equal(postDetails.status, Status.CanLiquidate);
 
 			await assert.revert(
@@ -1672,7 +1690,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
-			const fee = (await perpsV2Market.orderFee(toUnit('50')))[0];
+			const fee = (await perpsV2Market.orderFee(toUnit('50'), orderType))[0];
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
@@ -1714,14 +1732,24 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				perpsV2Market.modifyPosition(toUnit('101'), priceImpactDelta, { from: trader }),
 				'Max leverage exceeded'
 			);
-			let postDetails = await perpsV2Market.postTradeDetails(toUnit('101'), toUnit('0'), trader);
+			let postDetails = await perpsV2Market.postTradeDetails(
+				toUnit('101'),
+				toUnit('0'),
+				orderType,
+				trader
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(
 				perpsV2Market.modifyPosition(toUnit('-101'), priceImpactDelta, { from: trader2 }),
 				'Max leverage exceeded'
 			);
-			postDetails = await perpsV2Market.postTradeDetails(toUnit('-101'), toUnit('0'), trader2);
+			postDetails = await perpsV2Market.postTradeDetails(
+				toUnit('-101'),
+				toUnit('0'),
+				orderType,
+				trader2
+			);
 			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 		});
 
@@ -1738,14 +1766,14 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				'Insufficient margin'
 			);
 
-			let postDetails = await perpsV2Market.postTradeDetails(price, toUnit('0'), trader);
+			let postDetails = await perpsV2Market.postTradeDetails(price, toUnit('0'), orderType, trader);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
 
 			// But it works after transferring the remaining $1
 			await perpsV2Market.transferMargin(toUnit('1'), { from: trader });
 
-			const fee = (await perpsV2Market.orderFee(size))[0];
-			postDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), trader);
+			const fee = (await perpsV2Market.orderFee(size, orderType))[0];
+			postDetails = await perpsV2Market.postTradeDetails(size, toUnit('0'), orderType, trader);
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
 			assert.bnEqual(postDetails.size, size);
 			assert.bnEqual(postDetails.price, fillPrice);
@@ -1838,7 +1866,12 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 						await perpsV2Market.transferMargin(maxMargin.add(toUnit('11')), { from: trader });
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
 
-						const postDetails = await perpsV2Market.postTradeDetails(tooBig, toUnit('0'), trader);
+						const postDetails = await perpsV2Market.postTradeDetails(
+							tooBig,
+							toUnit('0'),
+							orderType,
+							trader
+						);
 						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 
 						await assert.revert(
@@ -1878,6 +1911,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 						const postDetails = await perpsV2Market.postTradeDetails(
 							sizeDelta,
 							toUnit('0'),
+							orderType,
 							trader
 						);
 						assert.equal(postDetails.status, Status.Ok);
@@ -2225,6 +2259,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				const postTradeDetails = await perpsV2Market.postTradeDetails(
 					sizeDelta,
 					toUnit('0'),
+					orderType,
 					trader
 				);
 
@@ -2254,6 +2289,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				const postTradeDetails = await perpsV2Market.postTradeDetails(
 					sizeDelta,
 					toUnit('0'),
+					orderType,
 					trader
 				);
 
@@ -2902,11 +2938,11 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await setPrice(baseAsset, price);
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
-				const fee1 = (await perpsV2Market.orderFee(toUnit('50')))[0];
+				const fee1 = (await perpsV2Market.orderFee(toUnit('50'), orderType))[0];
 				await perpsV2Market.modifyPosition(toUnit('50'), priceImpactDelta, { from: trader }); // 5x
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
 
-				const fee2 = (await perpsV2Market.orderFee(toUnit('-100')))[0];
+				const fee2 = (await perpsV2Market.orderFee(toUnit('-100'), orderType))[0];
 				await perpsV2Market.modifyPosition(toUnit('-100'), priceImpactDelta, { from: trader2 }); // -10x
 
 				const lev = (notional, margin, fee) => divideDecimal(notional, margin.sub(fee));
@@ -4000,7 +4036,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 			// debtCorrection (so far) = 1000
 			await perpsV2Market.transferMargin(margin1, { from: trader });
-			const fee1 = (await perpsV2Market.orderFee(size1))[0];
+			const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
 
 			// debtCorrection = debtCorrection - (50 * fillPrice) - fee1
 			await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
@@ -4025,7 +4061,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 			// debtCorrection (so far) = expectedDebtConnection1 + 600
 			await perpsV2Market.transferMargin(margin2, { from: trader2 });
-			const fee2 = (await perpsV2Market.orderFee(size2))[0];
+			const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
 			await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
 
 			const expectedDebtCorrection2 = expectedDebtCorrection1.add(
@@ -4232,14 +4268,14 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 				const margin1 = toUnit('1000');
 				const size1 = toUnit('100');
-				const fee1 = (await perpsV2Market.orderFee(size1))[0];
+				const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
 				const fillPrice1 = (await perpsV2Market.fillPriceWithBasePrice(size1, 0))[0];
 				await perpsV2Market.transferMargin(margin1, { from: trader });
 				await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1000');
 				const size2 = toUnit('-100');
-				const fee2 = (await perpsV2Market.orderFee(size2))[0];
+				const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
 				const fillPrice2 = (await perpsV2Market.fillPriceWithBasePrice(size2, 0))[0];
 				await perpsV2Market.transferMargin(margin2, { from: trader2 });
 				await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
@@ -4281,14 +4317,14 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 
 				const margin1 = toUnit('1000');
 				const size1 = toUnit('20');
-				const fee1 = (await perpsV2Market.orderFee(size1))[0];
+				const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
 				const fillPrice1 = (await perpsV2Market.fillPriceWithBasePrice(size1, 0))[0];
 				await perpsV2Market.transferMargin(margin1, { from: trader });
 				await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1000');
 				const size2 = toUnit('-20');
-				const fee2 = (await perpsV2Market.orderFee(size2))[0];
+				const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
 				const fillPrice2 = (await perpsV2Market.fillPriceWithBasePrice(size2, 0))[0];
 				await perpsV2Market.transferMargin(margin2, { from: trader2 });
 				await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
@@ -4467,14 +4503,14 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				// submit orders that induces an initial 0.05 funding rate. the market is currently long by 20 size
 				const margin1 = toUnit('1500');
 				const size1 = toUnit('30');
-				const fee1 = (await perpsV2Market.orderFee(size1))[0];
+				const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
 				const fillPrice1 = (await perpsV2Market.fillPriceWithBasePrice(size1, 0))[0];
 				await perpsV2Market.transferMargin(margin1, { from: trader });
 				await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
 
 				const margin2 = toUnit('1500');
 				const size2 = toUnit('-10');
-				const fee2 = (await perpsV2Market.orderFee(size2))[0];
+				const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
 				const fillPrice2 = (await perpsV2Market.fillPriceWithBasePrice(size2, 0))[0];
 				await perpsV2Market.transferMargin(margin2, { from: trader2 });
 				await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
@@ -5145,7 +5181,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 						{
 							from: owner,
 						}
@@ -5225,7 +5261,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}
@@ -5237,7 +5273,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 						{
 							from: owner,
 						}
@@ -5390,7 +5426,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}
@@ -5427,7 +5463,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				const expectedFee = multiplyDecimal(fillPrice, expectedRate.add(takerFee));
 
 				// check view
-				const res = await perpsV2Market.orderFee(orderSize);
+				const res = await perpsV2Market.orderFee(orderSize, orderType);
 				assert.bnClose(res.fee, expectedFee, toUnit('0.0000001'));
 
 				// check event from modifying a position
@@ -5469,7 +5505,7 @@ contract('PerpsV2Market PerpsV2MarketSpot', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
 					{
 						from: owner,
 					}

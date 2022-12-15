@@ -181,6 +181,7 @@ contract('PerpsV2MarketData', accounts => {
 				[
 					toUnit('0.005'), // 0.5% taker fee
 					toUnit('0.001'), // 0.1% maker fee
+					toUnit('0'), // 0% override commit fee for delayed/offchain order
 					toUnit('0.0005'), // 0.05% taker fee delayed order
 					toUnit('0'), // 0% maker fee delayed order
 					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
@@ -273,6 +274,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(details.baseAsset, baseAsset);
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
+			assert.bnEqual(details.feeRates.overrideCommitFee, params.overrideCommitFee);
 			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.bnEqual(
@@ -367,6 +369,7 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
+			assert.equal(sETHSummary.currentFundingVelocity, await sethMarket.currentFundingVelocity());
 			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
 			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
 			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
@@ -409,6 +412,10 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sBTCSummary.marketSize, await perpsV2Market.marketSize());
 			assert.equal(sBTCSummary.marketSkew, await perpsV2Market.marketSkew());
 			assert.equal(sBTCSummary.currentFundingRate, await perpsV2Market.currentFundingRate());
+			assert.equal(
+				sBTCSummary.currentFundingVelocity,
+				await perpsV2Market.currentFundingVelocity()
+			);
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
@@ -455,12 +462,29 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(sLINKSummary.marketSize, toUnit(0));
 			assert.equal(sLINKSummary.marketSkew, toUnit(0));
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
+			assert.equal(sLINKSummary.currentFundingVelocity, toUnit(0));
 			assert.equal(sLINKSummary.feeRates.takerFee, toUnit('0.005'));
 			assert.equal(sLINKSummary.feeRates.makerFee, toUnit('0.001'));
 			assert.equal(sLINKSummary.feeRates.takerFeeDelayedOrder, toUnit('0.0005'));
 			assert.equal(sLINKSummary.feeRates.makerFeeDelayedOrder, toUnit('0'));
 			assert.equal(sLINKSummary.feeRates.takerFeeOffchainDelayedOrder, toUnit('0.00005'));
 			assert.equal(sLINKSummary.feeRates.makerFeeOffchainDelayedOrder, toUnit('0'));
+		});
+
+		it('All proxied market summaries', async () => {
+			const summaries = await perpsV2MarketData.allProxiedMarketSummaries();
+
+			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
+			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
+			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
+
+			// A simplified version of allMarketSummaries test. All markets are considered proxied here.
+			assert.equal(sBTCSummary.market, perpsV2Market.address);
+			assert.equal(sETHSummary.market, sethMarket.address);
+			assert.equal(
+				sLINKSummary.market,
+				await futuresMarketManager.marketForKey(toBytes32('sLINK' + keySuffix))
+			);
 		});
 	});
 });

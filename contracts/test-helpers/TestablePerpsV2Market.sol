@@ -102,13 +102,13 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
     }
 
     /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
-    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint, bool) {
+    function fillPriceWithBasePrice(int sizeDelta, uint basePrice) external view returns (uint, bool) {
         uint price = basePrice;
         bool invalid;
         if (basePrice == 0) {
             (price, invalid) = _assetPrice();
         }
-        return (_fillPrice(size, price), invalid);
+        return (_fillPrice(sizeDelta, price), invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
@@ -128,7 +128,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
         return 0;
     }
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+    function currentFundingVelocity() external view returns (int fundingVelocity) {
         return 0;
     }
 
@@ -174,13 +174,18 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
         return false;
     }
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid)
+    {
         return (0, false);
     }
 
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external
