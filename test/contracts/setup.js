@@ -466,6 +466,30 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		PerpsV2OffchainOrderETH: [
+			tryGetAddressOf('ProxyPerpsV2MarketETH'),
+			tryGetAddressOf('PerpsV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		PerpsV2MarketBTC: [
+			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+			tryGetAddressOf('PerpsV2MarketStateBTC'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		PerpsV2MarketETH: [
+			tryGetAddressOf('ProxyPerpsV2MarketETH'),
+			tryGetAddressOf('PerpsV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		// TestablePerpsV2MarketBTC: [
+		// 	tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+		// 	tryGetAddressOf('PerpsV2MarketStateBTC'),
+		// 	owner,
+		// 	tryGetAddressOf('AddressResolver'),
+		// ],
 	};
 
 	let instance;
@@ -1509,6 +1533,16 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
+		// {
+		// 	contract: 'TestablePerpsV2MarketBTC',
+		// 	source: 'TestablePerpsV2Market',
+		// 	deps: ['PerpsV2MarketBTC'],
+		// },
+		// {
+		// 	contract: 'TestablePerpsV2MarketETH',
+		// 	source: 'TestablePerpsV2Market',
+		// 	deps: ['PerpsV2MarketETH'],
+		// },
 	];
 
 	// check contract list for contracts with the same address resolver name
