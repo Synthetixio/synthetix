@@ -752,11 +752,11 @@
 		},
 		"FuturesMarketManager": {
 			"name": "FuturesMarketManager",
-			"address": "0x2396748C446125754A12f0D167477eC6eB70EA90",
+			"address": "0x1F3063a77111a379C61cD9967375d1C9b6eaE5Af",
 			"source": "EmptyFuturesMarketManager",
-			"link": "https://goerli.etherscan.io/address/0x2396748C446125754A12f0D167477eC6eB70EA90",
-			"timestamp": "2022-12-02T16:58:00.000Z",
-			"txn": "https://goerli.etherscan.io/tx/0x04928e95a97d8881588eaa7c1dcc6cb2be7fe38cdde0460eaebdae5300c823f7",
+			"link": "https://goerli.etherscan.io/address/0x1F3063a77111a379C61cD9967375d1C9b6eaE5Af",
+			"timestamp": "2022-12-15T18:35:48.402Z",
+			"txn": "",
 			"network": "goerli",
 			"constructorArgs": []
 		},

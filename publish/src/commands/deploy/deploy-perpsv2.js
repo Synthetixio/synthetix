@@ -42,7 +42,7 @@ module.exports = async ({
 		return;
 	}
 
-	// This belongs in dapp-utils, but since we are only deploying futures on L2,
+	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
 	// I've colocated it here for now.
 	await deployer.deployContract({
 		name: 'PerpsV2MarketData',

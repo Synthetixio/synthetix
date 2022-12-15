@@ -70,11 +70,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
      * The current base price, reverting if it is invalid, or if system or synth is suspended.
      * This is mutative because the circuit breaker stores the last price on every invocation.
      */
-    function _assetPriceRequireSystemChecks() internal returns (uint) {
+    function _assetPriceRequireSystemChecks(bool checkOffchainMarket) internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(_marketKey()); // asset and market may be different
         // check that synth is active, and wasn't suspended, revert with appropriate message
         _systemStatus().requireSynthActive(_baseAsset());
+
+        if (checkOffchainMarket) {
+            // offchain PerpsV2 virtual market
+            _systemStatus().requireFuturesMarketActive(_offchainMarketKey(_marketKey()));
+        }
         // check if circuit breaker if price is within deviation tolerance and system & synth is active
         // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
@@ -152,13 +157,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
-            //     * they have sufficient margin to do so
-            //     * the resulting margin would not be lower than the liquidation margin or min initial margin
-            //     * the resulting leverage is lower than the maximum leverage
+            //   * they have sufficient margin to do so
+            //   * the resulting margin would not be lower than the liquidation margin or min initial margin
+            //     * liqMargin accounting for the liqPremium
+            //   * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
+                // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
+                uint liqPremium = _liquidationPremium(position.size, price);
+                uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
                 _revertIfError(
                     (margin < _minInitialMargin()) ||
-                        (margin <= _liquidationMargin(position.size, price)) ||
+                        (margin <= liqMargin) ||
                         (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
                     Status.InsufficientMargin
                 );
@@ -209,7 +218,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             _manager().payFee(fee);
             // emit tracking code event
             if (params.trackingCode != bytes32(0)) {
-                emitFuturesTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
+                emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
             }
         }
 
@@ -333,16 +342,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         proxy._emit(abi.encode(funding, fundingRate, index, timestamp), 1, FUNDINGRECOMPUTED_SIG, 0, 0, 0);
     }
 
-    event FuturesTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
-    bytes32 internal constant FUTURESTRACKING_SIG = keccak256("FuturesTracking(bytes32,bytes32,bytes32,int256,uint256)");
+    event PerpsTracking(bytes32 indexed trackingCode, bytes32 baseAsset, bytes32 marketKey, int sizeDelta, uint fee);
+    bytes32 internal constant PERPSTRACKING_SIG = keccak256("PerpsTracking(bytes32,bytes32,bytes32,int256,uint256)");
 
-    function emitFuturesTracking(
+    function emitPerpsTracking(
         bytes32 trackingCode,
         bytes32 baseAsset,
         bytes32 marketKey,
         int sizeDelta,
         uint fee
     ) internal {
-        proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, FUTURESTRACKING_SIG, trackingCode, 0, 0);
+        proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, PERPSTRACKING_SIG, trackingCode, 0, 0);
     }
 }

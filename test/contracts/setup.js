@@ -1890,6 +1890,7 @@ const setupAllContracts = async ({
 						[
 							toWei('0.003'), // 0.3% taker fee
 							toWei('0.001'), // 0.1% maker fee
+							toWei('0'), // 0 override commit fee
 							toWei('0.0005'), // 0.05% taker fee delayed order
 							toWei('0.0001'), // 0.01% maker fee delayed order
 							toWei('0.00005'), // 0.005% taker fee offchain delayed order
