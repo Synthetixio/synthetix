@@ -313,8 +313,9 @@
 			},
 			"FuturesMarketManager": {
 				"address": "0x55Bc4475e73E32255D3825fbD44cF5467950F33E",
-				"status": "current",
-				"keccak256": "0x70d93adddedc13bddf1a98d5846f06736949d0d26d0547bacc656be9ee829055"
+				"status": "replaced",
+				"keccak256": "0x70d93adddedc13bddf1a98d5846f06736949d0d26d0547bacc656be9ee829055",
+				"replaced_in": "v2.80.0-alpha"
 			},
 			"SynthUtil": {
 				"address": "0x492395BA6866EF703DA49667fF92Cb8551e7a2D1",
@@ -549,6 +550,37 @@
 				"address": "0xFC0E6442fC16e1caf52baa31f8043D8BE78AEb0D",
 				"status": "current",
 				"keccak256": "0xc85266777bdc8ba5399b1dc679a738f23c44dc60a40be34ba5a4f16450c52394"
+			}
+		}
+	},
+	"v2.80.0-alpha": {
+		"tag": "v2.80.0-alpha",
+		"fulltag": "v2.80.0-alpha",
+		"release": "Mintaka",
+		"network": "goerli",
+		"date": "2022-12-02T15:28:23-05:00",
+		"commit": "6571493f7284a9b41740a70a33fe83f77ef23036",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0x2396748C446125754A12f0D167477eC6eB70EA90",
+				"status": "replaced",
+				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51",
+				"replaced_in": "v2.80.1-alpha"
+			}
+		}
+	},
+	"v2.80.1-alpha": {
+		"tag": "v2.80.1-alpha",
+		"fulltag": "v2.80.1-alpha",
+		"release": "Mintaka",
+		"network": "goerli",
+		"date": "2022-12-15T15:45:14-05:00",
+		"commit": "09dae90318aa19fbe017d4200385b2ef6ccb2803",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0x1F3063a77111a379C61cD9967375d1C9b6eaE5Af",
+				"status": "current",
+				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51"
 			}
 		}
 	}
