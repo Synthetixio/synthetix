@@ -25,7 +25,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 
 contract('FuturesMarketManager (PerpsV2)', accounts => {
 	let futuresMarketManager,
-		futuresMarketSettings,
+		perpsV2MarketSettings,
 		systemSettings,
 		exchangeRates,
 		circuitBreaker,
@@ -72,7 +72,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	before(async () => {
 		({
 			FuturesMarketManager: futuresMarketManager,
-			PerpsV2MarketSettings: futuresMarketSettings,
+			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
@@ -619,7 +619,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	});
 
 	describe('Aggregated Debt', () => {
-		it('futures debt is zero when no markets are deployed', async () => {
+		it('perpsV2 debt is zero when no markets are deployed', async () => {
 			// check initial debt
 			const initialSystemDebt = (await debtCache.currentDebt())[0];
 			// issue some sUSD
@@ -802,11 +802,12 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				await setPrice(assetKey, toUnit(1000));
 
 				// Now that the market exists we can set the all its parameters
-				await futuresMarketSettings.setParameters(
+				await perpsV2MarketSettings.setParameters(
 					marketKey,
 					[
 						toUnit('0.005'), // 0.5% taker fee
 						toUnit('0.001'), // 0.1% maker fee
+						toUnit('0'), // 0% override commit fee for delayed/offchain order
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
 						toUnit('0.00005'), // 0.005% taker fee offchain delayed order
@@ -864,6 +865,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(summary.marketSize, await market.marketSize());
 			assert.equal(summary.marketSkew, await market.marketSkew());
 			assert.equal(summary.currentFundingRate, await market.currentFundingRate());
+			assert.equal(summary.currentFundingVelocity, await market.currentFundingVelocity());
 		});
 
 		it('For market keys', async () => {
@@ -891,6 +893,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
 			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
+			assert.equal(btcSummary.currentFundingVelocity, await markets[0].currentFundingVelocity());
 
 			assert.equal(ethSummary.market, markets[1].address);
 			assert.equal(ethSummary.asset, toBytes32(assets[1]));
@@ -899,6 +902,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
+			assert.equal(ethSummary.currentFundingVelocity, await markets[1].currentFundingVelocity());
 
 			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.asset, toBytes32('LINK'));
@@ -906,6 +910,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
+			assert.equal(linkSummary.currentFundingVelocity, toUnit(0));
 		});
 	});
 

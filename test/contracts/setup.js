@@ -466,12 +466,6 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		// TestablePerpsV2MarketBTC: [
-		// 	tryGetAddressOf('ProxyPerpsV2MarketBTC'),
-		// 	tryGetAddressOf('PerpsV2MarketStateBTC'),
-		// 	owner,
-		// 	tryGetAddressOf('AddressResolver'),
-		// ],
 	};
 
 	let instance;
@@ -1515,16 +1509,6 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
-		// {
-		// 	contract: 'TestablePerpsV2MarketBTC',
-		// 	source: 'TestablePerpsV2Market',
-		// 	deps: ['PerpsV2MarketBTC'],
-		// },
-		// {
-		// 	contract: 'TestablePerpsV2MarketETH',
-		// 	source: 'TestablePerpsV2Market',
-		// 	deps: ['PerpsV2MarketETH'],
-		// },
 	];
 
 	// check contract list for contracts with the same address resolver name
@@ -1890,6 +1874,7 @@ const setupAllContracts = async ({
 						[
 							toWei('0.003'), // 0.3% taker fee
 							toWei('0.001'), // 0.1% maker fee
+							toWei('0'), // 0 override commit fee
 							toWei('0.0005'), // 0.05% taker fee delayed order
 							toWei('0.0001'), // 0.01% maker fee delayed order
 							toWei('0.00005'), // 0.005% taker fee offchain delayed order
