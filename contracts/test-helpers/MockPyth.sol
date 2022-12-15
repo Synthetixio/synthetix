@@ -133,7 +133,7 @@ contract MockPyth {
     }
 
     function _updatePriceFeeds(bytes[] memory updateData) internal {
-        uint requiredFee = getUpdateFee(updateData.length);
+        uint requiredFee = getUpdateFee(updateData);
         require(msg.value >= requiredFee, "Insufficient paid fee amount");
 
         if (msg.value > requiredFee) {
@@ -183,8 +183,8 @@ contract MockPyth {
         emit UpdatePriceFeeds(msg.sender, 1, requiredFee);
     }
 
-    function getUpdateFee(uint updateDataLen) public view returns (uint feeAmount) {
-        return singleUpdateFeeInWei * updateDataLen;
+    function getUpdateFee(bytes[] memory updateData) public view returns (uint feeAmount) {
+        return singleUpdateFeeInWei * updateData.length;
     }
 
     function createPriceFeedUpdateData(
