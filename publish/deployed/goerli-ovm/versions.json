@@ -648,23 +648,27 @@
 			},
 			"PerpsV2MarketETHPERP": {
 				"address": "0x8bDfB37555C1F87195F475cAf2A7e9A769717Ff6",
-				"status": "current",
-				"keccak256": "0x344e77e84c1ff81851093679e5fa715d48a774045d80b2a081c5d47aecf4ef18"
+				"status": "replaced",
+				"keccak256": "0x344e77e84c1ff81851093679e5fa715d48a774045d80b2a081c5d47aecf4ef18",
+				"replaced_in": "v2.80.2-alpha"
 			},
 			"PerpsV2MarketViewsETHPERP": {
 				"address": "0x7f778ae58281B035ED56f02C1f931129d5B94BEC",
-				"status": "current",
-				"keccak256": "0x983cf1765f00996f9d94fdd28a0084d43bdac7584f4be8b104678da58e2ad081"
+				"status": "replaced",
+				"keccak256": "0x983cf1765f00996f9d94fdd28a0084d43bdac7584f4be8b104678da58e2ad081",
+				"replaced_in": "v2.80.2-alpha"
 			},
 			"PerpsV2DelayedOrderETHPERP": {
 				"address": "0xbe55a54dE7500992EEA1db09CD854893a7A2a221",
-				"status": "current",
-				"keccak256": "0x9cfef9646253017d4c37501ef7646e84e9f2a1dade1ec704052f9b7135605a12"
+				"status": "replaced",
+				"keccak256": "0x9cfef9646253017d4c37501ef7646e84e9f2a1dade1ec704052f9b7135605a12",
+				"replaced_in": "v2.80.2-alpha"
 			},
 			"PerpsV2OffchainDelayedOrderETHPERP": {
 				"address": "0x770F4Df1DE337FF4dEE79C82E954eb6f70961e57",
-				"status": "current",
-				"keccak256": "0xbc7324e220217e83c7bff23704f94b3edc23b76ea73401b3cfbda0d8aec5a28c"
+				"status": "replaced",
+				"keccak256": "0xbc7324e220217e83c7bff23704f94b3edc23b76ea73401b3cfbda0d8aec5a28c",
+				"replaced_in": "v2.80.2-alpha"
 			}
 		}
 	},
@@ -678,41 +682,119 @@
 		"contracts": {
 			"FuturesMarketManager": {
 				"address": "0x1306e1F0eFdc84EDBE665cD9B5146C535B5B382A",
+				"status": "replaced",
+				"keccak256": "0xa3e61f9cc4cdadb555143e7b8e9a1c7819a7ade8706b8d4816dcd96abb90d0d1",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2MarketData": {
+				"address": "0x0D9eFa310a4771c444233B10bfB57e5b991ad529",
+				"status": "replaced",
+				"keccak256": "0x6c261f68839a3e1b0e0628bb5dbd894d714103d797dd4589112d56b2b8854860",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2MarketSettings": {
+				"address": "0x14fA3376E2ffa41708A0636009A35CAE8D8E2bc7",
+				"status": "replaced",
+				"keccak256": "0x12785217e8268d5794cffb53b4d4848ed8a5d147faf0ccc758a0156e65d23a1e",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2ExchangeRate": {
+				"address": "0xf160B3173a14Cd7464E1CBe5fbAEB4c90da3Ad39",
+				"status": "replaced",
+				"keccak256": "0xd999737a0ad9825757d9bd616af24e79fec7bd7d30fe70559f4aa8b1a0299716",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2MarketBTCPERP": {
+				"address": "0xf84F9e5f156F780A1458e4b9C591917a8908F119",
+				"status": "replaced",
+				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2MarketViewsBTCPERP": {
+				"address": "0x775CcD342b5e3101e36724773d2CfD1c3612B302",
+				"status": "replaced",
+				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2DelayedOrderBTCPERP": {
+				"address": "0xA65574A3FaE065F70C707702CF8cc637B0B750b1",
+				"status": "replaced",
+				"keccak256": "0x6b8e6b27af62266f12b5162b0a4a4d00ea77b05fb81bf58e622fca7d264a1ab8",
+				"replaced_in": "v2.80.2-alpha"
+			},
+			"PerpsV2OffchainDelayedOrderBTCPERP": {
+				"address": "0x95949895D7CC9eEF57F98B3c571576519F1420A9",
+				"status": "replaced",
+				"keccak256": "0xcea074c31e31f3f2c3a5d709bd871dc08918f3503f17ac8d1d6710d8557db41a",
+				"replaced_in": "v2.80.2-alpha"
+			}
+		}
+	},
+	"v2.80.2-alpha": {
+		"tag": "v2.80.2-alpha",
+		"fulltag": "v2.80.2-alpha",
+		"release": "Mintaka",
+		"network": "goerli",
+		"date": "2022-12-16T16:42:03+00:00",
+		"commit": "622f9fd42028c2e689d820bede471845aa43a47a",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0xc429dd84c9a9a7c786764c7dcaF31e30bd35BcdF",
 				"status": "current",
 				"keccak256": "0xa3e61f9cc4cdadb555143e7b8e9a1c7819a7ade8706b8d4816dcd96abb90d0d1"
 			},
 			"PerpsV2MarketData": {
-				"address": "0x0D9eFa310a4771c444233B10bfB57e5b991ad529",
+				"address": "0xc880Cd434eD843398a2E20C8C617E6a9C2690A23",
 				"status": "current",
 				"keccak256": "0x6c261f68839a3e1b0e0628bb5dbd894d714103d797dd4589112d56b2b8854860"
 			},
 			"PerpsV2MarketSettings": {
-				"address": "0x14fA3376E2ffa41708A0636009A35CAE8D8E2bc7",
+				"address": "0x11CBE5740e145B25743C328c7605c6372dF3b45f",
 				"status": "current",
 				"keccak256": "0x12785217e8268d5794cffb53b4d4848ed8a5d147faf0ccc758a0156e65d23a1e"
 			},
 			"PerpsV2ExchangeRate": {
-				"address": "0xf160B3173a14Cd7464E1CBe5fbAEB4c90da3Ad39",
+				"address": "0x59b9D61F28C6D296a917f8171e42C6fcE5C1Fbea",
 				"status": "current",
 				"keccak256": "0xd999737a0ad9825757d9bd616af24e79fec7bd7d30fe70559f4aa8b1a0299716"
 			},
 			"PerpsV2MarketBTCPERP": {
-				"address": "0xf84F9e5f156F780A1458e4b9C591917a8908F119",
+				"address": "0x86946c06ec7451F433d9c3D01Fa0b76cb83043BB",
 				"status": "current",
 				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a"
 			},
 			"PerpsV2MarketViewsBTCPERP": {
-				"address": "0x775CcD342b5e3101e36724773d2CfD1c3612B302",
+				"address": "0x35E9b5C094887B82b4230de1f0aE355964831933",
 				"status": "current",
 				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6"
 			},
 			"PerpsV2DelayedOrderBTCPERP": {
-				"address": "0xA65574A3FaE065F70C707702CF8cc637B0B750b1",
+				"address": "0x42D0e43c4F19B6e88FC40dE5bB1C28730cD9c43C",
 				"status": "current",
 				"keccak256": "0x6b8e6b27af62266f12b5162b0a4a4d00ea77b05fb81bf58e622fca7d264a1ab8"
 			},
 			"PerpsV2OffchainDelayedOrderBTCPERP": {
-				"address": "0x95949895D7CC9eEF57F98B3c571576519F1420A9",
+				"address": "0x9D31529A79dF07a723Cdc4E7e11FaB42decc4043",
+				"status": "current",
+				"keccak256": "0xcea074c31e31f3f2c3a5d709bd871dc08918f3503f17ac8d1d6710d8557db41a"
+			},
+			"PerpsV2MarketETHPERP": {
+				"address": "0x4D657c0d33739D322cDB439D65d2D56E8928d3Ea",
+				"status": "current",
+				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a"
+			},
+			"PerpsV2MarketViewsETHPERP": {
+				"address": "0xDD0C5Fb003d152d99bA68C2C2b7D432b832a43d5",
+				"status": "current",
+				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6"
+			},
+			"PerpsV2DelayedOrderETHPERP": {
+				"address": "0xF64b4E28F4B5bF83905694016b2496f5E4e7943b",
+				"status": "current",
+				"keccak256": "0x6b8e6b27af62266f12b5162b0a4a4d00ea77b05fb81bf58e622fca7d264a1ab8"
+			},
+			"PerpsV2OffchainDelayedOrderETHPERP": {
+				"address": "0xCE7760d0D9Ea15C7CCC06d2D76f34817e0d6bC1A",
 				"status": "current",
 				"keccak256": "0xcea074c31e31f3f2c3a5d709bd871dc08918f3503f17ac8d1d6710d8557db41a"
 			}
