@@ -3,6 +3,8 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 
+const ethers = require('ethers');
+
 const { excludedFunctions, getFunctionSignatures } = require('../../command-utils/perps-v2-utils');
 
 module.exports = async ({
@@ -23,6 +25,16 @@ module.exports = async ({
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY PERPS V2 MARKETS ------\n`));
+
+	const filteredLists = (originalList, newList) => {
+		const toRemove = originalList.filter(element => !newList.includes(element));
+
+		const toKeep = originalList.filter(element => newList.includes(element)).sort();
+
+		const toAdd = newList.filter(element => !originalList.includes(element));
+
+		return { toRemove, toKeep, toAdd };
+	};
 
 	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -55,12 +67,13 @@ module.exports = async ({
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	await deployer.deployContract({
+	const perpsV2ExchangeRate = await deployer.deployContract({
 		name: 'PerpsV2ExchangeRate',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	const deployedFuturesMarkets = [];
+	const exchangeRateAssociateContractAddresses = [];
 
 	for (const marketConfig of perpsv2Markets) {
 		console.log(
@@ -146,6 +159,8 @@ module.exports = async ({
 			skipResolver: true,
 		});
 
+		exchangeRateAssociateContractAddresses.push(futuresMarketDelayedOrderOffchain.address);
+
 		// Configure Contracts, Proxy and State
 
 		// Initial cleanup
@@ -219,6 +234,26 @@ module.exports = async ({
 		// Order by selectors
 		filteredFunctions = filteredFunctions.sort((a, b) => a.signature > b.signature);
 
+		// Remove unknown selectors
+		const filteredFunctionSelectors = filteredFunctions.map(ff => ff.signature);
+		const routesLength = await futuresMarketProxy.getRoutesLength();
+		const routes = (await futuresMarketProxy.getRoutesPage(0, routesLength)).map(
+			route => route.selector
+		);
+		const { toRemove } = filteredLists(routes, filteredFunctionSelectors);
+
+		for (const f of toRemove) {
+			await runStep({
+				contract: 'ProxyPerpsV2',
+				target: futuresMarketProxy,
+				read: 'getRoute',
+				readArg: [f],
+				expected: readResult => readResult.implementation === ethers.constants.AddressZero,
+				write: 'removeRoute',
+				writeArg: [f],
+			});
+		}
+
 		// Add Missing selectors
 		for (const f of filteredFunctions) {
 			await runStep({
@@ -240,17 +275,49 @@ module.exports = async ({
 		}
 	}
 
-	// Now replace the relevant markets in the manager (if any)
+	// Add/Remove the relevant associated contracts in PerpsV2ExchangeRate
+	if (perpsV2ExchangeRate && exchangeRateAssociateContractAddresses.length > 0) {
+		const knownAssociates = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
 
+		const { toRemove, toKeep, toAdd } = filteredLists(
+			knownAssociates,
+			exchangeRateAssociateContractAddresses
+		);
+
+		if (toRemove.length > 0) {
+			await runStep({
+				contract: `PerpsV2ExchangeRate`,
+				target: perpsV2ExchangeRate,
+				read: 'associatedContracts()',
+				expected: contracts => JSON.stringify(contracts.slice().sort()) === JSON.stringify(toKeep),
+				write: 'removeAssociatedContracts',
+				writeArg: [toRemove],
+			});
+		}
+
+		if (toAdd.length > 0) {
+			await runStep({
+				contract: `PerpsV2ExchangeRate`,
+				target: perpsV2ExchangeRate,
+				read: 'associatedContracts()',
+				expected: contracts =>
+					JSON.stringify(contracts.slice().sort()) ===
+					JSON.stringify(exchangeRateAssociateContractAddresses.slice().sort()),
+				write: 'addAssociatedContracts',
+				writeArg: [toAdd],
+				gasLimit: 150e3 * toAdd.length, // extra gas per market
+			});
+		}
+	}
+
+	// Replace the relevant markets in the manager (if any)
 	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
 		const managerKnownMarkets = Array.from(
 			await futuresMarketManager['allMarkets(bool)'](true)
 		).sort();
 
-		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));
-		const toKeep = managerKnownMarkets
-			.filter(market => deployedFuturesMarkets.includes(market))
-			.sort();
+		const { toRemove, toKeep, toAdd } = filteredLists(managerKnownMarkets, deployedFuturesMarkets);
+
 		if (toRemove.length > 0) {
 			await runStep({
 				contract: `FuturesMarketManager`,
@@ -262,8 +329,6 @@ module.exports = async ({
 				writeArg: [toRemove],
 			});
 		}
-
-		const toAdd = deployedFuturesMarkets.filter(market => !managerKnownMarkets.includes(market));
 
 		if (toAdd.length > 0) {
 			await runStep({

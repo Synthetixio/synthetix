@@ -760,7 +760,9 @@
 					"PerpsV2MarketData",
 					"PerpsV2ExchangeRate",
 					"PerpsV2Proxy.+",
-					"PerpsV2Market.+"
+					"PerpsV2Market.+",
+					"PerpsV2DelayedOrder.+",
+					"PerpsV2OffchainDelayedOrder.+"
 				]
 			}
 		},
