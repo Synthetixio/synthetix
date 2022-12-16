@@ -92,6 +92,9 @@ module.exports = async ({
 
 		// Deploy contracts
 		// Proxy
+		const previousFuturesMarketProxy = deployer.getExistingAddress({
+			name: marketProxyName,
+		});
 		const futuresMarketProxy = await deployer.deployContract({
 			name: marketProxyName,
 			source: 'ProxyPerpsV2',
@@ -101,6 +104,9 @@ module.exports = async ({
 		});
 
 		// State
+		const previousFuturesMarketState = deployer.getExistingAddress({
+			name: marketStateName,
+		});
 		const futuresMarketState = await deployer.deployContract({
 			name: marketStateName,
 			source: 'PerpsV2MarketState',
@@ -109,6 +115,7 @@ module.exports = async ({
 		});
 
 		// Market
+		const previousFuturesMarket = deployer.getExistingAddress({ name: marketName });
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
 			source: 'PerpsV2Market',
@@ -132,6 +139,9 @@ module.exports = async ({
 		});
 
 		// DelayedOrder
+		const previousFuturesMarketDelayedOrder = deployer.getExistingAddress({
+			name: marketDelayedOrderName,
+		});
 		const futuresMarketDelayedOrder = await deployer.deployContract({
 			name: marketDelayedOrderName,
 			source: 'PerpsV2MarketDelayedOrders',
@@ -146,6 +156,9 @@ module.exports = async ({
 		});
 
 		// Offchain DelayedOrder
+		const previousFuturesMarketDelayedOrderOffchain = deployer.getExistingAddress({
+			name: marketOffchainDelayedOrderName,
+		});
 		const futuresMarketDelayedOrderOffchain = await deployer.deployContract({
 			name: marketOffchainDelayedOrderName,
 			source: 'PerpsV2MarketDelayedOrdersOffchain',
@@ -164,66 +177,84 @@ module.exports = async ({
 		// Configure Contracts, Proxy and State
 
 		// Initial cleanup
-		await runStep({
-			contract: `PerpsV2MarketState`,
-			target: futuresMarketState,
-			write: 'removeAssociatedContracts',
-			writeArg: [[account]],
-		});
+		const stateChanged = previousFuturesMarketState !== futuresMarketState.address;
+		const stateOrProxyChanged =
+			stateChanged || previousFuturesMarketProxy !== futuresMarketProxy.address;
+
+		if (stateChanged) {
+			await runStep({
+				contract: `PerpsV2MarketState`,
+				target: futuresMarketState,
+				write: 'removeAssociatedContracts',
+				writeArg: [[account]],
+			});
+		}
 
 		// Configure Views
 		filteredFunctions.push(...getFunctionSignatures(futuresMarketViews, excludedFunctions));
 
 		// Configure Next Price
-		await runStep({
-			contract: `PerpsV2MarketState`,
-			target: futuresMarketState,
-			write: 'addAssociatedContracts',
-			writeArg: [[futuresMarketDelayedOrder.address]],
-		});
+		if (
+			stateOrProxyChanged ||
+			previousFuturesMarketDelayedOrder !== futuresMarketDelayedOrder.address
+		) {
+			await runStep({
+				contract: `PerpsV2MarketState`,
+				target: futuresMarketState,
+				write: 'addAssociatedContracts',
+				writeArg: [[futuresMarketDelayedOrder.address]],
+			});
 
-		await runStep({
-			contract: `PerpsV2MarketDelayedOrders`,
-			target: futuresMarketDelayedOrder,
-			write: 'setProxy',
-			writeArg: [futuresMarketProxy.address],
-		});
+			await runStep({
+				contract: `PerpsV2MarketDelayedOrders`,
+				target: futuresMarketDelayedOrder,
+				write: 'setProxy',
+				writeArg: [futuresMarketProxy.address],
+			});
+		}
 
 		filteredFunctions.push(...getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions));
 
 		// Configure Offchain Next Price
-		await runStep({
-			contract: `PerpsV2MarketState`,
-			target: futuresMarketState,
-			write: 'addAssociatedContracts',
-			writeArg: [[futuresMarketDelayedOrderOffchain.address]],
-		});
+		if (
+			stateOrProxyChanged ||
+			previousFuturesMarketDelayedOrderOffchain !== futuresMarketDelayedOrderOffchain.address
+		) {
+			await runStep({
+				contract: `PerpsV2MarketState`,
+				target: futuresMarketState,
+				write: 'addAssociatedContracts',
+				writeArg: [[futuresMarketDelayedOrderOffchain.address]],
+			});
 
-		await runStep({
-			contract: `PerpsV2MarketDelayedOrdersOffchain`,
-			target: futuresMarketDelayedOrderOffchain,
-			write: 'setProxy',
-			writeArg: [futuresMarketProxy.address],
-		});
+			await runStep({
+				contract: `PerpsV2MarketDelayedOrdersOffchain`,
+				target: futuresMarketDelayedOrderOffchain,
+				write: 'setProxy',
+				writeArg: [futuresMarketProxy.address],
+			});
+		}
 
 		filteredFunctions.push(
 			...getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions)
 		);
 
 		// Configure Market
-		await runStep({
-			contract: `PerpsV2MarketState`,
-			target: futuresMarketState,
-			write: 'addAssociatedContracts',
-			writeArg: [[futuresMarket.address]],
-		});
+		if (stateOrProxyChanged || previousFuturesMarket !== futuresMarket.address) {
+			await runStep({
+				contract: `PerpsV2MarketState`,
+				target: futuresMarketState,
+				write: 'addAssociatedContracts',
+				writeArg: [[futuresMarket.address]],
+			});
 
-		await runStep({
-			contract: `PerpsV2Market`,
-			target: futuresMarket,
-			write: 'setProxy',
-			writeArg: [futuresMarketProxy.address],
-		});
+			await runStep({
+				contract: `PerpsV2Market`,
+				target: futuresMarket,
+				write: 'setProxy',
+				writeArg: [futuresMarketProxy.address],
+			});
+		}
 
 		filteredFunctions.push(...getFunctionSignatures(futuresMarket, excludedFunctions));
 
