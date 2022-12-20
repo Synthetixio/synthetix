@@ -1,1 +1,27 @@
-[]
+[
+	{
+		"marketKey": "sETHPERP",
+		"asset": "sETH",
+		"makerFee": "0.007",
+		"takerFee": "0.01",
+		"overrideCommitFee": "0",
+		"takerFeeDelayedOrder": "0.001",
+		"makerFeeDelayedOrder": "0.0005",
+		"takerFeeOffchainDelayedOrder": "0.001",
+		"makerFeeOffchainDelayedOrder": "0.0005",
+		"nextPriceConfirmWindow": "2",
+		"delayedOrderConfirmWindow": "120",
+		"minDelayTimeDelta": "60",
+		"maxDelayTimeDelta": "6000",
+		"offchainDelayedOrderMinAge": "15",
+		"offchainDelayedOrderMaxAge": "120",
+		"maxLeverage": "27",
+		"maxMarketValue": "20000",
+		"maxFundingVelocity": "3",
+		"skewScale": "1000000",
+		"offchainPriceDivergence": "0.02",
+		"offchainMarketKey": "ocETHPERP",
+		"paused": false,
+		"offchainPaused": false
+	}
+]

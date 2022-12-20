@@ -747,7 +747,8 @@
 		{
 			"sip": 279,
 			"layer": "both",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 280,
@@ -764,17 +765,20 @@
 					"PerpsV2DelayedOrder.+",
 					"PerpsV2OffchainDelayedOrder.+"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 281,
 			"layer": "both",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 285,
 			"layer": "both",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 299,
@@ -1469,7 +1473,8 @@
 				"major": 2,
 				"minor": 80
 			},
-			"sips": [279, 280, 281, 285]
+			"sips": [279, 280, 281, 285],
+			"released": true
 		},
 		{
 			"name": "Mintaka (Optimism)",
@@ -1478,7 +1483,8 @@
 				"major": 2,
 				"minor": 80
 			},
-			"sips": [279, 280, 281, 285]
+			"sips": [279, 280, 281, 285],
+			"released": true
 		}
 	]
 }
