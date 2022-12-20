@@ -4,6 +4,7 @@
 		"asset": "sBTC",
 		"makerFee": "0.007",
 		"takerFee": "0.01",
+		"overrideCommitFee": "0",
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0005",
 		"takerFeeOffchainDelayedOrder": "0.01",
@@ -20,13 +21,15 @@
 		"skewScale": "50000",
 		"offchainPriceDivergence": "0.05",
 		"offchainMarketKey": "ocBTCPERP",
-		"paused": false
+		"paused": false,
+		"offchainPaused": true
 	},
 	{
 		"marketKey": "sETHPERP",
 		"asset": "sETH",
 		"makerFee": "0.007",
 		"takerFee": "0.01",
+		"overrideCommitFee": "0",
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0005",
 		"takerFeeOffchainDelayedOrder": "0.001",
@@ -43,6 +46,7 @@
 		"skewScale": "1000000",
 		"offchainPriceDivergence": "0.02",
 		"offchainMarketKey": "ocETHPERP",
-		"paused": false
+		"paused": false,
+		"offchainPaused": false
 	}
 ]

@@ -18,17 +18,7 @@ interface IPerpsV2MarketViews {
 
     function fundingSequence(uint index) external view returns (int128 netFunding);
 
-    function positions(address account)
-        external
-        view
-        returns (
-            IPerpsV2MarketBaseTypes.Position memory
-            // uint64 id,
-            // uint64 lastFundingIndex,
-            // uint128 margin,
-            // uint128 lastPrice,
-            // int128 size
-        );
+    function positions(address account) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
     function assetPrice() external view returns (uint price, bool invalid);
 
@@ -38,7 +28,7 @@ interface IPerpsV2MarketViews {
 
     function currentFundingRate() external view returns (int fundingRate);
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity);
+    function currentFundingVelocity() external view returns (int fundingVelocity);
 
     function unrecordedFunding() external view returns (int funding, bool invalid);
 
@@ -62,11 +52,15 @@ interface IPerpsV2MarketViews {
 
     function canLiquidate(address account) external view returns (bool);
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid);
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid);
 
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external

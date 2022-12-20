@@ -3,10 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "../PerpsV2Market.sol";
 import "../interfaces/IPerpsV2MarketViews.sol";
-import "../interfaces/IPerpsV2MarketDelayedOrders.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
-contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2MarketDelayedOrders {
+contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
     constructor(
         address payable _proxy,
         address _marketState,
@@ -103,13 +102,13 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     }
 
     /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
-    function fillPriceWithBasePrice(int size, uint basePrice) external view returns (uint, bool) {
+    function fillPriceWithBasePrice(int sizeDelta, uint basePrice) external view returns (uint, bool) {
         uint price = basePrice;
         bool invalid;
         if (basePrice == 0) {
             (price, invalid) = _assetPrice();
         }
-        return (_fillPrice(size, price), invalid);
+        return (_fillPrice(sizeDelta, price), invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
@@ -129,7 +128,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return 0;
     }
 
-    function currentFundingVelocity() external view returns (int fundingRateVelocity) {
+    function currentFundingVelocity() external view returns (int fundingVelocity) {
         return 0;
     }
 
@@ -175,13 +174,18 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
         return false;
     }
 
-    function orderFee(int sizeDelta) external view returns (uint fee, bool invalid) {
+    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
+        external
+        view
+        returns (uint fee, bool invalid)
+    {
         return (0, false);
     }
 
     function postTradeDetails(
         int sizeDelta,
         uint tradePrice,
+        IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
     )
         external
@@ -197,41 +201,4 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews, IPerpsV2Ma
     {
         return (0, 0, 0, 0, 0, IPerpsV2MarketBaseTypes.Status.Ok);
     }
-
-    /* ---------- Delayed Orders ---------- */
-
-    function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return DelayedOrder(false, 0, 0, 0, 0, 0, 0, 0, bytes32(0));
-    }
-
-    function submitDelayedOrder(
-        int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
-    ) external {}
-
-    function submitDelayedOrderWithTracking(
-        int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta,
-        bytes32 trackingCode
-    ) external {}
-
-    function cancelDelayedOrder(address account) external {}
-
-    function executeDelayedOrder(address account) external {}
-
-    /* ---------- Offchain Delayed Orders ---------- */
-
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {}
-
-    function submitOffchainDelayedOrderWithTracking(
-        int sizeDelta,
-        uint priceImpactDelta,
-        bytes32 trackingCode
-    ) external {}
-
-    function cancelOffchainDelayedOrder(address account) external {}
-
-    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {}
 }

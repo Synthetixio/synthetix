@@ -10,7 +10,7 @@ import "./interfaces/IPerpsV2Market.sol";
  * =================
  *
  * PerpsV2 markets allow users leveraged exposure to an asset, long or short.
- * A user must post some margin in order to open a futures account, and profits/losses are
+ * A user must post some margin in order to open a perpsV2 account, and profits/losses are
  * continually tallied against this margin. If a user's margin runs out, then their position is closed
  * by a liquidation keeper, which is rewarded with a flat fee extracted from the margin.
  *
@@ -31,7 +31,7 @@ import "./interfaces/IPerpsV2Market.sol";
  * The contract architecture is as follows:
  *
  *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
- *                                  futures markets and the rest of the system. It accumulates the total debt
+ *                                  futures and perpsV2 markets and the rest of the system. It accumulates the total debt
  *                                  over all markets, and issues and burns sUSD on each market's behalf.
  *
  *     - PerpsV2MarketSettings.sol: Holds the settings for each market in the global FlexibleStorage instance used
@@ -153,7 +153,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _transferMargin(marginDelta, price, messageSender);
     }
@@ -164,7 +164,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      */
     function withdrawAllMargin() external onlyProxy {
         address sender = messageSender;
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         int marginDelta = -int(_accessibleMargin(marketState.positions(sender), price));
         _transferMargin(marginDelta, price, sender);
@@ -195,7 +195,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         uint priceImpactDelta,
         bytes32 trackingCode
     ) internal onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _trade(
             messageSender,
@@ -225,7 +225,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     function _closePosition(uint priceImpactDelta, bytes32 trackingCode) internal onlyProxy {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
         _trade(
             messageSender,
@@ -287,7 +287,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
     function liquidatePosition(address account) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks();
+        uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding();
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);

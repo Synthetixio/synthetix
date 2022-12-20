@@ -9,14 +9,14 @@ const marketKey = toBytes32('sETH-perps');
 const baseAsset = toBytes32('sETH');
 
 contract('PerpsV2MarketState', accounts => {
-	let futuresMarketState, mockPerpsV2StateConsumer;
+	let perpsV2MarketState, mockPerpsV2StateConsumer;
 
 	const owner = accounts[1];
 	const user = accounts[2];
 	const user2 = accounts[3];
 
 	beforeEach(async () => {
-		futuresMarketState = await setupContract({
+		perpsV2MarketState = await setupContract({
 			accounts,
 			contract: 'PerpsV2MarketState',
 			args: [owner, [owner], baseAsset, marketKey],
@@ -26,15 +26,15 @@ contract('PerpsV2MarketState', accounts => {
 		mockPerpsV2StateConsumer = await setupContract({
 			accounts,
 			contract: 'MockPerpsV2StateConsumer',
-			args: [futuresMarketState.address],
+			args: [perpsV2MarketState.address],
 			skipPostDeploy: true,
 		});
 
-		await futuresMarketState.removeAssociatedContracts([owner], {
+		await perpsV2MarketState.removeAssociatedContracts([owner], {
 			from: owner,
 		});
 
-		await futuresMarketState.addAssociatedContracts([mockPerpsV2StateConsumer.address], {
+		await perpsV2MarketState.addAssociatedContracts([mockPerpsV2StateConsumer.address], {
 			from: owner,
 		});
 	});
@@ -42,7 +42,7 @@ contract('PerpsV2MarketState', accounts => {
 	describe('Basic parameters', () => {
 		it('Only expected functions are mutative PerpsV2MarketState', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: futuresMarketState.abi,
+				abi: perpsV2MarketState.abi,
 				ignoreParents: ['Owned', 'StateShared'],
 				expected: [
 					'setBaseAsset',
@@ -64,7 +64,7 @@ contract('PerpsV2MarketState', accounts => {
 
 		it('Only associate functions cannot be called by unauthorized contracts/accounts', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setMarketKey,
+				fnc: perpsV2MarketState.setMarketKey,
 				args: [toBytes32('newMarketKey')],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -72,7 +72,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setBaseAsset,
+				fnc: perpsV2MarketState.setBaseAsset,
 				args: [toBytes32('newBaseAsset')],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -80,7 +80,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setMarketSize,
+				fnc: perpsV2MarketState.setMarketSize,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -88,7 +88,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setEntryDebtCorrection,
+				fnc: perpsV2MarketState.setEntryDebtCorrection,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -96,7 +96,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setNextPositionId,
+				fnc: perpsV2MarketState.setNextPositionId,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -104,7 +104,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setMarketSkew,
+				fnc: perpsV2MarketState.setMarketSkew,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -112,7 +112,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.setFundingLastRecomputed,
+				fnc: perpsV2MarketState.setFundingLastRecomputed,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -120,7 +120,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.pushFundingSequence,
+				fnc: perpsV2MarketState.pushFundingSequence,
 				args: [1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -128,7 +128,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.updatePosition,
+				fnc: perpsV2MarketState.updatePosition,
 				args: [user, 1, 1, 1, 1, 1],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -136,7 +136,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.updateDelayedOrder,
+				fnc: perpsV2MarketState.updateDelayedOrder,
 				args: [user, false, 1, 1, 1, 1, 1, 1, 1, toBytes32('code')],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -144,7 +144,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.deletePosition,
+				fnc: perpsV2MarketState.deletePosition,
 				args: [user],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -152,7 +152,7 @@ contract('PerpsV2MarketState', accounts => {
 			});
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketState.deleteDelayedOrder,
+				fnc: perpsV2MarketState.deleteDelayedOrder,
 				args: [user],
 				accounts: [owner, user],
 				reason: 'Only an associated contract can perform this action',
@@ -166,7 +166,7 @@ contract('PerpsV2MarketState', accounts => {
 			paramName,
 			singleParameter,
 			readBy,
-			marketStateContract = futuresMarketState,
+			marketStateContract = perpsV2MarketState,
 			marketStateConsumer = mockPerpsV2StateConsumer
 		) {
 			await marketStateConsumer['set' + paramName.charAt(0).toUpperCase() + paramName.slice(1)](
@@ -194,8 +194,8 @@ contract('PerpsV2MarketState', accounts => {
 		});
 
 		it('update and read single parameters', async () => {
-			assert.equal(await futuresMarketState.marketKey(), marketKey);
-			assert.equal(await futuresMarketState.baseAsset(), baseAsset);
+			assert.equal(await perpsV2MarketState.marketKey(), marketKey);
+			assert.equal(await perpsV2MarketState.baseAsset(), baseAsset);
 			await updateAndCheckSingleParameter('marketSize', 42, user);
 			await updateAndCheckSingleParameter('entryDebtCorrection', 43, user);
 			await updateAndCheckSingleParameter('nextPositionId', 44, user);
@@ -205,35 +205,35 @@ contract('PerpsV2MarketState', accounts => {
 		});
 
 		it('push funding sequence', async () => {
-			const previousFundingSequenceLength = await futuresMarketState.fundingSequenceLength();
+			const previousFundingSequenceLength = await perpsV2MarketState.fundingSequenceLength();
 			await mockPerpsV2StateConsumer.pushFundingSequence(100);
 
 			assert.bnEqual(
-				await futuresMarketState.fundingSequenceLength(),
+				await perpsV2MarketState.fundingSequenceLength(),
 				previousFundingSequenceLength.add(toBN(1))
 			);
 
 			assert.bnEqual(
-				await futuresMarketState.fundingSequence(previousFundingSequenceLength),
+				await perpsV2MarketState.fundingSequence(previousFundingSequenceLength),
 				toBN(100)
 			);
 		});
 
 		it('updates a Position', async () => {
-			assert.bnEqual((await futuresMarketState.positions(user2)).id, 0);
+			assert.bnEqual((await perpsV2MarketState.positions(user2)).id, 0);
 			await mockPerpsV2StateConsumer.updatePosition(user2, 42, 2, 3, 4, 5);
-			assert.bnEqual((await futuresMarketState.positions(user2)).id, 42);
+			assert.bnEqual((await perpsV2MarketState.positions(user2)).id, 42);
 		});
 
 		it('deletes a Position', async () => {
 			await mockPerpsV2StateConsumer.updatePosition(user2, 1337, 2, 3, 4, 5);
-			assert.bnEqual((await futuresMarketState.positions(user2)).id, 1337);
+			assert.bnEqual((await perpsV2MarketState.positions(user2)).id, 1337);
 			await mockPerpsV2StateConsumer.deletePosition(user2);
-			assert.bnEqual((await futuresMarketState.positions(user2)).id, 0);
+			assert.bnEqual((await perpsV2MarketState.positions(user2)).id, 0);
 		});
 
 		it('updates a DelayedOrder', async () => {
-			assert.bnEqual((await futuresMarketState.delayedOrders(user2)).sizeDelta, 0);
+			assert.bnEqual((await perpsV2MarketState.delayedOrders(user2)).sizeDelta, 0);
 			await mockPerpsV2StateConsumer.updateDelayedOrder(
 				user2,
 				true,
@@ -246,7 +246,7 @@ contract('PerpsV2MarketState', accounts => {
 				7,
 				toBytes32('code')
 			);
-			assert.bnEqual((await futuresMarketState.delayedOrders(user2)).sizeDelta, 42);
+			assert.bnEqual((await perpsV2MarketState.delayedOrders(user2)).sizeDelta, 42);
 		});
 
 		it('deletes a DelayedOrder', async () => {
@@ -262,15 +262,15 @@ contract('PerpsV2MarketState', accounts => {
 				7,
 				toBytes32('code')
 			);
-			assert.bnEqual((await futuresMarketState.delayedOrders(user2)).sizeDelta, 1337);
+			assert.bnEqual((await perpsV2MarketState.delayedOrders(user2)).sizeDelta, 1337);
 			await mockPerpsV2StateConsumer.deleteDelayedOrder(user2);
-			assert.bnEqual((await futuresMarketState.delayedOrders(user2)).sizeDelta, 0);
+			assert.bnEqual((await perpsV2MarketState.delayedOrders(user2)).sizeDelta, 0);
 		});
 
 		describe('can set marketKey and baseAsset if unset', () => {
-			let anotherFuturesMarketState, anotherMarketStateConsumer;
+			let anotherPerpsV2MarketState, anotherMarketStateConsumer;
 			beforeEach('setup new unset contracts', async () => {
-				anotherFuturesMarketState = await setupContract({
+				anotherPerpsV2MarketState = await setupContract({
 					accounts,
 					contract: 'PerpsV2MarketState',
 					args: [owner, [owner], toBytes32(''), toBytes32('')],
@@ -280,15 +280,15 @@ contract('PerpsV2MarketState', accounts => {
 				anotherMarketStateConsumer = await setupContract({
 					accounts,
 					contract: 'MockPerpsV2StateConsumer',
-					args: [anotherFuturesMarketState.address],
+					args: [anotherPerpsV2MarketState.address],
 					skipPostDeploy: true,
 				});
 
-				await anotherFuturesMarketState.removeAssociatedContracts([owner], {
+				await anotherPerpsV2MarketState.removeAssociatedContracts([owner], {
 					from: owner,
 				});
 
-				await anotherFuturesMarketState.addAssociatedContracts(
+				await anotherPerpsV2MarketState.addAssociatedContracts(
 					[anotherMarketStateConsumer.address],
 					{
 						from: owner,
@@ -301,7 +301,7 @@ contract('PerpsV2MarketState', accounts => {
 					'marketKey',
 					toBytes32('someFancyMarketKey'),
 					user,
-					anotherFuturesMarketState,
+					anotherPerpsV2MarketState,
 					anotherMarketStateConsumer
 				);
 			});
@@ -311,7 +311,7 @@ contract('PerpsV2MarketState', accounts => {
 					'baseAsset',
 					toBytes32('someFancyBaseAsset'),
 					user,
-					anotherFuturesMarketState,
+					anotherPerpsV2MarketState,
 					anotherMarketStateConsumer
 				);
 			});
