@@ -423,6 +423,14 @@ class Deployer {
 		const { abi } = this.deployment.sources[source];
 		return this.makeContract({ abi, address });
 	}
+
+	getExistingAddress({ name }) {
+		const existingAddress = this.deployment.targets[name]
+			? this.deployment.targets[name].address
+			: '';
+
+		return existingAddress;
+	}
 }
 
 module.exports = Deployer;
