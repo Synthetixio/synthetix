@@ -370,11 +370,11 @@ module.exports = ({ web3 } = {}) => {
 
 		assert.ok(
 			actual.gte(expected.sub(variance)),
-			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()})`
 		);
 		assert.ok(
 			actual.lte(expected.add(variance)),
-			`${actual} !~= ${expected} (maxVariance ${variance.toString()}`
+			`${actual} !~= ${expected} (maxVariance ${variance.toString()})`
 		);
 	};
 

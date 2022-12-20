@@ -103,9 +103,6 @@ module.exports = {
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 
-			// // for debugging
-			// console.log(i, arg.toString(), value.toString())
-
 			if (type === 'address') {
 				assert.equal(
 					web3.utils.toChecksumAddress(value),
@@ -187,6 +184,28 @@ module.exports = {
 		}
 		if (!skipPassCheck && address) {
 			await fnc(...args, { from: address });
+		}
+	},
+
+	async onlyGivenAddressesCanInvoke({
+		fnc,
+		args,
+		accounts,
+		addresses = [],
+		skipPassCheck = false,
+		reason = undefined,
+	}) {
+		for (const user of accounts) {
+			if (addresses.includes(user)) {
+				continue;
+			}
+
+			await assert.revert(fnc(...args, { from: user }), reason);
+		}
+		if (!skipPassCheck && addresses.length > 0) {
+			for (const address of addresses) {
+				await fnc(...args, { from: address });
+			}
 		}
 	},
 
