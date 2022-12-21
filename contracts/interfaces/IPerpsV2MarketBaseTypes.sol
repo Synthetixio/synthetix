@@ -3,9 +3,12 @@ pragma solidity ^0.5.16;
 interface IPerpsV2MarketBaseTypes {
     /* ========== TYPES ========== */
 
+    enum OrderType {Atomic, Delayed, Offchain}
+
     enum Status {
         Ok,
         InvalidPrice,
+        InvalidOrderType,
         PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,

@@ -604,6 +604,11 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(summary.marketSize, await market.marketSize());
 			assert.equal(summary.marketSkew, await market.marketSkew());
 			assert.equal(summary.currentFundingRate, await market.currentFundingRate());
+			assert.isBoolean(summary.proxied);
+			assert.equal(
+				summary.currentFundingVelocity,
+				summary.proxied ? await market.currentFundingVelocity() : toBN(0)
+			);
 		});
 
 		it('For market keys', async () => {
@@ -631,6 +636,11 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(btcSummary.marketSize, await markets[0].marketSize());
 			assert.equal(btcSummary.marketSkew, await markets[0].marketSkew());
 			assert.equal(btcSummary.currentFundingRate, await markets[0].currentFundingRate());
+			assert.isBoolean(btcSummary.proxied);
+			assert.equal(
+				btcSummary.currentFundingVelocity,
+				btcSummary.proxied ? await markets[0].currentFundingVelocity() : toBN(0)
+			);
 
 			assert.equal(ethSummary.market, markets[1].address);
 			assert.equal(ethSummary.asset, toBytes32(assets[1]));
@@ -639,6 +649,11 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(ethSummary.marketSize, await markets[1].marketSize());
 			assert.equal(ethSummary.marketSkew, await markets[1].marketSkew());
 			assert.equal(ethSummary.currentFundingRate, await markets[1].currentFundingRate());
+			assert.isBoolean(ethSummary.proxied);
+			assert.equal(
+				ethSummary.currentFundingVelocity,
+				ethSummary.proxied ? await markets[1].currentFundingVelocity() : toBN(0)
+			);
 
 			assert.equal(linkSummary.market, await futuresMarketManager.marketForKey(toBytes32('sLINK')));
 			assert.equal(linkSummary.asset, toBytes32('LINK'));
@@ -646,6 +661,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.equal(linkSummary.marketSize, toUnit(0));
 			assert.equal(linkSummary.marketSkew, toUnit(0));
 			assert.equal(linkSummary.currentFundingRate, toUnit(0));
+			assert.equal(linkSummary.currentFundingVelocity, toUnit(0));
 		});
 	});
 });

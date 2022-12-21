@@ -86,6 +86,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Status.InvalidOrderType)] = "Invalid order type";
         _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Status.CanLiquidate)] = "Position can be liquidated";
         _errorMessages[uint8(Status.CannotLiquidate)] = "Position cannot be liquidated";
@@ -333,7 +334,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function _accessibleMargin(Position memory position, uint price) internal view returns (uint) {
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
-        // This should guarantee that the value returned here can always been withdrawn, but there may be
+        // This should guarantee that the value returned here can always be withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
         uint milli = uint(_UNIT / 1000);
         int maxLeverage = int(_maxLeverage(_marketKey()).sub(milli));
@@ -541,9 +542,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // check that new position margin is above liquidation margin
         // (above, in _recomputeMarginWithDelta() we checked the old position, here we check the new one)
-        // Liquidation margin is considered without a fee, because it wouldn't make sense to allow
+        //
+        // Liquidation margin is considered without a fee (but including premium), because it wouldn't make sense to allow
         // a trade that will make the position liquidatable.
-        if (newMargin <= _liquidationMargin(newPos.size, params.price)) {
+        uint liqPremium = _liquidationPremium(newPos.size, params.price);
+        uint liqMargin = _liquidationMargin(newPos.size, params.price).add(liqPremium);
+        if (newMargin <= liqMargin) {
             return (newPos, 0, Status.CanLiquidate);
         }
 

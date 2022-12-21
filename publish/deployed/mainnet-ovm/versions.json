@@ -978,8 +978,9 @@
 			},
 			"FuturesMarketManager": {
 				"address": "0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B",
-				"status": "current",
-				"keccak256": "0xfda132bc4811a2112e611fbf50373a9ae1d4effd6a96b4503ace474ac795f2da"
+				"status": "replaced",
+				"keccak256": "0xfda132bc4811a2112e611fbf50373a9ae1d4effd6a96b4503ace474ac795f2da",
+				"replaced_in": "v2.80.3"
 			},
 			"FuturesMarketData": {
 				"address": "0xC51aeDBEC3aCD26650a7E85B6909E8AEc4d0F19e",
@@ -1534,6 +1535,66 @@
 				"address": "0xB589Af3f2e3377A9a57da74bE1b6598926479505",
 				"status": "current",
 				"keccak256": "0x04ca15c8a874862ae8997031bbb2330db2fb7ecd489b46b86645f545151ae581"
+			}
+		}
+	},
+	"v2.80.3": {
+		"tag": "v2.80.3",
+		"fulltag": "v2.80.3",
+		"release": "Mintaka",
+		"network": "mainnet",
+		"date": "2022-12-20T12:34:25-05:00",
+		"commit": "0b6e9a34e6324c95921602c1b1fa65f47682a166",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0xdb89f3fc45A707Dd49781495f77f8ae69bF5cA6e",
+				"status": "current",
+				"keccak256": "0xa3e61f9cc4cdadb555143e7b8e9a1c7819a7ade8706b8d4816dcd96abb90d0d1"
+			},
+			"PerpsV2MarketData": {
+				"address": "0xF7D3D05cCeEEcC9d77864Da3DdE67Ce9a0215A9D",
+				"status": "current",
+				"keccak256": "0x6c261f68839a3e1b0e0628bb5dbd894d714103d797dd4589112d56b2b8854860"
+			},
+			"PerpsV2MarketSettings": {
+				"address": "0xd442Dc2Ac1f3cA1C86C8329246e47Ca0C91D0471",
+				"status": "current",
+				"keccak256": "0x12785217e8268d5794cffb53b4d4848ed8a5d147faf0ccc758a0156e65d23a1e"
+			},
+			"PerpsV2ExchangeRate": {
+				"address": "0x4aD2d14Bed21062Ef7B85C378F69cDdf6ED7489C",
+				"status": "current",
+				"keccak256": "0xd999737a0ad9825757d9bd616af24e79fec7bd7d30fe70559f4aa8b1a0299716"
+			},
+			"PerpsV2ProxyETHPERP": {
+				"address": "0x2B3bb4c683BFc5239B029131EEf3B1d214478d93",
+				"status": "current",
+				"keccak256": "0xe79b34032f845059ce5c877d5ea079502d4e34532226d10db26ae5f23f693109"
+			},
+			"PerpsV2MarketStateETHPERP": {
+				"address": "0x038dC05D68ED32F23e6856c0D44b0696B325bfC8",
+				"status": "current",
+				"keccak256": "0xf680ad7a51bbf8491940c287780b2be785e6c2a795fa8a03de13118480e4cdc9"
+			},
+			"PerpsV2MarketETHPERP": {
+				"address": "0x517D0676E80115c1Aab36332B1732567Ce6D7010",
+				"status": "current",
+				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a"
+			},
+			"PerpsV2MarketViewsETHPERP": {
+				"address": "0xa1245E5B52555e40aa8A3Ffb95C5C426c7c7ef12",
+				"status": "current",
+				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6"
+			},
+			"PerpsV2DelayedOrderETHPERP": {
+				"address": "0xfe4950F0D73014039BE3CE900d5dcD24Ded54cCB",
+				"status": "current",
+				"keccak256": "0x6b8e6b27af62266f12b5162b0a4a4d00ea77b05fb81bf58e622fca7d264a1ab8"
+			},
+			"PerpsV2OffchainDelayedOrderETHPERP": {
+				"address": "0x36841F7Ff6fBD318202A5101F8426eBb051d5e4d",
+				"status": "current",
+				"keccak256": "0xcea074c31e31f3f2c3a5d709bd871dc08918f3503f17ac8d1d6710d8557db41a"
 			}
 		}
 	}

@@ -4221,8 +4221,9 @@
 			},
 			"FuturesMarketManager": {
 				"address": "0x834Ef6c82D431Ac9A7A6B66325F185b2430780D7",
-				"status": "current",
-				"keccak256": "0x70d93adddedc13bddf1a98d5846f06736949d0d26d0547bacc656be9ee829055"
+				"status": "replaced",
+				"keccak256": "0x70d93adddedc13bddf1a98d5846f06736949d0d26d0547bacc656be9ee829055",
+				"replaced_in": "v2.80.3"
 			}
 		}
 	},
@@ -4665,6 +4666,21 @@
 				"address": "0x8e9757479D5ad4E7f9d951B60d39F5220b893d6c",
 				"status": "current",
 				"keccak256": "0x04ca15c8a874862ae8997031bbb2330db2fb7ecd489b46b86645f545151ae581"
+			}
+		}
+	},
+	"v2.80.3": {
+		"tag": "v2.80.3",
+		"fulltag": "v2.80.3",
+		"release": "Mintaka",
+		"network": "mainnet",
+		"date": "2022-12-20T12:34:25-05:00",
+		"commit": "0b6e9a34e6324c95921602c1b1fa65f47682a166",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0xe343542366A9f3Af56Acc6D68154Cfaf23efeba6",
+				"status": "current",
+				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51"
 			}
 		}
 	}
