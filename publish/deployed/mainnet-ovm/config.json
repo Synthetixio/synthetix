@@ -319,5 +319,32 @@
 	},
 	"ExchangeSettlementLib": {
 		"deploy": false
+	},
+	"PerpsV2MarketSettings": {
+		"deploy": false
+	},
+	"PerpsV2MarketData": {
+		"deploy": false
+	},
+	"PerpsV2ExchangeRate": {
+		"deploy": false
+	},
+	"PerpsV2ProxyETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedOrderETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2OffchainDelayedOrderETHPERP": {
+		"deploy": false
 	}
 }
