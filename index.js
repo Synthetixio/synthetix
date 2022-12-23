@@ -479,55 +479,61 @@ const getFuturesMarkets = ({
 	});
 };
 
-const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath, path }) => {
-	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, perpsV2Consolidated) => {
+const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, path }) => {
+	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, PerpsV2Proxied) => {
 		const proxyPrefix = 'PerpsV2Proxy';
 		const marketPrefix = 'PerpsV2Market';
+		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData'];
 		const prefixes = ['PerpsV2MarketViews', 'PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
 
+		if (excludedContracts.includes(target) || target.startsWith('PerpsV2MarketState')) {
+			// not market contract or Market state. Do nothing
+			return;
+		}
+
+		// If is the proxy, get the address. Initialize object if not done yet
 		if (target.startsWith(proxyPrefix)) {
-			// Is proxy
 			// get name
 			const marketName = target.slice(proxyPrefix.length);
-			if (!perpsV2Consolidated[marketName]) {
-				perpsV2Consolidated[marketName] = {};
-				perpsV2Consolidated[marketName].abi = [];
+			if (!PerpsV2Proxied[marketName]) {
+				PerpsV2Proxied[marketName] = {};
+				PerpsV2Proxied[marketName].abi = [];
 			}
 			// get address
-			perpsV2Consolidated[marketName].address = targetData.address;
-		}
+			PerpsV2Proxied[marketName].address = targetData.address;
+		} else {
+			// Not proxy, is one of the components. First try with the long contract names because main component prefix is included in others
+			let nameFound = false;
+			let marketName;
 
-		for (const prefix of prefixes) {
-			if (target.startsWith(prefix)) {
-				// Is proxied
-				// get name
-				const marketName = target.slice(prefix.length);
-				if (!perpsV2Consolidated[marketName]) {
-					perpsV2Consolidated[marketName] = {};
-					perpsV2Consolidated[marketName].abi = [];
+			// Identify the market name (after the prefix)
+			for (const prefix of prefixes) {
+				if (target.startsWith(prefix)) {
+					// get name
+					marketName = target.slice(prefix.length);
+					nameFound = true;
+				}
+			}
+
+			// if not found one the previous step, it should be PerpsV2MarketXXXXX
+			if (!nameFound) {
+				if (target.startsWith(marketPrefix)) {
+					// get name
+					marketName = target.slice(marketPrefix.length);
+					nameFound = true;
+				}
+			}
+
+			if (nameFound) {
+				// Initialize if not done yet
+				if (!PerpsV2Proxied[marketName]) {
+					PerpsV2Proxied[marketName] = {};
+					PerpsV2Proxied[marketName].abi = [];
 				}
 				// add fragments to abi
-				_consolidateAbi(sourceData.abi, perpsV2Consolidated[marketName].abi);
+				_consolidateAbi(sourceData.abi, PerpsV2Proxied[marketName].abi);
 			}
 		}
-
-		if (
-			target.startsWith(marketPrefix) &&
-			!target.startsWith('PerpsV2MarketViews') &&
-			!target.startsWith('PerpsV2MarketState') &&
-			target !== 'PerpsV2MarketSettings' &&
-			target !== 'PerpsV2MarketData'
-		) {
-			// get name
-			const marketName = target.slice(marketPrefix.length);
-			if (!perpsV2Consolidated[marketName]) {
-				perpsV2Consolidated[marketName] = {};
-				perpsV2Consolidated[marketName].abi = [];
-			}
-			// add fragments to abi
-			_consolidateAbi(sourceData.abi, perpsV2Consolidated[marketName].abi);
-		}
-		// Otherwise do nothing, not proxy/proxied market contract
 	};
 
 	const _consolidateAbi = (currentAbi, consolidatedAbi) => {
@@ -550,7 +556,7 @@ const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath
 
 	const targets = Object.keys(deploymentData.targets);
 
-	const perpsV2Consolidated = {};
+	const PerpsV2Proxied = {};
 
 	for (const target of targets) {
 		if (!target.startsWith('PerpsV2')) {
@@ -574,10 +580,10 @@ const getPerpsV2ConsolidatedMarkets = ({ network = 'mainnet', fs, deploymentPath
 			deploymentPath,
 		});
 
-		_analyzeAndIncludePerpsV2(target, targetData, sourceData, perpsV2Consolidated);
+		_analyzeAndIncludePerpsV2(target, targetData, sourceData, PerpsV2Proxied);
 	}
 
-	return perpsV2Consolidated;
+	return PerpsV2Proxied;
 };
 
 /**
@@ -896,7 +902,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
-		'getPerpsV2ConsolidatedMarkets',
+		'getPerpsV2ProxiedMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -929,7 +935,7 @@ module.exports = {
 	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
-	getPerpsV2ConsolidatedMarkets,
+	getPerpsV2ProxiedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,

@@ -13,7 +13,7 @@ const {
 
 subtask('interact:load-contracts').setAction(async (args, hre, runSuper) => {
 	// Wrap Synthetix utils for current network
-	const { getPathToNetwork, getTarget, getSource, getPerpsV2ConsolidatedMarkets } = synthetix.wrap({
+	const { getPathToNetwork, getTarget, getSource, getPerpsV2ProxiedMarkets } = synthetix.wrap({
 		network: hre.network.name,
 		useOvm: false,
 		fs,
@@ -50,18 +50,18 @@ subtask('interact:load-contracts').setAction(async (args, hre, runSuper) => {
 	}
 
 	// Add perpV2 markets
-	const perpsV2Consolidated = getPerpsV2ConsolidatedMarkets({
+	const perpsV2Proxied = getPerpsV2ProxiedMarkets({
 		network: hre.network.name,
 		fs,
 		deploymentPath,
 	});
 
-	const perpV2MarketTargets = Object.keys(perpsV2Consolidated);
+	const perpsV2MarketTargets = Object.keys(perpsV2Proxied);
 
-	for (const perpV2MarketTarget of perpV2MarketTargets) {
-		contracts['perpsV2MarketConsolidated' + perpV2MarketTarget] = new ethers.Contract(
-			perpsV2Consolidated[perpV2MarketTarget].address,
-			perpsV2Consolidated[perpV2MarketTarget].abi,
+	for (const perpsV2MarketTarget of perpsV2MarketTargets) {
+		contracts['PerpsV2MarketProxied' + perpsV2MarketTarget] = new ethers.Contract(
+			perpsV2Proxied[perpsV2MarketTarget].address,
+			perpsV2Proxied[perpsV2MarketTarget].abi,
 			args.provider
 		);
 	}

@@ -15,7 +15,7 @@ const {
 	getSynths,
 	getFeeds,
 	getOffchainFeeds,
-	getPerpsV2ConsolidatedMarkets,
+	getPerpsV2ProxiedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -235,8 +235,8 @@ program
 		''
 	)
 	.action(async ({ network, deploymentPath }) => {
-		const consolidatedMarkets = getPerpsV2ConsolidatedMarkets({ network, deploymentPath, path });
-		console.log(JSON.stringify(consolidatedMarkets, null, 2));
+		const proxiedMarkets = getPerpsV2ProxiedMarkets({ network, deploymentPath, path });
+		console.log(JSON.stringify(proxiedMarkets, null, 2));
 	});
 
 program
