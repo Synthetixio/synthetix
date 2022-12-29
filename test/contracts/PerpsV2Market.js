@@ -1777,7 +1777,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
 			assert.bnEqual(postDetails.size, size);
 			assert.bnEqual(postDetails.price, fillPrice);
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.0555527525'));
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.056002775'));
 			assert.bnEqual(postDetails.fee, fee);
 			assert.equal(postDetails.status, Status.Ok);
 
