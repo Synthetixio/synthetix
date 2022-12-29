@@ -23,7 +23,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		sUSD,
 		systemSettings,
 		systemStatus,
-		feePool;
+		feePool,
+		debtCache;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -113,6 +114,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			FeePool: feePool,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
+			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
@@ -133,6 +135,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				'DebtCache',
 			],
 		}));
+
+		await debtCache.rebuildCache();
 
 		// Update the rate so that it is not invalid
 		await setOnchainPrice(baseAsset, initialPrice);

@@ -404,7 +404,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *
      * @param positionSize Size of the position we want to liquidate
      * @param currentPrice The current oracle price (not fillPrice)
-     * @return The premium to be paid in sUSD
+     * @return The premium to be paid upon liquidation in sUSD
      */
     function _liquidationPremium(int positionSize, uint currentPrice) internal view returns (uint) {
         if (positionSize == 0) {
@@ -412,9 +412,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         }
 
         // note: this is the same as fillPrice() where the skew is 0.
-        uint size = _abs(positionSize);
-        uint notional = size.multiplyDecimal(currentPrice);
-        return size.divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional) / 2;
+        uint notional = _abs(_notionalValue(positionSize, currentPrice));
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional) / 2;
     }
 
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
@@ -549,6 +548,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         //
         // Liquidation margin is considered without a fee (but including premium), because it wouldn't make sense to allow
         // a trade that will make the position liquidatable.
+        //
+        // TODO: params.price is the fillPrice. `liquidationPremium` requires the oracle price.
         uint liqPremium = _liquidationPremium(newPos.size, params.price);
         uint liqMargin = _liquidationMargin(newPos.size, params.price).add(liqPremium);
         if (newMargin <= liqMargin) {
