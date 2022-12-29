@@ -393,12 +393,14 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *
      * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
      * when we compute as if taking the position from 0 to x. In practice, the premium component of the
-     * liquidation will just be (0.5 * size / skewScale) * price.
+     * liquidation will just be (0.5 * size / skewScale) * (size * price).
      *
      * For instance, if size of the liquidation position is 100, oracle price is 1200 and skewScale is 1M then,
      *
-     *  premium = -100 / 1000000 * 1200 * 0.5
-     *          = 0.06
+     *  size    = abs(-100)
+     *          = 100
+     *  premium = 100 / 1000000 * (100 * 1200) * 0.5
+     *          = 6
      *
      * @param positionSize Size of the position we want to liquidate
      * @param currentPrice The current oracle price (not fillPrice)
@@ -410,7 +412,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         }
 
         // note: this is the same as fillPrice() where the skew is 0.
-        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(currentPrice) / 2;
+        uint size = _abs(positionSize);
+        uint notional = size.multiplyDecimal(currentPrice);
+        return size.divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional) / 2;
     }
 
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
