@@ -130,8 +130,8 @@
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
 		"web3": "^1.7.0",
-		"webpack": "^4.44.0",
-		"webpack-cli": "^3.3.12"
+		"webpack": "^5.75.0",
+		"webpack-cli": "^5.0.1"
 	},
 	"dependencies": {
 		"@nomiclabs/hardhat-etherscan": "^3.1.0",
