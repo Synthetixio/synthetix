@@ -487,7 +487,7 @@ const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, pat
 		const prefixes = ['PerpsV2MarketViews', 'PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
 
 		if (excludedContracts.includes(target) || target.startsWith('PerpsV2MarketState')) {
-			// not market contract or Market state. Do nothing
+			// Markets helper or Market state. Do nothing
 			return;
 		}
 
