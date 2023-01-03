@@ -31,7 +31,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
-	const defaultDesiredTimeDelta = 60;
 
 	const marketKeySuffix = '-perp';
 
