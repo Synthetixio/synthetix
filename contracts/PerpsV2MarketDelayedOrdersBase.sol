@@ -66,7 +66,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price (+ p/d) and market and check that the order doesn't revert
         uint price = _fillPrice(sizeDelta, _assetPriceRequireSystemChecks(isOffchain));
-        uint fundingIndex = _recomputeFunding();
+        uint fundingIndex = _recomputeFunding(price);
 
         TradeParams memory params =
             TradeParams({
@@ -133,7 +133,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
             // cancelling an order does not induce a fillPrice as no skew has moved.
             uint price = _assetPriceRequireSystemChecks(false);
-            uint fundingIndex = _recomputeFunding();
+            uint fundingIndex = _recomputeFunding(price);
             _updatePositionMargin(account, position, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
@@ -171,7 +171,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
         Position memory position = marketState.positions(account);
 
-        uint fundingIndex = _recomputeFunding();
+        uint fundingIndex = _recomputeFunding(currentPrice);
 
         // we need to grab the fillPrice for events and margin updates (but this is also calc in _trade).
         //

@@ -114,8 +114,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * been persisted in the funding sequence.
      */
     function unrecordedFunding() external view returns (int funding, bool invalid) {
-        (, bool isInvalid) = _assetPrice();
-        return (_unrecordedFunding(), isInvalid);
+        (uint price, bool isInvalid) = _assetPrice();
+        return (_unrecordedFunding(price), isInvalid);
     }
 
     /*
@@ -147,8 +147,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * The funding accrued in a position since it was opened; this does not include PnL.
      */
     function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        (, bool isInvalid) = _assetPrice();
-        return (_accruedFunding(marketState.positions(account)), isInvalid);
+        (uint price, bool isInvalid) = _assetPrice();
+        return (_accruedFunding(marketState.positions(account), price), isInvalid);
     }
 
     /*
@@ -368,7 +368,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
                     .sub(int(position.margin).sub(int(_liquidationPremium(position.size, currentPrice))))
                     .divideDecimal(position.size)
             )
-                .sub(_netFundingPerUnit(position.lastFundingIndex));
+                .sub(_netFundingPerUnit(position.lastFundingIndex, currentPrice));
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
         return uint(_max(0, result));
@@ -381,7 +381,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             return 0;
         }
         // see comment explaining this calculation in _positionDebtCorrection()
-        int priceWithFunding = int(price).add(_nextFundingEntry());
+        int priceWithFunding = int(price).add(_nextFundingEntry(price));
         int totalDebt =
             int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
         return uint(_max(totalDebt, 0));

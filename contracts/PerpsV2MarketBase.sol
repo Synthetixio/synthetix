@@ -203,24 +203,24 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
             );
     }
 
-    function _unrecordedFunding() internal view returns (int) {
+    function _unrecordedFunding(uint price) internal view returns (int) {
         int nextFundingRate = _currentFundingRate();
         // note the minus sign: funding flows in the opposite direction to the skew.
         int avgFundingRate = -(int(marketState.fundingRateLastRecomputed()).add(nextFundingRate)).divideDecimal(_UNIT * 2);
-        return avgFundingRate.multiplyDecimal(_proportionalElapsed());
+        return avgFundingRate.multiplyDecimal(_proportionalElapsed()).multiplyDecimal(int(price));
     }
 
     /*
      * The new entry in the funding sequence, appended when funding is recomputed. It is the sum of the
      * last entry and the unrecorded funding, so the sequence accumulates running total over the market's lifetime.
      */
-    function _nextFundingEntry() internal view returns (int) {
-        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding());
+    function _nextFundingEntry(uint price) internal view returns (int) {
+        return int(marketState.fundingSequence(_latestFundingIndex())).add(_unrecordedFunding(price));
     }
 
-    function _netFundingPerUnit(uint startIndex) internal view returns (int) {
+    function _netFundingPerUnit(uint startIndex, uint price) internal view returns (int) {
         // Compute the net difference between start and end indices.
-        return _nextFundingEntry().sub(marketState.fundingSequence(startIndex));
+        return _nextFundingEntry(price).sub(marketState.fundingSequence(startIndex));
     }
 
     /* ---------- Position Details ---------- */
@@ -273,12 +273,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return int(position.size).multiplyDecimal(priceShift);
     }
 
-    function _accruedFunding(Position memory position) internal view returns (int funding) {
+    function _accruedFunding(Position memory position, uint price) internal view returns (int funding) {
         uint lastModifiedIndex = position.lastFundingIndex;
         if (lastModifiedIndex == 0) {
             return 0; // The position does not exist -- no funding.
         }
-        int net = _netFundingPerUnit(lastModifiedIndex);
+        int net = _netFundingPerUnit(lastModifiedIndex, price);
         return int(position.size).multiplyDecimal(net);
     }
 
@@ -286,7 +286,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
      */
     function _marginPlusProfitFunding(Position memory position, uint price) internal view returns (int) {
-        int funding = _accruedFunding(position);
+        int funding = _accruedFunding(position, price);
         return int(position.margin).add(_profitLoss(position, price)).add(funding);
     }
 
