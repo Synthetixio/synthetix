@@ -218,14 +218,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				from: trader,
 			});
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
-			const expectedExecutableAt = txBlock.timestamp + defaultDesiredTimeDelta;
 
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, expectedExecutableAt);
+			assert.bnEqual(order.executableAtTime, 0);
 
 			// check margin
 			const position = await perpsV2Market.positions(trader);
@@ -247,16 +246,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [
-					trader,
-					true,
-					size,
-					roundId.add(toBN(1)),
-					txBlock.timestamp,
-					expectedExecutableAt,
-					orderFee,
-					keeperFee,
-				],
+				args: [trader, true, size, roundId.add(toBN(1)), txBlock.timestamp, 0, orderFee, keeperFee],
 				log: decodedLogs[2],
 			});
 		});
@@ -347,7 +337,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, txBlock.timestamp + defaultDesiredTimeDelta);
+			assert.bnEqual(order.executableAtTime, 0);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
 			const decodedLogs = await getDecodedLogs({
@@ -365,7 +355,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					size,
 					roundId.add(toBN(1)),
 					txBlock.timestamp,
-					txBlock.timestamp + 60,
+					0,
 					orderFee,
 					keeperFee,
 					trackingCode,

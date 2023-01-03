@@ -101,7 +101,10 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 targetRoundId: uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
-                executableAtTime: block.timestamp + desiredTimeDelta,
+                // offchain orders do _not_ have an executableAtTime as it's based on price age.
+                //
+                // we zero out the executableAtTime to minimise confusion.
+                executableAtTime: isOffchain ? 0 : block.timestamp + desiredTimeDelta,
                 intentionTime: block.timestamp,
                 trackingCode: trackingCode
             });
