@@ -98,10 +98,10 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
                 priceImpactDelta: uint128(priceImpactDelta),
-                targetRoundId: uint128(targetRoundId),
+                targetRoundId: isOffchain ? 0 : uint128(targetRoundId),
                 commitDeposit: uint128(commitDeposit),
                 keeperDeposit: uint128(keeperDeposit),
-                executableAtTime: block.timestamp + desiredTimeDelta,
+                executableAtTime: isOffchain ? 0 : block.timestamp + desiredTimeDelta,
                 intentionTime: block.timestamp,
                 trackingCode: trackingCode
             });

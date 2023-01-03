@@ -30,7 +30,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
-	const defaultDesiredTimeDelta = 60;
 
 	const marketKeySuffix = '-perp';
 
@@ -204,7 +203,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	describe('submitOffchainDelayedOrder()', () => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
-			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -214,14 +212,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				from: trader,
 			});
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
-			const expectedExecutableAt = txBlock.timestamp + defaultDesiredTimeDelta;
 
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
-			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
+			assert.bnEqual(order.targetRoundId, 0);
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, expectedExecutableAt);
+			assert.bnEqual(order.executableAtTime, 0);
 
 			// check margin
 			const position = await perpsV2Market.positions(trader);
@@ -243,16 +240,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [
-					trader,
-					true,
-					size,
-					roundId.add(toBN(1)),
-					txBlock.timestamp,
-					expectedExecutableAt,
-					orderFee,
-					keeperFee,
-				],
+				args: [trader, true, size, 0, txBlock.timestamp, 0, orderFee, keeperFee],
 				log: decodedLogs[2],
 			});
 		});
@@ -323,7 +311,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 		it('submitting an order results in correct views and events', async () => {
 			// setup
-			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -340,10 +327,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			// check order
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
-			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
+			assert.bnEqual(order.targetRoundId, 0);
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
-			assert.bnEqual(order.executableAtTime, txBlock.timestamp + defaultDesiredTimeDelta);
+			assert.bnEqual(order.executableAtTime, 0);
 			assert.bnEqual(order.trackingCode, trackingCode);
 
 			const decodedLogs = await getDecodedLogs({
@@ -355,17 +342,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [
-					trader,
-					true,
-					size,
-					roundId.add(toBN(1)),
-					txBlock.timestamp,
-					txBlock.timestamp + 60,
-					orderFee,
-					keeperFee,
-					trackingCode,
-				],
+				args: [trader, true, size, 0, txBlock.timestamp, 0, orderFee, keeperFee, trackingCode],
 				log: decodedLogs[2],
 			});
 		});
