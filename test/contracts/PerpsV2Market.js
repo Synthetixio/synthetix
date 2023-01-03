@@ -3166,7 +3166,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					account: trader2,
 					fastForwardBy: 29000,
 					expectedRate: toUnit('0.00839120'),
-					expectedFunding: toUnit('-0.001408'), // neg because longs pay short
+					expectedFunding: toUnit('-0.14086'), // neg because longs pay short
 				},
 				// skew = balanced but funding rate sticks.
 				{
@@ -3174,7 +3174,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					account: trader3,
 					fastForwardBy: 20000,
 					expectedRate: toUnit('0.02575231'),
-					expectedFunding: toUnit('-0.005360'), // neg because longs pay short
+					expectedFunding: toUnit('-0.53620'), // neg because longs pay short
 				},
 			];
 			const marginDelta = toUnit('1000000');
@@ -3943,17 +3943,19 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				// ~1 day has passed ~86400 seconds (+2 second buffer)
 				//
-				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(4.86111111109e-07 + 0.06000048611111111) / 2 * (86400 / 86400)
-				//                   = -0.06000097222222222 / 2 * 1
-				//                   = -0.03000049
-				//                   ~-0.03
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400) * price
+				//                   = -(4.861111109e-09 + 0.06000069930555555) / 2 * (86400 / 86400) * 100
+				//                   = -(4.86111111109e-07 + 0.06000048611111111) / 2 * 1 * 100
+				//                   = -0.06000070416666666 / 2 * 1 * 100
+				//                   = -0.03000035 * 1 * 100
+				//                   = -3.000035
 				//
 				// note: we invert the avgFundingRate here because accrual is paid in the opposite direction.
+				// note: it's slightly under -3.000352 because elapsed isn't exactly 1 during tests (~1.000011574074074)
 				assert.bnClose(
 					(await perpsV2Market.unrecordedFunding())[0],
-					toUnit('-0.03'),
-					toUnit('0.01')
+					toUnit('-3.0000486'),
+					toUnit('0.001')
 				);
 
 				// updating velocity should also trigger an update to recorded funding
@@ -3972,26 +3974,25 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(await perpsV2Market.fundingLastRecomputed(), time);
 				assert.bnClose(
 					await perpsV2Market.fundingSequence(initialFundingIndex.add(toBN(6))),
-					toUnit('-0.03'),
-					toUnit('0.01')
+					toUnit('-3.0000486'),
+					toUnit('0.001')
 				);
 
 				assert.bnClose((await perpsV2Market.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
 
 				// Another day has passed.
 				//
-				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(0.060001180555555554 + 0.18000118055555556) / 2 * (86400 / 86400)
-				//                   = -0.24000236 / 2 * 1
-				//                   = -0.12000118
-				//                   ~-0.12
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400) * price
+				//                   = -(0.060001180555555554 + 0.18000118055555556) / 2 * (86400 / 86400) * 100
+				//                   = -0.24000236 / 2 * 1 * 100
+				//                   = -12.000118
 				//
 				// no change in funding rates. skew has not moved.
 				await fastForward(24 * 60 * 60);
 				assert.bnClose(
 					(await perpsV2Market.unrecordedFunding())[0],
-					toUnit('-0.12'),
-					toUnit('0.01')
+					toUnit('-12.0000699'),
+					toUnit('0.0001')
 				);
 				assert.bnEqual(
 					await perpsV2Market.fundingSequenceLength(),
@@ -4000,19 +4001,18 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				// Another day has passed (note we haven't updated the funding sequence).
 				//
-				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400)
-				//                   = -(0.060001180555555554 + 0.3000011805555556) / 2 * ((86400 * 2) / 86400)
-				//                   = -0.36000236 / 2 * 2
-				//                   = -0.36000236
-				//                   ~-0.36
+				// unrecordedFunding = -(prevFundingRate + currentFundingRate) / 2 * (elapsed / 86400) * price
+				//                   = -(0.060001180555555554 + 0.3000011805555556) / 2 * ((86400 * 2) / 86400) * 100
+				//                   = -0.36000236 / 2 * 2 * 100
+				//                   = -36.000236
 				//
 				// additional note: since funding was not updated, fundingLastRecomputed is also unchanged. this means
 				// elapsed is actually 2 days, not 1.
 				await fastForward(24 * 60 * 60);
 				assert.bnClose(
 					(await perpsV2Market.unrecordedFunding())[0],
-					toUnit('-0.36'),
-					toUnit('0.01')
+					toUnit('-36.00014'),
+					toUnit('0.0001')
 				);
 				// no change in the funding sequence
 				assert.bnEqual(
@@ -4722,11 +4722,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				//      = 40 (skewed long = funding positive and negative funding entry
 				//
 				// marketDebt = skew * priceWithFunding + debtCorrection
-				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('947.904'), toUnit('0.1'));
+				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('931.98'), toUnit('0.1'));
 				assert.bnClose(
 					(await perpsV2Market.unrecordedFunding())[0],
-					toUnit('-0.002'),
-					toUnit('0.001')
+					toUnit('-0.4000188'),
+					toUnit('0.0001')
 				);
 
 				await perpsV2Market.liquidatePosition(trader, { from: noBalance });
@@ -4750,7 +4750,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(await perpsV2Market.marketSkew(), toUnit('-20'));
 
 				// Market debt is now just the remaining position, plus the funding they've made.
-				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('1997.537'), toUnit('0.01'));
+				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('2005.498'), toUnit('0.001'));
 			});
 
 			it('Liquidation properly affects the overall market parameters (short case)', async () => {
@@ -4768,20 +4768,14 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				//
 				// nextFundingEntry = lastFundingEntry + unrecordedFunding
 				// priceWithFunding = price + nextFundingEntry
-				//                  = 350 + -0.03500202549109439
-				//                  = 349.96499797
 				//
 				// skew = 40 + 20 - 20
 				//      = 40 (skewed long = funding positive and negative funding entry
-				//
-				// marketDebt = skew * priceWithFunding + debtCorrection
-				// marketDebt = 40 * 349.96499797 + -7052.016
-				//            = 6946.5839188
-				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('6946.583'), toUnit('0.1'));
+				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('6457.96'), toUnit('0.1'));
 				assert.bnClose(
 					(await perpsV2Market.unrecordedFunding())[0],
-					toUnit('-0.035'),
-					toUnit('0.01')
+					toUnit('-12.2505677'),
+					toUnit('0.0001')
 				);
 
 				await perpsV2Market.liquidatePosition(trader3, { from: noBalance });
@@ -4793,21 +4787,17 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(await perpsV2Market.marketSkew(), toUnit('60'));
 
 				// trader3 has a -20 size and when removed bumps skew up to 60 and debtCorrection is reflected
-				//
-				// marketDebt = skew * priceWithFunding + debtCorrection
-				// marketDebt = 60 * 349.96499797 + -13049.5135
-				//            = 7948.386
-				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('7948.386'), toUnit('0.1'));
+				assert.bnClose((await perpsV2Market.marketDebt())[0], toUnit('7215.435'), toUnit('0.001'));
 
 				// Funding has been recorded by the liquidation.
-				assert.bnClose((await perpsV2Market.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
+				assert.bnEqual((await perpsV2Market.unrecordedFunding())[0], toUnit(0));
 			});
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				assert.isFalse(await perpsV2Market.canLiquidate(trader));
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.350150000000012056'));
+				assert.bnEqual(liqPrice, toUnit('227.350150000003014'));
 
 				const newPrice = liqPrice.sub(toUnit(1));
 				await setPrice(baseAsset, newPrice);
@@ -4875,7 +4865,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('liquidations of positive margin position pays to fee pool, long case', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.350150000000012056'));
+				assert.bnEqual(liqPrice, toUnit('227.350150000003014'));
 
 				const newPrice = liqPrice.sub(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
