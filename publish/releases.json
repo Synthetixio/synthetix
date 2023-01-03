@@ -781,6 +781,19 @@
 			"released": "both"
 		},
 		{
+			"sip": 286,
+			"layer": "ovm",
+			"sources": {
+				"base": [],
+				"ovm": [
+					"PerpsV2Market[A-Z]+",
+					"PerpsV2MarketViews.+",
+					"PerpsV2DelayedOrder.+",
+					"PerpsV2OffchainDelayedOrder.+"
+				]
+			}
+		},
+		{
 			"sip": 299,
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
@@ -1485,6 +1498,15 @@
 			},
 			"sips": [279, 280, 281, 285],
 			"released": true
+		},
+		{
+			"name": "xxxx (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [286]
 		}
 	]
 }
