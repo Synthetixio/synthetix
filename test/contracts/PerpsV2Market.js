@@ -81,6 +81,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	const skewScale = toUnit('100000');
 	const initialPrice = toUnit('100');
 	const minKeeperFee = toUnit('20');
+	const maxKeeperFee = toUnit('1000');
 	const minInitialMargin = toUnit('100');
 	const minDelayTimeDelta = 60;
 	const maxDelayTimeDelta = 120;
@@ -5107,6 +5108,42 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// minimum liquidation fee > 30, 0.02 * 1500 * 2 = 60
 				await perpsV2MarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toUnit(60));
+			});
+
+			it('top up liquidation fee', async () => {
+				await perpsV2MarketSettings.setMaxKeeperFee(maxKeeperFee, { from: owner });
+
+				await setPrice(baseAsset, toUnit('1000'));
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader });
+				await perpsV2Market.modifyPosition(toUnit('200'), priceImpactDelta, { from: trader });
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader2 });
+				await perpsV2Market.modifyPosition(toUnit('-200'), priceImpactDelta, { from: trader2 });
+
+				// cannot liquidate
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader), toBN(0));
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toBN(0));
+
+				// long
+				await setPrice(baseAsset, toUnit('500'));
+				// max liquidation fee = 1000
+				// proportional fee: 0.0035 * 500 * 200 = 350
+				// min (1000,350) = 350
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader), toUnit('350'));
+
+				// reduce maximum
+				// min (100,350) = 100
+				await perpsV2MarketSettings.setMaxKeeperFee(toUnit(100), { from: owner });
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader), toUnit('100'));
+
+				// short
+				await setPrice(baseAsset, toUnit('1500'));
+				// proportional fee: 0.0035 * 1500 * 200 = 1050
+				// min (100,1050) = 100
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toUnit('100'));
+				// increase maximum
+				// min (2000,1050) = 1050
+				await perpsV2MarketSettings.setMaxKeeperFee(toUnit(2000), { from: owner });
+				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toUnit('1050'));
 			});
 		});
 

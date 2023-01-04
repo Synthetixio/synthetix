@@ -38,6 +38,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     // Global settings
     // minimum liquidation fee payable to liquidator
     bytes32 internal constant SETTING_MIN_KEEPER_FEE = "futuresMinKeeperFee";
+    // maximum liquidation fee payable to liquidator
+    bytes32 internal constant SETTING_MAX_KEEPER_FEE = "futuresMaxKeeperFee";
     // liquidation fee basis points payed to liquidator
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "futuresLiquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
@@ -151,6 +153,10 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _minKeeperFee() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
+    }
+
+    function _maxKeeperFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MAX_KEEPER_FEE);
     }
 
     function _liquidationFeeRatio() internal view returns (uint) {

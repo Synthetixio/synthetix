@@ -18,6 +18,7 @@ contract PerpsV2MarketData {
         uint liquidationFeeRatio;
         uint liquidationBufferRatio;
         uint minKeeperFee;
+        uint maxKeeperFee;
     }
 
     struct MarketSummary {
@@ -132,7 +133,8 @@ contract PerpsV2MarketData {
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
                 liquidationBufferRatio: settings.liquidationBufferRatio(),
-                minKeeperFee: settings.minKeeperFee()
+                minKeeperFee: settings.minKeeperFee(),
+                maxKeeperFee: settings.maxKeeperFee()
             });
     }
 

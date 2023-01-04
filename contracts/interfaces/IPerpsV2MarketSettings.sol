@@ -64,6 +64,8 @@ interface IPerpsV2MarketSettings {
 
     function minKeeperFee() external view returns (uint);
 
+    function maxKeeperFee() external view returns (uint);
+
     function liquidationFeeRatio() external view returns (uint);
 
     function liquidationBufferRatio() external view returns (uint);

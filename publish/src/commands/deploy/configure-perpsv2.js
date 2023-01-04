@@ -73,6 +73,17 @@ module.exports = async ({
 		comment: 'Set the minimum reward for liquidating a perpsV2 position (SIP-80)',
 	});
 
+	const FUTURES_MAX_KEEPER_FEE = await getDeployParameter('FUTURES_MAX_KEEPER_FEE');
+	await runStep({
+		contract: 'PerpsV2MarketSettings',
+		target: futuresMarketSettings,
+		read: 'maxKeeperFee',
+		expected: input => input === FUTURES_MAX_KEEPER_FEE,
+		write: 'setMaxKeeperFee',
+		writeArg: FUTURES_MAX_KEEPER_FEE,
+		comment: 'Set the maximum reward for liquidating a perpsV2 position',
+	});
+
 	//
 	// Configure parameters for each market.
 	//
