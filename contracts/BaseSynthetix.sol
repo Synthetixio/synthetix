@@ -37,6 +37,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
+    bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
 
     // ========== CONSTRUCTOR ==========
 
@@ -454,7 +455,15 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function revokeAllEscrow(address account) external systemActive {
         address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
         require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
-        rewardEscrowV2().revokeFrom(account, msg.sender, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+        rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+    }
+
+    function revokeEscrowForDebtMigration(address account) external systemActive returns (uint totalEscrowRevoked) {
+        address debtMigratorAddress = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
+        require(msg.sender == debtMigratorAddress, "Only DebtMigratorOnEthereum can revoke escrow");
+
+        totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
+        rewardEscrowV2().revokeFrom(account, debtMigratorAddress, totalEscrowRevoked, 0);
     }
 
     function exchangeWithTrackingForInitiator(

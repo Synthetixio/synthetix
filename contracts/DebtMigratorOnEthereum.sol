@@ -2,24 +2,30 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+import "./SafeDecimalMath.sol";
 
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
 import "./interfaces/IDebtMigrator.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
+import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISystemStatus.sol";
 
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    using SafeMath for uint;
+    using SafeDecimalMath for uint;
+
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -103,18 +109,16 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
     /* ========== MUTATIVE ========== */
 
-    // Ideally, the account should call vest on their escrow before invoking the migration to L2.
-    function migrateToL2(address account, uint256[][] memory entryIDs) public nonReentrant {
+    // Ideally, the account should call vest on their escrow before invoking the debt migration to L2.
+    function migrateDebt(address account) public nonReentrant {
         require(msg.sender == account, "Must be the account owner");
-        _migrateToL2(account, entryIDs);
+        _migrateDebt(account);
     }
 
-    function migrateToL2OnBehalf(address account, uint256[][] memory entryIDs) public onlyOwner {
-        _migrateToL2(account, entryIDs);
-    }
-
-    function _migrateToL2(address _account, uint256[][] memory _entryIDs) internal {
+    function _migrateDebt(address _account) internal {
         _systemStatus().requireSystemActive();
+
+        // TODO: require not flagged or open for liquidation?
 
         // important: this has to happen before any updates to user's debt shares
         _liquidatorRewards().getReward(_account);
@@ -122,15 +126,30 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
         // First, remove all debt shares
         ISynthetixDebtShare sds = _synthetixDebtShare();
         uint _amountOfDebtShares = sds.balanceOf(_account);
-        if (_amountOfDebtShares > 0) {
-            _issuer().modifyDebtSharesForMigration(_account, _amountOfDebtShares);
-        }
+        require(_amountOfDebtShares > 0, "No debt to migrate");
+        _issuer().modifyDebtSharesForMigration(_account, _amountOfDebtShares);
 
         // Get the user's liquid SNX balance.
         uint _spotBalance = _synthetixERC20().balanceOf(_account);
 
+        // Transfer all the _account's liquid SNX to this migrator.
+        require(_spotBalance <= _synthetixERC20().allowance(_account, address(this)), "Allowance not high enough");
+        _synthetixERC20().safeTransferFrom(_account, address(this), _spotBalance);
+
         // Deposit the user's liquid and escrowed SNX to L2.
-        _synthetixBridgeToOptimism().depositAndMigrateEscrow(_spotBalance, _entryIDs);
+        // TODO: check the balances are greater than zero?
+        //
+        // 1. revoke all of the escrow to this migrator
+        // 2. record the amount of escrow revoked
+        uint totalEscrowRevoked =
+            ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX)).revokeEscrowForDebtMigration(_account);
+
+        // 3. call depositTo() and send all of the (liquid & revoked) SNX to the _account
+        _synthetixBridgeToOptimism().depositTo(_account, _spotBalance.add(totalEscrowRevoked));
+
+        // 4. send amount of revoked escrow in payload to L2
+        // 5. on finalization in L2, create one batched escrow entry with MIGRATION_DURATION variable (set on DebtMigratorOnOptimism via SCCP)
+        //
 
         // require zeroed balances
         require(_synthetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
@@ -138,15 +157,17 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
         require(_rewardEscrowV2().balanceOf(_account) == 0, "Escrow balanace is not zero");
         require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
 
-        // create the data payload to be relayed on L2
+        // create the data payloads to be relayed on L2
+        // TODO: escrow payload
+
         IIssuer issuer;
-        bytes memory _payload =
+        bytes memory _debtPayload =
             abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, _amountOfDebtShares);
 
         // send message to L2 to finalize the migration
         IDebtMigrator debtMigratorOnOptimism;
         bytes memory messageData =
-            abi.encodeWithSelector(debtMigratorOnOptimism.finalizeMigration.selector, _account, _payload);
+            abi.encodeWithSelector(debtMigratorOnOptimism.finalizeDebtMigration.selector, _account, _debtPayload);
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
         emit MigrationInitiated(_account);

@@ -36,6 +36,9 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
         return requireAndGetAddress(CONTRACT_ISSUER);
     }
 
+    function _finalizeEscrow(bytes memory _escrowPayload) private {}
+
+    // TODO: rename to _finalizeDebt and _debtPayload
     function _relayCall(bytes memory payload) private {
         address target = _issuer(); // target is the Issuer contract on Optimism.
         // solhint-disable avoid-low-level-calls
@@ -66,8 +69,11 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
     /* ========== EXTERNAL ========== */
 
-    function finalizeMigration(address account, bytes calldata payload) external onlyMessengerAndL1DebtMigrator {
+    function finalizeDebtMigration(address account, bytes calldata payload) external onlyMessengerAndL1DebtMigrator {
         _relayCall(payload);
+
+        // _finalizeEscrow(escrowPayload)
+        // _finalizeDebt(debtPayload)
 
         emit MigrationFinalized(account);
     }

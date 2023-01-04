@@ -656,8 +656,8 @@
 			"sip": 237,
 			"layer": "both",
 			"sources": {
-				"base": ["DebtMigratorOnEthereum", "Issuer"],
-				"ovm": ["DebtMigratorOnOptimism", "Issuer"]
+				"base": ["DebtMigratorOnEthereum", "Issuer", "Synthetix"],
+				"ovm": ["DebtMigratorOnOptimism", "Issuer", "Synthetix"]
 			}
 		},
 		{
@@ -1493,6 +1493,23 @@
 			},
 			"sips": [279, 280, 281, 285],
 			"released": true
+		},
+		{
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [237]
+		},
+		{
+			"name": "Sadr (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [237]
 		}
 	]
 }

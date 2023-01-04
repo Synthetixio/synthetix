@@ -120,6 +120,7 @@ contract('BaseSynthetix', async accounts => {
 				'mintSecondary',
 				'mintSecondaryRewards',
 				'revokeAllEscrow',
+				'revokeEscrowForDebtMigration',
 				'settle',
 				'transfer',
 				'transferFrom',
