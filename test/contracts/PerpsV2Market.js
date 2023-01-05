@@ -1777,7 +1777,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			assert.bnEqual(postDetails.margin, minInitialMargin.sub(fee));
 			assert.bnEqual(postDetails.size, size);
 			assert.bnEqual(postDetails.price, fillPrice);
-			assert.bnEqual(postDetails.liqPrice, toUnit('2.056002775'));
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.0565028'));
 			assert.bnEqual(postDetails.fee, fee);
 			assert.equal(postDetails.status, Status.Ok);
 
@@ -3429,7 +3429,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				market: perpsV2Market,
 				account: trader,
 				fillPrice: toUnit(price),
-				marginDelta: toUnit('1000'),
+				marginDelta: toUnit('2000'),
 				sizeDelta: toUnit('12'),
 			});
 
@@ -3481,7 +3481,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				market: perpsV2Market,
 				account: trader,
 				fillPrice: toUnit(price),
-				marginDelta: toUnit('1000'), // 6x leverage (at $250)
+				marginDelta: toUnit('2000'), // 3x leverage (at $250)
 				sizeDelta: toUnit('-24'),
 			});
 
@@ -4253,9 +4253,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					liqBufferRatio
 				).add(expectedLiquidationFee);
 
-				const premium = divideDecimal(
-					multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
-					toUnit('2')
+				const premium = multiplyDecimal(
+					divideDecimal(size.abs(), skewScale),
+					multiplyDecimal(size.abs(), price)
 				);
 
 				// note: we use fillPrice here because this the same as position.lastPrice
@@ -4799,7 +4799,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				assert.isFalse(await perpsV2Market.canLiquidate(trader));
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.350150000003014'));
+				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
 
 				const newPrice = liqPrice.sub(toUnit(1));
 				await setPrice(baseAsset, newPrice);
@@ -4867,7 +4867,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('liquidations of positive margin position pays to fee pool, long case', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.350150000003014'));
+				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
 
 				const newPrice = liqPrice.sub(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
@@ -4905,7 +4905,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader3)).price;
-				assert.bnEqual(liqPrice, toUnit('298.224875'));
+				assert.bnEqual(liqPrice, toUnit('298.199875'));
 
 				const newPrice = liqPrice.add(toUnit(1));
 
@@ -4970,7 +4970,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('liquidations of positive margin position pays to fee pool, short case', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader3)).price;
-				assert.bnEqual(liqPrice, toUnit('298.224875'));
+				assert.bnEqual(liqPrice, toUnit('298.199875'));
 
 				const newPrice = liqPrice.add(toUnit(0.5));
 				await setPrice(baseAsset, newPrice);
