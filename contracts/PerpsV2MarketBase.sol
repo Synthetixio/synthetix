@@ -499,6 +499,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         }
 
         // The order is not submitted if the user's existing position needs to be liquidated.
+        //
+        // TODO: This might also need to be `oraclePrice` and not `fillPrice` - need to think this one through.
+        // Adding this comment here so we make sure to update before merging.
         if (_canLiquidate(oldPos, params.fillPrice)) {
             return (oldPos, 0, Status.CanLiquidate);
         }

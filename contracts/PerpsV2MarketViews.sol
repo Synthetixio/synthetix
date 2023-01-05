@@ -345,6 +345,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /// helper methods calculates the approximate liquidation price
+    ///
+    /// note: currentPrice is oracle price and not fill price.
     function _approxLiquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
         if (position.size == 0) {
             return 0;

@@ -4257,6 +4257,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
 					toUnit('2')
 				);
+
+				// note: we use fillPrice here because this the same as position.lastPrice
 				return fillPrice
 					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
 					.sub(expectedNetFundingPerUnit);
