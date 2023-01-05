@@ -414,7 +414,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // note: this is the same as fillPrice() where the skew is 0.
         uint notional = _abs(_notionalValue(positionSize, currentPrice));
-        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional) / 2;
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional);
     }
 
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
