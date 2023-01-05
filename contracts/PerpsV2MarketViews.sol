@@ -234,7 +234,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, price),
+                oraclePrice: price,
+                fillPrice: _fillPrice(sizeDelta, price),
                 makerFee: makerFee,
                 takerFee: takerFee,
                 priceImpactDelta: 0, // price impact is not needed to calculate order fees.
@@ -290,7 +291,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, tradePrice), // we use fillPrice here as we're not actually calling _trade.
+                oraclePrice: tradePrice,
+                fillPrice: _fillPrice(sizeDelta, tradePrice),
                 makerFee: makerFee,
                 takerFee: takerFee,
                 priceImpactDelta: 0,

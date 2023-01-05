@@ -65,13 +65,15 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
         // to prevent submitting bad orders in good faith and being charged commitDeposit for them
         // simulate the order with current price (+ p/d) and market and check that the order doesn't revert
-        uint price = _fillPrice(sizeDelta, _assetPriceRequireSystemChecks(isOffchain));
+        uint price = _assetPriceRequireSystemChecks(isOffchain);
+        uint fillPrice = _fillPrice(sizeDelta, price);
         uint fundingIndex = _recomputeFunding(price);
 
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: price,
+                oraclePrice: price,
+                fillPrice: fillPrice,
                 takerFee: isOffchain ? _takerFeeOffchainDelayedOrder(marketKey) : _takerFeeDelayedOrder(marketKey),
                 makerFee: isOffchain ? _makerFeeOffchainDelayedOrder(marketKey) : _makerFeeDelayedOrder(marketKey),
                 priceImpactDelta: priceImpactDelta,
@@ -89,8 +91,8 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
-        _updatePositionMargin(messageSender, position, price, -int(commitDeposit + keeperDeposit));
-        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, price, fundingIndex, 0);
+        _updatePositionMargin(messageSender, position, fillPrice, -int(commitDeposit + keeperDeposit));
+        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
@@ -173,9 +175,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
 
         uint fundingIndex = _recomputeFunding(currentPrice);
 
-        // we need to grab the fillPrice for events and margin updates (but this is also calc in _trade).
-        //
-        // warning: do not pass fillPrice into `_trade`!
+        // we need to grab the fillPrice for events and margin updates.
         uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
 
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
@@ -189,7 +189,8 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             account,
             TradeParams({
                 sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                price: currentPrice, // the funding is applied only from order confirmation time
+                oraclePrice: currentPrice, // the funding is applied only from order confirmation time
+                fillPrice: fillPrice,
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
                 priceImpactDelta: order.priceImpactDelta,
