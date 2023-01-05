@@ -79,8 +79,12 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
                 priceImpactDelta: priceImpactDelta,
                 trackingCode: trackingCode
             });
-        (, , Status status) = _postTradeDetails(position, params);
-        _revertIfError(status);
+
+        // stack too deep
+        {
+            (, , Status status) = _postTradeDetails(position, params);
+            _revertIfError(status);
+        }
 
         // deduct fees from margin
         //
