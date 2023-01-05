@@ -363,17 +363,25 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * liquidations of small positions, or overpaying.
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
+     * @param capped boolean flag indicating if the liquidation fee must be capped to maxKeeperFee sUSD
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
      */
-    function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
+    function _liquidationFee(
+        int positionSize,
+        uint price,
+        bool capped
+    ) internal view returns (uint lFee) {
         // size * price * fee-ratio
         uint proportionalFee = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationFeeRatio());
         uint maxFee = _maxKeeperFee();
-        uint topedProportionalFee = proportionalFee > maxFee ? maxFee : proportionalFee;
+        uint cappedProportionalFee = proportionalFee;
+        if (capped) {
+            cappedProportionalFee = proportionalFee > maxFee ? maxFee : proportionalFee;
+        }
         uint minFee = _minKeeperFee();
 
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
-        return topedProportionalFee > minFee ? topedProportionalFee : minFee; // not using _max() helper because it's for signed ints
+        return cappedProportionalFee > minFee ? cappedProportionalFee : minFee; // not using _max() helper because it's for signed ints
     }
 
     /**
@@ -388,7 +396,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-        return liquidationBuffer.add(_liquidationFee(positionSize, price));
+        return liquidationBuffer.add(_liquidationFee(positionSize, price, false));
     }
 
     /**

@@ -5109,8 +5109,10 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setLiquidationFeeRatio(toUnit(0.02), { from: owner });
 				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toUnit(60));
 			});
+		});
 
-			it('top up liquidation fee', async () => {
+		describe('max liquidationFee', () => {
+			it('only send the max liquidation fee to the liquidator', async () => {
 				await perpsV2MarketSettings.setMaxKeeperFee(maxKeeperFee, { from: owner });
 
 				await setPrice(baseAsset, toUnit('1000'));
@@ -5125,8 +5127,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				// long
 				await setPrice(baseAsset, toUnit('500'));
+
 				// max liquidation fee = 1000
-				// proportional fee: 0.0035 * 500 * 200 = 350
+				// proportional fee: 0.0035 * price * 200 = 350
 				// min (1000,350) = 350
 				assert.bnEqual(await perpsV2Market.liquidationFee(trader), toUnit('350'));
 
@@ -5144,6 +5147,112 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// min (2000,1050) = 1050
 				await perpsV2MarketSettings.setMaxKeeperFee(toUnit(2000), { from: owner });
 				assert.bnEqual(await perpsV2Market.liquidationFee(trader2), toUnit('1050'));
+			});
+
+			it('send the remaining to the fee pool when max is exceeded - long', async () => {
+				await setPrice(baseAsset, toUnit('1000'));
+				// increase margin so that we can play with it
+				await perpsV2MarketSettings.setLiquidationBufferRatio(toUnit('0.1'), { from: owner });
+
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader });
+				await perpsV2Market.modifyPosition(toUnit('200'), priceImpactDelta, { from: trader });
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader2 });
+				await perpsV2Market.modifyPosition(toUnit('-200'), priceImpactDelta, { from: trader2 });
+
+				// cannot liquidate
+				assert.isFalse(await perpsV2Market.canLiquidate(trader));
+
+				// long
+				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
+
+				// move the price so that is liquidatable but there's still margin to use
+				const newPrice = liqPrice.sub(toUnit(100));
+				await setPrice(baseAsset, newPrice);
+
+				// confirm is liquidatable
+				assert.isTrue(await perpsV2Market.canLiquidate(trader));
+
+				// reduce maximum fee
+				await perpsV2MarketSettings.setMinKeeperFee(toUnit(1), { from: owner });
+				await perpsV2MarketSettings.setMaxKeeperFee(toUnit(10), { from: owner });
+
+				const liquidationFee = await perpsV2Market.liquidationFee(trader);
+				const expectedLiquidationFee = toUnit('10'); // max keeper fee
+				assert.bnEqual(liquidationFee, expectedLiquidationFee);
+
+				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
+				const poolFee = remainingMargin.sub(expectedLiquidationFee);
+
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				const feeAddress = await feePool.FEE_ADDRESS();
+				const preFeePoolBalance = await sUSD.balanceOf(feeAddress);
+				const preLiquidatorBalance = await sUSD.balanceOf(noBalance);
+
+				await perpsV2Market.liquidatePosition(trader, { from: noBalance });
+
+				assert.bnEqual(
+					await sUSD.balanceOf(noBalance),
+					preLiquidatorBalance.add(expectedLiquidationFee)
+				);
+
+				const postFeePoolBalance = await sUSD.balanceOf(feeAddress);
+				assert.bnGt(postFeePoolBalance, preFeePoolBalance.add(toUnit(1))); // we are exceeding the 'close' margin below
+				assert.bnClose(postFeePoolBalance, preFeePoolBalance.add(poolFee), toUnit('0.0000001'));
+			});
+
+			it('send the remaining to the fee pool when max is exceeded - short', async () => {
+				await setPrice(baseAsset, toUnit('1000'));
+				// increase margin so that we can play with it
+				await perpsV2MarketSettings.setLiquidationBufferRatio(toUnit('0.1'), { from: owner });
+
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader });
+				await perpsV2Market.modifyPosition(toUnit('200'), priceImpactDelta, { from: trader });
+				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader2 });
+				await perpsV2Market.modifyPosition(toUnit('-200'), priceImpactDelta, { from: trader2 });
+
+				// cannot liquidate
+				assert.isFalse(await perpsV2Market.canLiquidate(trader2));
+
+				// long
+				const liqPrice = (await perpsV2Market.liquidationPrice(trader2)).price;
+
+				// move the price so that is liquidatable but there's still margin to use
+				const newPrice = liqPrice.add(toUnit(100));
+				await setPrice(baseAsset, newPrice);
+
+				// confirm is liquidatable
+				assert.isTrue(await perpsV2Market.canLiquidate(trader2));
+
+				// reduce maximum fee
+				await perpsV2MarketSettings.setMinKeeperFee(toUnit(1), { from: owner });
+				await perpsV2MarketSettings.setMaxKeeperFee(toUnit(10), { from: owner });
+
+				const liquidationFee = await perpsV2Market.liquidationFee(trader2);
+				const expectedLiquidationFee = toUnit('10'); // max keeper fee
+				assert.bnEqual(liquidationFee, expectedLiquidationFee);
+
+				const remainingMargin = (await perpsV2Market.remainingMargin(trader2)).marginRemaining;
+				const poolFee = remainingMargin.sub(expectedLiquidationFee);
+
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				const feeAddress = await feePool.FEE_ADDRESS();
+				const preFeePoolBalance = await sUSD.balanceOf(feeAddress);
+				const preLiquidatorBalance = await sUSD.balanceOf(noBalance);
+
+				await perpsV2Market.liquidatePosition(trader2, { from: noBalance });
+
+				assert.bnEqual(
+					await sUSD.balanceOf(noBalance),
+					preLiquidatorBalance.add(expectedLiquidationFee)
+				);
+
+				const postFeePoolBalance = await sUSD.balanceOf(feeAddress);
+				assert.bnGt(postFeePoolBalance, preFeePoolBalance.add(toUnit(1))); // we are exceeding the 'close' margin below
+				assert.bnClose(postFeePoolBalance, preFeePoolBalance.add(poolFee), toUnit('0.0000001'));
 			});
 		});
 

@@ -190,7 +190,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     function liquidationFee(address account) external view returns (uint) {
         (uint price, bool invalid) = _assetPrice();
         if (!invalid && _canLiquidate(marketState.positions(account), price)) {
-            return _liquidationFee(int(marketState.positions(account).size), price);
+            return _liquidationFee(int(marketState.positions(account).size), price, true);
         } else {
             // theoretically we can calculate a value, but this value is always incorrect because
             // it's for a price at which liquidation cannot happen - so is misleading, because
@@ -225,7 +225,6 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         (uint price, bool isInvalid) = _assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
 
-        bytes32 marketKey = _marketKey();
         (uint makerFee, uint takerFee, bool invalid) = _makerTakeFeeByOrderType(orderType);
         if (invalid) {
             return (0, true);
