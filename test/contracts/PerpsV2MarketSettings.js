@@ -148,6 +148,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMinDelayTimeDelta',
 				'setMinInitialMargin',
 				'setMinKeeperFee',
+				'setMaxKeeperFee',
 				'setNextPriceConfirmWindow',
 				'setParameters',
 				'setSkewScale',
@@ -386,6 +387,57 @@ contract('PerpsV2MarketSettings', accounts => {
 			});
 			assert.eventEqual(txn, 'MinKeeperFeeUpdated', {
 				sUSD: minKeeperFee,
+			});
+		});
+	});
+
+	describe('setMaxKeeperFee()', () => {
+		let minKeeperFee;
+		beforeEach(async () => {
+			minKeeperFee = await perpsV2MarketSettings.minKeeperFee.call();
+		});
+
+		it('should be able to change the perpsV2 liquidation fee', async () => {
+			// max fee > min fee
+			const maxKeeperFee = minKeeperFee.add(new BN(1));
+
+			const originalLiquidationFee = await perpsV2MarketSettings.maxKeeperFee.call();
+			await perpsV2MarketSettings.setMaxKeeperFee(maxKeeperFee, { from: owner });
+			const newLiquidationFee = await perpsV2MarketSettings.maxKeeperFee.call();
+			assert.bnEqual(newLiquidationFee, maxKeeperFee);
+			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
+		});
+
+		it('only owner is permitted to change the perpsV2 liquidation fee', async () => {
+			const maxKeeperFee = toUnit('1000');
+
+			await onlyGivenAddressCanInvoke({
+				fnc: perpsV2MarketSettings.setMaxKeeperFee,
+				args: [maxKeeperFee.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the fee is lower than the min fee', async () => {
+			await assert.revert(
+				perpsV2MarketSettings.setMaxKeeperFee(minKeeperFee.sub(new BN(1)), {
+					from: owner,
+				}),
+				'max fee < min fee'
+			);
+		});
+
+		it('should emit event on successful liquidation fee change', async () => {
+			// fee <= minInitialMargin
+			const maxKeeperFee = minKeeperFee.add(new BN(1));
+
+			const txn = await perpsV2MarketSettings.setMaxKeeperFee(maxKeeperFee, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'MaxKeeperFeeUpdated', {
+				sUSD: maxKeeperFee,
 			});
 		});
 	});

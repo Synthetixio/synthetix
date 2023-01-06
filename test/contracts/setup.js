@@ -57,6 +57,7 @@ const constantsOverrides = {
 	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
 	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
 	FUTURES_MIN_KEEPER_FEE: toWei('20'),
+	FUTURES_MAX_KEEPER_FEE: toWei('1000'),
 };
 
 /**
@@ -1857,6 +1858,12 @@ const setupAllContracts = async ({
 				}),
 				returnObj['PerpsV2MarketSettings'].setMinKeeperFee(
 					constantsOverrides.FUTURES_MIN_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
+				returnObj['PerpsV2MarketSettings'].setMaxKeeperFee(
+					constantsOverrides.FUTURES_MAX_KEEPER_FEE,
 					{
 						from: owner,
 					}

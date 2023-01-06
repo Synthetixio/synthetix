@@ -272,7 +272,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         marketState.deletePosition(account);
 
         // Issue the reward to the liquidator.
-        uint liqFee = _liquidationFee(positionSize, price);
+        uint liqFee = _liquidationFee(positionSize, price, true);
         _manager().issueSUSD(liquidator, liqFee);
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
