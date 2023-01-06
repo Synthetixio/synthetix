@@ -707,6 +707,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 255,
+			"layer": "both",
+			"sources": ["FeePool", "Issuer"]
+		},
+		{
 			"sip": 257,
 			"layer": "both",
 			"sources": ["ExchangeRates"],
@@ -1485,6 +1490,23 @@
 			},
 			"sips": [279, 280, 281, 285],
 			"released": true
+		},
+		{
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [255]
+		},
+		{
+			"name": "Sadr (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [255]
 		}
 	]
 }

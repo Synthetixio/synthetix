@@ -306,6 +306,13 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             .sub(periodToRollover.rewardsClaimed)
             .add(periodClosing.rewardsToDistribute);
 
+        // Note: As of SIP-255, all sUSD fee are now automatically burned and are effectively shared amongst stakers in the form of reduced debt.
+        issuer().burnSynthsWithoutDebt(sUSD, FEE_ADDRESS, _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute);
+
+        // Mark the burnt fees as claimed.
+        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesClaimed = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2)
+            .feesToDistribute;
+
         // Shift the previous fee periods across to make room for the new one.
         _currentFeePeriod = _currentFeePeriod.add(FEE_PERIOD_LENGTH).sub(1).mod(FEE_PERIOD_LENGTH);
 
@@ -343,10 +350,14 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return _claimFees(claimingForAddress);
     }
 
+    /**
+     * Note: As of SIP-255, all sUSD fees are burned at the beginning of the fee period and are no longer claimable.
+     * @notice Send the rewards to claiming address.
+     * @param claimingAddress The address to send the rewards to.
+     */
     function _claimFees(address claimingAddress) internal returns (bool) {
         uint rewardsPaid = 0;
-        uint feesPaid = 0;
-        uint availableFees;
+        uint feesPaid = 0; // this should remain unchanged since fees are now automatically burnt
         uint availableRewards;
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
@@ -357,24 +368,13 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
-        // Get the claimingAddress available fees and rewards
-        (availableFees, availableRewards) = feesAvailable(claimingAddress);
+        // Get the claimingAddress available rewards
+        (, availableRewards) = feesAvailable(claimingAddress);
 
-        require(
-            availableFees > 0 || availableRewards > 0,
-            "No fees or rewards available for period, or fees already claimed"
-        );
+        require(availableRewards > 0, "No rewards available for period, or are already claimed");
 
         // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
-
-        if (availableFees > 0) {
-            // Record the fee payment in our recentFeePeriods
-            feesPaid = _recordFeePayment(availableFees);
-
-            // Send them their fees
-            _payFees(claimingAddress, feesPaid);
-        }
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
@@ -421,38 +421,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice Record the fee payment in our recentFeePeriods.
-     * @param sUSDAmount The amount of fees priced in sUSD.
-     */
-    function _recordFeePayment(uint sUSDAmount) internal returns (uint) {
-        // Don't assign to the parameter
-        uint remainingToAllocate = sUSDAmount;
-
-        uint feesPaid;
-        // Start at the oldest period and record the amount, moving to newer periods
-        // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
-            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
-
-            if (delta > 0) {
-                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
-                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
-
-                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
-                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
-                feesPaid = feesPaid.add(amountInPeriod);
-
-                // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return feesPaid;
-            }
-        }
-
-        return feesPaid;
-    }
-
-    /**
      * @notice Record the reward payment in our recentFeePeriods.
      * @param snxAmount The amount of SNX tokens.
      */
@@ -482,26 +450,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             }
         }
         return rewardPaid;
-    }
-
-    /**
-     * @notice Send the fees to claiming address.
-     * @param account The address to send the fees to.
-     * @param sUSDAmount The amount of fees priced in sUSD.
-     */
-    function _payFees(address account, uint sUSDAmount) internal notFeeAddress(account) {
-        // Grab the sUSD Synth
-        ISynth sUSDSynth = issuer().synths(sUSD);
-
-        // NOTE: we do not control the FEE_ADDRESS so it is not possible to do an
-        // ERC20.approve() transaction to allow this feePool to call ERC20.transferFrom
-        // to the accounts address
-
-        // Burn the source amount
-        sUSDSynth.burn(FEE_ADDRESS, sUSDAmount);
-
-        // Mint their new synths
-        sUSDSynth.issue(account, sUSDAmount);
     }
 
     /**
