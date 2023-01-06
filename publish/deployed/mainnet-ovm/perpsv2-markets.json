@@ -15,7 +15,7 @@
 		"maxDelayTimeDelta": "6000",
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "120",
-		"maxLeverage": "27",
+		"maxLeverage": "100",
 		"maxMarketValue": "20000",
 		"maxFundingVelocity": "3",
 		"skewScale": "1000000",
