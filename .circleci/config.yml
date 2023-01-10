@@ -35,7 +35,7 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44159a"
+      foundry_locked_commit: "a44aa13"
     steps:
       - restore_cache:
           keys:
@@ -125,7 +125,7 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44159a"
+      foundry_locked_commit: "a44aa13"
     resource_class: large
     steps:
       - restore_cache:
@@ -288,7 +288,7 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44159a"
+      foundry_locked_commit: "a44aa13"
     resource_class: large
     steps:
       - restore_cache:
