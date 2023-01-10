@@ -42,7 +42,7 @@ function itCanTrade({ ctx }) {
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
-			PerpsV2MarketBTC,
+			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
 			PerpsV2DelayedOrderETHPERP,
 			PerpsV2OffchainDelayedOrderETHPERP,
@@ -79,7 +79,7 @@ function itCanTrade({ ctx }) {
 				PerpsV2OffchainDelayedOrderETHPERP,
 			]);
 			if (unifiedAbis && PerpsV2ProxyETHPERP) {
-				PerpsV2MarketBTC = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
+				PerpsV2MarketETH = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
 			}
 		});
 
@@ -97,12 +97,12 @@ function itCanTrade({ ctx }) {
 			let skipTest;
 
 			before('market and conditions', async () => {
-				if (!PerpsV2MarketBTC) {
+				if (!PerpsV2MarketETH) {
 					// Since we are forking mainnet-ovm, if there's no market defined (before adding PerpsV2 to production), it will fail to find it.
 					skipTest = true;
 					return;
 				}
-				market = PerpsV2MarketBTC.connect(someUser);
+				market = PerpsV2MarketETH.connect(someUser);
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
@@ -212,7 +212,9 @@ function itCanTrade({ ctx }) {
 						//      = 1010
 						//
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
-						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.5')));
+
+						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
+						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('2')));
 
 						await market.modifyPosition(size, priceImpactDelta);
 					});
@@ -251,7 +253,7 @@ function itCanTrade({ ctx }) {
 						assert.ok(await market.canLiquidate(someUser.address));
 
 						// liquidation tx
-						const otherCaller = PerpsV2MarketBTC.connect(otherUser);
+						const otherCaller = PerpsV2MarketETH.connect(otherUser);
 						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
@@ -343,7 +345,7 @@ function itCanTrade({ ctx }) {
 						? await PerpsV2MarketSettings.maxLeverage(marketKey)
 						: await FuturesMarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
-					assert.bnLt(maxLeverage, toUnit(100));
+					assert.bnLte(maxLeverage, toUnit(100));
 
 					const maxMarketValue = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
