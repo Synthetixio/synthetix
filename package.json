@@ -22,7 +22,7 @@
 		"describe": "hardhat describe",
 		"test:deployments": "mocha test/deployments -- --timeout 100000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"anvil > /dev/null\" \"wait-port 127.0.0.1:8545 && mocha test/publish --bail --timeout 240000\"",
+		"test:publish": "concurrently --kill-others --success first \"anvil --prune-history > /dev/null\" \"wait-port 127.0.0.1:8545 && mocha test/publish --bail --timeout 600000\"",
 		"test:integration:l1": "hardhat test:integration:l1 --compile --deploy",
 		"test:integration:l2": "hardhat test:integration:l2 --compile --deploy"
 	},
@@ -145,6 +145,7 @@
 		"web3-utils": "^1.2.2"
 	},
 	"overrides": {
+		"flat": "5.0.2",
 		"loader-utils": "1.4.1"
 	},
 	"lavamoat": {
