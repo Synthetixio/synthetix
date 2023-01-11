@@ -68,7 +68,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     // convenience struct for passing params between position modification helper functions
     struct TradeParams {
         int sizeDelta;
-        uint price;
+        uint oraclePrice;
+        uint fillPrice;
         uint takerFee;
         uint makerFee;
         uint priceImpactDelta;
@@ -359,18 +360,29 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
-     * but is at least the _minKeeperFee() of sUSD to prevent underincentivising
-     * liquidations of small positions.
+     * but is between _minKeeperFee() and _maxKeeperFee() of sUSD to prevent underincentivising
+     * liquidations of small positions, or overpaying.
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
+     * @param capped boolean flag indicating if the liquidation fee must be capped to maxKeeperFee sUSD
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
      */
-    function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
+    function _liquidationFee(
+        int positionSize,
+        uint price,
+        bool capped
+    ) internal view returns (uint lFee) {
         // size * price * fee-ratio
         uint proportionalFee = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationFeeRatio());
+        uint maxFee = _maxKeeperFee();
+        uint cappedProportionalFee = proportionalFee;
+        if (capped) {
+            cappedProportionalFee = proportionalFee > maxFee ? maxFee : proportionalFee;
+        }
         uint minFee = _minKeeperFee();
+
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
-        return proportionalFee > minFee ? proportionalFee : minFee; // not using _max() helper because it's for signed ints
+        return cappedProportionalFee > minFee ? cappedProportionalFee : minFee; // not using _max() helper because it's for signed ints
     }
 
     /**
@@ -385,7 +397,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-        return liquidationBuffer.add(_liquidationFee(positionSize, price));
+        return liquidationBuffer.add(_liquidationFee(positionSize, price, false));
     }
 
     /**
@@ -413,7 +425,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // note: this is the same as fillPrice() where the skew is 0.
         uint notional = _abs(_notionalValue(positionSize, currentPrice));
-        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional) / 2;
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional);
     }
 
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
@@ -439,9 +451,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     function _orderFee(TradeParams memory params, uint dynamicFeeRate) internal view returns (uint fee) {
-        // usd value of the difference in position
+        // usd value of the difference in position (using the p/d-adjusted price).
         int marketSkew = marketState.marketSkew();
-        int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.price));
+        int notionalDiff = params.sizeDelta.multiplyDecimal(int(params.fillPrice));
 
         // minimum fee to pay regardless (due to dynamic fees).
         uint baseFee = _abs(notionalDiff).multiplyDecimal(dynamicFeeRate);
@@ -498,7 +510,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         }
 
         // The order is not submitted if the user's existing position needs to be liquidated.
-        if (_canLiquidate(oldPos, params.price)) {
+        if (_canLiquidate(oldPos, params.oraclePrice)) {
             return (oldPos, 0, Status.CanLiquidate);
         }
 
@@ -513,7 +525,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        (uint newMargin, Status status) = _recomputeMarginWithDelta(oldPos, params.price, -int(fee));
+        (uint newMargin, Status status) = _recomputeMarginWithDelta(oldPos, params.fillPrice, -int(fee));
         if (_isError(status)) {
             return (oldPos, 0, status);
         }
@@ -524,7 +536,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
                 id: oldPos.id,
                 lastFundingIndex: uint64(_latestFundingIndex()),
                 margin: uint128(newMargin),
-                lastPrice: uint128(params.price),
+                lastPrice: uint128(params.fillPrice),
                 size: int128(int(oldPos.size).add(params.sizeDelta))
             });
 
@@ -549,9 +561,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // Liquidation margin is considered without a fee (but including premium), because it wouldn't make sense to allow
         // a trade that will make the position liquidatable.
         //
-        // TODO: params.price is the fillPrice. `liquidationPremium` requires the oracle price.
-        uint liqPremium = _liquidationPremium(newPos.size, params.price);
-        uint liqMargin = _liquidationMargin(newPos.size, params.price).add(liqPremium);
+        // note: we use `oraclePrice` here as `liquidationPremium` calcs premium based not current skew.
+        uint liqPremium = _liquidationPremium(newPos.size, params.oraclePrice);
+        uint liqMargin = _liquidationMargin(newPos.size, params.oraclePrice).add(liqPremium);
         if (newMargin <= liqMargin) {
             return (newPos, 0, Status.CanLiquidate);
         }
@@ -562,7 +574,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         // We'll allow a little extra headroom for rounding errors.
         {
             // stack too deep
-            int leverage = int(newPos.size).multiplyDecimal(int(params.price)).divideDecimal(int(newMargin.add(fee)));
+            int leverage = int(newPos.size).multiplyDecimal(int(params.fillPrice)).divideDecimal(int(newMargin.add(fee)));
             if (_maxLeverage(_marketKey()).add(uint(_UNIT) / 100) < _abs(leverage)) {
                 return (oldPos, 0, Status.MaxLeverageExceeded);
             }

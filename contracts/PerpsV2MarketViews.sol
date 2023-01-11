@@ -190,7 +190,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     function liquidationFee(address account) external view returns (uint) {
         (uint price, bool invalid) = _assetPrice();
         if (!invalid && _canLiquidate(marketState.positions(account), price)) {
-            return _liquidationFee(int(marketState.positions(account).size), price);
+            return _liquidationFee(int(marketState.positions(account).size), price, true);
         } else {
             // theoretically we can calculate a value, but this value is always incorrect because
             // it's for a price at which liquidation cannot happen - so is misleading, because
@@ -225,7 +225,6 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         (uint price, bool isInvalid) = _assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
 
-        bytes32 marketKey = _marketKey();
         (uint makerFee, uint takerFee, bool invalid) = _makerTakeFeeByOrderType(orderType);
         if (invalid) {
             return (0, true);
@@ -234,7 +233,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, price),
+                oraclePrice: price,
+                fillPrice: _fillPrice(sizeDelta, price),
                 makerFee: makerFee,
                 takerFee: takerFee,
                 priceImpactDelta: 0, // price impact is not needed to calculate order fees.
@@ -290,7 +290,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: _fillPrice(sizeDelta, tradePrice), // we use fillPrice here as we're not actually calling _trade.
+                oraclePrice: tradePrice,
+                fillPrice: _fillPrice(sizeDelta, tradePrice),
                 makerFee: makerFee,
                 takerFee: takerFee,
                 priceImpactDelta: 0,
@@ -343,6 +344,8 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /// helper methods calculates the approximate liquidation price
+    ///
+    /// note: currentPrice is oracle price and not fill price.
     function _approxLiquidationPrice(Position memory position, uint currentPrice) internal view returns (uint) {
         if (position.size == 0) {
             return 0;

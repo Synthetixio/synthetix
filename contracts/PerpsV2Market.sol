@@ -201,7 +201,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             messageSender,
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: price,
+                oraclePrice: price,
+                fillPrice: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
                 priceImpactDelta: priceImpactDelta,
@@ -229,9 +230,11 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         _recomputeFunding(price);
         _trade(
             messageSender,
+            // note: the -size here is needed to completely close the position.
             TradeParams({
                 sizeDelta: -size,
-                price: price,
+                oraclePrice: price,
+                fillPrice: _fillPrice(-size, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
                 priceImpactDelta: priceImpactDelta,
@@ -269,7 +272,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         marketState.deletePosition(account);
 
         // Issue the reward to the liquidator.
-        uint liqFee = _liquidationFee(positionSize, price);
+        uint liqFee = _liquidationFee(positionSize, price, true);
         _manager().issueSUSD(liquidator, liqFee);
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);

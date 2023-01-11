@@ -220,7 +220,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
-			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
+			assert.bnEqual(order.targetRoundId, 0);
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, 0);
@@ -333,7 +333,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			// check order
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
-			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
+			assert.bnEqual(order.targetRoundId, 0);
 			assert.bnEqual(order.commitDeposit, orderFee);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, 0);

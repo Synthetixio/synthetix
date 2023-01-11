@@ -250,7 +250,9 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(await perpsV2MarketSettings.minInitialMargin(), globals.minInitialMargin);
 			assert.bnEqual(globals.minInitialMargin, toUnit('40'));
 			assert.bnEqual(await perpsV2MarketSettings.minKeeperFee(), globals.minKeeperFee);
+			assert.bnEqual(await perpsV2MarketSettings.maxKeeperFee(), globals.maxKeeperFee);
 			assert.bnEqual(globals.minKeeperFee, toUnit('20'));
+			assert.bnEqual(globals.maxKeeperFee, toUnit('1000'));
 			assert.bnEqual(
 				await perpsV2MarketSettings.liquidationFeeRatio(),
 				globals.liquidationFeeRatio

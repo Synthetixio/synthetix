@@ -781,11 +781,11 @@
 			"released": "both"
 		},
 		{
-			"sip": 286,
+			"sip": 295,
 			"layer": "ovm",
 			"sources": {
-				"base": [],
 				"ovm": [
+					"PerpsV2MarketSettings",
 					"PerpsV2Market[A-Z]+",
 					"PerpsV2MarketViews.+",
 					"PerpsV2DelayedOrder.+",
@@ -1506,7 +1506,7 @@
 				"major": 2,
 				"minor": 81
 			},
-			"sips": [286]
+			"sips": [295]
 		}
 	]
 }

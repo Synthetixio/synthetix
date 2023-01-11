@@ -205,8 +205,15 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
+     * The maximum amount of sUSD paid to a liquidator when they successfully liquidate a position.
+     */
+    function maxKeeperFee() external view returns (uint) {
+        return _maxKeeperFee();
+    }
+
+    /*
      * Liquidation fee basis points paid to liquidator.
-     * Use together with minKeeperFee() to calculate the actual fee paid.
+     * Use together with minKeeperFee() and maxKeeperFee() to calculate the actual fee paid.
      */
     function liquidationFeeRatio() external view returns (uint) {
         return _liquidationFeeRatio();
@@ -372,8 +379,18 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
         require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
+        if (_maxKeeperFee() > 0) {
+            // only check if already set
+            require(_sUSD <= _maxKeeperFee(), "max fee < min fee");
+        }
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE, _sUSD);
         emit MinKeeperFeeUpdated(_sUSD);
+    }
+
+    function setMaxKeeperFee(uint _sUSD) external onlyOwner {
+        require(_sUSD >= _minKeeperFee(), "max fee < min fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MAX_KEEPER_FEE, _sUSD);
+        emit MaxKeeperFeeUpdated(_sUSD);
     }
 
     function setLiquidationFeeRatio(uint _ratio) external onlyOwner {
@@ -397,6 +414,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     event ParameterUpdated(bytes32 indexed marketKey, bytes32 indexed parameter, uint value);
     event ParameterUpdatedBytes32(bytes32 indexed marketKey, bytes32 indexed parameter, bytes32 value);
     event MinKeeperFeeUpdated(uint sUSD);
+    event MaxKeeperFeeUpdated(uint sUSD);
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
