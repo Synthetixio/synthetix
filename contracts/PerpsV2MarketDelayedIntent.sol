@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2MarketProxyable.sol";
-import "./interfaces/IPerpsV2MarketDelayedSubm.sol";
+import "./interfaces/IPerpsV2MarketDelayedIntent.sol";
 
 // Reference
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
@@ -20,8 +20,8 @@ import "./interfaces/IPerpsV2MarketBaseTypes.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedSubm
-contract PerpsV2MarketDelayedSubm is IPerpsV2MarketDelayedSubm, PerpsV2MarketProxyable {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedIntent
+contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -32,6 +32,26 @@ contract PerpsV2MarketDelayedSubm is IPerpsV2MarketDelayedSubm, PerpsV2MarketPro
     ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     ///// Mutative methods
+    function closeDelayedOrder(IPerpsV2MarketBaseTypes.OrderType orderType) external onlyProxy {}
+
+    function submitOrder(
+        IPerpsV2MarketBaseTypes.OrderType orderType,
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode
+    ) external onlyProxy {
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
+            revert("Invalid order type");
+        }
+
+        bool isOffchain;
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
+            isOffchain = true;
+        }
+
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, isOffchain);
+    }
 
     /**
      * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
@@ -103,10 +123,6 @@ contract PerpsV2MarketDelayedSubm is IPerpsV2MarketDelayedSubm, PerpsV2MarketPro
 
         _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
     }
-
-    function closeDelayedOrder() external onlyProxy {}
-
-    function closeOffchainDelayedOrder() external onlyProxy {}
 
     ///// Internal views
 

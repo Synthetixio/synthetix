@@ -211,10 +211,10 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         // Send the fee to the fee pool
         if (0 < fee) {
             _manager().payFee(fee);
-            // emit tracking code event
-            if (params.trackingCode != bytes32(0)) {
-                emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
-            }
+        }
+        // emit tracking code event
+        if (params.trackingCode != bytes32(0)) {
+            emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
         }
 
         // Update the margin, and apply the resulting debt correction

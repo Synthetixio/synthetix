@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2MarketProxyable.sol";
-import "./interfaces/IPerpsV2MarketDelayedExec.sol";
+import "./interfaces/IPerpsV2MarketDelayedExecution.sol";
 
 // Reference
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
@@ -22,8 +22,8 @@ import "./interfaces/IPyth.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedExec
-contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketProxyable {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedExecution
+contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -44,26 +44,83 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
     ///// Mutative methods
 
     /**
-     * @notice Cancels an existing order for an account.
-     * Anyone can call this method for any account, but only the account owner
-     *  can cancel their own order during the period when it can still potentially be executed (before it becomes stale).
-     *  Only after the order becomes stale, can anyone else (e.g. a keeper) cancel the order for the keeperFee.
-     * Cancelling the order:
-     * - Removes the stored order.
-     * - commitFee (deducted during submission) is sent to the fee pool.
-     * - keeperFee (deducted during submission) is refunded into margin if it's the account holder,
-     *  or send to the msg.sender if it's not the account holder.
-     * @param account the account for which the stored order should be cancelled
+     * @notice Tries to execute a previously submitted delayed or offchain order.
+     * Reverts if:
+     * - There is no order
+     * For delayedOrders:
+     * - Target roundId wasn't reached yet for delayed orders
+     * - Order is stale (target roundId is too low compared to current roundId).
+     * - Order fails for accounting reason (e.g. margin was removed, leverage exceeded, etc)
+     * - Time delay and target round has not yet been reached
+     * If order reverts, it has to be removed by calling cancelDelayedOrder().
+     * Anyone can call this method for any account.
+     * If this is called by the account holder - the keeperFee is refunded into margin,
+     *  otherwise it sent to the msg.sender.
+     * @param account address of the account for which to try to execute a delayed order
      */
-    function cancelDelayedOrder(address account) external onlyProxy {
-        // important!! order of the account, not the msg.sender
+
+    function executeOrder(address account, bytes[] calldata priceUpdateData) external payable {
+        // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
+
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
-        // check to ensure we are not running the offchain delayed order.
-        require(!order.isOffchain, "use offchain method");
 
-        _cancelDelayedOrder(account, order);
+        if (order.isOffchain) {
+            // update price feed (this is payable)
+            _perpsV2ExchangeRate().updatePythPrice.value(msg.value)(messageSender, priceUpdateData);
+        }
+        _executeOrder(account, order);
+    }
+
+    function _executeOrder(address account, DelayedOrder memory order) internal onlyProxy {
+        uint currentPrice;
+        uint takerFee;
+        uint makerFee;
+        uint currentRoundId;
+
+        if (order.isOffchain) {
+            // get latest price for asset
+            uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
+            uint minAge = _offchainDelayedOrderMinAge(_marketKey());
+
+            uint executionTimestamp;
+            (currentPrice, executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
+
+            require((executionTimestamp > order.intentionTime), "price not updated");
+            require((executionTimestamp - order.intentionTime > minAge), "executability not reached");
+            require((executionTimestamp - order.intentionTime < maxAge), "order too old, use cancel");
+
+            takerFee = _takerFeeOffchainDelayedOrder(_marketKey());
+            makerFee = _makerFeeOffchainDelayedOrder(_marketKey());
+        } else {
+            // order.isOffchain === false
+
+            // check order executability and round-id
+            uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+            require(
+                block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
+                "executability not reached"
+            );
+
+            // check order is not too old to execute
+            // we cannot allow executing old orders because otherwise future knowledge
+            // can be used to trigger failures of orders that are more profitable
+            // then the commitFee that was charged, or can be used to confirm
+            // orders that are more profitable than known then (which makes this into a "cheap option").
+            require(
+                !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+                "order too old, use cancel"
+            );
+
+            // price depends on whether the delay or price update has reached/occurred first
+            uint currentPrice = _assetPriceRequireSystemChecks(false);
+
+            takerFee = _takerFeeDelayedOrder(_marketKey());
+            makerFee = _makerFeeDelayedOrder(_marketKey());
+        }
+
+        _executeDelayedOrder(account, order, currentPrice, currentRoundId, takerFee, makerFee);
     }
 
     /**
@@ -80,7 +137,7 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a delayed order
      */
-    function executeDelayedOrder(address account) external onlyProxy {
+    function executeDelayedOrder(address account) external {
         // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
@@ -88,72 +145,7 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
 
         require(!order.isOffchain, "use offchain method");
 
-        // check order executability and round-id
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
-        require(
-            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
-            "executability not reached"
-        );
-
-        // check order is not too old to execute
-        // we cannot allow executing old orders because otherwise future knowledge
-        // can be used to trigger failures of orders that are more profitable
-        // then the commitFee that was charged, or can be used to confirm
-        // orders that are more profitable than known then (which makes this into a "cheap option").
-        require(
-            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-            "order too old, use cancel"
-        );
-
-        // price depends on whether the delay or price update has reached/occurred first
-        uint currentPrice = _assetPriceRequireSystemChecks(false);
-        _executeDelayedOrder(
-            account,
-            order,
-            currentPrice,
-            currentRoundId,
-            _takerFeeDelayedOrder(_marketKey()),
-            _makerFeeDelayedOrder(_marketKey())
-        );
-    }
-
-    // function _confirmCanCancel(
-    //     address account,
-    //     DelayedOrder memory order,
-    //     uint currentRoundId
-    // ) internal {
-    //     if (account != messageSender) {
-    //         // this is someone else (like a keeper)
-    //         // cancellation by third party is only possible when execution cannot be attempted any longer
-    //         // otherwise someone might try to grief an account by cancelling for the keeper fee
-    //         require(
-    //             _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-    //             "cannot be cancelled by keeper yet"
-    //         );
-    //     }
-    // }
-
-    /**
-     * @notice Cancels an existing order for an account.
-     * Anyone can call this method for any account, but only the account owner
-     *  can cancel their own order during the period when it can still potentially be executed (before it becomes stale).
-     *  Only after the order becomes stale, can anyone else (e.g. a keeper) cancel the order for the keeperFee.
-     * Cancelling the order:
-     * - Removes the stored order.
-     * - commitFee (deducted during submission) is sent to the fee pool.
-     * - keeperFee (deducted during submission) is refunded into margin if it's the account holder,
-     *  or send to the msg.sender if it's not the account holder.
-     * @param account the account for which the stored order should be cancelled
-     */
-    function cancelOffchainDelayedOrder(address account) external onlyProxy {
-        // important!! order of the account, not the msg.sender
-        DelayedOrder memory order = marketState.delayedOrders(account);
-        // check that a previous order exists
-        require(order.sizeDelta != 0, "no previous order");
-
-        require(order.isOffchain, "use onchain method");
-
-        _cancelDelayedOrder(account, order);
+        _executeOrder(account, order);
     }
 
     /**
@@ -170,7 +162,7 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a delayed order
      */
-    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable onlyProxy {
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {
         // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
@@ -181,24 +173,62 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
         // update price feed (this is payable)
         _perpsV2ExchangeRate().updatePythPrice.value(msg.value)(messageSender, priceUpdateData);
 
-        // get latest price for asset
-        uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
-        uint minAge = _offchainDelayedOrderMinAge(_marketKey());
+        _executeOrder(account, order);
+    }
 
-        (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
+    /**
+     * @notice Cancels an existing order for an account.
+     * Anyone can call this method for any account, but only the account owner
+     *  can cancel their own order during the period when it can still potentially be executed (before it becomes stale).
+     *  Only after the order becomes stale, can anyone else (e.g. a keeper) cancel the order for the keeperFee.
+     * Cancelling the order:
+     * - Removes the stored order.
+     * - commitFee (deducted during submission) is sent to the fee pool.
+     * - keeperFee (deducted during submission) is refunded into margin if it's the account holder,
+     *  or send to the msg.sender if it's not the account holder.
+     * @param account the account for which the stored order should be cancelled
+     */
+    function cancelOrder(address account) external {
+        // important!! order of the account, not the msg.sender
+        DelayedOrder memory order = marketState.delayedOrders(account);
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no previous order");
 
-        require((executionTimestamp > order.intentionTime), "price not updated");
-        require((executionTimestamp - order.intentionTime > minAge), "too early");
-        require((executionTimestamp - order.intentionTime < maxAge), "too late");
+        _cancelDelayedOrder(account, order);
+    }
 
-        _executeDelayedOrder(
-            account,
-            order,
-            currentPrice,
-            0,
-            _takerFeeOffchainDelayedOrder(_marketKey()),
-            _makerFeeOffchainDelayedOrder(_marketKey())
-        );
+    function cancelDelayedOrder(address account) external {
+        // important!! order of the account, not the msg.sender
+        DelayedOrder memory order = marketState.delayedOrders(account);
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no previous order");
+
+        require(!order.isOffchain, "use offchain method");
+
+        _cancelDelayedOrder(account, order);
+    }
+
+    /**
+     * @notice Cancels an existing order for an account.
+     * Anyone can call this method for any account, but only the account owner
+     *  can cancel their own order during the period when it can still potentially be executed (before it becomes stale).
+     *  Only after the order becomes stale, can anyone else (e.g. a keeper) cancel the order for the keeperFee.
+     * Cancelling the order:
+     * - Removes the stored order.
+     * - commitFee (deducted during submission) is sent to the fee pool.
+     * - keeperFee (deducted during submission) is refunded into margin if it's the account holder,
+     *  or send to the msg.sender if it's not the account holder.
+     * @param account the account for which the stored order should be cancelled
+     */
+    function cancelOffchainDelayedOrder(address account) external {
+        // important!! order of the account, not the msg.sender
+        DelayedOrder memory order = marketState.delayedOrders(account);
+        // check that a previous order exists
+        require(order.sizeDelta != 0, "no previous order");
+
+        require(order.isOffchain, "use onchain method");
+
+        _cancelDelayedOrder(account, order);
     }
 
     // solhint-disable no-unused-vars
@@ -263,7 +293,7 @@ contract PerpsV2MarketDelayedExec is IPerpsV2MarketDelayedExec, PerpsV2MarketPro
         return (price, publishTime);
     }
 
-    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal {
+    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal onlyProxy {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
         _confirmCanCancel(account, order, currentRoundId);
