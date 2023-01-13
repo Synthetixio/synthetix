@@ -97,7 +97,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
             // order.isOffchain === false
 
             // check order executability and round-id
-            uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+            currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
             require(
                 block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
                 "executability not reached"
@@ -114,7 +114,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
             );
 
             // price depends on whether the delay or price update has reached/occurred first
-            uint currentPrice = _assetPriceRequireSystemChecks(false);
+            currentPrice = _assetPriceRequireSystemChecks(false);
 
             takerFee = _takerFeeDelayedOrder(_marketKey());
             makerFee = _makerFeeDelayedOrder(_marketKey());

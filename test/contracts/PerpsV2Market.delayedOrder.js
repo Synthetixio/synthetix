@@ -8,12 +8,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const {
-	getDecodedLogs,
-	decodedEventEqual,
-	// setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
 contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	let perpsV2MarketSettings,
@@ -71,10 +66,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
-				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
-				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
 				'AddressResolver',
 				'FeePool',
@@ -356,7 +349,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				event: 'PerpsTracking',
 				emittedFrom: perpsV2Market.address,
 				args: [trackingCode, baseAsset, marketKey, size, expectedFee],
-				log: decodedLogs[2],
+				log: decodedLogs[3],
 			});
 		});
 	});
