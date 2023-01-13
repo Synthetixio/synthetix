@@ -174,16 +174,26 @@ module.exports = {
 		address = undefined,
 		skipPassCheck = false,
 		reason = undefined,
+		value = undefined,
 	}) {
 		for (const user of accounts) {
 			if (user === address) {
 				continue;
 			}
 
-			await assert.revert(fnc(...args, { from: user }), reason);
+			const options = { from: user };
+			if (value) {
+				options.value = value;
+			}
+
+			await assert.revert(fnc(...args, options), reason);
 		}
 		if (!skipPassCheck && address) {
-			await fnc(...args, { from: address });
+			const options = { from: address };
+			if (value) {
+				options.value = value;
+			}
+			await fnc(...args, options);
 		}
 	},
 
