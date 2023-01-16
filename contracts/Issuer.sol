@@ -1015,7 +1015,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
         address feePool = resolver.getAddress(CONTRACT_FEEPOOL);
         require(msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool, "only trusted minters");
-        require(bridgeL1 == address(0) || bridgeL2 == address(0), "one minter must be 0x0");
         _;
     }
 
