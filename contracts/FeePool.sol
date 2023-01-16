@@ -307,11 +307,17 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
             .add(periodClosing.rewardsToDistribute);
 
         // Note: As of SIP-255, all sUSD fee are now automatically burned and are effectively shared amongst stakers in the form of reduced debt.
-        issuer().burnSynthsWithoutDebt(sUSD, FEE_ADDRESS, _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute);
+        if (_recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute > 0) {
+            issuer().burnSynthsWithoutDebt(
+                sUSD,
+                FEE_ADDRESS,
+                _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute
+            );
 
-        // Mark the burnt fees as claimed.
-        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesClaimed = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2)
-            .feesToDistribute;
+            // Mark the burnt fees as claimed.
+            _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesClaimed = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2)
+                .feesToDistribute;
+        }
 
         // Shift the previous fee periods across to make room for the new one.
         _currentFeePeriod = _currentFeePeriod.add(FEE_PERIOD_LENGTH).sub(1).mod(FEE_PERIOD_LENGTH);
@@ -357,7 +363,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      */
     function _claimFees(address claimingAddress) internal returns (bool) {
         uint rewardsPaid = 0;
-        uint feesPaid = 0; // this should remain unchanged since fees are now automatically burnt
+        uint feesPaid = 0;
+        uint availableFees;
         uint availableRewards;
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
@@ -368,13 +375,21 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
-        // Get the claimingAddress available rewards
-        (, availableRewards) = feesAvailable(claimingAddress);
+        // Get the claimingAddress available fees and rewards
+        (availableFees, availableRewards) = feesAvailable(claimingAddress);
 
-        require(availableRewards > 0, "No rewards available for period, or are already claimed");
+        require(
+            availableFees > 0 || availableRewards > 0,
+            "No fees or rewards available for period, or fees already claimed"
+        );
 
         // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
+
+        if (availableFees > 0) {
+            // Record the fee payment in our recentFeePeriods
+            feesPaid = _recordFeePayment(availableFees);
+        }
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
@@ -418,6 +433,38 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         if (feePeriodIndex == 0) {
             issuer().setCurrentPeriodId(uint128(feePeriodId));
         }
+    }
+
+    /**
+     * @notice Record the fee payment in our recentFeePeriods.
+     * @param sUSDAmount The amount of fees priced in sUSD.
+     */
+    function _recordFeePayment(uint sUSDAmount) internal returns (uint) {
+        // Don't assign to the parameter
+        uint remainingToAllocate = sUSDAmount;
+
+        uint feesPaid;
+        // Start at the oldest period and record the amount, moving to newer periods
+        // until we've exhausted the amount.
+        // The condition checks for overflow because we're going to 0 with an unsigned int.
+        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
+            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
+            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
+
+            if (delta > 0) {
+                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
+                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
+
+                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
+                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
+                feesPaid = feesPaid.add(amountInPeriod);
+
+                // No need to continue iterating if we've recorded the whole amount;
+                if (remainingToAllocate == 0) return feesPaid;
+            }
+        }
+
+        return feesPaid;
     }
 
     /**
@@ -482,6 +529,20 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
+     * @notice The total fees that were already burned (i.e. claimed).
+     */
+    function totalFeesBurned() external view returns (uint) {
+        uint totalFees = 0;
+
+        // Fees in fee period [0] are not yet burned
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            totalFees = totalFees.add(_recentFeePeriodsStorage(i).feesClaimed);
+        }
+
+        return totalFees;
+    }
+
+    /**
      * @notice The total SNX rewards available in the system to be withdrawn
      */
     function totalRewardsAvailable() external view returns (uint) {
@@ -514,8 +575,37 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         }
 
         // And convert totalFees to sUSD
+        // Note: totalFees will always return zero per SIP-255 fee burning.
         // Return totalRewards as is in SNX amount
         return (totalFees, totalRewards);
+    }
+
+    /**
+     * @notice The total amount of fees burned for a specific account.
+     */
+    function feesBurned(address account) public view returns (uint) {
+        // Add up the fees
+        uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
+
+        uint totalFees = 0;
+
+        // Fees & Rewards in fee period [0] are not yet burned
+        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
+            totalFees = totalFees.add(userFees[i][0]);
+        }
+
+        // Return totalFees in sUSD
+        return totalFees;
+    }
+
+    /**
+     * @notice The amount of fees to be burned for an account during the current fee period.
+     */
+    function feesToBurn(address account) public view returns (uint) {
+        return
+            _recentFeePeriodsStorage(0).feesToDistribute.multiplyDecimal(
+                synthetixDebtShare().balanceOf(account).divideDecimal(synthetixDebtShare().totalSupply())
+            );
     }
 
     function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
