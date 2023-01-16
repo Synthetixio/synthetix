@@ -4955,44 +4955,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnLt(remainingMargin, liquidationFee);
 			});
 
-			it('liquidations of positive margin position pays to fee pool, long case', async () => {
-				// see: getExpectedLiquidationPrice for liqPrice calculation.
-				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
-
-				const newPrice = liqPrice.sub(toUnit(0.5));
-				await setPrice(baseAsset, newPrice);
-				assert.isTrue(await perpsV2Market.canLiquidate(trader));
-
-				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
-				const tx = await perpsV2Market.liquidatePosition(trader, { from: noBalance });
-
-				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), newPrice),
-					toUnit(40) // position size
-				);
-				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
-
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
-				assert.deepEqual(
-					decodedLogs.map(({ name }) => name),
-					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
-				);
-				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
-
-				const poolFee = remainingMargin.sub(liquidationFee);
-				// the price needs to be set in a way that leaves positive margin after fee
-				assert.isTrue(poolFee.gt(toBN(0)));
-
-				decodedEventEqual({
-					event: 'Issued',
-					emittedFrom: sUSD.address,
-					args: [await feePool.FEE_ADDRESS(), poolFee],
-					log: decodedLogs[4],
-					bnCloseVariance: toUnit('0.001'),
-				});
-			});
-
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader3)).price;
@@ -5056,6 +5018,44 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, long case', async () => {
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
+				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
+				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
+
+				const newPrice = liqPrice.sub(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue(await perpsV2Market.canLiquidate(trader));
+
+				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
+				const tx = await perpsV2Market.liquidatePosition(trader, { from: noBalance });
+
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
+				);
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[4],
+					bnCloseVariance: toUnit('0.001'),
+				});
 			});
 
 			it('liquidations of positive margin position pays to fee pool, short case', async () => {
