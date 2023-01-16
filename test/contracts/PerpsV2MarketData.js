@@ -202,6 +202,8 @@ contract('PerpsV2MarketData', accounts => {
 
 					offchainMarketKey,
 					toUnit('0.05'),
+
+					toWei('1'), // 1 liquidation premium multiplier
 				],
 				{ from: owner }
 			);
