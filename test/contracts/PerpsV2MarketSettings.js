@@ -240,6 +240,15 @@ contract('PerpsV2MarketSettings', accounts => {
 					'cannot set skew scale 0'
 				);
 			});
+
+			it('should revert if setLiquidationPremiumMultiplier is 0', async () => {
+				await assert.revert(
+					perpsV2MarketSettings.setLiquidationPremiumMultiplier(marketKey, 0, {
+						from: owner,
+					}),
+					'cannot set liquidation premium multiplier 0'
+				);
+			});
 		});
 
 		describe('Setting the params', async () => {
