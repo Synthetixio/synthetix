@@ -171,6 +171,13 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         return _offchainPriceDivergence(_marketKey);
     }
 
+    /*
+     * The liquidation premium multiplier applied when calculating the liquidation premium margin.
+     */
+    function liquidationPremiumMultiplier(bytes32 _marketKey) public view returns (uint) {
+        return _liquidationPremiumMultiplier(_marketKey);
+    }
+
     function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
         return
             Parameters(
@@ -192,7 +199,8 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _offchainDelayedOrderMinAge(_marketKey),
                 _offchainDelayedOrderMaxAge(_marketKey),
                 _offchainMarketKey(_marketKey),
-                _offchainPriceDivergence(_marketKey)
+                _offchainPriceDivergence(_marketKey),
+                _liquidationPremiumMultiplier(_marketKey)
             );
     }
 
@@ -354,6 +362,11 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_OFFCHAIN_PRICE_DIVERGENCE, _offchainPriceDivergence);
     }
 
+    function setLiquidationPremiumMultiplier(bytes32 _marketKey, uint _liquidationPremiumMultiplier) public onlyOwner {
+        require(_liquidationPremiumMultiplier > 0, "cannot set liquidation premium multiplier 0");
+        _setParameter(_marketKey, PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER, _liquidationPremiumMultiplier);
+    }
+
     function setParameters(bytes32 _marketKey, Parameters calldata _parameters) external onlyOwner {
         _recomputeFunding(_marketKey);
         setTakerFee(_marketKey, _parameters.takerFee);
@@ -375,6 +388,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setOffchainDelayedOrderMaxAge(_marketKey, _parameters.offchainDelayedOrderMaxAge);
         setOffchainMarketKey(_marketKey, _parameters.offchainMarketKey);
         setOffchainPriceDivergence(_marketKey, _parameters.offchainPriceDivergence);
+        setLiquidationPremiumMultiplier(_marketKey, _parameters.liquidationPremiumMultiplier);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {

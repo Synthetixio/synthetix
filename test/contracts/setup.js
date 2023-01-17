@@ -1918,6 +1918,8 @@ const setupAllContracts = async ({
 
 							offchainMarketKey, // offchain market key
 							toUnit('0.06'), // offchain price divergence 6%
+
+							toWei('1'), // 1 liquidation premium multiplier
 						],
 						{ from: owner }
 					),

@@ -119,7 +119,7 @@ contract PerpsV2MarketData {
             );
     }
 
-    function _futuresMarketSettings() internal view returns (IPerpsV2MarketSettings) {
+    function _perpsV2MarketSettings() internal view returns (IPerpsV2MarketSettings) {
         return
             IPerpsV2MarketSettings(
                 resolverProxy.requireAndGetAddress("PerpsV2MarketSettings", "Missing PerpsV2MarketSettings Address")
@@ -127,7 +127,7 @@ contract PerpsV2MarketData {
     }
 
     function globals() external view returns (FuturesGlobals memory) {
-        IPerpsV2MarketSettings settings = _futuresMarketSettings();
+        IPerpsV2MarketSettings settings = _perpsV2MarketSettings();
         return
             FuturesGlobals({
                 minInitialMargin: settings.minInitialMargin(),
@@ -143,7 +143,7 @@ contract PerpsV2MarketData {
     }
 
     function _parameters(bytes32 marketKey) internal view returns (IPerpsV2MarketSettings.Parameters memory) {
-        return _futuresMarketSettings().parameters(marketKey);
+        return _perpsV2MarketSettings().parameters(marketKey);
     }
 
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {

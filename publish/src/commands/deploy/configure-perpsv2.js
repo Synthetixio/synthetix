@@ -110,6 +110,7 @@ module.exports = async ({
 			skewScale,
 			offchainMarketKey,
 			offchainPriceDivergence,
+			liquidationPremiumMultiplier,
 			paused,
 			offchainPaused,
 		} = market;
@@ -138,6 +139,7 @@ module.exports = async ({
 			skewScale: w3utils.toWei(skewScale),
 			offchainMarketKey: offchainMarketKeyBytes,
 			offchainPriceDivergence: w3utils.toWei(offchainPriceDivergence),
+			liquidationPremiumMultiplier: w3utils.toWei(liquidationPremiumMultiplier),
 		};
 
 		for (const setting in settings) {

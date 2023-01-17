@@ -4229,14 +4229,18 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				minFee,
 				feeRatio,
 				bufferRatio,
+				liquidationPremiumMultiplier,
 			}) => {
 				const defaultLiquidationBufferRatio = toUnit('0.0025');
 				const defaultLiquidationFeeRatio = toUnit('0.0035');
 				const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
+				const defaultLiquidationPremiumMultiplier = toUnit('1'); // *1
 
 				const liqMinFee = minFee || defaultLiquidationMinFee;
 				const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
 				const liqBufferRatio = bufferRatio || defaultLiquidationBufferRatio;
+				const liqPremiumMultiplier =
+					liquidationPremiumMultiplier || defaultLiquidationPremiumMultiplier;
 
 				// How is the liquidation price calculated?
 				//
@@ -4255,10 +4259,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				).add(expectedLiquidationFee);
 
 				const premium = multiplyDecimal(
-					divideDecimal(size.abs(), skewScale),
-					multiplyDecimal(size.abs(), price)
+					multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
+					liqPremiumMultiplier
 				);
 
+				//  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
 				// note: we use fillPrice here because this the same as position.lastPrice
 				return fillPrice
 					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
@@ -4579,6 +4584,91 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.isTrue(false);
 			});
 
+			it('Liquidation price is accurate if the liquidation premium multiplier changes', async () => {
+				await perpsV2MarketSettings.setLiquidationPremiumMultiplier(marketKey, toUnit('1'), {
+					from: owner,
+				});
+
+				const price = toUnit('250');
+				await setPrice(baseAsset, price);
+
+				const margin1 = toUnit('1000');
+				const size1 = toUnit('20');
+				const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
+				const fillPrice1 = (await perpsV2Market.fillPriceWithBasePrice(size1, 0))[0];
+				await perpsV2Market.transferMargin(margin1, { from: trader });
+				await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
+
+				const margin2 = toUnit('1000');
+				const size2 = toUnit('-20');
+				const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
+				const fillPrice2 = (await perpsV2Market.fillPriceWithBasePrice(size2, 0))[0];
+				await perpsV2Market.transferMargin(margin2, { from: trader2 });
+				await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
+
+				assert.bnEqual(
+					(await perpsV2Market.liquidationPrice(trader)).price,
+					await getExpectedLiquidationPrice({
+						skewScale,
+						margin: margin1,
+						size: size1,
+						fillPrice: fillPrice1,
+						fee: fee1,
+						price,
+						account: trader,
+					})
+				);
+				assert.bnEqual(
+					(await perpsV2Market.liquidationPrice(trader2)).price,
+					await getExpectedLiquidationPrice({
+						skewScale,
+						margin: margin2,
+						size: size2,
+						fillPrice: fillPrice2,
+						fee: fee2,
+						price,
+						account: trader2,
+					})
+				);
+
+				// change the minimum liquidation fee
+				const liquidationPremiumMultiplier = toUnit('5');
+				await perpsV2MarketSettings.setLiquidationPremiumMultiplier(
+					marketKey,
+					liquidationPremiumMultiplier,
+					{
+						from: owner,
+					}
+				);
+
+				assert.bnEqual(
+					(await perpsV2Market.liquidationPrice(trader)).price,
+					await getExpectedLiquidationPrice({
+						skewScale,
+						margin: margin1,
+						size: size1,
+						fillPrice: fillPrice1,
+						fee: fee1,
+						price,
+						account: trader,
+						liquidationPremiumMultiplier,
+					})
+				);
+				assert.bnEqual(
+					(await perpsV2Market.liquidationPrice(trader2)).price,
+					await getExpectedLiquidationPrice({
+						skewScale,
+						margin: margin2,
+						size: size2,
+						fillPrice: fillPrice2,
+						fee: fee2,
+						price,
+						account: trader2,
+						liquidationPremiumMultiplier,
+					})
+				);
+			});
+
 			it('No liquidation price on an empty position', async () => {
 				assert.bnEqual((await perpsV2Market.liquidationPrice(noBalance))[0], toUnit(0));
 			});
@@ -4865,44 +4955,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnLt(remainingMargin, liquidationFee);
 			});
 
-			it('liquidations of positive margin position pays to fee pool, long case', async () => {
-				// see: getExpectedLiquidationPrice for liqPrice calculation.
-				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
-				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
-
-				const newPrice = liqPrice.sub(toUnit(0.5));
-				await setPrice(baseAsset, newPrice);
-				assert.isTrue(await perpsV2Market.canLiquidate(trader));
-
-				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
-				const tx = await perpsV2Market.liquidatePosition(trader, { from: noBalance });
-
-				const liquidationFee = multiplyDecimal(
-					multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), newPrice),
-					toUnit(40) // position size
-				);
-				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
-
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
-				assert.deepEqual(
-					decodedLogs.map(({ name }) => name),
-					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
-				);
-				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
-
-				const poolFee = remainingMargin.sub(liquidationFee);
-				// the price needs to be set in a way that leaves positive margin after fee
-				assert.isTrue(poolFee.gt(toBN(0)));
-
-				decodedEventEqual({
-					event: 'Issued',
-					emittedFrom: sUSD.address,
-					args: [await feePool.FEE_ADDRESS(), poolFee],
-					log: decodedLogs[4],
-					bnCloseVariance: toUnit('0.001'),
-				});
-			});
-
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
 				// see: getExpectedLiquidationPrice for liqPrice calculation.
 				const liqPrice = (await perpsV2Market.liquidationPrice(trader3)).price;
@@ -4966,6 +5018,44 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				assert.bnLt(remainingMargin, liquidationFee);
+			});
+
+			it('liquidations of positive margin position pays to fee pool, long case', async () => {
+				// see: getExpectedLiquidationPrice for liqPrice calculation.
+				const liqPrice = (await perpsV2Market.liquidationPrice(trader)).price;
+				assert.bnEqual(liqPrice, toUnit('227.400150000003014'));
+
+				const newPrice = liqPrice.sub(toUnit(0.5));
+				await setPrice(baseAsset, newPrice);
+				assert.isTrue(await perpsV2Market.canLiquidate(trader));
+
+				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
+				const tx = await perpsV2Market.liquidatePosition(trader, { from: noBalance });
+
+				const liquidationFee = multiplyDecimal(
+					multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), newPrice),
+					toUnit(40) // position size
+				);
+				assert.bnClose(await sUSD.balanceOf(noBalance), liquidationFee, toUnit('0.001'));
+
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
+				assert.deepEqual(
+					decodedLogs.map(({ name }) => name),
+					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
+				);
+				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
+
+				const poolFee = remainingMargin.sub(liquidationFee);
+				// the price needs to be set in a way that leaves positive margin after fee
+				assert.isTrue(poolFee.gt(toBN(0)));
+
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), poolFee],
+					log: decodedLogs[4],
+					bnCloseVariance: toUnit('0.001'),
+				});
 			});
 
 			it('liquidations of positive margin position pays to fee pool, short case', async () => {
@@ -5314,7 +5404,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1],
 						{
 							from: owner,
 						}
@@ -5394,7 +5484,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1],
 					{
 						from: owner,
 					}
@@ -5406,7 +5496,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1],
 						{
 							from: owner,
 						}
@@ -5559,7 +5649,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1],
 					{
 						from: owner,
 					}
@@ -5638,7 +5728,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1],
 					{
 						from: owner,
 					}

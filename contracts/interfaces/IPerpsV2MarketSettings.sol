@@ -22,6 +22,7 @@ interface IPerpsV2MarketSettings {
         uint offchainDelayedOrderMaxAge;
         bytes32 offchainMarketKey;
         uint offchainPriceDivergence;
+        uint liquidationPremiumMultiplier;
     }
 
     function takerFee(bytes32 _marketKey) external view returns (uint);
@@ -61,6 +62,8 @@ interface IPerpsV2MarketSettings {
     function offchainMarketKey(bytes32 _marketKey) external view returns (bytes32);
 
     function offchainPriceDivergence(bytes32 _marketKey) external view returns (uint);
+
+    function liquidationPremiumMultiplier(bytes32 _marketKey) external view returns (uint);
 
     function minKeeperFee() external view returns (uint);
 
