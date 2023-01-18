@@ -21,7 +21,7 @@ module.exports = async ({
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// ----------------
-	// Futures market setup
+	// PerpsV2 market setup
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY PERPS V2 MARKETS ------\n`));
@@ -72,7 +72,7 @@ module.exports = async ({
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	const deployedFuturesMarkets = [];
+	const deployedPerpsV2Markets = [];
 	const perpMarketsImplementationUpdated = [];
 	const exchangeRateAssociateContractAddresses = [];
 
@@ -87,16 +87,16 @@ module.exports = async ({
 		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketDelayedOrderName = 'PerpsV2DelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
-		const marketOffchainDelayedOrderName =
-			'PerpsV2OffchainDelayedOrder' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketDelayedIntentName = 'PerpsV2DelayedIntent' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketDelayedExecutionName =
+			'PerpsV2DelayedExecution' + marketConfig.marketKey.slice('1'); // remove s prefix
 
 		// Deploy contracts
 		// Proxy
-		const previousFuturesMarketProxy = deployer.getExistingAddress({
+		const previousPerpsV2MarketProxy = deployer.getExistingAddress({
 			name: marketProxyName,
 		});
-		const futuresMarketProxy = await deployer.deployContract({
+		const perpsV2MarketProxy = await deployer.deployContract({
 			name: marketProxyName,
 			source: 'ProxyPerpsV2',
 			args: [account],
@@ -105,10 +105,10 @@ module.exports = async ({
 		});
 
 		// State
-		const previousFuturesMarketState = deployer.getExistingAddress({
+		const previousPerpsV2MarketState = deployer.getExistingAddress({
 			name: marketStateName,
 		});
-		const futuresMarketState = await deployer.deployContract({
+		const perpsV2MarketState = await deployer.deployContract({
 			name: marketStateName,
 			source: 'PerpsV2MarketState',
 			args: [account, [account], baseAsset, marketKey],
@@ -116,13 +116,13 @@ module.exports = async ({
 		});
 
 		// Market
-		const previousFuturesMarket = deployer.getExistingAddress({ name: marketName });
-		const futuresMarket = await deployer.deployContract({
+		const previousPerpsV2Market = deployer.getExistingAddress({ name: marketName });
+		const perpsV2Market = await deployer.deployContract({
 			name: marketName,
 			source: 'PerpsV2Market',
 			args: [
-				futuresMarketProxy.address,
-				futuresMarketState.address,
+				perpsV2MarketProxy.address,
+				perpsV2MarketState.address,
 				account,
 				addressOf(ReadProxyAddressResolver),
 			],
@@ -131,24 +131,24 @@ module.exports = async ({
 		});
 
 		// Views
-		const futuresMarketViews = await deployer.deployContract({
+		const perpsV2MarketViews = await deployer.deployContract({
 			name: marketViewName,
 			source: 'PerpsV2MarketViews',
-			args: [futuresMarketState.address, account, addressOf(ReadProxyAddressResolver)],
+			args: [perpsV2MarketState.address, account, addressOf(ReadProxyAddressResolver)],
 			force: true,
 			skipResolver: true,
 		});
 
-		// DelayedOrder
-		const previousFuturesMarketDelayedOrder = deployer.getExistingAddress({
-			name: marketDelayedOrderName,
+		// DelayedIntent
+		const previousPerpsV2MarketDelayedIntent = deployer.getExistingAddress({
+			name: marketDelayedIntentName,
 		});
-		const futuresMarketDelayedOrder = await deployer.deployContract({
-			name: marketDelayedOrderName,
-			source: 'PerpsV2MarketDelayedOrders',
+		const perpsV2MarketDelayedIntent = await deployer.deployContract({
+			name: marketDelayedIntentName,
+			source: 'PerpsV2MarketDelayedIntent',
 			args: [
-				futuresMarketProxy.address,
-				futuresMarketState.address,
+				perpsV2MarketProxy.address,
+				perpsV2MarketState.address,
 				account,
 				addressOf(ReadProxyAddressResolver),
 			],
@@ -156,16 +156,16 @@ module.exports = async ({
 			skipResolver: true,
 		});
 
-		// Offchain DelayedOrder
-		const previousFuturesMarketDelayedOrderOffchain = deployer.getExistingAddress({
-			name: marketOffchainDelayedOrderName,
+		// DelayedExecution
+		const previousPerpsV2MarketDelayedExecution = deployer.getExistingAddress({
+			name: marketDelayedExecutionName,
 		});
-		const futuresMarketDelayedOrderOffchain = await deployer.deployContract({
-			name: marketOffchainDelayedOrderName,
-			source: 'PerpsV2MarketDelayedOrdersOffchain',
+		const perpsV2MarketDelayedExecution = await deployer.deployContract({
+			name: marketDelayedExecutionName,
+			source: 'PerpsV2MarketDelayedExecution',
 			args: [
-				futuresMarketProxy.address,
-				futuresMarketState.address,
+				perpsV2MarketProxy.address,
+				perpsV2MarketState.address,
 				account,
 				addressOf(ReadProxyAddressResolver),
 			],
@@ -173,95 +173,96 @@ module.exports = async ({
 			skipResolver: true,
 		});
 
-		exchangeRateAssociateContractAddresses.push(futuresMarketDelayedOrderOffchain.address);
+		exchangeRateAssociateContractAddresses.push(perpsV2MarketDelayedIntent.address);
+		exchangeRateAssociateContractAddresses.push(perpsV2MarketDelayedExecution.address);
 
 		// Configure Contracts, Proxy and State
 
 		// Initial cleanup
-		const stateChanged = previousFuturesMarketState !== futuresMarketState.address;
+		const stateChanged = previousPerpsV2MarketState !== perpsV2MarketState.address;
 		const stateOrProxyChanged =
-			stateChanged || previousFuturesMarketProxy !== futuresMarketProxy.address;
+			stateChanged || previousPerpsV2MarketProxy !== perpsV2MarketProxy.address;
 		let implementationChanged = false;
 
 		if (stateChanged) {
 			await runStep({
 				contract: `PerpsV2MarketState`,
-				target: futuresMarketState,
+				target: perpsV2MarketState,
 				write: 'removeAssociatedContracts',
 				writeArg: [[account]],
 			});
 		}
 
 		// Configure Views
-		filteredFunctions.push(...getFunctionSignatures(futuresMarketViews, excludedFunctions));
+		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketViews, excludedFunctions));
 
-		// Configure Next Price
+		// Configure Delayed Intent
 		if (
 			stateOrProxyChanged ||
-			previousFuturesMarketDelayedOrder !== futuresMarketDelayedOrder.address
+			previousPerpsV2MarketDelayedIntent !== perpsV2MarketDelayedIntent.address
 		) {
 			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
-				target: futuresMarketState,
+				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
-				writeArg: [[futuresMarketDelayedOrder.address]],
+				writeArg: [[perpsV2MarketDelayedIntent.address]],
 			});
 
 			await runStep({
-				contract: `PerpsV2MarketDelayedOrders`,
-				target: futuresMarketDelayedOrder,
+				contract: `PerpsV2MarketDelayedIntent`,
+				target: perpsV2MarketDelayedIntent,
 				write: 'setProxy',
-				writeArg: [futuresMarketProxy.address],
+				writeArg: [perpsV2MarketProxy.address],
 			});
 		}
 
-		filteredFunctions.push(...getFunctionSignatures(futuresMarketDelayedOrder, excludedFunctions));
+		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketDelayedIntent, excludedFunctions));
 
-		// Configure Offchain Next Price
+		// Configure Delayed Intent
 		if (
 			stateOrProxyChanged ||
-			previousFuturesMarketDelayedOrderOffchain !== futuresMarketDelayedOrderOffchain.address
+			previousPerpsV2MarketDelayedExecution !== perpsV2MarketDelayedExecution.address
 		) {
 			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
-				target: futuresMarketState,
+				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
-				writeArg: [[futuresMarketDelayedOrderOffchain.address]],
+				writeArg: [[perpsV2MarketDelayedExecution.address]],
 			});
 
 			await runStep({
-				contract: `PerpsV2MarketDelayedOrdersOffchain`,
-				target: futuresMarketDelayedOrderOffchain,
+				contract: `PerpsV2MarketDelayedExecution`,
+				target: perpsV2MarketDelayedExecution,
 				write: 'setProxy',
-				writeArg: [futuresMarketProxy.address],
+				writeArg: [perpsV2MarketProxy.address],
 			});
 		}
 
 		filteredFunctions.push(
-			...getFunctionSignatures(futuresMarketDelayedOrderOffchain, excludedFunctions)
+			...getFunctionSignatures(perpsV2MarketDelayedExecution, excludedFunctions)
 		);
 
 		// Configure Market
-		if (stateOrProxyChanged || previousFuturesMarket !== futuresMarket.address) {
+		if (stateOrProxyChanged || previousPerpsV2Market !== perpsV2Market.address) {
 			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
-				target: futuresMarketState,
+				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
-				writeArg: [[futuresMarket.address]],
+				writeArg: [[perpsV2Market.address]],
 			});
 
 			await runStep({
 				contract: `PerpsV2Market`,
-				target: futuresMarket,
+				target: perpsV2Market,
 				write: 'setProxy',
-				writeArg: [futuresMarketProxy.address],
+				writeArg: [perpsV2MarketProxy.address],
 			});
 		}
 
-		filteredFunctions.push(...getFunctionSignatures(futuresMarket, excludedFunctions));
+		filteredFunctions.push(...getFunctionSignatures(perpsV2Market, excludedFunctions));
 
 		// Remove duplicate selectors
 		filteredFunctions = filteredFunctions.filter(
@@ -272,8 +273,8 @@ module.exports = async ({
 
 		// Remove unknown selectors
 		const filteredFunctionSelectors = filteredFunctions.map(ff => ff.signature);
-		const routesLength = await futuresMarketProxy.getRoutesLength();
-		const routes = (await futuresMarketProxy.getRoutesPage(0, routesLength)).map(
+		const routesLength = await perpsV2MarketProxy.getRoutesLength();
+		const routes = (await perpsV2MarketProxy.getRoutesPage(0, routesLength)).map(
 			route => route.selector
 		);
 		const { toRemove } = filteredLists(routes, filteredFunctionSelectors);
@@ -281,7 +282,7 @@ module.exports = async ({
 		for (const f of toRemove) {
 			await runStep({
 				contract: 'ProxyPerpsV2',
-				target: futuresMarketProxy,
+				target: perpsV2MarketProxy,
 				read: 'getRoute',
 				readArg: [f],
 				expected: readResult => readResult.implementation === ethers.constants.AddressZero,
@@ -294,7 +295,7 @@ module.exports = async ({
 		for (const f of filteredFunctions) {
 			await runStep({
 				contract: 'ProxyPerpsV2',
-				target: futuresMarketProxy,
+				target: perpsV2MarketProxy,
 				read: 'getRoute',
 				readArg: [f.signature],
 				expected: readResult =>
@@ -306,11 +307,11 @@ module.exports = async ({
 			});
 		}
 
-		if (futuresMarketProxy) {
-			deployedFuturesMarkets.push(addressOf(futuresMarketProxy));
+		if (perpsV2MarketProxy) {
+			deployedPerpsV2Markets.push(addressOf(perpsV2MarketProxy));
 
 			if (implementationChanged) {
-				perpMarketsImplementationUpdated.push(addressOf(futuresMarketProxy));
+				perpMarketsImplementationUpdated.push(addressOf(perpsV2MarketProxy));
 			}
 		}
 	}
@@ -352,12 +353,12 @@ module.exports = async ({
 
 	// Replace the relevant markets in the manager (if any)
 	let marketImplementationsUpdated = perpMarketsImplementationUpdated;
-	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
+	if (futuresMarketManager && deployedPerpsV2Markets.length > 0) {
 		const managerKnownMarkets = Array.from(
 			await futuresMarketManager['allMarkets(bool)'](true)
 		).sort();
 
-		const { toRemove, toKeep, toAdd } = filteredLists(managerKnownMarkets, deployedFuturesMarkets);
+		const { toRemove, toKeep, toAdd } = filteredLists(managerKnownMarkets, deployedPerpsV2Markets);
 
 		if (toRemove.length > 0) {
 			await runStep({
@@ -379,7 +380,7 @@ module.exports = async ({
 				readArg: [true],
 				expected: markets =>
 					JSON.stringify(markets.slice().sort()) ===
-					JSON.stringify(deployedFuturesMarkets.slice().sort()),
+					JSON.stringify(deployedPerpsV2Markets.slice().sort()),
 				write: 'addProxiedMarkets',
 				writeArg: [toAdd],
 				gasLimit: 150e3 * toAdd.length, // extra gas per market
