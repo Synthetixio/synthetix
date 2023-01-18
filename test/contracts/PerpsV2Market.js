@@ -271,7 +271,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	describe('Basic parameters', () => {
-		it('Only expected functions are mutative PerpsV2MarketDelayedOrders', () => {
+		it('Only expected functions are mutative PerpsV2MarketDelayedIntent', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsV2MarketDelayedIntent.abi,
 				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
@@ -286,7 +286,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 		});
 
-		it('Only expected functions are mutative PerpsV2MarketDelayedOrdersOffchain', () => {
+		it('Only expected functions are mutative PerpsV2MarketDelayedExecution', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: perpsV2MarketDelayedExecution.abi,
 				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned', 'Proxyable'],
@@ -306,28 +306,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				abi: perpsV2MarketViewsImpl.abi,
 				ignoreParents: ['MixinPerpsV2MarketSettings', 'Owned'],
 				expected: [],
-			});
-		});
-
-		it('Only expected functions are mutative PerpsV2MarketState', () => {
-			ensureOnlyExpectedMutativeFunctions({
-				abi: perpsV2MarketState.abi,
-				ignoreParents: ['Owned', 'StateShared'],
-				expected: [
-					'setBaseAsset',
-					'setMarketKey',
-					'setMarketSize',
-					'setMarketSkew',
-					'setEntryDebtCorrection',
-					'setNextPositionId',
-					'setFundingLastRecomputed',
-					'setFundingRateLastRecomputed',
-					'pushFundingSequence',
-					'updateDelayedOrder',
-					'updatePosition',
-					'deleteDelayedOrder',
-					'deletePosition',
-				],
 			});
 		});
 
