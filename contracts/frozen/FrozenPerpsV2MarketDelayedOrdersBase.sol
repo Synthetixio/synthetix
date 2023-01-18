@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./../PerpsV2MarketProxyable.sol";
+import "./FrozenPerpsV2MarketProxyable.sol";
 
 // Reference
 import "./../interfaces/IPerpsV2MarketBaseTypes.sol";
@@ -22,7 +22,7 @@ import "./../interfaces/IPerpsV2MarketBaseTypes.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersBase
-contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
+contract FrozenPerpsV2MarketDelayedOrdersBase is FrozenPerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -30,7 +30,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
+    ) public FrozenPerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     function delayedOrders(address account) external view returns (DelayedOrder memory) {
         return marketState.delayedOrders(account);
