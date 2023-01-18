@@ -135,7 +135,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         Position memory position,
         uint price,
         int marginDelta
-    ) internal {
+    ) internal notFlagged(account) {
         Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _recomputeMarginWithDelta(oldPosition, price, marginDelta);
@@ -185,7 +185,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         );
     }
 
-    function _trade(address sender, TradeParams memory params) internal {
+    function _trade(address sender, TradeParams memory params) internal notFlagged(sender) {
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({

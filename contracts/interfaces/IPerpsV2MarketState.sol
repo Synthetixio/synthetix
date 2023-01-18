@@ -80,4 +80,10 @@ interface IPerpsV2MarketState {
     function deletePosition(address) external;
 
     function deleteDelayedOrder(address) external;
+
+    function flagged(address) external view returns (bool);
+
+    function flag(address) external;
+
+    function unflag(address) external;
 }

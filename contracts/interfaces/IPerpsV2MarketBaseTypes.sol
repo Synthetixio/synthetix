@@ -19,7 +19,8 @@ interface IPerpsV2MarketBaseTypes {
         NilOrder,
         NoPositionOpen,
         PriceTooVolatile,
-        PriceImpactToleranceExceeded
+        PriceImpactToleranceExceeded,
+        PositionFlagged
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.

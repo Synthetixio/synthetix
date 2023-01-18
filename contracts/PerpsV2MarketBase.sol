@@ -99,6 +99,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
         _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded";
+        _errorMessages[uint8(Status.PositionFlagged)] = "Position flagged";
     }
 
     /* ---------- External Contracts ---------- */
@@ -730,5 +731,12 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         if (_isError(status)) {
             revert(_errorMessages[uint8(status)]);
         }
+    }
+
+    modifier notFlagged(address account) {
+        if (marketState.flagged(account)) {
+            revert(_errorMessages[uint8(Status.PositionFlagged)]);
+        }
+        _;
     }
 }

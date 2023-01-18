@@ -72,6 +72,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => DelayedOrder) public delayedOrders;
 
+    /// @dev Holds a mapping of accounts to booleans to flag an account. Only one order per account is supported
+    mapping(address => bool) public flagged;
+    AddressSetLib.AddressSet internal _flaggedAddresses;
+
     constructor(
         address _owner,
         address[] memory _associatedContracts,
@@ -241,6 +245,18 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         delete delayedOrders[account];
         if (_delayedOrderAddresses.contains(account)) {
             _delayedOrderAddresses.remove(account);
+        }
+    }
+
+    function flag(address account) external onlyAssociatedContracts {
+        flagged[account] = true;
+        _flaggedAddresses.add(account);
+    }
+
+    function unflag(address account) external onlyAssociatedContracts {
+        delete flagged[account];
+        if (_flaggedAddresses.contains(account)) {
+            _flaggedAddresses.remove(account);
         }
     }
 }
