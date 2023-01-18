@@ -2,10 +2,10 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2MarketProxyable.sol";
+import "./../PerpsV2MarketProxyable.sol";
 
 // Reference
-import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+import "./../interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
  Contract that implements DelayedOrders (base for on-chain and off-chain) mechanism for the PerpsV2 market.

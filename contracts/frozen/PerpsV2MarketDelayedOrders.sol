@@ -3,14 +3,10 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2MarketDelayedOrdersBase.sol";
-import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
-
-// Reference
-import "./interfaces/IPerpsV2ExchangeRate.sol";
-import "./interfaces/IPyth.sol";
+import "./../interfaces/IPerpsV2MarketDelayedOrders.sol";
 
 /**
- Contract that implements DelayedOrders (offchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (onchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -21,8 +17,8 @@ import "./interfaces/IPyth.sol";
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersOffchain
-contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, PerpsV2MarketDelayedOrdersBase {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
+contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2MarketDelayedOrdersBase {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -31,10 +27,6 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         address _owner,
         address _resolver
     ) public PerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
-
-    function _perpsV2ExchangeRate() internal view returns (IPerpsV2ExchangeRate) {
-        return IPerpsV2ExchangeRate(requireAndGetAddress(CONTRACT_PERPSV2EXCHANGERATE));
-    }
 
     ///// Mutative methods
 
@@ -50,24 +42,31 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
+     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
      */
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy {
+    function submitDelayedOrder(
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint desiredTimeDelta
+    ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, bytes32(0), true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, bytes32(0), false);
     }
 
-    function submitOffchainDelayedOrderWithTracking(
+    /// same as submitDelayedOrder but emits an event with the tracking code
+    /// to allow volume source fee sharing for integrations
+    function submitDelayedOrderWithTracking(
         int sizeDelta,
         uint priceImpactDelta,
+        uint desiredTimeDelta,
         bytes32 trackingCode
     ) external onlyProxy {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, false);
     }
 
     /**
@@ -82,13 +81,13 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      *  or send to the msg.sender if it's not the account holder.
      * @param account the account for which the stored order should be cancelled
      */
-    function cancelOffchainDelayedOrder(address account) external onlyProxy {
+    function cancelDelayedOrder(address account) external onlyProxy {
         // important!! order of the account, not the msg.sender
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
-
-        require(order.isOffchain, "use onchain method");
+        // check to ensure we are not running the offchain delayed order.
+        require(!order.isOffchain, "use offchain method");
 
         _cancelDelayedOrder(account, order);
     }
@@ -107,64 +106,75 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
      *  otherwise it sent to the msg.sender.
      * @param account address of the account for which to try to execute a delayed order
      */
-    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable onlyProxy {
+    function executeDelayedOrder(address account) external onlyProxy {
         // important!: order of the account, not the sender!
         DelayedOrder memory order = marketState.delayedOrders(account);
         // check that a previous order exists
         require(order.sizeDelta != 0, "no previous order");
 
-        require(order.isOffchain, "use onchain method");
+        require(!order.isOffchain, "use offchain method");
 
-        // update price feed (this is payable)
-        _perpsV2ExchangeRate().updatePythPrice.value(msg.value)(messageSender, priceUpdateData);
+        // check order executability and round-id
+        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
+        require(
+            block.timestamp >= order.executableAtTime || order.targetRoundId <= currentRoundId,
+            "executability not reached"
+        );
 
-        // get latest price for asset
-        uint maxAge = _offchainDelayedOrderMaxAge(_marketKey());
-        uint minAge = _offchainDelayedOrderMinAge(_marketKey());
+        // check order is not too old to execute
+        // we cannot allow executing old orders because otherwise future knowledge
+        // can be used to trigger failures of orders that are more profitable
+        // then the commitFee that was charged, or can be used to confirm
+        // orders that are more profitable than known then (which makes this into a "cheap option").
+        require(
+            !_confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+            "order too old, use cancel"
+        );
 
-        (uint currentPrice, uint executionTimestamp) = _offchainAssetPriceRequireSystemChecks(maxAge);
-
-        require((executionTimestamp > order.intentionTime), "price not updated");
-        require((executionTimestamp - order.intentionTime > minAge), "too early");
-        require((executionTimestamp - order.intentionTime < maxAge), "too late");
-
+        // price depends on whether the delay or price update has reached/occurred first
+        uint currentPrice = _assetPriceRequireSystemChecks(false);
         _executeDelayedOrder(
             account,
             order,
             currentPrice,
-            0,
-            _takerFeeOffchainDelayedOrder(_marketKey()),
-            _makerFeeOffchainDelayedOrder(_marketKey())
+            currentRoundId,
+            _takerFeeDelayedOrder(_marketKey()),
+            _makerFeeDelayedOrder(_marketKey())
         );
     }
 
-    // solhint-disable no-unused-vars
     function _confirmCanCancel(
         address account,
         DelayedOrder memory order,
         uint currentRoundId
     ) internal {
-        require(block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()) * 2, "cannot cancel yet");
+        if (account != messageSender) {
+            // this is someone else (like a keeper)
+            // cancellation by third party is only possible when execution cannot be attempted any longer
+            // otherwise someone might try to grief an account by cancelling for the keeper fee
+            require(
+                _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+                "cannot be cancelled by keeper yet"
+            );
+        }
     }
 
-    ///// Internal
+    ///// Internal views
 
-    /*
-     * The current base price, reverting if it is invalid, or if system or synth is suspended.
-     */
-    function _offchainAssetPriceRequireSystemChecks(uint maxAge) internal returns (uint price, uint publishTime) {
-        // Onchain oracle asset price
-        uint onchainPrice = _assetPriceRequireSystemChecks(true);
-        (price, publishTime) = _perpsV2ExchangeRate().resolveAndGetPrice(_baseAsset(), maxAge);
-
-        require(onchainPrice > 0 && price > 0, "invalid, price is 0");
-
-        uint delta =
-            (onchainPrice > price)
-                ? onchainPrice.divideDecimal(price).sub(SafeDecimalMath.unit())
-                : price.divideDecimal(onchainPrice).sub(SafeDecimalMath.unit());
-        require(_offchainPriceDivergence(_marketKey()) > delta, "price divergence too high");
-
-        return (price, publishTime);
+    /// confirmation window is over when:
+    ///  1. current roundId is more than nextPriceConfirmWindow rounds after target roundId
+    ///  2. or executableAtTime - block.timestamp is more than delayedOrderConfirmWindow
+    ///
+    /// if either conditions are met, an order is considered to have exceeded the window.
+    function _confirmationWindowOver(
+        uint executableAtTime,
+        uint currentRoundId,
+        uint targetRoundId
+    ) internal view returns (bool) {
+        bytes32 marketKey = _marketKey();
+        return
+            (block.timestamp > executableAtTime &&
+                (block.timestamp - executableAtTime) > _delayedOrderConfirmWindow(marketKey)) ||
+            ((currentRoundId > targetRoundId) && (currentRoundId - targetRoundId > _nextPriceConfirmWindow(marketKey))); // don't underflow
     }
 }
