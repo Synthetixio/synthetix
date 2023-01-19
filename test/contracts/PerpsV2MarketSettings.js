@@ -51,7 +51,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainPriceDivergence = toUnit('0.05');
 
 	const liquidationPremiumMultiplier = toUnit('1');
-  
+
 	const maxLiquidationDelta = toUnit('0.05');
 	const maxPD = toUnit('0.05');
 
@@ -168,7 +168,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setOffchainMarketKey',
 				'setOffchainPriceDivergence',
 				'setLiquidationPremiumMultiplier',
-        'setMaxLiquidationDelta',
+				'setMaxLiquidationDelta',
 				'setMaxPD',
 				'setParameters',
 			],
@@ -565,7 +565,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'KeeperLiquidationFeeUpdated', {
-				bps: newValue,
+				keeperFee: newValue,
 			});
 		});
 	});
