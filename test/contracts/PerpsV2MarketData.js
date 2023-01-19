@@ -228,6 +228,8 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.05'),
 
 					toUnit('1'), // 1 liquidation premium multiplier
+					toUnit('0'),
+					toUnit('0'),
 				],
 				{ from: owner }
 			);

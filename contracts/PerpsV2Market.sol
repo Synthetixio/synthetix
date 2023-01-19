@@ -289,7 +289,30 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * `canLiquidate(account)` is true, and reverts otherwise.
      * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
      */
+    function flagPosition(address account) external onlyProxy {
+        uint price = _assetPriceRequireSystemChecks(false);
+        _recomputeFunding(price);
+
+        _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
+
+        _liquidatePosition(account, messageSender, price);
+    }
+
+    /*
+     * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
+     * `canLiquidate(account)` is true, and reverts otherwise.
+     * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
+     */
     function liquidatePosition(address account) external onlyProxy {
+        uint price = _assetPriceRequireSystemChecks(false);
+        _recomputeFunding(price);
+
+        _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
+
+        _liquidatePosition(account, messageSender, price);
+    }
+
+    function forceLiquidatePosition(address account) external onlyProxy {
         uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding(price);
 

@@ -1924,6 +1924,8 @@ const setupAllContracts = async ({
 							toUnit('0.06'), // offchain price divergence 6%
 
 							toWei('1'), // 1 liquidation premium multiplier
+							toWei('0'),
+							toWei('0'),
 						],
 						{ from: owner }
 					),
