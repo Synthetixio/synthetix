@@ -53,7 +53,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The fee charged as commit fee if set. It will override the default calculation if this value is larger than  zero.
+     * The fee charged as commit fee if set. It will override the default calculation if this value is larger than zero.
      */
     function overrideCommitFee(bytes32 _marketKey) external view returns (uint) {
         return _parameter(_marketKey, PARAMETER_OVERRIDE_COMMIT_FEE);

@@ -50,6 +50,9 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainMarketKey = toBytes32('ocsBTC');
 	const offchainPriceDivergence = toUnit('0.05');
 
+	const maxLiquidationDelta = toUnit('0.05');
+	const maxPD = toUnit('0.05');
+
 	const marketAbi = {
 		abi: [
 			'function recomputeFunding() view returns (uint)',
@@ -135,36 +138,41 @@ contract('PerpsV2MarketSettings', accounts => {
 			abi: perpsV2MarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setDelayedOrderConfirmWindow',
+				// Market Agnostic
+				'setMinKeeperFee',
+				'setMaxKeeperFee',
 				'setLiquidationBufferRatio',
 				'setLiquidationFeeRatio',
+				'setMinInitialMargin',
+				'setKeeperLiquidationFee',
+				// Per Market
 				'setMakerFee',
 				'setMakerFeeDelayedOrder',
 				'setMakerFeeOffchainDelayedOrder',
-				'setMaxDelayTimeDelta',
-				'setMaxFundingVelocity',
-				'setMaxLeverage',
-				'setMaxMarketValue',
-				'setMinDelayTimeDelta',
-				'setMinInitialMargin',
-				'setMinKeeperFee',
-				'setMaxKeeperFee',
-				'setNextPriceConfirmWindow',
-				'setParameters',
-				'setSkewScale',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 				'setTakerFeeOffchainDelayedOrder',
-				'setOverrideCommitFee',
+				'setNextPriceConfirmWindow',
+				'setDelayedOrderConfirmWindow',
 				'setOffchainDelayedOrderMinAge',
 				'setOffchainDelayedOrderMaxAge',
+				'setOverrideCommitFee',
+				'setMaxLeverage',
+				'setMaxMarketValue',
+				'setMaxFundingVelocity',
+				'setSkewScale',
+				'setMinDelayTimeDelta',
+				'setMaxDelayTimeDelta',
 				'setOffchainMarketKey',
 				'setOffchainPriceDivergence',
+				'setMaxLiquidationDelta',
+				'setMaxPD',
+				'setParameters',
 			],
 		});
 	});
 
-	describe('Parameter setting', () => {
+	describe('Market Related Parameter setting', () => {
 		let params;
 
 		before('init params', async () => {
@@ -185,6 +193,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				offchainDelayedOrderMaxAge,
 				offchainMarketKey,
 				offchainPriceDivergence,
+				maxLiquidationDelta,
+				maxPD,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, perpsV2MarketSettings[`set${capKey}`], perpsV2MarketSettings[`${key}`]];
@@ -507,6 +517,41 @@ contract('PerpsV2MarketSettings', accounts => {
 				from: owner,
 			});
 			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
+				bps: newValue,
+			});
+		});
+	});
+
+	describe('setKeeperLiquidationFee()', () => {
+		let keeperLiquidationFee;
+		beforeEach(async () => {
+			keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
+		});
+		it('should be able to change keeperLiquidationFee', async () => {
+			const originalValue = await perpsV2MarketSettings.keeperLiquidationFee();
+			await perpsV2MarketSettings.setKeeperLiquidationFee(originalValue.mul(toBN(2)), {
+				from: owner,
+			});
+			const newValue = await perpsV2MarketSettings.keeperLiquidationFee.call();
+			assert.bnEqual(newValue, originalValue.mul(toBN(2)));
+		});
+
+		it('only owner is permitted to change keeperLiquidationFee', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: perpsV2MarketSettings.setKeeperLiquidationFee,
+				args: [keeperLiquidationFee.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful keeperLiquidationFee change', async () => {
+			const newValue = toBN(100);
+			const txn = await perpsV2MarketSettings.setKeeperLiquidationFee(newValue, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'KeeperLiquidationFeeUpdated', {
 				bps: newValue,
 			});
 		});
