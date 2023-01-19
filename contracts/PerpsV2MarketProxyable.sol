@@ -266,6 +266,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     /* ========== EVENTS ========== */
+
     function addressToBytes32(address input) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(input)));
     }
@@ -303,28 +304,6 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         );
     }
 
-    event MarginTransferred(address indexed account, int marginDelta);
-    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
-
-    function emitMarginTransferred(address account, int marginDelta) internal {
-        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
-    }
-
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
-    bytes32 internal constant POSITIONLIQUIDATED_SIG =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
-
-    function emitPositionLiquidated(
-        uint id,
-        address account,
-        address liquidator,
-        int size,
-        uint price,
-        uint fee
-    ) internal {
-        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
-    }
-
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
     bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,int256,uint256,uint256)");
 
@@ -348,5 +327,14 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         uint fee
     ) internal {
         proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, PERPSTRACKING_SIG, trackingCode, 0, 0);
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier notFlagged(address account) {
+        if (marketState.flagged(account)) {
+            revert(_errorMessages[uint8(Status.PositionFlagged)]);
+        }
+        _;
     }
 }
