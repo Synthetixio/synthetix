@@ -50,6 +50,8 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainMarketKey = toBytes32('ocsBTC');
 	const offchainPriceDivergence = toUnit('0.05');
 
+	const liquidationPremiumMultiplier = toUnit('1');
+  
 	const maxLiquidationDelta = toUnit('0.05');
 	const maxPD = toUnit('0.05');
 
@@ -165,7 +167,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMaxDelayTimeDelta',
 				'setOffchainMarketKey',
 				'setOffchainPriceDivergence',
-				'setMaxLiquidationDelta',
+				'setLiquidationPremiumMultiplier',
+        'setMaxLiquidationDelta',
 				'setMaxPD',
 				'setParameters',
 			],
@@ -193,6 +196,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				offchainDelayedOrderMaxAge,
 				offchainMarketKey,
 				offchainPriceDivergence,
+				liquidationPremiumMultiplier,
 				maxLiquidationDelta,
 				maxPD,
 			}).map(([key, val]) => {
@@ -244,6 +248,15 @@ contract('PerpsV2MarketSettings', accounts => {
 						from: owner,
 					}),
 					'cannot set skew scale 0'
+				);
+			});
+
+			it('should revert if setLiquidationPremiumMultiplier is 0', async () => {
+				await assert.revert(
+					perpsV2MarketSettings.setLiquidationPremiumMultiplier(marketKey, 0, {
+						from: owner,
+					}),
+					'cannot set liquidation premium multiplier 0'
 				);
 			});
 		});
