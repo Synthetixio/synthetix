@@ -175,7 +175,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 if (!_isClosing(positionSize, orderSizeDelta)) {
                     _revertIfError(
                         (margin < _minInitialMargin()) ||
-                        (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
+                            (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
                         Status.InsufficientMargin
                     );
                 }
