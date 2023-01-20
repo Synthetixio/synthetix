@@ -139,7 +139,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
         Position memory position = marketState.positions(sender);
 
-        _updatePositionMargin(sender, position, price, marginDelta);
+        _updatePositionMargin(sender, position, position.size, price, marginDelta);
 
         emitMarginTransferred(sender, marginDelta);
 

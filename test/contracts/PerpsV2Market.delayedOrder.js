@@ -1,6 +1,6 @@
 const { artifacts, contract, web3, ethers } = require('hardhat');
 const { toBytes32 } = require('../..');
-const { toUnit, multiplyDecimal, fastForward } = require('../utils')();
+const { toUnit, multiplyDecimal, divideDecimal, fastForward } = require('../utils')();
 const { toBN } = web3.utils;
 
 const PerpsV2MarketHelper = artifacts.require('TestablePerpsV2Market');
@@ -182,6 +182,51 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
+		});
+
+		it('allow close position when above maxLeverage but not liquidated', async () => {
+			// A short test to demonstrate how a user can fail to close a position with
+			// delayed orders. The crux of the problem is they don't have enough margin to
+			// pay the keeper deposit and the order fails to execute.
+
+			// (1) Setup the scenario.
+			const skewScale = toUnit('1000000'); // 1M
+			await perpsV2MarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
+			const maxLeverage = toUnit('25'); // 25x
+			await perpsV2MarketSettings.setMaxLeverage(marketKey, maxLeverage, { from: owner });
+			const price = toUnit('1000');
+			await setPrice(baseAsset, price);
+
+			// (2) Submit an order with a high degen leverage (say, 24x).
+			//
+			// Note: `trader` has 2k margin, at 24x, 1k per unit is a size 48
+			const leverage = toUnit('24');
+			const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+			await perpsV2Market.submitDelayedOrder(sizeDelta, priceImpactDelta, desiredTimeDelta, {
+				from: trader,
+			});
+
+			// (3) Fast forward time to allow this to be executable then execute.
+			await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+			await perpsV2Market.executeDelayedOrder(trader, { from: trader });
+			const position = await perpsV2Market.positions(trader);
+
+			// (4) Price moves in the opposite direction -0.5% (50bps)
+			await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+
+			// (5) Attempt to close the position - expected to revert with not enough margin.
+			const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
+			await perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
+				from: trader,
+			});
+
+			// (6) Execute order, closing out the position.
+			await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+			await perpsV2Market.executeDelayedOrder(trader, { from: trader });
+			const closedPosition = await perpsV2Market.positions(trader);
+
+			// (7) Successfully closed position.
+			assert.bnEqual(closedPosition.size, toUnit('0'));
 		});
 
 		describe('cannot submit an order when', () => {

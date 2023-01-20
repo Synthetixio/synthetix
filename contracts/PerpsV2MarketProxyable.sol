@@ -133,6 +133,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _updatePositionMargin(
         address account,
         Position memory position,
+        int orderSizeDelta,
         uint price,
         int marginDelta
     ) internal {
@@ -165,12 +166,19 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
                 uint liqPremium = _liquidationPremium(position.size, price);
                 uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
-                _revertIfError(
-                    (margin < _minInitialMargin()) ||
-                        (margin <= liqMargin) ||
+
+                _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
+
+                // Margin can be decreasing (due to fees/pnl) however, if we're closing the position and
+                // as long as it's not at liquidation, then we should always allow it to close. An inverted
+                // orderSizeDelta of the same size means we're closing.
+                if (!_isClosing(positionSize, orderSizeDelta)) {
+                    _revertIfError(
+                        (margin < _minInitialMargin()) ||
                         (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
-                    Status.InsufficientMargin
-                );
+                        Status.InsufficientMargin
+                    );
+                }
             }
         }
 
