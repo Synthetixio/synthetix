@@ -357,7 +357,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * Note: As of SIP-255, all sUSD fees are burned at the beginning of the fee period and are no longer claimable.
+     * Note: As of SIP-255, all sUSD fees are burned at the closure of the fee period and are no longer claimable.
      * @notice Send the rewards to claiming address.
      * @param claimingAddress The address to send the rewards to.
      */
@@ -387,8 +387,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
 
         if (availableFees > 0) {
-            // Record the fee payment in our recentFeePeriods
-            feesPaid = _recordFeePayment(availableFees);
+            // Mark the fees as paid since they were already burned.
+            feesPaid = availableFees;
         }
 
         if (availableRewards > 0) {
@@ -433,38 +433,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         if (feePeriodIndex == 0) {
             issuer().setCurrentPeriodId(uint128(feePeriodId));
         }
-    }
-
-    /**
-     * @notice Record the fee payment in our recentFeePeriods.
-     * @param sUSDAmount The amount of fees priced in sUSD.
-     */
-    function _recordFeePayment(uint sUSDAmount) internal returns (uint) {
-        // Don't assign to the parameter
-        uint remainingToAllocate = sUSDAmount;
-
-        uint feesPaid;
-        // Start at the oldest period and record the amount, moving to newer periods
-        // until we've exhausted the amount.
-        // The condition checks for overflow because we're going to 0 with an unsigned int.
-        for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint feesAlreadyClaimed = _recentFeePeriodsStorage(i).feesClaimed;
-            uint delta = _recentFeePeriodsStorage(i).feesToDistribute.sub(feesAlreadyClaimed);
-
-            if (delta > 0) {
-                // Take the smaller of the amount left to claim in the period and the amount we need to allocate
-                uint amountInPeriod = delta < remainingToAllocate ? delta : remainingToAllocate;
-
-                _recentFeePeriodsStorage(i).feesClaimed = feesAlreadyClaimed.add(amountInPeriod);
-                remainingToAllocate = remainingToAllocate.sub(amountInPeriod);
-                feesPaid = feesPaid.add(amountInPeriod);
-
-                // No need to continue iterating if we've recorded the whole amount;
-                if (remainingToAllocate == 0) return feesPaid;
-            }
-        }
-
-        return feesPaid;
     }
 
     /**
@@ -575,7 +543,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         }
 
         // And convert totalFees to sUSD
-        // Note: totalFees will always return zero per SIP-255 fee burning.
         // Return totalRewards as is in SNX amount
         return (totalFees, totalRewards);
     }

@@ -1013,8 +1013,8 @@ contract('Rewards Integration Tests', accounts => {
 			});
 
 			const newUSDBalance = await sUSDContract.balanceOf(account2);
-			// We should have our fees
-			assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+			// sUSD balance remains unchanged since the fees are burned.
+			assert.bnEqual(newUSDBalance, oldsUSDBalance);
 
 			const period = await feePool.recentFeePeriods(1);
 			period.index = 1;
