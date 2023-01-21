@@ -4811,6 +4811,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// So a keeper querying canLiquidate() or simulating the liquidation
 				// tx would have the correct liquidation price, and canLiquidate() result.
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
+				await perpsV2Market.flagPosition(trader);
 				await perpsV2Market.liquidatePosition(trader);
 			});
 

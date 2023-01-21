@@ -328,7 +328,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
+     * @dev Similar to _remainingMargin except it accounts for the premium and fees to be paid upon liquidation.
      */
     function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
         int remaining = _marginPlusProfitFunding(position, price).sub(int(_liquidationPremium(position.size, price)));
@@ -388,7 +388,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /**
-     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee
+     * The minimal margin at which liquidation can happen.
+     * Is the sum of liquidationBuffer, liquidationFee (for flagger) and keeperLiquidationFee (for liquidator)
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
@@ -399,7 +400,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-        return liquidationBuffer.add(_liquidationFee(positionSize, price, false));
+        return liquidationBuffer.add(_liquidationFee(positionSize, price, false)).add(_keeperLiquidationFee());
     }
 
     /**
@@ -407,7 +408,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *
      * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
      * when we compute as if taking the position from 0 to x. In practice, the premium component of the
-     * liquidation will just be (size / skewScale) * (size * price).
+     * liquidation will just be (size / skewScale) * (size * price) .
      *
      * It adds a configurable multiplier that can be used to increase the margin that goes to feePool.
      *
