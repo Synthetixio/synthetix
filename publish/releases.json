@@ -1485,6 +1485,74 @@
 			},
 			"sips": [279, 280, 281, 285],
 			"released": true
+		},
+		{
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": []
+		},
+		{
+			"name": "Sadr (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": []
+		},
+		{
+			"name": "Eltanin",
+			"version": {
+				"major": 2,
+				"minor": 82
+			},
+			"sips": []
+		},
+		{
+			"name": "Eltanin (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 82
+			},
+			"sips": []
+		},
+		{
+			"name": "Schedar",
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": []
+		},
+		{
+			"name": "Schedar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": []
+		},
+		{
+			"name": "Naos",
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": []
+		},
+		{
+			"name": "Naos (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": []
 		}
 	]
 }
