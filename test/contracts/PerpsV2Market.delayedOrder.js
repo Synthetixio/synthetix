@@ -201,7 +201,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				return perpsV2Market.positions(account);
 			};
 
-			it.only('should allow close position when above maxLeverage but not liquidated', async () => {
+			it('should allow close position when above maxLeverage but not liquidated', async () => {
 				// Submit an order with a high degen leverage (say, 24x).
 				//
 				// Note: `trader` has 2k margin, at 24x, 1k per unit is a size 48
@@ -221,7 +221,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				assert.bnEqual(closedPosition.size, toUnit('0'));
 			});
 
-			it.only('should allow close position when below maxLeverage and not liquidated', async () => {
+			it('should allow close position when below maxLeverage and not liquidated', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
@@ -237,7 +237,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				assert.bnEqual(closedPosition.size, toUnit('0'));
 			});
 
-			it.only('should not allow close when position can be liquidated', async () => {
+			it('should not allow close when position can be liquidated', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
@@ -258,7 +258,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				);
 			});
 
-			it.only('should not allow a partial close (i.e. orderSizeDelta != -pos.size)', async () => {
+			it('should not allow a partial close (i.e. orderSizeDelta != -pos.size)', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
