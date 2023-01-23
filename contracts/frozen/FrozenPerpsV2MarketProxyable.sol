@@ -2,11 +2,11 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Proxyable.sol";
-import "./PerpsV2MarketBase.sol";
+import "./../Proxyable.sol";
+import "./FrozenPerpsV2MarketBase.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketProxyable
-contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
+contract FrozenPerpsV2MarketProxyable is FrozenPerpsV2MarketBase, Proxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -14,7 +14,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {}
+    ) public FrozenPerpsV2MarketBase(_marketState, _owner, _resolver) Proxyable(_proxy) {}
 
     /* ---------- Market Operations ---------- */
 
@@ -133,10 +133,9 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _updatePositionMargin(
         address account,
         Position memory position,
-        int orderSizeDelta,
         uint price,
         int marginDelta
-    ) internal notFlagged(account) {
+    ) internal {
         Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _recomputeMarginWithDelta(oldPosition, price, marginDelta);
@@ -166,19 +165,12 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
                 uint liqPremium = _liquidationPremium(position.size, price);
                 uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
-
-                _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
-
-                // Margin can be decreasing (due to fees/pnl) however, if we're closing the position and
-                // as long as it's not at liquidation, then we should always allow it to close. An inverted
-                // orderSizeDelta of the same size means we're closing.
-                if (!_isClosing(positionSize, orderSizeDelta)) {
-                    _revertIfError(
-                        (margin < _minInitialMargin()) ||
-                            (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
-                        Status.InsufficientMargin
-                    );
-                }
+                _revertIfError(
+                    (margin < _minInitialMargin()) ||
+                        (margin <= liqMargin) ||
+                        (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
+                    Status.InsufficientMargin
+                );
             }
         }
 
@@ -193,7 +185,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         );
     }
 
-    function _trade(address sender, TradeParams memory params) internal notFlagged(sender) {
+    function _trade(address sender, TradeParams memory params) internal {
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({
@@ -274,7 +266,6 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     /* ========== EVENTS ========== */
-
     function addressToBytes32(address input) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(input)));
     }
@@ -312,6 +303,28 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         );
     }
 
+    event MarginTransferred(address indexed account, int marginDelta);
+    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
+
+    function emitMarginTransferred(address account, int marginDelta) internal {
+        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
+    }
+
+    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+    bytes32 internal constant POSITIONLIQUIDATED_SIG =
+        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
+
+    function emitPositionLiquidated(
+        uint id,
+        address account,
+        address liquidator,
+        int size,
+        uint price,
+        uint fee
+    ) internal {
+        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
+    }
+
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
     bytes32 internal constant FUNDINGRECOMPUTED_SIG = keccak256("FundingRecomputed(int256,int256,uint256,uint256)");
 
@@ -335,14 +348,5 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         uint fee
     ) internal {
         proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, PERPSTRACKING_SIG, trackingCode, 0, 0);
-    }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier notFlagged(address account) {
-        if (marketState.flagged(account)) {
-            revert(_errorMessages[uint8(Status.PositionFlagged)]);
-        }
-        _;
     }
 }

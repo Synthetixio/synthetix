@@ -1,26 +1,26 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "./Owned.sol";
+import "./../Owned.sol";
 
 // Inheritance
-import "./MixinPerpsV2MarketSettings.sol";
-import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+import "./../MixinPerpsV2MarketSettings.sol";
+import "./../interfaces/IPerpsV2MarketBaseTypes.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./SignedSafeMath.sol";
-import "./SignedSafeDecimalMath.sol";
-import "./SafeDecimalMath.sol";
+import "./../SignedSafeMath.sol";
+import "./../SignedSafeDecimalMath.sol";
+import "./../SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IFuturesMarketManager.sol";
+import "./../interfaces/IExchangeRates.sol";
+import "./../interfaces/IExchanger.sol";
+import "./../interfaces/ISystemStatus.sol";
+import "./../interfaces/IFuturesMarketManager.sol";
 
 // Internal references
-import "./interfaces/IPerpsV2MarketState.sol";
+import "./../interfaces/IPerpsV2MarketState.sol";
 
 // Use internal interface (external functions not present in IFuturesMarketManager)
 interface IFuturesMarketManagerInternal {
@@ -32,7 +32,7 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketBase
-contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketBaseTypes {
+contract FrozenPerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketBaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -99,8 +99,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
         _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded";
-        _errorMessages[uint8(Status.PositionFlagged)] = "Position flagged";
-        _errorMessages[uint8(Status.PositionNotFlagged)] = "Position not flagged";
     }
 
     /* ---------- External Contracts ---------- */
@@ -328,7 +326,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Similar to _remainingMargin except it accounts for the premium and fees to be paid upon liquidation.
+     * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
      */
     function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
         int remaining = _marginPlusProfitFunding(position, price).sub(int(_liquidationPremium(position.size, price)));
@@ -388,8 +386,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /**
-     * The minimal margin at which liquidation can happen.
-     * Is the sum of liquidationBuffer, liquidationFee (for flagger) and keeperLiquidationFee (for liquidator)
+     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
@@ -400,7 +397,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-        return liquidationBuffer.add(_liquidationFee(positionSize, price, false)).add(_keeperLiquidationFee());
+        return liquidationBuffer.add(_liquidationFee(positionSize, price, false));
     }
 
     /**
@@ -408,18 +405,14 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *
      * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
      * when we compute as if taking the position from 0 to x. In practice, the premium component of the
-     * liquidation will just be (size / skewScale) * (size * price) .
-     *
-     * It adds a configurable multiplier that can be used to increase the margin that goes to feePool.
+     * liquidation will just be (size / skewScale) * (size * price).
      *
      * For instance, if size of the liquidation position is 100, oracle price is 1200 and skewScale is 1M then,
      *
      *  size    = abs(-100)
      *          = 100
-     *  premium = 100 / 1000000 * (100 * 1200) * multiplier
-     *          = 12 * multiplier
-     *  if multiplier is set to 1
-     *          = 12 * 1 = 12
+     *  premium = 100 / 1000000 * (100 * 1200)
+     *          = 12
      *
      * @param positionSize Size of the position we want to liquidate
      * @param currentPrice The current oracle price (not fillPrice)
@@ -432,11 +425,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
         // note: this is the same as fillPrice() where the skew is 0.
         uint notional = _abs(_notionalValue(positionSize, currentPrice));
-
-        return
-            _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional).multiplyDecimal(
-                _liquidationPremiumMultiplier(_marketKey())
-            );
+        return _abs(positionSize).divideDecimal(_skewScale(_marketKey())).multiplyDecimal(notional);
     }
 
     function _canLiquidate(Position memory position, uint price) internal view returns (bool) {
@@ -716,10 +705,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     // that is, if they have the same sign, or either of them is zero.
     function _sameSide(int a, int b) internal pure returns (bool) {
         return (a == 0) || (b == 0) || (a > 0) == (b > 0);
-    }
-
-    function _isClosing(int a, int b) internal pure returns (bool) {
-        return a != 0 && b != 0 && -a == b;
     }
 
     /*

@@ -14,7 +14,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
 		perpsV2MarketHelper,
-		perpsV2OffchainDelayedOrder,
+		perpsV2MarketDelayedIntent,
+		perpsV2MarketDelayedExecution,
 		perpsV2MarketState,
 		perpsV2ExchangeRate,
 		mockPyth,
@@ -104,7 +105,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		({
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
-			PerpsV2OffchainOrderBTC: perpsV2OffchainDelayedOrder,
+			PerpsV2MarketDelayedIntentBTC: perpsV2MarketDelayedIntent,
+			PerpsV2MarketDelayedExecutionBTC: perpsV2MarketDelayedExecution,
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			PerpsV2ExchangeRate: perpsV2ExchangeRate,
 			ExchangeRates: exchangeRates,
@@ -164,7 +166,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 		// Authorize markets (and users that call the function) to call updatePythPrice
 		await perpsV2ExchangeRate.addAssociatedContracts(
-			[perpsV2OffchainDelayedOrder.address, owner, trader],
+			[perpsV2MarketDelayedExecution.address, owner, trader],
 			{
 				from: owner,
 			}
@@ -233,7 +235,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [perpsV2Market, perpsV2MarketDelayedExecution, perpsV2MarketDelayedIntent],
 			});
 			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
@@ -341,7 +343,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedExecution],
 			});
 
 			// OffchainDelayedOrderSubmitted
@@ -401,7 +403,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedExecution, perpsV2MarketDelayedIntent],
 			});
 
 			decodedEventEqual({
@@ -446,7 +448,12 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+					contracts: [
+						sUSD,
+						perpsV2Market,
+						perpsV2MarketDelayedExecution,
+						perpsV2MarketDelayedIntent,
+					],
 				});
 
 				if (from === trader) {
@@ -554,7 +561,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'too late'
+						'order too old, use cancel'
 					);
 
 					await assert.revert(
@@ -597,7 +604,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
-						'too late'
+						'order too old, use cancel'
 					);
 
 					await assert.revert(
@@ -710,7 +717,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						// account owner
 						await assert.revert(
 							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-							'too early'
+							'executability not reached'
 						);
 					});
 					it('reverts for keeper', async () => {
@@ -719,7 +726,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
 								from: trader2,
 							}),
-							'too early'
+							'executability not reached'
 						);
 					});
 				});
@@ -738,7 +745,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						// account owner
 						await assert.revert(
 							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-							'too late'
+							'order too old, use cancel'
 						);
 					});
 					it('reverts for keeper', async () => {
@@ -747,7 +754,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
 								from: trader2,
 							}),
-							'too late'
+							'order too old, use cancel'
 						);
 					});
 				});
@@ -985,7 +992,12 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2OffchainDelayedOrder],
+					contracts: [
+						sUSD,
+						perpsV2Market,
+						perpsV2MarketDelayedExecution,
+						perpsV2MarketDelayedIntent,
+					],
 				});
 
 				let expectedRefund = commitFee; // at least the commitFee is refunded

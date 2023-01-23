@@ -25,5 +25,9 @@ interface IPerpsV2Market {
 
     function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
 
+    function flagPosition(address account) external;
+
     function liquidatePosition(address account) external;
+
+    function forceLiquidatePosition(address account) external;
 }

@@ -35,6 +35,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_OFFCHAIN_MARKET_KEY = "offchainMarketKey";
     bytes32 internal constant PARAMETER_OFFCHAIN_PRICE_DIVERGENCE = "offchainPriceDivergence";
     bytes32 internal constant PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER = "liquidationPremiumMultiplier";
+    bytes32 internal constant PARAMETER_MAX_LIQUIDAION_DELTA = "maxLiquidationDelta";
+    bytes32 internal constant PARAMETER_MAX_LIQUIDATION_PD = "maxPD";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
@@ -45,7 +47,10 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "perpsV2LiquidationFeeRatio";
     // liquidation buffer to prevent negative margin upon liquidation
     bytes32 internal constant SETTING_LIQUIDATION_BUFFER_RATIO = "perpsV2LiquidationBufferRatio";
+    // minimum initial margin
     bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "perpsV2MinInitialMargin";
+    // fixed liquidation fee to be paid to liquidator keeper (not flagger)
+    bytes32 internal constant SETTING_KEEPER_LIQUIRATION_FEE = "keeperLiquidationFee";
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -156,6 +161,14 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER);
     }
 
+    function _maxLiquidationDelta(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_LIQUIDAION_DELTA);
+    }
+
+    function _maxPD(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_MAX_LIQUIDATION_PD);
+    }
+
     function _minKeeperFee() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
     }
@@ -174,5 +187,9 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _minInitialMargin() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN);
+    }
+
+    function _keeperLiquidationFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_LIQUIRATION_FEE);
     }
 }

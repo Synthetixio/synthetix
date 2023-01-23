@@ -8,18 +8,14 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const {
-	getDecodedLogs,
-	decodedEventEqual,
-	// setupPriceAggregators,
-	updateAggregatorRates,
-} = require('./helpers');
+const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
 
 contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	let perpsV2MarketSettings,
 		perpsV2Market,
 		perpsV2MarketHelper,
-		perpsV2MarketDelayedOrder,
+		perpsV2MarketDelayedIntent,
+		perpsV2MarketDelayedExecution,
 		perpsV2MarketState,
 		exchangeRates,
 		circuitBreaker,
@@ -57,7 +53,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		({
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
-			PerpsV2DelayedOrderBTC: perpsV2MarketDelayedOrder,
+			PerpsV2MarketDelayedIntentBTC: perpsV2MarketDelayedIntent,
+			PerpsV2MarketDelayedExecutionBTC: perpsV2MarketDelayedExecution,
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
@@ -69,10 +66,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			accounts,
 			synths: ['sUSD', 'sBTC', 'sETH'],
 			contracts: [
-				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
-				'PerpsV2MarketViewsBTC',
 				'PerpsV2MarketBTC',
 				'AddressResolver',
 				'FeePool',
@@ -146,7 +141,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			// The relevant events are properly emitted
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [perpsV2Market, perpsV2MarketDelayedOrder],
+				contracts: [perpsV2Market, perpsV2MarketDelayedIntent, perpsV2MarketDelayedExecution],
 			});
 			assert.equal(decodedLogs.length, 3);
 
@@ -356,7 +351,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 			});
 
 			// DelayedOrderSubmitted
@@ -400,7 +395,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedOrder],
+				contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 			});
 
 			decodedEventEqual({
@@ -445,7 +440,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 				});
 
 				if (from === trader) {
@@ -770,7 +765,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				// The relevant events are properly emitted
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedOrder],
+					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 				});
 
 				let expectedRefund = orderFee; // at least the commitFee is refunded

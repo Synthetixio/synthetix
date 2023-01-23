@@ -431,30 +431,32 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2DelayedOrderBTC: [
+
+		PerpsV2MarketDelayedIntentBTC: [
 			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2OffchainOrderBTC: [
+		PerpsV2MarketDelayedExecutionBTC: [
 			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2DelayedOrderETH: [
+		PerpsV2MarketDelayedIntentETH: [
 			tryGetAddressOf('ProxyPerpsV2MarketETH'),
 			tryGetAddressOf('PerpsV2MarketStateETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2OffchainOrderETH: [
+		PerpsV2MarketDelayedExecutionETH: [
 			tryGetAddressOf('ProxyPerpsV2MarketETH'),
 			tryGetAddressOf('PerpsV2MarketStateETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+
 		PerpsV2MarketBTC: [
 			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
@@ -778,7 +780,8 @@ const setupContract = async ({
 				)
 			);
 		},
-		async PerpsV2DelayedOrderBTC() {
+
+		async PerpsV2MarketDelayedIntentBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -796,7 +799,7 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async PerpsV2OffchainOrderBTC() {
+		async PerpsV2MarketDelayedExecutionBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all([
@@ -814,6 +817,7 @@ const setupContract = async ({
 				),
 			]);
 		},
+
 		async PerpsV2MarketBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, [
 				...excludedTestableFunctions,
@@ -1430,9 +1434,22 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
+
 		{
-			contract: 'PerpsV2DelayedOrderBTC',
-			source: 'PerpsV2MarketDelayedOrders',
+			contract: 'PerpsV2MarketDelayedIntentBTC',
+			source: 'PerpsV2MarketDelayedIntent',
+			deps: [
+				'ProxyPerpsV2MarketBTC',
+				'PerpsV2MarketStateBTC',
+				'PerpsV2MarketSettings',
+				'AddressResolver',
+				'FlexibleStorage',
+				'ExchangeRates',
+			],
+		},
+		{
+			contract: 'PerpsV2MarketDelayedExecutionBTC',
+			source: 'PerpsV2MarketDelayedExecution',
 			deps: [
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
@@ -1444,21 +1461,20 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'PerpsV2OffchainOrderBTC',
-			source: 'PerpsV2MarketDelayedOrdersOffchain',
+			contract: 'PerpsV2MarketDelayedIntentETH',
+			source: 'PerpsV2MarketDelayedIntent',
 			deps: [
-				'ProxyPerpsV2MarketBTC',
-				'PerpsV2MarketStateBTC',
+				'ProxyPerpsV2MarketETH',
+				'PerpsV2MarketStateETH',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FlexibleStorage',
 				'ExchangeRates',
-				'PerpsV2ExchangeRate',
 			],
 		},
 		{
-			contract: 'PerpsV2DelayedOrderETH',
-			source: 'PerpsV2MarketDelayedOrders',
+			contract: 'PerpsV2MarketDelayedExecutionETH',
+			source: 'PerpsV2MarketDelayedExecution',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
@@ -1469,19 +1485,7 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
-		{
-			contract: 'PerpsV2OffchainOrderETH',
-			source: 'PerpsV2MarketDelayedOrdersOffchain',
-			deps: [
-				'ProxyPerpsV2MarketETH',
-				'PerpsV2MarketStateETH',
-				'PerpsV2MarketSettings',
-				'AddressResolver',
-				'FlexibleStorage',
-				'ExchangeRates',
-				'PerpsV2ExchangeRate',
-			],
-		},
+
 		{
 			contract: 'PerpsV2MarketBTC',
 			source: 'TestablePerpsV2Market',
@@ -1489,8 +1493,8 @@ const setupAllContracts = async ({
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
-				'PerpsV2DelayedOrderBTC',
-				'PerpsV2OffchainOrderBTC',
+				'PerpsV2MarketDelayedIntentBTC',
+				'PerpsV2MarketDelayedExecutionBTC',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FuturesMarketManager',
@@ -1506,8 +1510,8 @@ const setupAllContracts = async ({
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
 				'PerpsV2MarketViewsETH',
-				'PerpsV2DelayedOrderETH',
-				'PerpsV2OffchainOrderETH',
+				'PerpsV2MarketDelayedIntentETH',
+				'PerpsV2MarketDelayedExecutionETH',
 				'PerpsV2MarketSettings',
 				'AddressResolver',
 				'FuturesMarketManager',
@@ -1920,6 +1924,8 @@ const setupAllContracts = async ({
 							toUnit('0.06'), // offchain price divergence 6%
 
 							toWei('1'), // 1 liquidation premium multiplier
+							toWei('0'),
+							toWei('0'),
 						],
 						{ from: owner }
 					),

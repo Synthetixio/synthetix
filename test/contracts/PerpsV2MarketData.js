@@ -123,16 +123,26 @@ contract('PerpsV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
-			const marketDelayedOrder = await setupContract({
+			const marketDelayedIntent = await setupContract({
 				accounts,
-				contract: 'PerpsV2DelayedOrderAdded' + symbol,
-				source: 'PerpsV2MarketDelayedOrders',
+				contract: 'PerpsV2MarketDelayedIntentAdded' + symbol,
+				source: 'PerpsV2MarketDelayedIntent',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
-			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
-				from: owner,
+			const marketDelayedExecution = await setupContract({
+				accounts,
+				contract: 'PerpsV2MarketDelayedExecutionAdded' + symbol,
+				source: 'PerpsV2MarketDelayedExecution',
+				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
+
+			await marketState.addAssociatedContracts(
+				[marketImpl.address, marketDelayedIntent.address, marketDelayedExecution.address],
+				{
+					from: owner,
+				}
+			);
 
 			filteredFunctions = getFunctionSignatures(marketImpl, excludedFunctions);
 			await Promise.all(
@@ -152,10 +162,19 @@ contract('PerpsV2MarketData', accounts => {
 				)
 			);
 
-			filteredFunctions = getFunctionSignatures(marketDelayedOrder, excludedFunctions);
+			filteredFunctions = getFunctionSignatures(marketDelayedIntent, excludedFunctions);
 			await Promise.all(
 				filteredFunctions.map(e =>
-					market.addRoute(e.signature, marketDelayedOrder.address, e.isView, {
+					market.addRoute(e.signature, marketDelayedIntent.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
+			filteredFunctions = getFunctionSignatures(marketDelayedExecution, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketDelayedExecution.address, e.isView, {
 						from: owner,
 					})
 				)
@@ -166,7 +185,12 @@ contract('PerpsV2MarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches(
-				[marketImpl.address, marketViews.address, marketDelayedOrder.address],
+				[
+					marketImpl.address,
+					marketViews.address,
+					marketDelayedIntent.address,
+					marketDelayedExecution.address,
+				],
 				{
 					from: owner,
 				}
@@ -204,6 +228,8 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.05'),
 
 					toUnit('1'), // 1 liquidation premium multiplier
+					toUnit('0'),
+					toUnit('0'),
 				],
 				{ from: owner }
 			);

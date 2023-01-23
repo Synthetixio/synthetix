@@ -2,12 +2,12 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2MarketDelayedOrdersBase.sol";
-import "./interfaces/IPerpsV2MarketOffchainOrders.sol";
+import "./FrozenPerpsV2MarketDelayedOrdersBase.sol";
+import "./../interfaces/IPerpsV2MarketOffchainOrders.sol";
 
 // Reference
-import "./interfaces/IPerpsV2ExchangeRate.sol";
-import "./interfaces/IPyth.sol";
+import "./../interfaces/IPerpsV2ExchangeRate.sol";
+import "./../interfaces/IPyth.sol";
 
 /**
  Contract that implements DelayedOrders (offchain) mechanism for the PerpsV2 market.
@@ -22,7 +22,7 @@ import "./interfaces/IPyth.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersOffchain
-contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, PerpsV2MarketDelayedOrdersBase {
+contract FrozenPerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, FrozenPerpsV2MarketDelayedOrdersBase {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -30,7 +30,7 @@ contract PerpsV2MarketDelayedOrdersOffchain is IPerpsV2MarketOffchainOrders, Per
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
+    ) public FrozenPerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
 
     function _perpsV2ExchangeRate() internal view returns (IPerpsV2ExchangeRate) {
         return IPerpsV2ExchangeRate(requireAndGetAddress(CONTRACT_PERPSV2EXCHANGERATE));

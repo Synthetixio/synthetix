@@ -4,9 +4,9 @@ import "../BaseMigration.sol";
 import "../FuturesMarketManager.sol";
 import "../ProxyPerpsV2.sol";
 import "../PerpsV2MarketState.sol";
-import "../PerpsV2MarketDelayedOrders.sol";
-import "../PerpsV2MarketDelayedOrdersOffchain.sol";
-import "../PerpsV2Market.sol";
+import "../frozen/FrozenPerpsV2MarketDelayedOrders.sol";
+import "../frozen/FrozenPerpsV2MarketDelayedOrdersOffchain.sol";
+import "../frozen/FrozenPerpsV2Market.sol";
 import "../PerpsV2ExchangeRate.sol";
 import "../AddressResolver.sol";
 import "../PerpsV2MarketSettings.sol";
@@ -31,13 +31,13 @@ contract Migration_MintakaOptimism is BaseMigration {
     // https://explorer.optimism.io/address/0x038dC05D68ED32F23e6856c0D44b0696B325bfC8
     PerpsV2MarketState public constant perpsv2marketstate_i = PerpsV2MarketState(0x038dC05D68ED32F23e6856c0D44b0696B325bfC8);
     // https://explorer.optimism.io/address/0xfe4950F0D73014039BE3CE900d5dcD24Ded54cCB
-    PerpsV2MarketDelayedOrders public constant perpsv2marketdelayedorders_i =
-        PerpsV2MarketDelayedOrders(0xfe4950F0D73014039BE3CE900d5dcD24Ded54cCB);
+    FrozenPerpsV2MarketDelayedOrders public constant perpsv2marketdelayedorders_i =
+        FrozenPerpsV2MarketDelayedOrders(0xfe4950F0D73014039BE3CE900d5dcD24Ded54cCB);
     // https://explorer.optimism.io/address/0x36841F7Ff6fBD318202A5101F8426eBb051d5e4d
-    PerpsV2MarketDelayedOrdersOffchain public constant perpsv2marketdelayedordersoffchain_i =
-        PerpsV2MarketDelayedOrdersOffchain(0x36841F7Ff6fBD318202A5101F8426eBb051d5e4d);
+    FrozenPerpsV2MarketDelayedOrdersOffchain public constant perpsv2marketdelayedordersoffchain_i =
+        FrozenPerpsV2MarketDelayedOrdersOffchain(0x36841F7Ff6fBD318202A5101F8426eBb051d5e4d);
     // https://explorer.optimism.io/address/0x517D0676E80115c1Aab36332B1732567Ce6D7010
-    PerpsV2Market public constant perpsv2market_i = PerpsV2Market(0x517D0676E80115c1Aab36332B1732567Ce6D7010);
+    FrozenPerpsV2Market public constant perpsv2market_i = FrozenPerpsV2Market(0x517D0676E80115c1Aab36332B1732567Ce6D7010);
     // https://explorer.optimism.io/address/0x2B3bb4c683BFc5239B029131EEf3B1d214478d93
     ProxyPerpsV2 public constant proxyperpsv2_i = ProxyPerpsV2(0x2B3bb4c683BFc5239B029131EEf3B1d214478d93);
     // https://explorer.optimism.io/address/0x4aD2d14Bed21062Ef7B85C378F69cDdf6ED7489C

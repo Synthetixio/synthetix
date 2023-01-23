@@ -2,8 +2,8 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./PerpsV2MarketDelayedOrdersBase.sol";
-import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
+import "./FrozenPerpsV2MarketDelayedOrdersBase.sol";
+import "./../interfaces/IPerpsV2MarketDelayedOrders.sol";
 
 /**
  Contract that implements DelayedOrders (onchain) mechanism for the PerpsV2 market.
@@ -18,7 +18,7 @@ import "./interfaces/IPerpsV2MarketDelayedOrders.sol";
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrders
-contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2MarketDelayedOrdersBase {
+contract FrozenPerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, FrozenPerpsV2MarketDelayedOrdersBase {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -26,7 +26,7 @@ contract PerpsV2MarketDelayedOrders is IPerpsV2MarketDelayedOrders, PerpsV2Marke
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
+    ) public FrozenPerpsV2MarketDelayedOrdersBase(_proxy, _marketState, _owner, _resolver) {}
 
     ///// Mutative methods
 

@@ -3,26 +3,25 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./PerpsV2MarketProxyable.sol";
+import "./interfaces/IPerpsV2MarketDelayedIntent.sol";
 
 // Reference
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
- Contract that implements DelayedOrders (base for on-chain and off-chain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (onchain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
  the risk to the debt pool, and funding rate for traders.
-
  The fees can be reduced when committing to next price, because front-running (MEV and oracle delay)
  is less of a risk when committing to next price.
-
  The relative complexity of the mechanism is due to having to enforce the "commitment" to the trade
  without either introducing free (or cheap) optionality to cause cancellations, and without large
  sacrifices to the UX / risk of the traders (e.g. blocking all actions, or penalizing failures too much).
  */
-// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedOrdersBase
-contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
+// https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketDelayedIntent
+contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2MarketProxyable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -32,11 +31,100 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         address _resolver
     ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
-    function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return marketState.delayedOrders(account);
+    ///// Mutative methods
+    function closeDelayedOrder(IPerpsV2MarketBaseTypes.OrderType orderType) external onlyProxy {}
+
+    function submitOrder(
+        IPerpsV2MarketBaseTypes.OrderType orderType,
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode
+    ) external onlyProxy {
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
+            revert("Invalid order type");
+        }
+
+        bool isOffchain;
+        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
+            isOffchain = true;
+        }
+
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, isOffchain);
     }
 
-    ///// Mutative methods
+    /**
+     * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
+     * Reverts if a previous order still exists (wasn't executed or cancelled).
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
+     * incorrectly submitted orders (that cannot be filled).
+     *
+     * The order is executable after desiredTimeDelta. However, we also allow execution if the next price update
+     * occurs before the desiredTimeDelta.
+     * Reverts if the desiredTimeDelta is < minimum required delay.
+     *
+     * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
+     * @param desiredTimeDelta maximum time in seconds to wait before filling this order
+     */
+    function submitDelayedOrder(
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint desiredTimeDelta
+    ) external onlyProxy {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
+        // bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, bytes32(0), false);
+    }
+
+    /// same as submitDelayedOrder but emits an event with the tracking code
+    /// to allow volume source fee sharing for integrations
+    function submitDelayedOrderWithTracking(
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode
+    ) external onlyProxy {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
+        // bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, false);
+    }
+
+    /**
+     * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
+     * Reverts if a previous order still exists (wasn't executed or cancelled).
+     * Reverts if the order cannot be filled at current price to prevent withholding commitFee for
+     * incorrectly submitted orders (that cannot be filled).
+     *
+     * The order is executable after desiredTimeDelta. However, we also allow execution if the next price update
+     * occurs before the desiredTimeDelta.
+     * Reverts if the desiredTimeDelta is < minimum required delay.
+     *
+     * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
+     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
+     */
+    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
+        // bytes32 marketKey = _marketKey();
+
+        // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, bytes32(0), true);
+    }
+
+    function submitOffchainDelayedOrderWithTracking(
+        int sizeDelta,
+        uint priceImpactDelta,
+        bytes32 trackingCode
+    ) external onlyProxy {
+        // @dev market key is obtained here and not in internal function to prevent stack too deep there
+        // bytes32 marketKey = _marketKey();
+
+        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
+    }
+
+    ///// Internal views
 
     function _submitDelayedOrder(
         bytes32 marketKey,
@@ -95,7 +183,7 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
-        _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(messageSender, position, fillPrice, -int(commitDeposit + keeperDeposit));
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
@@ -127,94 +215,6 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
         );
     }
 
-    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal {
-        uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
-
-        _confirmCanCancel(account, order, currentRoundId);
-
-        if (account == messageSender) {
-            // this is account owner
-            // refund keeper fee to margin
-            Position memory position = marketState.positions(account);
-
-            // cancelling an order does not induce a fillPrice as no skew has moved.
-            uint price = _assetPriceRequireSystemChecks(false);
-            uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(account, position, order.sizeDelta, price, int(order.keeperDeposit));
-
-            // emit event for modifying the position (add the fee to margin)
-            emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
-        } else {
-            // send keeper fee to keeper
-            _manager().issueSUSD(messageSender, order.keeperDeposit);
-        }
-
-        // pay the commitDeposit as fee to the FeePool
-        _manager().payFee(order.commitDeposit);
-
-        // important!! position of the account, not the msg.sender
-        marketState.deleteDelayedOrder(account);
-        emitDelayedOrderRemoved(account, currentRoundId, order);
-    }
-
-    function _executeDelayedOrder(
-        address account,
-        DelayedOrder memory order,
-        uint currentPrice,
-        uint currentRoundId,
-        uint takerFee,
-        uint makerFee
-    ) internal {
-        // handle the fees and refunds according to the mechanism rules
-        uint toRefund = order.commitDeposit; // refund the commitment deposit
-
-        // refund keeperFee to margin if it's the account holder
-        if (messageSender == account) {
-            toRefund += order.keeperDeposit;
-        } else {
-            _manager().issueSUSD(messageSender, order.keeperDeposit);
-        }
-
-        Position memory position = marketState.positions(account);
-
-        uint fundingIndex = _recomputeFunding(currentPrice);
-
-        // we need to grab the fillPrice for events and margin updates.
-        uint fillPrice = _fillPrice(order.sizeDelta, currentPrice);
-
-        // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
-        // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
-        // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
-
-        // execute or revert
-        _trade(
-            account,
-            TradeParams({
-                sizeDelta: order.sizeDelta, // using the pastPrice from the target roundId
-                oraclePrice: currentPrice, // the funding is applied only from order confirmation time
-                fillPrice: fillPrice,
-                takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
-                makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
-                priceImpactDelta: order.priceImpactDelta,
-                trackingCode: order.trackingCode
-            })
-        );
-
-        // remove stored order
-        marketState.deleteDelayedOrder(account);
-        // emit event
-        emitDelayedOrderRemoved(account, currentRoundId, order);
-    }
-
-    function _confirmCanCancel(
-        address account,
-        DelayedOrder memory order,
-        uint currentRoundId
-    ) internal {}
-
-    ///// Events
     event DelayedOrderSubmitted(
         address indexed account,
         bool isOffchain,
@@ -243,42 +243,6 @@ contract PerpsV2MarketDelayedOrdersBase is PerpsV2MarketProxyable {
             ),
             2,
             DELAYEDORDERSUBMITTED_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
-    }
-
-    event DelayedOrderRemoved(
-        address indexed account,
-        bool isOffchain,
-        uint currentRoundId,
-        int sizeDelta,
-        uint targetRoundId,
-        uint commitDeposit,
-        uint keeperDeposit,
-        bytes32 trackingCode
-    );
-    bytes32 internal constant DELAYEDORDERREMOVED_SIG =
-        keccak256("DelayedOrderRemoved(address,bool,uint256,int256,uint256,uint256,uint256,bytes32)");
-
-    function emitDelayedOrderRemoved(
-        address account,
-        uint currentRoundId,
-        DelayedOrder memory order
-    ) internal {
-        proxy._emit(
-            abi.encode(
-                order.isOffchain,
-                currentRoundId,
-                order.sizeDelta,
-                order.targetRoundId,
-                order.commitDeposit,
-                order.keeperDeposit,
-                order.trackingCode
-            ),
-            2,
-            DELAYEDORDERREMOVED_SIG,
             addressToBytes32(account),
             0,
             0

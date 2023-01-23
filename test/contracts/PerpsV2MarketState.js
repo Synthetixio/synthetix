@@ -58,6 +58,8 @@ contract('PerpsV2MarketState', accounts => {
 					'updatePosition',
 					'deleteDelayedOrder',
 					'deletePosition',
+					'flag',
+					'unflag',
 				],
 			});
 		});
