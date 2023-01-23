@@ -33,16 +33,8 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
     ///// Mutative methods
 
-    function submitCloseOffchainDelayedOrderWithTracking(
-        uint priceImpactDelta,
-        bytes32 trackingCode
-    ) external {
-        _submitCloseDelayedOrder(
-            priceImpactDelta,
-            0,
-            trackingCode,
-            IPerpsV2MarketBaseTypes.OrderType.Offchain
-        );
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
+        _submitCloseDelayedOrder(priceImpactDelta, 0, trackingCode, IPerpsV2MarketBaseTypes.OrderType.Offchain);
     }
 
     function submitCloseDelayedOrderWithTracking(

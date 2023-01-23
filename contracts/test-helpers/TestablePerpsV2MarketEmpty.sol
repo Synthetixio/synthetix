@@ -187,10 +187,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
     function forceLiquidatePosition(address account) external {}
 
     /* ========== Delayed Intent ========== */
-    function submitCloseOffchainDelayedOrderWithTracking(
-        uint priceImpactDelta,
-        bytes32 trackingCode
-    ) external;
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
 
     function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
