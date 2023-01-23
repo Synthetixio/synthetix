@@ -179,54 +179,106 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
 		});
 
-		it('should allow close position when above maxLeverage but not liquidated', async () => {
-			// (1) Setup the scenario.
-			const skewScale = toUnit('1000000'); // 1M
-			await perpsV2MarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
-			const maxLeverage = toUnit('25'); // 25x
-			await perpsV2MarketSettings.setMaxLeverage(marketKey, maxLeverage, { from: owner });
-			const price = toUnit('1000');
-			await setPrice(baseAsset, price);
+		describe('with degen maxLeverage', () => {
+			let maxLeverage, price, skewScale;
 
-			// (2) Submit an order with a high degen leverage (say, 24x).
-			//
-			// Note: `trader` has 2k margin, at 24x, 1k per unit is a size 48
-			const leverage = toUnit('24');
-			const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
-			await perpsV2Market.submitDelayedOrder(sizeDelta, priceImpactDelta, desiredTimeDelta, {
-				from: trader,
+			beforeEach(async () => {
+				skewScale = toUnit('1000000'); // 1M
+				await perpsV2MarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
+				maxLeverage = toUnit('25'); // 25x
+				await perpsV2MarketSettings.setMaxLeverage(marketKey, maxLeverage, { from: owner });
+				price = toUnit('1000');
+				await setPrice(baseAsset, price);
 			});
 
-			// (3) Fast forward time to allow this to be executable then execute.
-			await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
-			await perpsV2Market.executeDelayedOrder(trader, { from: trader });
-			const position = await perpsV2Market.positions(trader);
+			const submitAndFastForwardAndExecute = async (sizeDelta, account) => {
+				await perpsV2Market.submitDelayedOrder(sizeDelta, priceImpactDelta, desiredTimeDelta, {
+					from: account,
+				});
 
-			// (4) Price moves in the opposite direction -0.5% (50bps)
-			await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+				await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+				await perpsV2Market.executeDelayedOrder(account, { from: account });
+				return perpsV2Market.positions(account);
+			};
 
-			// (5) Attempt to close the position - should not revert if above maxLeverage
-			const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
-			await perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
-				from: trader,
+			it.only('should allow close position when above maxLeverage but not liquidated', async () => {
+				// Submit an order with a high degen leverage (say, 24x).
+				//
+				// Note: `trader` has 2k margin, at 24x, 1k per unit is a size 48
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
+
+				// Price moves in the opposite direction -0.5% (50bps) - now above maxLeverage
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+				assert.bnGt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Attempt to close the position - should not revert if above maxLeverage
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
+				const closedPosition = await submitAndFastForwardAndExecute(closeSizeDelta, trader);
+
+				// Successfully closed position.
+				assert.bnEqual(closedPosition.size, toUnit('0'));
 			});
 
-			// (6) Execute order, closing out the position.
-			await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
-			await perpsV2Market.executeDelayedOrder(trader, { from: trader });
-			const closedPosition = await perpsV2Market.positions(trader);
+			it.only('should allow close position when below maxLeverage and not liquidated', async () => {
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
 
-			// (7) Successfully closed position.
-			assert.bnEqual(closedPosition.size, toUnit('0'));
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('1.03')));
+				assert.bnLt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Attempt to close the position - should not revert if above maxLeverage
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
+				const closedPosition = await submitAndFastForwardAndExecute(closeSizeDelta, trader);
+
+				// Successfully closed position.
+				assert.bnEqual(closedPosition.size, toUnit('0'));
+			});
+
+			it.only('should not allow close when position can be liquidated', async () => {
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
+
+				// -10% loss
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.9')));
+				assert.bnLt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Attempt to close the position - must revert due to `canLiquidate`.
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
+				await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+
+				await assert.revert(
+					perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
+						from: trader,
+					}),
+					'Position can be liquidated'
+				);
+			});
+
+			it.only('should not allow a partial close (i.e. orderSizeDelta != -pos.size)', async () => {
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
+
+				// Price moves in the opposite direction -0.5% (50bps) - now above maxLeverage
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+				assert.bnGt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Attempt to close the position - must revert due to `canLiquidate`.
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-0.9')); // Inverted partially.
+				await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+
+				await assert.revert(
+					perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
+						from: trader,
+					}),
+					'Insufficient margin'
+				);
+			});
 		});
-
-		it('should allow close position when below maxLeverage and not liquidated');
-
-		it('should allow close position when below margin is below minMargin and not liquidated');
-
-		it('should not allow close when position can be liquidated');
-
-		it('should not allow a partial close (i.e. orderSizeDelta != -pos.size)');
 
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
