@@ -95,7 +95,7 @@ contract FrozenPerpsV2MarketDelayedOrdersBase is FrozenPerpsV2MarketProxyable {
         uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
-        _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(messageSender, position, fillPrice, -int(commitDeposit + keeperDeposit));
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
@@ -140,7 +140,7 @@ contract FrozenPerpsV2MarketDelayedOrdersBase is FrozenPerpsV2MarketProxyable {
             // cancelling an order does not induce a fillPrice as no skew has moved.
             uint price = _assetPriceRequireSystemChecks(false);
             uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(account, position, order.sizeDelta, price, int(order.keeperDeposit));
+            _updatePositionMargin(account, position, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
             emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
@@ -184,7 +184,7 @@ contract FrozenPerpsV2MarketDelayedOrdersBase is FrozenPerpsV2MarketProxyable {
 
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
+        _updatePositionMargin(account, position, fillPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
         emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 

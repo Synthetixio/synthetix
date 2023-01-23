@@ -143,17 +143,16 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         _revertIfError(status);
 
         // Update the debt correction.
-        int positionSize = position.size;
         uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(position.size)),
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(position.size))
         );
 
         // Update the account's position with the realised margin.
         position.margin = uint128(margin);
         // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize != 0) {
+        if (position.size != 0) {
             position.lastPrice = uint128(price);
             position.lastFundingIndex = uint64(fundingIndex);
 
@@ -172,7 +171,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 // Margin can be decreasing (due to fees/pnl) however, if we're closing the position and
                 // as long as it's not at liquidation, then we should always allow it to close. An inverted
                 // orderSizeDelta of the same size means we're closing.
-                if (!_isClosing(positionSize, orderSizeDelta)) {
+                if (!_isClosing(position.size, orderSizeDelta)) {
                     _revertIfError(
                         (margin < _minInitialMargin()) ||
                             (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
