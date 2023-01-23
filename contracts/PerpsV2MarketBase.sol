@@ -712,12 +712,17 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return x < y ? x : y;
     }
 
-    // True if and only if two positions a and b are on the same side of the market;
-    // that is, if they have the same sign, or either of them is zero.
+    /*
+     * True if and only if two positions a and b are on the same side of the market; that is, if they have the same
+     * sign, or either of them is zero.
+     */
     function _sameSide(int a, int b) internal pure returns (bool) {
         return (a == 0) || (b == 0) || (a > 0) == (b > 0);
     }
 
+    /*
+     * True if sizes a and b, inverted are equal and both not zero.
+     */
     function _isClosing(int a, int b) internal pure returns (bool) {
         return a != 0 && b != 0 && -a == b;
     }
