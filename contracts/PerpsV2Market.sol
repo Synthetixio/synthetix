@@ -416,13 +416,4 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     ) internal {
         proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
     }
-
-    /* ========== MODIFIERS ========== */
-
-    modifier flagged(address account) {
-        if (!marketState.flagged(account)) {
-            revert(_errorMessages[uint8(Status.PositionNotFlagged)]);
-        }
-        _;
-    }
 }

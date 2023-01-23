@@ -32,26 +32,14 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
     ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     ///// Mutative methods
-    function closeDelayedOrder(IPerpsV2MarketBaseTypes.OrderType orderType) external onlyProxy {}
 
-    function submitOrder(
-        IPerpsV2MarketBaseTypes.OrderType orderType,
-        int sizeDelta,
-        uint priceImpactDelta,
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {}
+
+    function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
+        uint priceImpactDelta,
         bytes32 trackingCode
-    ) external onlyProxy {
-        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Atomic) {
-            revert("Invalid order type");
-        }
-
-        bool isOffchain;
-        if (orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain) {
-            isOffchain = true;
-        }
-
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, isOffchain);
-    }
+    ) external {}
 
     /**
      * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
