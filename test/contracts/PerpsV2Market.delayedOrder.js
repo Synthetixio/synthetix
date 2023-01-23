@@ -180,10 +180,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		});
 
 		it('should allow close position when above maxLeverage but not liquidated', async () => {
-			// A short test to demonstrate how a user can fail to close a position with
-			// delayed orders. The crux of the problem is they don't have enough margin to
-			// pay the keeper deposit and the order fails to execute.
-
 			// (1) Setup the scenario.
 			const skewScale = toUnit('1000000'); // 1M
 			await perpsV2MarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
@@ -209,7 +205,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			// (4) Price moves in the opposite direction -0.5% (50bps)
 			await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
 
-			// (5) Attempt to close the position - expected to revert with not enough margin.
+			// (5) Attempt to close the position - should not revert if above maxLeverage
 			const closeSizeDelta = multiplyDecimal(position.size, toUnit('-1')); // Inverted to close.
 			await perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
 				from: trader,
