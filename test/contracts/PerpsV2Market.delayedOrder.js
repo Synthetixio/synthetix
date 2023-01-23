@@ -184,7 +184,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
 		});
 
-		it('allow close position when above maxLeverage but not liquidated', async () => {
+		it('should allow close position when above maxLeverage but not liquidated', async () => {
 			// A short test to demonstrate how a user can fail to close a position with
 			// delayed orders. The crux of the problem is they don't have enough margin to
 			// pay the keeper deposit and the order fails to execute.
@@ -228,6 +228,14 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			// (7) Successfully closed position.
 			assert.bnEqual(closedPosition.size, toUnit('0'));
 		});
+
+		it('should allow close position when below maxLeverage and not liquidated');
+
+		it('should allow close position when below margin is below minMargin and not liquidated');
+
+		it('should not allow close when position can be liquidated');
+
+		it('should not allow a partial close (i.e. orderSizeDelta != -pos.size)');
 
 		describe('cannot submit an order when', () => {
 			it('zero size', async () => {
