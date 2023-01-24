@@ -243,61 +243,43 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         );
     }
 
-    function _flagPosition(
-        address account,
-        address liquidator,
-        uint price
-    ) internal {
+    function _flagPosition(address account, address flagger) internal {
         Position memory position = marketState.positions(account);
-        int128 positionSize = position.size;
-        uint positionId = position.id;
-
-        // Get remaining margin for sending any leftover buffer to fee pool
-        //
-        // note: we do _not_ use `_remainingLiquidatableMargin` here as we want to send this premium to the fee pool
-        // upon liquidation to give back to stakers.
-        uint remMargin = _remainingMargin(position, price);
-
-        uint liqFee = _liquidationFee(positionSize, price, true);
-        uint leftover;
-        if (remMargin > liqFee) {
-            leftover = remMargin.sub(liqFee);
-        }
-
-        uint fundingIndex = _latestFundingIndex();
-        _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), uint128(leftover), uint128(price), positionSize),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, positionSize)
-        );
 
         // Flag position
-        marketState.flag(account);
+        marketState.flag(account, flagger);
 
         // Cleanup any outstanding delayed order
         marketState.deleteDelayedOrder(account);
 
-        // Issue the reward to the liquidator.
-        _manager().issueSUSD(liquidator, liqFee);
-
-        emitPositionModified(positionId, account, leftover, positionSize, 0, price, fundingIndex, 0);
-        emitPositionFlagged(positionId, account, liquidator, positionSize, price, liqFee);
+        emitPositionFlagged(position.id, account, flagger);
     }
 
     function _liquidatePosition(
         Position memory position,
         address account,
-        // address liquidator,
-        uint price
-    ) internal returns (uint remMargin) {
+        address liquidator,
+        uint price,
+        uint liquidatorFee
+    ) internal {
+        int128 positionSize = position.size;
+        uint positionId = position.id;
+
         // Get remaining margin for sending any leftover buffer to fee pool
         //
         // note: we do _not_ use `_remainingLiquidatableMargin` here as we want to send this premium to the fee pool
         // upon liquidation to give back to stakers.
-        remMargin = _remainingMargin(position, price);
+        uint remainingMargin = _remainingMargin(position, price);
+
+        // Get fees to pay to flagger, liquidator and feepooland/or feePool)
+        // Pay fee to flagger
+        uint flaggerFee = _liquidationFee(positionSize, price, true);
+        uint totalFees = flaggerFee.add(liquidatorFee);
+
+        // update remaining margin
+        remainingMargin = remainingMargin > totalFees ? remainingMargin.sub(totalFees) : 0;
 
         // Record updates to market size and debt.
-        int128 positionSize = position.size;
-        uint positionId = position.id;
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).sub(positionSize)));
         marketState.setMarketSize(uint128(uint(marketState.marketSize()).sub(_abs(positionSize))));
 
@@ -313,7 +295,22 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // Unflag position.
         marketState.unflag(account);
 
+        // Issue the reward to the flagger.
+        _manager().issueSUSD(marketState.flagged(account), flaggerFee);
+
+        // Issue the reward to the liquidator (keeper).
+        if (liquidatorFee > 0) {
+            _manager().issueSUSD(liquidator, liquidatorFee);
+        }
+
+        // Pay the remaining to feePool
+        if (remainingMargin > 0) {
+            _manager().payFee(remainingMargin);
+        }
+
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
+
+        emitPositionLiquidated(position.id, account, messageSender, position.size, price, totalFees);
     }
 
     /*
@@ -327,7 +324,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
-        _flagPosition(account, messageSender, price);
+        _flagPosition(account, messageSender);
     }
 
     /*
@@ -343,20 +340,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // TODO Check if conditions are met
 
         // Liquidate and get remaining margin
-        uint remMargin = _liquidatePosition(position, account, price);
-
-        // Issue the reward to the liquidator.
-        uint liqFee = _keeperLiquidationFee();
-        uint keeperFee = remMargin > liqFee ? liqFee : remMargin;
-
-        _manager().issueSUSD(messageSender, keeperFee);
-
-        emitPositionLiquidated(position.id, account, messageSender, position.size, price, keeperFee);
-
-        // Send any positive margin buffer to the fee pool
-        if (remMargin > keeperFee) {
-            _manager().payFee(remMargin.sub(keeperFee));
-        }
+        _liquidatePosition(position, account, messageSender, price, _keeperLiquidationFee());
     }
 
     function forceLiquidatePosition(address account) external onlyProxy flagged(account) {
@@ -367,15 +351,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // TODO Check if sender is endorsed
 
         // Liquidate and get remaining margin
-        uint remMargin = _liquidatePosition(position, account, price);
-
-        // forced liquidation => no keeper fee to be paid, all remaining margin goes to the feePool
-        emitPositionLiquidated(position.id, account, messageSender, position.size, price, 0);
-
-        // Send any positive margin buffer to the fee pool
-        if (remMargin > 0) {
-            _manager().payFee(remMargin);
-        }
+        _liquidatePosition(position, account, messageSender, price, 0);
     }
 
     /* ========== EVENTS ========== */
@@ -387,19 +363,15 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
     }
 
-    event PositionFlagged(uint id, address account, address liquidator, int size, uint price, uint fee);
-    bytes32 internal constant POSITIONFLAGGED_SIG =
-        keccak256("PositionFlagged(uint256,address,address,int256,uint256,uint256)");
+    event PositionFlagged(uint id, address account, address flagger);
+    bytes32 internal constant POSITIONFLAGGED_SIG = keccak256("PositionFlagged(uint256,address,address)");
 
     function emitPositionFlagged(
         uint id,
         address account,
-        address liquidator,
-        int size,
-        uint price,
-        uint fee
+        address flagger
     ) internal {
-        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(id, account, flagger), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
     }
 
     event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);

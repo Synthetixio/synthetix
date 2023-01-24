@@ -332,14 +332,14 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     /* ========== MODIFIERS ========== */
 
     modifier flagged(address account) {
-        if (!marketState.flagged(account)) {
+        if (!marketState.isFlagged(account)) {
             revert(_errorMessages[uint8(Status.PositionNotFlagged)]);
         }
         _;
     }
 
     modifier notFlagged(address account) {
-        if (marketState.flagged(account)) {
+        if (marketState.isFlagged(account)) {
             revert(_errorMessages[uint8(Status.PositionFlagged)]);
         }
         _;

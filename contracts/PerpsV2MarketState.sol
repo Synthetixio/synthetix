@@ -72,8 +72,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     /// @dev Holds a mapping of accounts to orders. Only one order per account is supported
     mapping(address => DelayedOrder) public delayedOrders;
 
-    /// @dev Holds a mapping of accounts to booleans to flag an account. Only one order per account is supported
-    mapping(address => bool) public flagged;
+    /// @dev Holds a mapping of accounts to flagger address to flag an account. Only one order per account is supported
+    mapping(address => address) public flagged;
     AddressSetLib.AddressSet internal _flaggedAddresses;
 
     constructor(
@@ -103,6 +103,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return fundingSequence.length;
     }
 
+    function isFlagged(address account) external view returns (bool) {
+        return flagged[account] != address(0);
+    }
+
     function getPositionAddressesPage(uint index, uint pageSize)
         external
         view
@@ -121,12 +125,25 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _delayedOrderAddresses.getPage(index, pageSize);
     }
 
+    function getFlaggedAddressesPage(uint index, uint pageSize)
+        external
+        view
+        onlyAssociatedContracts
+        returns (address[] memory)
+    {
+        return _flaggedAddresses.getPage(index, pageSize);
+    }
+
     function getPositionAddressesLength() external view onlyAssociatedContracts returns (uint) {
         return _positionAddresses.elements.length;
     }
 
     function getDelayedOrderAddressesLength() external view onlyAssociatedContracts returns (uint) {
         return _delayedOrderAddresses.elements.length;
+    }
+
+    function getFlaggedAddressesLength() external view onlyAssociatedContracts returns (uint) {
+        return _flaggedAddresses.elements.length;
     }
 
     function setMarketKey(bytes32 _marketKey) external onlyAssociatedContracts {
@@ -248,8 +265,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         }
     }
 
-    function flag(address account) external onlyAssociatedContracts {
-        flagged[account] = true;
+    function flag(address account, address flagger) external onlyAssociatedContracts {
+        flagged[account] = flagger;
         _flaggedAddresses.add(account);
     }
 
