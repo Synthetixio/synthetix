@@ -19,7 +19,7 @@ const {
 } = require('./helpers');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const MockExchanger = artifacts.require('MockExchanger');
 

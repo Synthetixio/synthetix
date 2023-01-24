@@ -11,7 +11,7 @@ const {
 const { assert } = require('./common');
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
@@ -66,6 +66,7 @@ contract('PerpsV2MarketData', accounts => {
 				'PerpsV2MarketSettings',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
+				'TestablePerpsV2MarketBTC',
 				'PerpsV2MarketBTC',
 				'PerpsV2MarketData',
 				'AddressResolver',
