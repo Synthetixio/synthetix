@@ -170,7 +170,8 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
                 // Margin can be decreasing (due to fees/pnl) however, if we're closing or reducing the position and
                 // as long as it's not at liquidation, then we should always allow it to decrease or close completely.
                 int newPositionSize = int(position.size).add(orderSizeDelta);
-                bool positionDecreasing = _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
+                bool positionDecreasing =
+                    _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
 
                 if (!positionDecreasing) {
                     _revertIfError(
