@@ -196,7 +196,7 @@ interface IPerpsV2MarketConsolidated {
 
     event MarginTransferred(address indexed account, int marginDelta);
 
-    event PositionFlagged(uint id, address account, address liquidator, int size, uint price, uint fee);
+    event PositionFlagged(uint id, address account, address liquidator);
 
     event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
 

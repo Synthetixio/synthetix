@@ -274,6 +274,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // Get fees to pay to flagger, liquidator and feepooland/or feePool)
         // Pay fee to flagger
         uint flaggerFee = _liquidationFee(positionSize, price, true);
+
         uint totalFees = flaggerFee.add(liquidatorFee);
 
         // update remaining margin
@@ -289,12 +290,6 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             Position(0, position.lastFundingIndex, position.margin, position.lastPrice, positionSize)
         );
 
-        // Close the position itself.
-        marketState.deletePosition(account);
-
-        // Unflag position.
-        marketState.unflag(account);
-
         // Issue the reward to the flagger.
         _manager().issueSUSD(marketState.flagged(account), flaggerFee);
 
@@ -307,6 +302,12 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         if (remainingMargin > 0) {
             _manager().payFee(remainingMargin);
         }
+
+        // Close the position itself.
+        marketState.deletePosition(account);
+
+        // Unflag position.
+        marketState.unflag(account);
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
 
