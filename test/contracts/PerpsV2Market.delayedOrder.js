@@ -192,7 +192,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + minDelayTimeDelta);
 		});
 
-		describe('with degen leverage', () => {
+		describe('modifying while with degen leverage', () => {
 			let maxLeverage, price, skewScale;
 
 			beforeEach(async () => {
@@ -204,7 +204,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				await setPrice(baseAsset, price);
 			});
 
-			it('should allow close position when above maxLeverage but not liquidated', async () => {
+			it('should allow submit for close when above maxLeverage but not liquidated', async () => {
 				// Submit an order with a high degen leverage (say, 24x).
 				//
 				// Note: `trader` has 2k margin, at 24x, 1k per unit is a size 48
@@ -224,7 +224,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				assert.bnEqual(closedPosition.size, toUnit('0'));
 			});
 
-			it('should allow close position when below maxLeverage and not liquidated', async () => {
+			it('should allow submit for close when below maxLeverage and not liquidated', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
@@ -240,7 +240,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				assert.bnEqual(closedPosition.size, toUnit('0'));
 			});
 
-			it('should not allow close when position can be liquidated', async () => {
+			it('should not allow submit when position can be liquidated', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
@@ -262,7 +262,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				);
 			});
 
-			it('should not allow position to decrease even when orderSizeDelta != -pos.size and above maxLeverage', async () => {
+			it('should not allow submit for close when newPos is still above maxLeverage', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
@@ -272,6 +272,27 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				assert.bnGt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
 
 				// Attempt to decrease the position but stay above maxLev
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-0.01'));
+				await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
+
+				await assert.revert(
+					perpsV2Market.submitDelayedOrder(closeSizeDelta, priceImpactDelta, desiredTimeDelta, {
+						from: trader,
+					}),
+					'Max leverage exceeded'
+				);
+			});
+
+			it('should not allow submit for modification when newPos is above maxLeverage', async () => {
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
+
+				// Price moves in the opposite direction -0.5% (50bps) - now above maxLeverage
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+				assert.bnGt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Increase position above pushing further above maxLeverage.
 				const closeSizeDelta = multiplyDecimal(position.size, toUnit('0.05'));
 				await fastForward(minDelayTimeDelta + 1); // ff min + 1s buffer.
 
@@ -281,6 +302,23 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					}),
 					'Max leverage exceeded'
 				);
+			});
+
+			it('should allow submit for close when newPos is now below maxLeverage', async () => {
+				const leverage = toUnit('24');
+				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
+				const position = await submitAndFastForwardAndExecute(sizeDelta, trader);
+
+				// Price moves in the opposite direction -0.5% (50bps) - now above maxLeverage
+				await setPrice(baseAsset, multiplyDecimal(price, toUnit('0.995')));
+				assert.bnGt((await perpsV2MarketHelper.currentLeverage(trader))[0], maxLeverage);
+
+				// Attempt to decrease the position but below maxLev.
+				const closeSizeDelta = multiplyDecimal(position.size, toUnit('-0.25'));
+				const closedPosition = await submitAndFastForwardAndExecute(closeSizeDelta, trader);
+
+				// Successfully closed position.
+				assert.bnEqual(closedPosition.size, multiplyDecimal(position.size, toUnit('0.75')));
 			});
 		});
 
