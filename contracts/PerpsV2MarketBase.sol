@@ -721,13 +721,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * True if sizes a and b, inverted are equal and both not zero.
-     */
-    function _isClosing(int a, int b) internal pure returns (bool) {
-        return a != 0 && b != 0 && -a == b;
-    }
-
-    /*
      * True if and only if the given status indicates an error.
      */
     function _isError(Status status) internal pure returns (bool) {

@@ -151,31 +151,33 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
 
         // Update the account's position with the realised margin.
         position.margin = uint128(margin);
+
         // We only need to update their funding/PnL details if they actually have a position open
         if (position.size != 0) {
             position.lastPrice = uint128(price);
             position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
-            //   * they have sufficient margin to do so
             //   * the resulting margin would not be lower than the liquidation margin or min initial margin
             //     * liqMargin accounting for the liqPremium
-            //   * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
                 // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
                 uint liqPremium = _liquidationPremium(position.size, price);
                 uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
 
-                _revertIfError(margin < _minInitialMargin() || margin <= liqMargin, Status.InsufficientMargin);
+                _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
 
-                // Margin can be decreasing (due to fees/pnl) however, if we're closing the position and
-                // as long as it's not at liquidation, then we should always allow it to close. An inverted
-                // orderSizeDelta of the same size means we're closing.
-                if (!_isClosing(position.size, orderSizeDelta)) {
+                // Margin can be decreasing (due to fees/pnl) however, if we're closing or reducing the position and
+                // as long as it's not at liquidation, then we should always allow it to decrease or close completely.
+                int newPositionSize = int(position.size).add(orderSizeDelta);
+                bool positionDecreasing = _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
+
+                if (!positionDecreasing) {
                     _revertIfError(
                         _maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin)),
                         Status.MaxLeverageExceeded
                     );
+                    _revertIfError(margin < _minInitialMargin(), Status.InsufficientMargin);
                 }
             }
         }
