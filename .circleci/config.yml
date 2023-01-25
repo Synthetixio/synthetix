@@ -35,11 +35,11 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44aa13"
+      foundry_locked_commit: "232f66f9"
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${foundry_locked_commit}-12
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -49,7 +49,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${foundry_locked_commit}-12
           paths:
             - ~/.foundry/bin
       - checkout
@@ -125,12 +125,12 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44aa13"
+      foundry_locked_commit: "232f66f9"
     resource_class: large
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${foundry_locked_commit}-12
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -140,7 +140,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${foundry_locked_commit}-12
           paths:
             - ~/.foundry/bin
       - checkout
@@ -288,12 +288,12 @@ jobs:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     environment:
-      foundry_locked_commit: "a44aa13"
+      foundry_locked_commit: "232f66f9"
     resource_class: large
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${foundry_locked_commit}-12
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -303,7 +303,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${foundry_locked_commit}-12
           paths:
             - ~/.foundry/bin
       - checkout
