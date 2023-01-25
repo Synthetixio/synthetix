@@ -167,8 +167,12 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
 
                 _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
 
-                // Margin can be decreasing (due to fees/pnl) however, if we're closing or reducing the position and
-                // as long as it's not at liquidation, then we should always allow it to decrease or close completely.
+                // `marginDelta` can be decreasing (due to e.g. fees). However, price could also have moved in the
+                // opposite direction resulting in a loss. A reduced remainingMargin to calc currentLeverage can
+                // put the position above maxLeverage.
+                //
+                // To account for this, a check on `positionDecreasing` ensures that we can always perform this action
+                // so long as we're reducing the position size and not liquidatable.
                 int newPositionSize = int(position.size).add(orderSizeDelta);
                 bool positionDecreasing =
                     _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
