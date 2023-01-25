@@ -1,6 +1,7 @@
 # Builds a testing chain which is used for integration tests and downstream projects
 {{> job-header-machine.yml}}
 steps:
+
   # get foundry
   - restore_cache:
       keys:
@@ -19,6 +20,11 @@ steps:
       paths:
         - ~/.foundry/bin
 
+  # setup cannon IPFS
+  - run: mkdir -p ~/.local/share/cannon && echo '{"ipfsUrl":"http://localhost:5001"}' > ~/.local/share/cannon/settings.json
+  - run: npx ipfs daemon &
+  
+  # run test
   - checkout
   - attach_workspace:
       at: .
