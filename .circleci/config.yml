@@ -39,7 +39,7 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-11
+            - foundry-bin-${foundry_locked_commit}-12
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
@@ -49,7 +49,7 @@ jobs:
           rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-11
+          key: foundry-bin-${foundry_locked_commit}-12
           paths:
             - ~/.foundry/bin
       - checkout
