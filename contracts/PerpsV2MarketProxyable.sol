@@ -133,6 +133,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _updatePositionMargin(
         address account,
         Position memory position,
+        int orderSizeDelta,
         uint price,
         int marginDelta
     ) internal notFlagged(account) {
@@ -142,35 +143,47 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         _revertIfError(status);
 
         // Update the debt correction.
-        int positionSize = position.size;
         uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(position.size)),
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(position.size))
         );
 
         // Update the account's position with the realised margin.
         position.margin = uint128(margin);
+
         // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize != 0) {
+        if (position.size != 0) {
             position.lastPrice = uint128(price);
             position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
-            //   * they have sufficient margin to do so
             //   * the resulting margin would not be lower than the liquidation margin or min initial margin
             //     * liqMargin accounting for the liqPremium
-            //   * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
                 // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
                 uint liqPremium = _liquidationPremium(position.size, price);
                 uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
-                _revertIfError(
-                    (margin < _minInitialMargin()) ||
-                        (margin <= liqMargin) ||
-                        (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
-                    Status.InsufficientMargin
-                );
+
+                _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
+
+                // `marginDelta` can be decreasing (due to e.g. fees). However, price could also have moved in the
+                // opposite direction resulting in a loss. A reduced remainingMargin to calc currentLeverage can
+                // put the position above maxLeverage.
+                //
+                // To account for this, a check on `positionDecreasing` ensures that we can always perform this action
+                // so long as we're reducing the position size and not liquidatable.
+                int newPositionSize = int(position.size).add(orderSizeDelta);
+                bool positionDecreasing =
+                    _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
+
+                if (!positionDecreasing) {
+                    _revertIfError(
+                        _maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin)),
+                        Status.MaxLeverageExceeded
+                    );
+                    _revertIfError(margin < _minInitialMargin(), Status.InsufficientMargin);
+                }
             }
         }
 

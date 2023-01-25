@@ -417,6 +417,57 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 	});
 
+	// For an in-depth and more holistic set of tests, refer to submitCloseDelayedOrderWithTracking
+	describe('submitCloseOffchainDelayedOrderWithTracking()', () => {
+		const trackingCode = toBytes32('code');
+
+		const fastForwardAndExecute = async (account, price) => {
+			await fastForward(offchainDelayedOrderMinAge + 1); // ff min + 1s buffer.
+
+			const updateFeedData = await getFeedUpdateData({
+				id: defaultFeedId,
+				price: feedBaseFromUNIT(price),
+				conf: feedBaseFromUNIT(confidence),
+			});
+
+			await perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
+				from: account,
+			});
+			return perpsV2Market.positions(account);
+		};
+
+		const submitAndFastForwardAndExecute = async (sizeDelta, price, account) => {
+			await perpsV2Market.submitOffchainDelayedOrder(sizeDelta, priceImpactDelta, {
+				from: account,
+			});
+			return fastForwardAndExecute(account, price);
+		};
+
+		it('can successfully close a position', async () => {
+			// Submit and successfully open a position.
+			const openedPosition = await submitAndFastForwardAndExecute(size, price, trader);
+			assert.bnEqual(openedPosition.size, size);
+
+			// Close said position.
+			await perpsV2Market.submitCloseOffchainDelayedOrderWithTracking(
+				priceImpactDelta,
+				trackingCode,
+				{ from: trader }
+			);
+
+			const targetPrice = multiplyDecimal(price, toUnit('0.95'));
+			await setOnchainPrice(baseAsset, targetPrice);
+			await setOffchainPrice(trader, {
+				id: defaultFeedId,
+				price: feedBaseFromUNIT(targetPrice),
+				conf: feedBaseFromUNIT(confidence),
+				publishTime: await currentTime(),
+			});
+			const closedPosition = await fastForwardAndExecute(trader, targetPrice);
+			assert.bnEqual(closedPosition.size, 0);
+		});
+	});
+
 	describe('cancelOffchainDelayedOrder()', () => {
 		it('cannot cancel when there is no order', async () => {
 			// account owner

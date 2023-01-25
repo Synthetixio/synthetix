@@ -256,7 +256,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
             // cancelling an order does not induce a fillPrice as no skew has moved.
             uint price = _assetPriceRequireSystemChecks(false);
             uint fundingIndex = _recomputeFunding(price);
-            _updatePositionMargin(account, position, price, int(order.keeperDeposit));
+            _updatePositionMargin(account, position, order.sizeDelta, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
             emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
@@ -300,7 +300,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
 
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, fillPrice, int(toRefund));
+        _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
         emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 

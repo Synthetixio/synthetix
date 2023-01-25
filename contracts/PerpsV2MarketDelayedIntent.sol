@@ -9,7 +9,7 @@ import "./interfaces/IPerpsV2MarketDelayedIntent.sol";
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
 
 /**
- Contract that implements DelayedOrders (onchain) mechanism for the PerpsV2 market.
+ Contract that implements DelayedOrders (on-chain & off-chain) mechanism for the PerpsV2 market.
  The purpose of the mechanism is to allow reduced fees for trades that commit to next price instead
  of current price. Specifically, this should serve funding rate arbitrageurs, such that funding rate
  arb is profitable for smaller skews. This in turn serves the protocol by reducing the skew, and so
@@ -33,13 +33,22 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
     ///// Mutative methods
 
-    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {}
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
+        _submitCloseDelayedOrder(priceImpactDelta, 0, trackingCode, IPerpsV2MarketBaseTypes.OrderType.Offchain);
+    }
 
     function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
         uint priceImpactDelta,
         bytes32 trackingCode
-    ) external {}
+    ) external {
+        _submitCloseDelayedOrder(
+            priceImpactDelta,
+            desiredTimeDelta,
+            trackingCode,
+            IPerpsV2MarketBaseTypes.OrderType.Delayed
+        );
+    }
 
     /**
      * @notice submits an order to be filled some time in the future or at a price of the next oracle update.
@@ -66,8 +75,8 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, bytes32(0), false);
     }
 
-    /// same as submitDelayedOrder but emits an event with the tracking code
-    /// to allow volume source fee sharing for integrations
+    /// Same as submitDelayedOrder but emits an event with the tracking code to allow volume source
+    /// fee sharing for integrations.
     function submitDelayedOrderWithTracking(
         int sizeDelta,
         uint priceImpactDelta,
@@ -112,7 +121,33 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
     }
 
-    ///// Internal views
+    ///// Internal
+
+    function _submitCloseDelayedOrder(
+        uint priceImpactDelta,
+        uint desiredTimeDelta,
+        bytes32 trackingCode,
+        IPerpsV2MarketBaseTypes.OrderType orderType
+    ) internal {
+        Position memory position = marketState.positions(messageSender);
+
+        // a position must be present before closing.
+        require(position.size != 0, "no existing position");
+
+        // we only allow off-chain and delayed orders.
+        //
+        // note: although this is internal and may _never_ be called incorrectly, just a safety check.
+        require(orderType != IPerpsV2MarketBaseTypes.OrderType.Atomic, "invalid order type");
+
+        _submitDelayedOrder(
+            _marketKey(),
+            -position.size,
+            priceImpactDelta,
+            desiredTimeDelta,
+            trackingCode,
+            orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain
+        );
+    }
 
     function _submitDelayedOrder(
         bytes32 marketKey,
@@ -171,7 +206,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
-        _updatePositionMargin(messageSender, position, fillPrice, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(commitDeposit + keeperDeposit));
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round

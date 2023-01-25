@@ -187,25 +187,14 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
     function forceLiquidatePosition(address account) external {}
 
     /* ========== Delayed Intent ========== */
-    function closeDelayedOrder(IPerpsV2MarketBaseTypes.OrderType orderType) external {
-        orderType;
-    }
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
 
-    function submitOrder(
-        IPerpsV2MarketBaseTypes.OrderType orderType,
-        int sizeDelta,
-        uint priceImpactDelta,
+    function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
+        uint priceImpactDelta,
         bytes32 trackingCode
-    ) external {
-        orderType;
-        sizeDelta;
-        priceImpactDelta;
-        desiredTimeDelta;
-        trackingCode;
-    }
+    ) external;
 
-    // Legacy. Attention integrators: This function will be removed soon
     function submitDelayedOrder(
         int sizeDelta,
         uint priceImpactDelta,
@@ -216,7 +205,6 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         desiredTimeDelta;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function submitDelayedOrderWithTracking(
         int sizeDelta,
         uint priceImpactDelta,
@@ -229,13 +217,11 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         trackingCode;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {
         sizeDelta;
         priceImpactDelta;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
         uint priceImpactDelta,
