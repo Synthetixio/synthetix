@@ -22,7 +22,11 @@ steps:
 
   # setup cannon IPFS
   - run: mkdir -p ~/.local/share/cannon && echo '{"ipfsUrl":"http://localhost:5001"}' > ~/.local/share/cannon/settings.json
-  - run: npx ipfs daemon &
+  - run:
+      command: npx ipfs daemon
+      background: true
+  - cmd-wait-for-port:
+      port: 5001
   
   # run test
   - checkout
