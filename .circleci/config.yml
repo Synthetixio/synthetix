@@ -52,12 +52,12 @@ jobs:
           key: foundry-bin-${foundry_locked_commit}-11
           paths:
             - ~/.foundry/bin
-      - run: mkdir -p ~/.local/share/cannon && echo '{"ipfsUrl":"http://localhost:5001"}' > ~/.local/share/cannon/settings.json
+      - run: mkdir -p ~/.local/share/cannon && echo '{"ipfsUrl":"http://localhost:5002"}' > ~/.local/share/cannon/settings.json
       - run:
           command: npx ipfs daemon
           background: true
       - cmd-wait-for-port:
-          port: 5001
+          port: 5002
       - checkout
       - attach_workspace:
           at: .
