@@ -1,16 +1,16 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "../PerpsV2Market.sol";
+import "../PerpsV2MarketProxyable.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
-contract TestablePerpsV2Market is PerpsV2Market {
+contract TestablePerpsV2Market is PerpsV2MarketProxyable {
     constructor(
         address payable _proxy,
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2Market(_proxy, _marketState, _owner, _resolver) {}
+    ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     function entryDebtCorrection() external view returns (int) {
         return marketState.entryDebtCorrection();

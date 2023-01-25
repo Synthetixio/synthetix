@@ -469,12 +469,18 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		// TestablePerpsV2MarketBTC: [
-		// 	tryGetAddressOf('ProxyPerpsV2MarketBTC'),
-		// 	tryGetAddressOf('PerpsV2MarketStateBTC'),
-		// 	owner,
-		// 	tryGetAddressOf('AddressResolver'),
-		// ],
+		TestablePerpsV2MarketBTC: [
+			tryGetAddressOf('ProxyPerpsV2MarketBTC'),
+			tryGetAddressOf('PerpsV2MarketStateBTC'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		TestablePerpsV2MarketETH: [
+			tryGetAddressOf('ProxyPerpsV2MarketETH'),
+			tryGetAddressOf('PerpsV2MarketStateETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
 	};
 
 	let instance;
@@ -872,11 +878,14 @@ const setupContract = async ({
 			const filteredFunctions = getFunctionSignatures(
 				{
 					abi: [
+						'function entryDebtCorrection() external view returns (int)',
 						'function proportionalSkew() view returns (int)',
-						'function maxFundingVelocity() view returns (uint)',
 						'function maxOrderSizes() view returns (uint, uint, bool)',
-						'liquidationMargin(address) view returns (uint)',
-						'currentLeverage(address) view returns (int, bool)',
+						'function liquidationMargin(address) view returns (uint)',
+						'function currentLeverage(address) view returns (int, bool)',
+						// 'function maxFundingVelocity() view returns (uint)',
+						'function fillPriceWithBasePrice(int, uint) view returns (uint, bool)',
+						'function netFundingPerUnit(address account) external view returns (int)',
 					],
 				},
 				excludedFunctions.filter(e => e !== 'marketState')
@@ -1488,7 +1497,7 @@ const setupAllContracts = async ({
 
 		{
 			contract: 'PerpsV2MarketBTC',
-			source: 'TestablePerpsV2Market',
+			source: 'PerpsV2Market',
 			deps: [
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
@@ -1505,7 +1514,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'PerpsV2MarketETH',
-			source: 'TestablePerpsV2Market',
+			source: 'PerpsV2Market',
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
@@ -1520,16 +1529,16 @@ const setupAllContracts = async ({
 				'PerpsV2ExchangeRate',
 			],
 		},
-		// {
-		// 	contract: 'TestablePerpsV2MarketBTC',
-		// 	source: 'TestablePerpsV2Market',
-		// 	deps: ['PerpsV2MarketBTC'],
-		// },
-		// {
-		// 	contract: 'TestablePerpsV2MarketETH',
-		// 	source: 'TestablePerpsV2Market',
-		// 	deps: ['PerpsV2MarketETH'],
-		// },
+		{
+			contract: 'TestablePerpsV2MarketBTC',
+			source: 'TestablePerpsV2Market',
+			deps: ['PerpsV2MarketBTC'],
+		},
+		{
+			contract: 'TestablePerpsV2MarketETH',
+			source: 'TestablePerpsV2Market',
+			deps: ['PerpsV2MarketETH'],
+		},
 	];
 
 	// check contract list for contracts with the same address resolver name

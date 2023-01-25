@@ -142,7 +142,15 @@ interface IPerpsV2MarketConsolidated {
 
     function liquidatePosition(address account) external;
 
-    /* ========== DelayedOrder ========== */
+    /* ========== Delayed Intent ========== */
+    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
+
+    function submitCloseDelayedOrderWithTracking(
+        uint desiredTimeDelta,
+        uint priceImpactDelta,
+        bytes32 trackingCode
+    ) external;
+
     function submitDelayedOrder(
         int sizeDelta,
         uint priceImpactDelta,
@@ -156,11 +164,6 @@ interface IPerpsV2MarketConsolidated {
         bytes32 trackingCode
     ) external;
 
-    function cancelDelayedOrder(address account) external;
-
-    function executeDelayedOrder(address account) external;
-
-    /* ========== OffchainDelayedOrder ========== */
     function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external;
 
     function submitOffchainDelayedOrderWithTracking(
@@ -169,9 +172,14 @@ interface IPerpsV2MarketConsolidated {
         bytes32 trackingCode
     ) external;
 
-    function cancelOffchainDelayedOrder(address account) external;
+    /* ========== Delayed Execution ========== */
+    function executeDelayedOrder(address account) external;
 
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable;
+
+    function cancelDelayedOrder(address account) external;
+
+    function cancelOffchainDelayedOrder(address account) external;
 
     /* ========== Events ========== */
 
@@ -187,6 +195,8 @@ interface IPerpsV2MarketConsolidated {
     );
 
     event MarginTransferred(address indexed account, int marginDelta);
+
+    event PositionFlagged(uint id, address account, address liquidator);
 
     event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
 
