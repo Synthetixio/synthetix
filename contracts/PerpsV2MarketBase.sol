@@ -362,25 +362,17 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /**
      * The fee charged from the margin during liquidation. Fee is proportional to position size
-     * but is between _minKeeperFee() and _maxKeeperFee() of sUSD to prevent underincentivising
+     * but is between _minKeeperFee() and _maxKeeperFee() expressed in sUSD to prevent underincentivising
      * liquidations of small positions, or overpaying.
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
-     * @param capped boolean flag indicating if the liquidation fee must be capped to maxKeeperFee sUSD
      * @return lFee liquidation fee to be paid to liquidator in sUSD fixed point decimal units
      */
-    function _liquidationFee(
-        int positionSize,
-        uint price,
-        bool capped
-    ) internal view returns (uint lFee) {
+    function _liquidationFee(int positionSize, uint price) internal view returns (uint lFee) {
         // size * price * fee-ratio
         uint proportionalFee = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationFeeRatio());
         uint maxFee = _maxKeeperFee();
-        uint cappedProportionalFee = proportionalFee;
-        if (capped) {
-            cappedProportionalFee = proportionalFee > maxFee ? maxFee : proportionalFee;
-        }
+        uint cappedProportionalFee = proportionalFee > maxFee ? maxFee : proportionalFee;
         uint minFee = _minKeeperFee();
 
         // max(proportionalFee, minFee) - to prevent not incentivising liquidations enough
@@ -400,7 +392,11 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
+<<<<<<< perpsv2-refactor-close
         return liquidationBuffer.add(_liquidationFee(positionSize, price, false)).add(_keeperLiquidationFee());
+=======
+        return liquidationBuffer.add(_liquidationFee(positionSize, price));
+>>>>>>> fix/perps-v2-calcs
     }
 
     /**
