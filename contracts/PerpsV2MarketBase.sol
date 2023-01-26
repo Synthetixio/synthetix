@@ -392,11 +392,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
         uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-<<<<<<< perpsv2-refactor-close
-        return liquidationBuffer.add(_liquidationFee(positionSize, price, false)).add(_keeperLiquidationFee());
-=======
-        return liquidationBuffer.add(_liquidationFee(positionSize, price));
->>>>>>> fix/perps-v2-calcs
+        return liquidationBuffer.add(_liquidationFee(positionSize, price)).add(_keeperLiquidationFee());
     }
 
     /**
