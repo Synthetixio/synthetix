@@ -12,6 +12,7 @@ steps:
       port: 8545
   - run:
       name: Run integration tests on l2
+      no_output_timeout: 30m
       command: |
         # Only compile and deploy when there are new contracts
         NEW_CONTRACTS=$(node bin.js sips --layer=ovm --unreleased --with-sources)

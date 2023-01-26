@@ -81,6 +81,7 @@ jobs:
           port: 8545
       - run:
           name: Run integration tests on l2
+          no_output_timeout: 30m
           command: |
             NEW_CONTRACTS=$(node bin.js sips --layer=ovm --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
