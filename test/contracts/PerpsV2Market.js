@@ -110,7 +110,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	}) {
 		await market.transferMargin(marginDelta, { from: account });
 		await setPrice(await market.baseAsset(), fillPrice);
-		return market.modifyPosition(sizeDelta, priceImpactDelta, { from: account });
+		const tx = await market.modifyPosition(sizeDelta, priceImpactDelta, { from: account });
+		return tx;
 	}
 
 	async function closePositionAndWithdrawMargin({ market, account, fillPrice }) {
@@ -1301,7 +1302,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			assert.bnClose((await perpsV2Market.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 		});
 
-		describe('No position', async () => {
+		describe('No position', () => {
 			it('New margin', async () => {
 				assert.bnEqual((await perpsV2Market.positions(trader)).margin, toBN(0));
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
@@ -2387,7 +2388,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 		});
 
-		describe('Remaining margin', async () => {
+		describe('Remaining margin', () => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('100'));
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
@@ -2932,7 +2933,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 		});
 
-		describe('Leverage', async () => {
+		describe('Leverage', () => {
 			it('current leverage', async () => {
 				let price = toUnit(100);
 
