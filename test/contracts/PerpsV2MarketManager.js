@@ -37,6 +37,9 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const otherAddress = accounts[3];
+	const someAccount1 = accounts[4];
+	const someAccount2 = accounts[5];
+	const someAccount3 = accounts[6];
 	const initialMint = toUnit('100000');
 	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
@@ -708,38 +711,218 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 	// Liquidation helper
 	describe('Endorsed addresses admin', () => {
-		const confirmEndorsedAddressList = (expected, returned) => {};
-		const confirmAddedEvents = (expected, tx) => {};
-		const confirmRemovedEvents = (expected, tx) => {};
+		const confirmEndorsedAddressList = (current, expected) => {
+			assert.equal(current.length, expected.length);
+			if (expected.length > 0) {
+				const sortedCurrent = current.map(e => e.toString()).sort();
+				const sortedExpected = expected.map(e => e.toString()).sort();
+				assert.deepEqual(sortedCurrent, sortedExpected);
+			}
+		};
+
+		const confirmAddedEvents = async (tx, expected) => {
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			assert.equal(decodedLogs.length, expected.length);
+			let idx = 0;
+			for (const expectedAddress of expected) {
+				decodedEventEqual({
+					event: 'EndorsedAddressAdded',
+					emittedFrom: futuresMarketManager.address,
+					args: [expectedAddress],
+					log: decodedLogs[idx++],
+				});
+			}
+		};
+
+		const confirmRemovedEvents = async (tx, expected) => {
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			assert.equal(decodedLogs.length, expected.length);
+			let idx = 0;
+			for (const expectedAddress of expected) {
+				decodedEventEqual({
+					event: 'EndorsedAddressRemoved',
+					emittedFrom: futuresMarketManager.address,
+					args: [expectedAddress],
+					log: decodedLogs[idx++],
+				});
+			}
+		};
 
 		describe('gets the list of endorsed addresses', () => {
 			it('returns an empty address when no addresses are endorsed', async () => {
-				confirmEndorsedAddressList();
-				confirmAddedEvents();
-				confirmRemovedEvents();
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, []);
 			});
-			it('returns 1 address when only one address is endorsed', async () => {});
-			it('returns the list of endorsed addresses', async () => {});
+
+			it('returns 1 address when only one address is endorsed', async () => {
+				const endorsedAddresses = [someAccount1];
+
+				// add the addresses
+				await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, { from: owner });
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('returns the list of endorsed addresses', async () => {
+				const endorsedAddresses = [someAccount1, someAccount2, someAccount3];
+
+				// add the addresses
+				await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, { from: owner });
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+			// confirmRemovedEvents();
 		});
 
 		describe('when there is no addresses endorsed', () => {
-			it('returns an empty address retrieving the endorsed addresses', async () => {});
-			it('reverts if trying to add from an unauthorized address', async () => {});
-			it('allows to add 1 address', async () => {});
-			it('allows to add more than 1 address', async () => {});
-			it('allows to pass addresses already endorsed', async () => {});
-			it('allows to pass repeated addresses in the array', async () => {});
+			it('reverts if trying to add from an unauthorized address', async () => {
+				await assert.revert(
+					futuresMarketManager.addEndorsedAddresses([someAccount1], { from: someAccount2 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+
+			it('allows to add 1 address', async () => {
+				const endorsedAddresses = [someAccount1];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, endorsedAddresses);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('allows to add more than 1 address', async () => {
+				const endorsedAddresses = [someAccount1, someAccount2];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, endorsedAddresses);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('allows to pass addresses already endorsed', async () => {
+				const preEndorsedAddresses = [otherAddress, someAccount2];
+				const endorsedAddresses = [someAccount1, someAccount2, someAccount3, otherAddress];
+
+				await futuresMarketManager.addEndorsedAddresses(preEndorsedAddresses, {
+					from: owner,
+				});
+
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, [someAccount1, someAccount3]);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [
+					otherAddress,
+					someAccount2,
+					someAccount1,
+					someAccount3,
+				]);
+			});
+
+			it('allows to pass repeated addresses in the array', async () => {
+				const endorsedAddresses = [
+					someAccount1,
+					someAccount2,
+					otherAddress,
+					someAccount1,
+					someAccount3,
+				];
+				const expectedAddresses = [someAccount1, someAccount2, otherAddress, someAccount3];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, expectedAddresses);
+
+				await confirmAddedEvents(tx, expectedAddresses);
+			});
 		});
 
 		describe('when there are some addresses endorsed', () => {
+			const preEndorsedAddresses = [someAccount1, someAccount3, otherAddress];
+
 			beforeEach(async () => {
 				// Add some endorsed addresses
+				await futuresMarketManager.addEndorsedAddresses(preEndorsedAddresses, {
+					from: owner,
+				});
 			});
-			it('validates the endorsed addresses', async () => {});
-			it('not validate unendorsed addresses', async () => {});
-			it('can remove some addresses', async () => {});
-			it('can remove some addresses, allows to pass addresses not endorsed', async () => {});
-			it('can remove some addresses, allows to pass repeated addresses in the array', async () => {});
+
+			it('reverts if trying to remove from an unauthorized address', async () => {
+				await assert.revert(
+					futuresMarketManager.removeEndorsedAddresses([someAccount1], { from: someAccount2 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+
+			it('validates the endorsed addresses', async () => {
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), true);
+			});
+
+			it('not validate unendorsed addresses', async () => {
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount2), false);
+			});
+
+			it('can remove some addresses', async () => {
+				const unendorsedAddresses = [someAccount1];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, unendorsedAddresses);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [someAccount3, otherAddress]);
+			});
+
+			it('can remove some addresses, allows to pass addresses not endorsed', async () => {
+				const unendorsedAddresses = [someAccount1, someAccount2, someAccount3];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, [someAccount1, someAccount3]);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [otherAddress]);
+			});
+
+			it('can remove some addresses, allows to pass repeated addresses in the array', async () => {
+				const unendorsedAddresses = [
+					someAccount1,
+					someAccount2,
+					someAccount3,
+					someAccount1,
+					someAccount2,
+				];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, [someAccount1, someAccount3]);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [otherAddress]);
+			});
 		});
 	});
 

@@ -441,8 +441,10 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      */
     function addEndorsedAddresses(address[] calldata addresses) external onlyOwner {
         for (uint i = 0; i < addresses.length; i++) {
-            _endorsedAddresses.add(addresses[i]);
-            emit EndorsedAddressAdded(addresses[i]);
+            if (!_endorsedAddresses.contains(addresses[i])) {
+                _endorsedAddresses.add(addresses[i]);
+                emit EndorsedAddressAdded(addresses[i]);
+            }
         }
     }
 
