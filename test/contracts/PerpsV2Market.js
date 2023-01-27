@@ -272,7 +272,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await setOffchainPrice(owner, { id: feed.feedId });
 		}
 
-		// add an endorsed address
+		// add an force liquidator endorsed address
 		await futuresMarketManager.addEndorsedAddresses([endorsed], { from: owner });
 
 		// set maxLiquidationDelta to a large amount to prevent reverts when not tested
@@ -2561,16 +2561,19 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		});
 
 		describe('Accessible margin', async () => {
-			const withdrawAccessibleAndValidate = async account => {
+			const withdrawAccessibleAndValidate = async (
+				account,
+				revertWithInsufficientMargin = false
+			) => {
 				let accessible = (await perpsV2Market.accessibleMargin(account))[0];
 				await perpsV2Market.transferMargin(accessible.neg(), { from: account });
 				accessible = (await perpsV2Market.accessibleMargin(account))[0];
-				assert.bnClose(accessible, toBN('0'), toUnit('1'));
+				assert.bnClose(accessible, toBN('0'), toUnit('0.00000001'));
 
 				// withdraw large enough margin to trigger leverage > maxLeverage.
 				await assert.revert(
 					perpsV2Market.transferMargin(toUnit('-1.5'), { from: account }),
-					'Max leverage exceeded'
+					revertWithInsufficientMargin ? 'Insufficient margin' : 'Max leverage exceeded'
 				);
 			};
 
@@ -2578,7 +2581,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const margin = toUnit('1234.56789');
 				await perpsV2Market.transferMargin(margin, { from: trader3 });
 				assert.bnEqual((await perpsV2Market.accessibleMargin(trader3))[0], margin);
-				await withdrawAccessibleAndValidate(trader3);
+				await withdrawAccessibleAndValidate(trader3, true);
 			});
 
 			it('With a tiny position, minimum margin requirement is enforced.', async () => {
@@ -2596,7 +2599,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawAccessibleAndValidate(trader3);
+				await withdrawAccessibleAndValidate(trader3, true);
 
 				await transferMarginAndModifyPosition({
 					market: perpsV2Market,
@@ -2610,7 +2613,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					margin.sub(minInitialMargin),
 					toUnit('0.1')
 				);
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, true);
 			});
 
 			it('At max leverage, no margin is accessible.', async () => {
@@ -2678,7 +2681,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await setPrice(baseAsset, toUnit('80'));
 				assert.isTrue(await perpsV2Market.canLiquidate(trader3));
 				assert.bnEqual((await perpsV2Market.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				await withdrawAccessibleAndValidate(trader3, true);
 
 				await transferMarginAndModifyPosition({
 					market: perpsV2Market,
@@ -2691,7 +2694,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await setPrice(baseAsset, toUnit('120'));
 				assert.isTrue(await perpsV2Market.canLiquidate(trader2));
 				assert.bnEqual((await perpsV2Market.accessibleMargin(trader2))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader2);
+				await withdrawAccessibleAndValidate(trader2, true);
 			});
 
 			it('If remaining margin is below minimum initial margin, no margin is accessible.', async () => {
@@ -2738,7 +2741,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				assert.bnEqual((await perpsV2Market.accessibleMargin(trader3))[0], toUnit('0'));
-				await withdrawAccessibleAndValidate(trader3);
+				await withdrawAccessibleAndValidate(trader3, true);
 			});
 
 			it('With a fraction of max leverage position, a complementary fraction of margin is accessible', async () => {
