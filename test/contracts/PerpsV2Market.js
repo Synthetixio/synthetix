@@ -67,8 +67,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	const trader = accounts[2];
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
-	const noBalance = accounts[5];
-	const noBalance2 = accounts[6];
+	const endorsed = accounts[5];
+	const noBalance = accounts[6];
+	const noBalance2 = accounts[7];
 	const traderInitialBalance = toUnit(1000000);
 
 	const marketKeySuffix = '-perp';
@@ -270,6 +271,20 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			// set initial prices to have some valid data in Pyth
 			await setOffchainPrice(owner, { id: feed.feedId });
 		}
+
+		// add an endorsed address
+		await futuresMarketManager.addEndorsedAddresses([endorsed], { from: owner });
+
+		// set maxLiquidationDelta to a large amount to prevent reverts when not tested
+		await perpsV2MarketSettings.setMaxLiquidationDelta(marketKey, toUnit('10000'), {
+			from: owner,
+		});
+		// set maxPD to a large amount to prevent reverts when not tested
+		await perpsV2MarketSettings.setMaxPD(marketKey, toUnit('10000'), {
+			from: owner,
+		});
+		// set keeperLiquidationFee to 0 to not alter numbers when is not tested
+		await perpsV2MarketSettings.setKeeperLiquidationFee(toUnit('0'), { from: owner });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -2555,7 +2570,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// withdraw large enough margin to trigger leverage > maxLeverage.
 				await assert.revert(
 					perpsV2Market.transferMargin(toUnit('-1.5'), { from: account }),
-					'Insufficient margin'
+					'Max leverage exceeded'
 				);
 			};
 
@@ -4814,7 +4829,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				// tx would have the correct liquidation price, and canLiquidate() result.
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
 				await perpsV2Market.flagPosition(trader);
-				await perpsV2Market.liquidatePosition(trader);
+				await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
 			});
 
 			it('Empty positions cannot be liquidated', async () => {
@@ -5869,7 +5884,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader });
 					await setPrice(baseAsset, toUnit('1'));
 					await perpsV2Market.flagPosition(trader, { from: trader2 });
-					await perpsV2Market.liquidatePosition(trader, { from: trader2 });
+					await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
 				});
 			});
 		});
@@ -5902,7 +5917,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader });
 					await setPrice(baseAsset, toUnit('1'));
 					await perpsV2Market.flagPosition(trader, { from: trader2 });
-					await perpsV2Market.liquidatePosition(trader, { from: trader2 });
+					await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
 				});
 			});
 		});
@@ -5926,7 +5941,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader });
 				await setPrice(baseAsset, toUnit('1'));
 				await perpsV2Market.flagPosition(trader, { from: trader2 });
-				await perpsV2Market.liquidatePosition(trader, { from: trader2 });
+				await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
 			});
 		});
 	});
@@ -5980,7 +5995,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 			it('liquidations do not revert', async () => {
 				await perpsV2Market.flagPosition(trader2, { from: trader });
-				await perpsV2Market.liquidatePosition(trader2, { from: trader });
+				await perpsV2Market.forceLiquidatePosition(trader2, { from: endorsed });
 			});
 
 			it('perpsV2MarketSettings parameter changes do not revert', async () => {
