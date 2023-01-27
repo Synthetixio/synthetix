@@ -131,6 +131,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					'payFee',
 					'payFee',
 					'updateMarketsImplementations',
+					'addEndorsedAddresses',
+					'removeEndorsedAddresses',
 				],
 			});
 		});

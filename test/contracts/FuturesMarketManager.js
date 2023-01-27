@@ -95,6 +95,8 @@ contract('FuturesMarketManager', accounts => {
 					'payFee',
 					'payFee',
 					'updateMarketsImplementations',
+					'addEndorsedAddresses',
+					'removeEndorsedAddresses',
 				],
 			});
 		});

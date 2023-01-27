@@ -29,6 +29,8 @@ interface IFuturesMarketManagerInternal {
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
     function payFee(uint amount) external;
+
+    function isEndorsed(address account) external view returns (bool);
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketBase

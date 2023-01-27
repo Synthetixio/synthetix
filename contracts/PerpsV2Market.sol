@@ -360,7 +360,10 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding(price);
 
-        // TODO Check if sender is endorsed
+        // Check if sender is endorsed
+        if (!_manager().isEndorsed(messageSender)) {
+            revert("address not endorsed");
+        }
 
         // Liquidate and get remaining margin
         _liquidatePosition(position, account, messageSender, price, 0);
