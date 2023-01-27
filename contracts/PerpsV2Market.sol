@@ -338,7 +338,18 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding(price);
 
-        // TODO Check if conditions are met
+        bytes32 marketKey = _marketKey();
+        uint skewScale = _skewScale(marketKey);
+
+        // Check price impact of liquidation
+        if (_abs(position.size).divideDecimal(skewScale) >= _maxLiquidationDelta(marketKey)) {
+            revert("price impact of liquidation exceeded");
+        }
+
+        // Check Instantaneous P/D
+        if (_abs(marketState.marketSkew()).divideDecimal(skewScale) >= _maxPD(marketKey)) {
+            revert("instantaneous P/D exceeded");
+        }
 
         // Liquidate and get remaining margin
         _liquidatePosition(position, account, messageSender, price, _keeperLiquidationFee());

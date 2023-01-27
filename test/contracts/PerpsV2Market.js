@@ -5676,6 +5676,59 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(await perpsV2MarketHelper.liquidationMargin(trader2), toUnit('150'));
 			});
 		});
+
+		describe('flaggin and liquidation', () => {
+			describe('Setting the oracle price at a price where account A is not open for flagging', () => {
+				// When a random account attempts to flag account A
+				// ❌ Then transaction reverts, due to the account not being open for flagging
+			});
+
+			describe('Setting the oracle price at a liquidation price of account A with an open position', () => {
+				// When a random account attempts to flag account A, who's position isn't already flagged
+				// ✅ Then the transaction succeeds and the flagger receives a liquidation reward
+				// When a random account attempts to flag account A, who's position isn't already flagged and account A has a pending order
+				// ✅ Then the transaction succeeds and the flagger receives a liquidation reward and pending orders are cancelled
+				// When a random account attempts to flag account A, who's position is already flagged
+				// ❌ Then transaction reverts, due to the account already being flagged
+			});
+
+			describe('Setting Account A as flagged for liquidation', () => {
+				// When the price of liquidating A exceeds maxLiquidationDelta
+				// 	When a random account attempts to liquidate account A
+				// 	❌ Then transaction reverts, due to the maxLiquidationDelta being exceeded
+				// 	When a endorsed account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+				// When the price impact of the liquidating A is below maxLiquidationDelta
+				// 	When a random account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+				// 	When a endorsed account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds and the liquidator receives no reward, account A's position is closed and the flag is removed
+				// When the price impact of the liquidating account A below maxLiquidationDelta and the price recovered that the account is no longer flaggable
+				// 	When a random account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+				// When the instantaneous PD is above maxPD
+				// 	When a random account attempts to liquidate account A
+				// 	❌ Then transaction reverts, due to the maxPD being exceeded
+				// 	When a endorsed account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+				// When the instantaneous PD is below maxPD
+				// 	When a random account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+				// 	When a endorsed account attempts to liquidate account A
+				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+				// When the instantaneous PD is below maxPD and the price recovered that Account A is no longer flaggable
+				// When a random account attempts to liquidate account A
+				// ✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+				// When account A attempts to deposit sUSD into his position
+				// ❌ Then transaction reverts, as the account is flagged for liquidation
+				// When account A attempts to close his position
+				// ❌ Then transaction reverts, as the account is flagged for liquidation
+				// When account A attempts to increase his position
+				// ❌ Then transaction reverts, as the account is flagged for liquidation
+				// When account A attempts to decrease his position
+				// ❌ Then transaction reverts, as the account is flagged for liquidation
+			});
+		});
 	});
 
 	describe('Price deviation scenarios', () => {

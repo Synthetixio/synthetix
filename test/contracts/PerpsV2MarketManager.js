@@ -706,6 +706,43 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		});
 	});
 
+	// Liquidation helper
+	describe('Endorsed addresses admin', () => {
+		const confirmEndorsedAddressList = (expected, returned) => {};
+		const confirmAddedEvents = (expected, tx) => {};
+		const confirmRemovedEvents = (expected, tx) => {};
+
+		describe('gets the list of endorsed addresses', () => {
+			it('returns an empty address when no addresses are endorsed', async () => {
+				confirmEndorsedAddressList();
+				confirmAddedEvents();
+				confirmRemovedEvents();
+			});
+			it('returns 1 address when only one address is endorsed', async () => {});
+			it('returns the list of endorsed addresses', async () => {});
+		});
+
+		describe('when there is no addresses endorsed', () => {
+			it('returns an empty address retrieving the endorsed addresses', async () => {});
+			it('reverts if trying to add from an unauthorized address', async () => {});
+			it('allows to add 1 address', async () => {});
+			it('allows to add more than 1 address', async () => {});
+			it('allows to pass addresses already endorsed', async () => {});
+			it('allows to pass repeated addresses in the array', async () => {});
+		});
+
+		describe('when there are some addresses endorsed', () => {
+			beforeEach(async () => {
+				// Add some endorsed addresses
+			});
+			it('validates the endorsed addresses', async () => {});
+			it('not validate unendorsed addresses', async () => {});
+			it('can remove some addresses', async () => {});
+			it('can remove some addresses, allows to pass addresses not endorsed', async () => {});
+			it('can remove some addresses, allows to pass repeated addresses in the array', async () => {});
+		});
+	});
+
 	// helpful views
 	describe('Market summaries', () => {
 		const traderInitialBalance = toUnit(1000000);
