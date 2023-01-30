@@ -1,5 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toWei, toBN } = web3.utils;
+const { toBN } = web3.utils;
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const {
@@ -187,10 +187,10 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
 					toUnit('0'), // 0% maker fee offchain delayed order
 
-					toWei('5'), // 5x max leverage
-					toWei('1000'), // 1000 max market value
-					toWei('0.2'), // 20% max funding velocity
-					toWei('100000'), // 100k native units skewScale
+					toUnit('5'), // 5x max leverage
+					toUnit('1000'), // 1000 max market value
+					toUnit('0.2'), // 20% max funding velocity
+					toUnit('100000'), // 100k native units skewScale
 
 					toBN('2'), // 2 rounds next price confirm window
 					30, // 30s delay confirm window
@@ -202,6 +202,8 @@ contract('PerpsV2MarketData', accounts => {
 
 					offchainMarketKey,
 					toUnit('0.05'),
+
+					toUnit('1'), // 1 liquidation premium multiplier
 				],
 				{ from: owner }
 			);
@@ -250,7 +252,9 @@ contract('PerpsV2MarketData', accounts => {
 			assert.bnEqual(await perpsV2MarketSettings.minInitialMargin(), globals.minInitialMargin);
 			assert.bnEqual(globals.minInitialMargin, toUnit('40'));
 			assert.bnEqual(await perpsV2MarketSettings.minKeeperFee(), globals.minKeeperFee);
+			assert.bnEqual(await perpsV2MarketSettings.maxKeeperFee(), globals.maxKeeperFee);
 			assert.bnEqual(globals.minKeeperFee, toUnit('20'));
+			assert.bnEqual(globals.maxKeeperFee, toUnit('1000'));
 			assert.bnEqual(
 				await perpsV2MarketSettings.liquidationFeeRatio(),
 				globals.liquidationFeeRatio
