@@ -206,6 +206,7 @@ const defaults = {
 	ETHER_WRAPPER_BURN_FEE_RATE: '0',
 
 	FUTURES_MIN_KEEPER_FEE: w3utils.toWei('1'), // 1 sUSD min keeper fee
+	FUTURES_MAX_KEEPER_FEE: w3utils.toWei('1000'), // 1000 sUSD min keeper fee
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
@@ -477,6 +478,113 @@ const getFuturesMarkets = ({
 		// mixin the asset details
 		return Object.assign({}, assets[assetKey], futuresMarket);
 	});
+};
+
+const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, path }) => {
+	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, PerpsV2Proxied) => {
+		const proxyPrefix = 'PerpsV2Proxy';
+		const marketPrefix = 'PerpsV2Market';
+		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData'];
+		const prefixes = ['PerpsV2MarketViews', 'PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
+
+		if (excludedContracts.includes(target) || target.startsWith('PerpsV2MarketState')) {
+			// Markets helper or Market state. Do nothing
+			return;
+		}
+
+		// If is the proxy, get the address. Initialize object if not done yet
+		if (target.startsWith(proxyPrefix)) {
+			// get name
+			const marketName = target.slice(proxyPrefix.length);
+			if (!PerpsV2Proxied[marketName]) {
+				PerpsV2Proxied[marketName] = {};
+				PerpsV2Proxied[marketName].abi = [];
+			}
+			// get address
+			PerpsV2Proxied[marketName].address = targetData.address;
+		} else {
+			// Not proxy, is one of the components. First try with the long contract names because main component prefix is included in others
+			let nameFound = false;
+			let marketName;
+
+			// Identify the market name (after the prefix)
+			for (const prefix of prefixes) {
+				if (target.startsWith(prefix)) {
+					// get name
+					marketName = target.slice(prefix.length);
+					nameFound = true;
+				}
+			}
+
+			// if not found one the previous step, it should be PerpsV2MarketXXXXX
+			if (!nameFound) {
+				if (target.startsWith(marketPrefix)) {
+					// get name
+					marketName = target.slice(marketPrefix.length);
+					nameFound = true;
+				}
+			}
+
+			if (nameFound) {
+				// Initialize if not done yet
+				if (!PerpsV2Proxied[marketName]) {
+					PerpsV2Proxied[marketName] = {};
+					PerpsV2Proxied[marketName].abi = [];
+				}
+				// add fragments to abi
+				_consolidateAbi(sourceData.abi, PerpsV2Proxied[marketName].abi);
+			}
+		}
+	};
+
+	const _consolidateAbi = (currentAbi, consolidatedAbi) => {
+		for (const abiFragment of currentAbi) {
+			if (
+				!consolidatedAbi.find(
+					f =>
+						f.type === abiFragment.type && f.name && abiFragment.name && f.name === abiFragment.name
+				)
+			) {
+				if (abiFragment.type !== 'constructor') {
+					// don't push constructors to the consolidated abi
+					consolidatedAbi.push(abiFragment);
+				}
+			}
+		}
+	};
+
+	const deploymentData = loadDeploymentFile({ network, useOvm: false, path, fs, deploymentPath });
+
+	const targets = Object.keys(deploymentData.targets);
+
+	const PerpsV2Proxied = {};
+
+	for (const target of targets) {
+		if (!target.startsWith('PerpsV2')) {
+			continue;
+		}
+		const targetData = getTarget({
+			contract: target,
+			network,
+			useOvm: false,
+			path,
+			fs,
+			deploymentPath,
+		});
+
+		const sourceData = getSource({
+			contract: targetData.source,
+			network,
+			useOvm: false,
+			path,
+			fs,
+			deploymentPath,
+		});
+
+		_analyzeAndIncludePerpsV2(target, targetData, sourceData, PerpsV2Proxied);
+	}
+
+	return PerpsV2Proxied;
 };
 
 /**
@@ -795,6 +903,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
+		'getPerpsV2ProxiedMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -827,6 +936,7 @@ module.exports = {
 	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
+	getPerpsV2ProxiedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,

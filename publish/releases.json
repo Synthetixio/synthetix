@@ -781,6 +781,19 @@
 			"released": "both"
 		},
 		{
+			"sip": 297,
+			"layer": "ovm",
+			"sources": {
+				"ovm": [
+					"PerpsV2MarketSettings",
+					"PerpsV2Market[A-Z]+",
+					"PerpsV2MarketViews.+",
+					"PerpsV2DelayedOrder.+",
+					"PerpsV2OffchainDelayedOrder.+"
+				]
+			}
+		},
+		{
 			"sip": 299,
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
@@ -1483,8 +1496,7 @@
 				"major": 2,
 				"minor": 80
 			},
-			"sips": [279, 280, 281, 285],
-			"released": true
+			"sips": [297]
 		}
 	]
 }

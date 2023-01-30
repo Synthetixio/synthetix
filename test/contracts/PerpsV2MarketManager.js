@@ -827,6 +827,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 						offchainMarketKey,
 						toUnit('0.05'),
+
+						toUnit('1'), // 1 liquidation premium multiplier
 					],
 					{ from: owner }
 				);

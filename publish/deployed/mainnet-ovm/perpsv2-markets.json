@@ -15,11 +15,12 @@
 		"maxDelayTimeDelta": "6000",
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "120",
-		"maxLeverage": "27",
+		"maxLeverage": "100",
 		"maxMarketValue": "20000",
 		"maxFundingVelocity": "3",
 		"skewScale": "1000000",
 		"offchainPriceDivergence": "0.02",
+		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocETHPERP",
 		"paused": false,
 		"offchainPaused": false
