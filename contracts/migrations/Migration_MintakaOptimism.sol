@@ -144,7 +144,7 @@ contract Migration_MintakaOptimism is BaseMigration {
         // Set the reward for liquidating a perpsV2 position (SIP-80);
         perpsv2marketsettings_i.setLiquidationBufferRatio(2500000000000000);
         // Set the minimum reward for liquidating a perpsV2 position (SIP-80);
-        perpsv2marketsettings_i.setMinKeeperFee(1000000000000000000);
+        perpsv2marketsettings_i.setMinKeeperFee(2000000000000000000);
         // Set the maximum reward for liquidating a perpsV2 position;
         perpsv2marketsettings_i.setMaxKeeperFee(1000000000000000000000);
         perpsv2marketsettings_i.setTakerFee("sETHPERP", 10000000000000000);
@@ -160,7 +160,7 @@ contract Migration_MintakaOptimism is BaseMigration {
         perpsv2marketsettings_i.setOffchainDelayedOrderMinAge("sETHPERP", 15);
         perpsv2marketsettings_i.setOffchainDelayedOrderMaxAge("sETHPERP", 120);
         perpsv2marketsettings_i.setMaxLeverage("sETHPERP", 100000000000000000000);
-        perpsv2marketsettings_i.setMaxMarketValue("sETHPERP", 20000000000000000000000);
+        perpsv2marketsettings_i.setMaxMarketValue("sETHPERP", 1000000000000000000000);
         perpsv2marketsettings_i.setMaxFundingVelocity("sETHPERP", 3000000000000000000);
         perpsv2marketsettings_i.setSkewScale("sETHPERP", 1000000000000000000000000);
         perpsv2marketsettings_i.setOffchainMarketKey("sETHPERP", "ocETHPERP");
