@@ -72,11 +72,6 @@ contract Migration_MintakaOptimism is BaseMigration {
     }
 
     function migrate() external onlyOwner {
-        require(
-            ISynthetixNamedContract(new_PerpsV2MarketSettings_contract).CONTRACT_NAME() == "PerpsV2MarketSettings",
-            "Invalid contract supplied for PerpsV2MarketSettings"
-        );
-
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
 
