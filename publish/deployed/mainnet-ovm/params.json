@@ -73,5 +73,9 @@
 			"SYNTHS": ["sUSD", "sETH"],
 			"ISSUE_FEE_RATE": "0"
 		}
+	},
+	{
+		"name": "FUTURES_MIN_KEEPER_FEE",
+		"value": "2000000000000000000"
 	}
 ]

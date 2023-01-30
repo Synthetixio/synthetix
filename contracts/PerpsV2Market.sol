@@ -104,11 +104,11 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         // This is because this method is used by system settings when changing funding related
         // parameters, so needs to function even when system / market is paused. E.g. to facilitate
         // market migration.
-        (, bool invalid) = _assetPrice();
+        (uint price, bool invalid) = _assetPrice();
         // A check for a valid price is still in place, to ensure that a system settings action
         // doesn't take place when the price is invalid (e.g. some oracle issue).
         require(!invalid, "Invalid price");
-        return _recomputeFunding();
+        return _recomputeFunding(price);
     }
 
     function _transferMargin(
@@ -154,7 +154,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      */
     function transferMargin(int marginDelta) external onlyProxy {
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding();
+        _recomputeFunding(price);
         _transferMargin(marginDelta, price, messageSender);
     }
 
@@ -165,7 +165,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     function withdrawAllMargin() external onlyProxy {
         address sender = messageSender;
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding();
+        _recomputeFunding(price);
         int marginDelta = -int(_accessibleMargin(marketState.positions(sender), price));
         _transferMargin(marginDelta, price, sender);
     }
@@ -196,12 +196,13 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         bytes32 trackingCode
     ) internal onlyProxy {
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding();
+        _recomputeFunding(price);
         _trade(
             messageSender,
             TradeParams({
                 sizeDelta: sizeDelta,
-                price: price,
+                oraclePrice: price,
+                fillPrice: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
                 priceImpactDelta: priceImpactDelta,
@@ -226,12 +227,14 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding();
+        _recomputeFunding(price);
         _trade(
             messageSender,
+            // note: the -size here is needed to completely close the position.
             TradeParams({
                 sizeDelta: -size,
-                price: price,
+                oraclePrice: price,
+                fillPrice: _fillPrice(-size, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
                 priceImpactDelta: priceImpactDelta,
@@ -288,7 +291,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      */
     function liquidatePosition(address account) external onlyProxy {
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding();
+        _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 

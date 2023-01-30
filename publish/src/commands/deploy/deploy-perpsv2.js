@@ -73,6 +73,7 @@ module.exports = async ({
 	});
 
 	const deployedFuturesMarkets = [];
+	const perpMarketsImplementationUpdated = [];
 	const exchangeRateAssociateContractAddresses = [];
 
 	for (const marketConfig of perpsv2Markets) {
@@ -180,6 +181,7 @@ module.exports = async ({
 		const stateChanged = previousFuturesMarketState !== futuresMarketState.address;
 		const stateOrProxyChanged =
 			stateChanged || previousFuturesMarketProxy !== futuresMarketProxy.address;
+		let implementationChanged = false;
 
 		if (stateChanged) {
 			await runStep({
@@ -198,6 +200,7 @@ module.exports = async ({
 			stateOrProxyChanged ||
 			previousFuturesMarketDelayedOrder !== futuresMarketDelayedOrder.address
 		) {
+			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
 				target: futuresMarketState,
@@ -220,6 +223,7 @@ module.exports = async ({
 			stateOrProxyChanged ||
 			previousFuturesMarketDelayedOrderOffchain !== futuresMarketDelayedOrderOffchain.address
 		) {
+			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
 				target: futuresMarketState,
@@ -241,6 +245,7 @@ module.exports = async ({
 
 		// Configure Market
 		if (stateOrProxyChanged || previousFuturesMarket !== futuresMarket.address) {
+			implementationChanged = true;
 			await runStep({
 				contract: `PerpsV2MarketState`,
 				target: futuresMarketState,
@@ -303,6 +308,10 @@ module.exports = async ({
 
 		if (futuresMarketProxy) {
 			deployedFuturesMarkets.push(addressOf(futuresMarketProxy));
+
+			if (implementationChanged) {
+				perpMarketsImplementationUpdated.push(addressOf(futuresMarketProxy));
+			}
 		}
 	}
 
@@ -342,6 +351,7 @@ module.exports = async ({
 	}
 
 	// Replace the relevant markets in the manager (if any)
+	let marketImplementationsUpdated = perpMarketsImplementationUpdated;
 	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
 		const managerKnownMarkets = Array.from(
 			await futuresMarketManager['allMarkets(bool)'](true)
@@ -375,5 +385,20 @@ module.exports = async ({
 				gasLimit: 150e3 * toAdd.length, // extra gas per market
 			});
 		}
+
+		// implememtation was updated, but not the market (proxy)
+		marketImplementationsUpdated = perpMarketsImplementationUpdated.filter(element =>
+			toKeep.includes(element)
+		);
+	}
+
+	// Update markets implementations if its needed.
+	if (futuresMarketManager && marketImplementationsUpdated.length > 0) {
+		await runStep({
+			contract: `FuturesMarketManager`,
+			target: futuresMarketManager,
+			write: 'updateMarketsImplementations',
+			writeArg: [marketImplementationsUpdated],
+		});
 	}
 };
