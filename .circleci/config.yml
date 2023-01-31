@@ -59,9 +59,6 @@ jobs:
       - run: node publish build --test-helpers
       - run: npx hardhat --network cannon cannon:build cannonfile.aggregator.toml
       - run: npx hardhat --network cannon cannon:build
-      - uses: ibnesayeed/setup-ipfs@92d412e0dad36c06ffab50733e9c624896a0964f
-      with:
-        run_daemon: true
       - persist_to_workspace:
           root: .
           paths:
