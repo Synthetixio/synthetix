@@ -47,6 +47,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		perpsV2MarketHelper,
 		perpsV2MarketImpl,
 		perpsV2MarketViewsImpl,
+		perpsV2MarketLiquidate,
 		perpsV2MarketDelayedIntent,
 		perpsV2MarketDelayedExecution,
 		perpsV2ExchangeRate,
@@ -178,6 +179,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			PerpsV2MarketBTC: perpsV2MarketImpl,
+			PerpsV2MarketLiquidateBTC: perpsV2MarketLiquidate,
 			PerpsV2MarketViewsBTC: perpsV2MarketViewsImpl,
 			PerpsV2MarketDelayedIntentBTC: perpsV2MarketDelayedIntent,
 			PerpsV2MarketDelayedExecutionBTC: perpsV2MarketDelayedExecution,
@@ -302,10 +304,15 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					'modifyPositionWithTracking',
 					'closePosition',
 					'closePositionWithTracking',
-					'flagPosition',
-					'liquidatePosition',
-					'forceLiquidatePosition',
 				],
+			});
+		});
+
+		it('Only expected functions are mutative PerpsV2Market', () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: perpsV2MarketLiquidate.abi,
+				ignoreParents: ['MixinPerpsV2MarketSettings', 'Proxyable', 'Owned'],
+				expected: ['flagPosition', 'liquidatePosition', 'forceLiquidatePosition'],
 			});
 		});
 
@@ -517,9 +524,29 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,
 				});
+			});
+		});
+
+		describe('PerpsV2MarketLiquidate', () => {
+			it('Only proxy functions only work for proxy', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketLiquidate.flagPosition,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
 
 				await onlyGivenAddressCanInvoke({
-					fnc: perpsV2MarketImpl.liquidatePosition,
+					fnc: perpsV2MarketLiquidate.liquidatePosition,
+					args: [noBalance],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketLiquidate.forceLiquidatePosition,
 					args: [noBalance],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only the proxy can call',
