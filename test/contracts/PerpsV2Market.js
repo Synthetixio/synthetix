@@ -5332,6 +5332,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
 
 				const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
+				await perpsV2Market.flagPosition(trader, { from: noBalance });
 				const tx = await perpsV2Market.liquidatePosition(trader, { from: noBalance });
 
 				const liquidationFee = multiplyDecimal(
@@ -5343,7 +5344,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
 				assert.deepEqual(
 					decodedLogs.map(({ name }) => name),
-					['FundingRecomputed', 'Issued', 'PositionModified', 'PositionLiquidated', 'Issued']
+					['FundingRecomputed', 'Issued', 'Issued', 'PositionModified', 'PositionLiquidated']
 				);
 				assert.equal(decodedLogs.length, 5); // additional sUSD issue event
 
@@ -5355,7 +5356,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					event: 'Issued',
 					emittedFrom: sUSD.address,
 					args: [await feePool.FEE_ADDRESS(), poolFee],
-					log: decodedLogs[4],
+					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});

@@ -200,6 +200,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
+     * True if the position is already flagged for liquidation.
+     */
+    function isFlagged(address account) external view returns (bool) {
+        return marketState.isFlagged(account);
+    }
+
+    /*
      * True if and only if a position is ready to be liquidated.
      */
     function canLiquidate(address account) external view returns (bool) {

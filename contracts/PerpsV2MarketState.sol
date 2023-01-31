@@ -73,7 +73,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     mapping(address => DelayedOrder) public delayedOrders;
 
     /// @dev Holds a mapping of accounts to flagger address to flag an account. Only one order per account is supported
-    mapping(address => address) public flagged;
+    mapping(address => address) public positionFlagger;
     AddressSetLib.AddressSet internal _flaggedAddresses;
 
     constructor(
@@ -104,7 +104,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function isFlagged(address account) external view returns (bool) {
-        return flagged[account] != address(0);
+        return positionFlagger[account] != address(0);
     }
 
     function getPositionAddressesPage(uint index, uint pageSize)
@@ -266,12 +266,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function flag(address account, address flagger) external onlyAssociatedContracts {
-        flagged[account] = flagger;
+        positionFlagger[account] = flagger;
         _flaggedAddresses.add(account);
     }
 
     function unflag(address account) external onlyAssociatedContracts {
-        delete flagged[account];
+        delete positionFlagger[account];
         if (_flaggedAddresses.contains(account)) {
             _flaggedAddresses.remove(account);
         }

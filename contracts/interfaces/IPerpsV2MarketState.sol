@@ -23,7 +23,7 @@ interface IPerpsV2MarketState {
 
     function delayedOrders(address) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
 
-    function flagged(address) external view returns (address);
+    function positionFlagger(address) external view returns (address);
 
     function entryDebtCorrection() external view returns (int128);
 

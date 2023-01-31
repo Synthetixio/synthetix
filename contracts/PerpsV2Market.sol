@@ -291,7 +291,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         );
 
         // Issue the reward to the flagger.
-        _manager().issueSUSD(marketState.flagged(account), flaggerFee);
+        _manager().issueSUSD(marketState.positionFlagger(account), flaggerFee);
 
         // Issue the reward to the liquidator (keeper).
         if (liquidatorFee > 0) {
