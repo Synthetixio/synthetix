@@ -14,5 +14,7 @@
 	"SynthetixEscrow",
 	"SynthetixState",
 	"TokenState",
-	"ReadProxyAddressResolver"
+	"ReadProxyAddressResolver",
+	"PerpsV2ProxyETHPERP",
+	"PerpsV2MarketStateETHPERP"
 ]

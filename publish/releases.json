@@ -791,7 +791,8 @@
 					"PerpsV2DelayedOrder.+",
 					"PerpsV2OffchainDelayedOrder.+"
 				]
-			}
+			},
+			"released": "ovm"
 		},
 		{
 			"sip": 299,
@@ -1496,17 +1497,8 @@
 				"major": 2,
 				"minor": 80
 			},
-			"sips": [279, 280, 281, 285],
+			"sips": [297],
 			"released": true
-		},
-		{
-			"name": "Xxxx (Optimism)",
-			"ovm": true,
-			"version": {
-				"major": 2,
-				"minor": 81
-			},
-			"sips": [297]
 		}
 	]
 }

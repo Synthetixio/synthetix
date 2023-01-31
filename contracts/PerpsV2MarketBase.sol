@@ -402,7 +402,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      *
      * Similar to fillPrice, but we disregard the skew (by assuming it's zero). Which is basically the calculation
      * when we compute as if taking the position from 0 to x. In practice, the premium component of the
-     * liquidation will just be (size / skewScale) * (size * price) .
+     * liquidation will just be (size / skewScale) * (size * price).
      *
      * It adds a configurable multiplier that can be used to increase the margin that goes to feePool.
      *
