@@ -68,7 +68,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         int sizeDelta,
         uint priceImpactDelta,
         uint desiredTimeDelta
-    ) external onlyProxy {
+    ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -82,7 +82,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint priceImpactDelta,
         uint desiredTimeDelta,
         bytes32 trackingCode
-    ) external onlyProxy {
+    ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -102,7 +102,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
      * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
      */
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy {
+    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -114,7 +114,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         int sizeDelta,
         uint priceImpactDelta,
         bytes32 trackingCode
-    ) external onlyProxy {
+    ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
@@ -128,7 +128,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint desiredTimeDelta,
         bytes32 trackingCode,
         IPerpsV2MarketBaseTypes.OrderType orderType
-    ) internal {
+    ) internal notFlagged(messageSender) {
         Position memory position = marketState.positions(messageSender);
 
         // a position must be present before closing.

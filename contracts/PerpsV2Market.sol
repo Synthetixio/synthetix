@@ -115,7 +115,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         int marginDelta,
         uint price,
         address sender
-    ) internal {
+    ) internal notFlagged(sender) {
         // Transfer no tokens if marginDelta is 0
         uint absDelta = _abs(marginDelta);
         if (marginDelta > 0) {

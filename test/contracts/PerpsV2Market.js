@@ -4394,21 +4394,33 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			return { flaggerFee, liquidatorFee, feePoolFee };
 		};
 
-		const assertFlagTx = async ({ tx, positionId, flaggedAccount, flaggerAccount }) => {
+		const assertFlagTx = async ({
+			tx,
+			positionId,
+			flaggedAccount,
+			flaggerAccount,
+			closeDelayed = false,
+		}) => {
+			const eventsLen = closeDelayed ? 3 : 2;
+			const events = closeDelayed
+				? ['FundingRecomputed', 'PositionModified', 'PositionFlagged']
+				: ['FundingRecomputed', 'PositionFlagged'];
+			const positionFlaggedIdx = closeDelayed ? 2 : 1;
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSD, perpsV2Market],
 			});
+
+			assert.equal(decodedLogs.length, eventsLen);
 			assert.deepEqual(
 				decodedLogs.map(({ name }) => name),
-				['FundingRecomputed', 'PositionFlagged']
+				events
 			);
-			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'PositionFlagged',
 				emittedFrom: perpsV2Market.address,
 				args: [positionId, flaggedAccount, flaggerAccount],
-				log: decodedLogs[1],
+				log: decodedLogs[positionFlaggedIdx],
 			});
 		};
 
@@ -5796,16 +5808,12 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 
 			describe('Setting the oracle price at a liquidation price of account A with an open position', () => {
-				let newPrice;
-
-				beforeEach(async () => {
-					// Move price to liquidation zone for trader
-					newPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
-					await setPrice(baseAsset, newPrice);
-				});
-
 				describe("When a random account attempts to flag account A, who's position isn't already flagged", () => {
 					it('Then the transaction succeeds and the flagger and liquidator receives a liquidation reward', async () => {
+						// Move price to liquidation zone for trader
+						const newPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
+						await setPrice(baseAsset, newPrice);
+
 						const { size: positionSize, id: positionId } = await perpsV2Market.positions(trader);
 						const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
 						const fees = await computeFees(remainingMargin, positionSize, newPrice);
@@ -5843,13 +5851,85 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				describe("When a random account attempts to flag account A, who's position isn't already flagged and account A has a pending order", () => {
-					// ✅
-					it('Then the transaction succeeds and the flagger receives a liquidation reward and pending orders are cancelled', async () => {});
+					it('Then the transaction succeeds and the flagger receives a liquidation reward and pending orders are cancelled - delayed order', async () => {
+						// set a delayed order
+						const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
+						await perpsV2Market.submitDelayedOrder(toUnit('10'), priceImpactDelta, toBN(0), {
+							from: trader2,
+						});
+
+						// get margin in delayed order (will be returned as fees)
+						const delayedOrder = await perpsV2Market.delayedOrders(trader2);
+						const delayedOrderFees = toBN(delayedOrder.commitDeposit).add(
+							toBN(delayedOrder.keeperDeposit)
+						);
+
+						// Liquidate the position
+						// Move price to liquidation zone for trader
+						// NOTE: using new liquidationPrice
+						const newPrice = multiplyDecimal(
+							(await perpsV2Market.liquidationPrice(trader2)).price,
+							toUnit('0.995')
+						);
+						await setPrice(baseAsset, newPrice);
+
+						const { size: positionSize, id: positionId } = await perpsV2Market.positions(trader2);
+						const remainingMargin = (await perpsV2Market.remainingMargin(trader2)).marginRemaining;
+						const fees = await computeFees(
+							remainingMargin.add(delayedOrderFees),
+							positionSize,
+							newPrice
+						);
+
+						const txFlag = await perpsV2Market.flagPosition(trader2, { from: flagger });
+						const txLiquidate = await perpsV2Market.liquidatePosition(trader2, {
+							from: liquidator,
+						});
+
+						assert.bnGt(fees.flaggerFee, toBN(0));
+						assert.bnLt(remainingMargin, fees.flaggerFee);
+
+						assert.bnClose(await sUSD.balanceOf(flagger), fees.flaggerFee, toUnit('0.001'));
+						assert.bnClose(await sUSD.balanceOf(liquidator), fees.liquidatorFee, toUnit('0.001'));
+
+						await assertFlagTx({
+							tx: txFlag,
+							positionId,
+							flaggedAccount: trader2,
+							flaggerAccount: flagger,
+							closeDelayed: true,
+						});
+
+						await assertLiquidateTx({
+							tx: txLiquidate,
+							positionId,
+							flaggedAccount: trader2,
+							flaggerAccount: flagger,
+							liquidatorAccount: liquidator,
+							positionSize,
+							price: (await perpsV2Market.assetPrice()).price,
+							fundingSequenceId: await perpsV2Market.fundingSequenceLength(),
+							flaggerFee: fees.flaggerFee,
+							liquidatorFee: fees.liquidatorFee,
+							feePoolFee: fees.feePoolFee,
+						});
+					});
 				});
 
 				describe("When a random account attempts to flag account A, who's position is already flagged", () => {
-					// ❌
-					it('Then transaction reverts, due to the account already being flagged', async () => {});
+					it('Then transaction reverts, due to the account already being flagged', async () => {
+						// Move price to liquidation zone for trader
+						const newPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
+						await setPrice(baseAsset, newPrice);
+
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						await perpsV2Market.flagPosition(trader, { from: liquidator });
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						await assert.revert(
+							perpsV2Market.flagPosition(trader, { from: flagger }),
+							'Position flagged'
+						);
+					});
 				});
 			});
 

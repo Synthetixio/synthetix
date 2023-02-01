@@ -243,7 +243,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         return (price, publishTime);
     }
 
-    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal {
+    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal notFlagged(account) {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
         _confirmCanCancel(account, order, currentRoundId);
@@ -280,7 +280,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         uint currentRoundId,
         uint takerFee,
         uint makerFee
-    ) internal {
+    ) internal notFlagged(account) {
         // handle the fees and refunds according to the mechanism rules
         uint toRefund = order.commitDeposit; // refund the commitment deposit
 

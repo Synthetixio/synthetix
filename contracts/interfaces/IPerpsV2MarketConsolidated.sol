@@ -97,6 +97,8 @@ interface IPerpsV2MarketConsolidated {
 
     function liquidationFee(address account) external view returns (uint);
 
+    function isFlagged(address) external view returns (bool);
+
     function canLiquidate(address account) external view returns (bool);
 
     function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)

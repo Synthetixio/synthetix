@@ -136,7 +136,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int orderSizeDelta,
         uint price,
         int marginDelta
-    ) internal notFlagged(account) {
+    ) internal {
         Position memory oldPosition = position;
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _recomputeMarginWithDelta(oldPosition, price, marginDelta);

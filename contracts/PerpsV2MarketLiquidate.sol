@@ -95,11 +95,11 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
      */
     function flagPosition(address account) external onlyProxy notFlagged(account) {
         uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding(price);
+        uint fundingIndex = _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
-        _flagPosition(account, messageSender);
+        _flagPosition(account, messageSender, price, fundingIndex);
     }
 
     /*
@@ -140,7 +140,12 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         _liquidatePosition(position, account, messageSender, price, 0);
     }
 
-    function _flagPosition(address account, address flagger) internal {
+    function _flagPosition(
+        address account,
+        address flagger,
+        uint price,
+        uint fundingIndex
+    ) internal {
         Position memory position = marketState.positions(account);
 
         // Flag position
@@ -150,8 +155,6 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         DelayedOrder memory order = marketState.delayedOrders(account);
         if (order.sizeDelta != 0) {
             Position memory position = marketState.positions(account);
-            uint price = _assetPriceRequireSystemChecks(false);
-            uint fundingIndex = _recomputeFunding(price);
             _updatePositionMargin(account, position, order.sizeDelta, price, int(order.commitDeposit + order.keeperDeposit));
             emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
 
