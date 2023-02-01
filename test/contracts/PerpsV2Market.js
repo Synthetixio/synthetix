@@ -5934,40 +5934,123 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 
 			describe('Setting Account A as flagged for liquidation', () => {
-				// When the price of liquidating A exceeds maxLiquidationDelta
-				// 	When a random account attempts to liquidate account A
-				// 	❌ Then transaction reverts, due to the maxLiquidationDelta being exceeded
-				// 	When a endorsed account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
-				// When the price impact of the liquidating A is below maxLiquidationDelta
-				// 	When a random account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
-				// 	When a endorsed account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds and the liquidator receives no reward, account A's position is closed and the flag is removed
-				// When the price impact of the liquidating account A below maxLiquidationDelta and the price recovered that the account is no longer flaggable
-				// 	When a random account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
-				// When the instantaneous PD is above maxPD
-				// 	When a random account attempts to liquidate account A
-				// 	❌ Then transaction reverts, due to the maxPD being exceeded
-				// 	When a endorsed account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
-				// When the instantaneous PD is below maxPD
-				// 	When a random account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
-				// 	When a endorsed account attempts to liquidate account A
-				// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
-				// When the instantaneous PD is below maxPD and the price recovered that Account A is no longer flaggable
-				// When a random account attempts to liquidate account A
-				// ✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
-				// When account A attempts to deposit sUSD into his position
-				// ❌ Then transaction reverts, as the account is flagged for liquidation
-				// When account A attempts to close his position
-				// ❌ Then transaction reverts, as the account is flagged for liquidation
-				// When account A attempts to increase his position
-				// ❌ Then transaction reverts, as the account is flagged for liquidation
-				// When account A attempts to decrease his position
-				// ❌ Then transaction reverts, as the account is flagged for liquidation
+				beforeEach('flag the account', async () => {
+					const flaggingPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
+					await setPrice(baseAsset, flaggingPrice);
+
+					await perpsV2Market.flagPosition(trader, { from: flagger });
+				});
+
+				describe('When the price of liquidating A exceeds maxLiquidationDelta', () => {
+					beforeEach('set conditions to exceed maxLiquidationDelta', async () => {
+						const { size: positionSize } = await perpsV2Market.positions(trader);
+						const liquidationDeltaLimit = divideDecimal(positionSize, skewScale);
+
+						// set maxLiquidationDelta under the limit
+						await perpsV2MarketSettings.setMaxLiquidationDelta(
+							marketKey,
+							liquidationDeltaLimit.sub(toBN(1)),
+							{
+								from: owner,
+							}
+						);
+
+						// // set maxPD to a large amount to prevent reverts when not tested
+						// await perpsV2MarketSettings.setMaxPD(marketKey, toUnit('10000'), {
+						// 	from: owner,
+						// });
+					});
+
+					it('When a random account attempts to liquidate account A', async () => {
+						await assert.revert(
+							perpsV2Market.liquidatePosition(trader, { from: liquidator }),
+							'price impact of liquidation exceeded'
+						);
+					});
+
+					it('When a endorsed account attempts to force liquidate account A', async () => {
+						// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+						await assert.revert(
+							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
+							'address not endorsed'
+						);
+
+						// const txLiquidate =
+						perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+						// TOOD check fees
+					});
+				});
+
+				describe('When the price impact of the liquidating A is below maxLiquidationDelta', () => {
+					beforeEach('set conditions to exceed maxLiquidationDelta', async () => {
+						const { size: positionSize } = await perpsV2Market.positions(trader);
+						const liquidationDeltaLimit = divideDecimal(positionSize, skewScale);
+
+						// set maxLiquidationDelta over the limit
+						await perpsV2MarketSettings.setMaxLiquidationDelta(
+							marketKey,
+							liquidationDeltaLimit.add(toBN(1)),
+							{
+								from: owner,
+							}
+						);
+					});
+					// 	When a random account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+					it('When a random account attempts to liquidate account A', async () => {
+						// const txLiquidate =
+						perpsV2Market.liquidatePosition(trader, { from: liquidator });
+						// TOOD check fees
+					});
+					// 	When a endorsed account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds and the liquidator receives no reward, account A's position is closed and the flag is removed
+					it('When a endorsed account attempts to force liquidate account A', async () => {
+						// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+						await assert.revert(
+							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
+							'address not endorsed'
+						);
+
+						// const txLiquidate =
+						perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+						// TOOD check fees
+					});
+				});
+
+				describe('When the price impact of the liquidating account A below maxLiquidationDelta and the price recovered that the account is no longer flaggable', () => {
+					// 	When a random account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+				});
+
+				describe('When the instantaneous PD is above maxPD', () => {
+					// 	When a random account attempts to liquidate account A
+					// 	❌ Then transaction reverts, due to the maxPD being exceeded
+					// 	When a endorsed account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+				});
+
+				describe('When the instantaneous PD is below maxPD', () => {
+					// 	When a random account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+					// 	When a endorsed account attempts to liquidate account A
+					// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+				});
+
+				describe('When the instantaneous PD is below maxPD and the price recovered that Account A is no longer flaggable', () => {
+					describe('When a random account attempts to liquidate account A', () => {
+						// ✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+					});
+					describe('When account A attempts to transact (still flagged)', () => {
+						// When account A attempts to deposit sUSD into his position
+						// ❌ Then transaction reverts, as the account is flagged for liquidation
+						// When account A attempts to close his position
+						// ❌ Then transaction reverts, as the account is flagged for liquidation
+						// When account A attempts to increase his position
+						// ❌ Then transaction reverts, as the account is flagged for liquidation
+						// When account A attempts to decrease his position
+						// ❌ Then transaction reverts, as the account is flagged for liquidation
+					});
+				});
 			});
 		});
 	});
