@@ -4365,7 +4365,162 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		});
 	});
 
-	describe('Liquidations', () => {
+	describe('PerpsV2 Liquidations', () => {
+		const computeFees = async (remainingMargin, positionSize, price) => {
+			const min = (a, b) => (a.lt(b) ? a : b);
+			const max = (a, b) => (a.gt(b) ? a : b);
+
+			const minKeeperFee = await perpsV2MarketSettings.minKeeperFee();
+			const maxKeeperFee = await perpsV2MarketSettings.maxKeeperFee();
+			const keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
+
+			const calculatedFee = multiplyDecimal(
+				multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), price),
+				positionSize
+			);
+
+			const minCapped = max(calculatedFee, minKeeperFee);
+			const flaggerFee = min(minCapped, maxKeeperFee);
+			// const remainingAfterFlag =
+			// 	remainingMargin > flaggerFee ? remainingMargin.sub(flaggerFee) : toBN(0);
+
+			// const liquidatorFee = min(remainingAfterFlag, keeperLiquidationFee); // keeper always receives the fee
+			const liquidatorFee = keeperLiquidationFee;
+			const feePoolFee =
+				remainingMargin > flaggerFee.add(liquidatorFee)
+					? remainingMargin.sub(flaggerFee).sub(liquidatorFee)
+					: toBN(0);
+
+			return { flaggerFee, liquidatorFee, feePoolFee };
+		};
+
+		const assertFlagTx = async ({ tx, positionId, flaggedAccount, flaggerAccount }) => {
+			const decodedLogs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSD, perpsV2Market],
+			});
+			assert.deepEqual(
+				decodedLogs.map(({ name }) => name),
+				['FundingRecomputed', 'PositionFlagged']
+			);
+			assert.equal(decodedLogs.length, 2);
+			decodedEventEqual({
+				event: 'PositionFlagged',
+				emittedFrom: perpsV2Market.address,
+				args: [positionId, flaggedAccount, flaggerAccount],
+				log: decodedLogs[1],
+			});
+		};
+
+		const assertLiquidateTx = async ({
+			tx,
+			positionId,
+			flaggedAccount,
+			flaggerAccount,
+			liquidatorAccount,
+			positionSize,
+			price,
+			fundingSequenceId,
+			flaggerFee,
+			liquidatorFee = toBN(0),
+			feePoolFee = toBN(0),
+		}) => {
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
+			const events = ['FundingRecomputed', 'Issued'];
+			let eventsLen = 4;
+			let latestIdx = 2;
+			let liquidatorFeeIdx, feePoolFeeIdx;
+			let positionModifiedIdx = 2;
+			let positionLiquidatedIdx = 3;
+
+			if (liquidatorFee.gt(toBN(0))) {
+				events.push('Issued');
+				eventsLen++;
+				liquidatorFeeIdx = latestIdx++;
+			}
+
+			if (feePoolFee.gt(toBN(0))) {
+				events.push('Issued');
+				eventsLen++;
+				feePoolFeeIdx = latestIdx++;
+			}
+
+			events.push('PositionModified');
+			positionModifiedIdx = latestIdx++;
+			events.push('PositionLiquidated');
+			positionLiquidatedIdx = latestIdx++;
+
+			assert.deepEqual(
+				decodedLogs.map(({ name }) => name),
+				events
+			);
+			assert.equal(decodedLogs.length, eventsLen);
+
+			// flagger Fee
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [flaggerAccount, flaggerFee],
+				log: decodedLogs[1],
+				bnCloseVariance: toUnit('0.001'),
+			});
+
+			// liquidator Fee
+			if (liquidatorFeeIdx) {
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [liquidatorAccount, liquidatorFee],
+					log: decodedLogs[liquidatorFeeIdx],
+					bnCloseVariance: toUnit('0.001'),
+				});
+			}
+
+			// feePool Fee
+			if (feePoolFeeIdx) {
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [await feePool.FEE_ADDRESS(), feePoolFee],
+					log: decodedLogs[feePoolFeeIdx],
+					bnCloseVariance: toUnit('0.001'),
+				});
+			}
+
+			// position modified
+			decodedEventEqual({
+				event: 'PositionModified',
+				emittedFrom: perpsV2Market.address,
+				args: [
+					positionId,
+					flaggedAccount,
+					toBN('0'),
+					toBN('0'),
+					toBN('0'),
+					price,
+					fundingSequenceId,
+					toBN('0'),
+				],
+				log: decodedLogs[positionModifiedIdx],
+			});
+
+			// position liquidated
+			decodedEventEqual({
+				event: 'PositionLiquidated',
+				emittedFrom: perpsV2Market.address,
+				args: [
+					positionId,
+					flaggedAccount,
+					liquidatorAccount,
+					positionSize,
+					price,
+					flaggerFee.add(liquidatorFee),
+				],
+				log: decodedLogs[positionLiquidatedIdx],
+				bnCloseVariance: toUnit('0.001'),
+			});
+		};
+
 		describe('Liquidation price', () => {
 			const getExpectedLiquidationPrice = async ({
 				skewScale,
@@ -4923,159 +5078,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.modifyPosition(toUnit('-20'), priceImpactDelta, { from: trader3 });
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
 			});
-
-			const computeFees = async (remainingMargin, positionSize, price) => {
-				const min = (a, b) => (a.lt(b) ? a : b);
-				const max = (a, b) => (a.gt(b) ? a : b);
-
-				const minKeeperFee = await perpsV2MarketSettings.minKeeperFee();
-				const maxKeeperFee = await perpsV2MarketSettings.maxKeeperFee();
-				const keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
-
-				const calculatedFee = multiplyDecimal(
-					multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), price),
-					positionSize
-				);
-
-				const minCapped = max(calculatedFee, minKeeperFee);
-				const flaggerFee = min(minCapped, maxKeeperFee);
-				const remainingAfterFlag =
-					remainingMargin > flaggerFee ? remainingMargin.sub(flaggerFee) : toBN(0);
-				const liquidatorFee = min(remainingAfterFlag, keeperLiquidationFee);
-				const feePoolFee =
-					remainingMargin > flaggerFee.add(liquidatorFee)
-						? remainingMargin.sub(flaggerFee).sub(liquidatorFee)
-						: toBN(0);
-
-				return { flaggerFee, liquidatorFee, feePoolFee };
-			};
-
-			const assertFlagTx = async ({ tx, positionId, flaggedAccount, flaggerAccount }) => {
-				const decodedLogs = await getDecodedLogs({
-					hash: tx.tx,
-					contracts: [sUSD, perpsV2Market],
-				});
-				assert.deepEqual(
-					decodedLogs.map(({ name }) => name),
-					['FundingRecomputed', 'PositionFlagged']
-				);
-				assert.equal(decodedLogs.length, 2);
-				decodedEventEqual({
-					event: 'PositionFlagged',
-					emittedFrom: perpsV2Market.address,
-					args: [positionId, flaggedAccount, flaggerAccount],
-					log: decodedLogs[1],
-				});
-			};
-
-			const assertLiquidateTx = async ({
-				tx,
-				positionId,
-				flaggedAccount,
-				flaggerAccount,
-				liquidatorAccount,
-				positionSize,
-				price,
-				fundingSequenceId,
-				flaggerFee,
-				liquidatorFee = toBN(0),
-				feePoolFee = toBN(0),
-			}) => {
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
-				const events = ['FundingRecomputed', 'Issued'];
-				let eventsLen = 4;
-				let latestIdx = 2;
-				let liquidatorFeeIdx, feePoolFeeIdx;
-				let positionModifiedIdx = 2;
-				let positionLiquidatedIdx = 3;
-
-				if (liquidatorFee.gt(toBN(0))) {
-					events.push('Issued');
-					eventsLen++;
-					liquidatorFeeIdx = latestIdx++;
-				}
-
-				if (feePoolFee.gt(toBN(0))) {
-					events.push('Issued');
-					eventsLen++;
-					feePoolFeeIdx = latestIdx++;
-				}
-
-				events.push('PositionModified');
-				positionModifiedIdx = latestIdx++;
-				events.push('PositionLiquidated');
-				positionLiquidatedIdx = latestIdx++;
-
-				assert.deepEqual(
-					decodedLogs.map(({ name }) => name),
-					events
-				);
-				assert.equal(decodedLogs.length, eventsLen);
-
-				// flagger Fee
-				decodedEventEqual({
-					event: 'Issued',
-					emittedFrom: sUSD.address,
-					args: [flaggerAccount, flaggerFee],
-					log: decodedLogs[1],
-					bnCloseVariance: toUnit('0.001'),
-				});
-
-				// liquidator Fee
-				if (liquidatorFeeIdx) {
-					decodedEventEqual({
-						event: 'Issued',
-						emittedFrom: sUSD.address,
-						args: [liquidatorAccount, liquidatorFee],
-						log: decodedLogs[liquidatorFeeIdx],
-						bnCloseVariance: toUnit('0.001'),
-					});
-				}
-
-				// feePool Fee
-				if (feePoolFeeIdx) {
-					decodedEventEqual({
-						event: 'Issued',
-						emittedFrom: sUSD.address,
-						args: [await feePool.FEE_ADDRESS(), feePoolFee],
-						log: decodedLogs[feePoolFeeIdx],
-						bnCloseVariance: toUnit('0.001'),
-					});
-				}
-
-				// position modified
-				decodedEventEqual({
-					event: 'PositionModified',
-					emittedFrom: perpsV2Market.address,
-					args: [
-						positionId,
-						flaggedAccount,
-						toBN('0'),
-						toBN('0'),
-						toBN('0'),
-						price,
-						fundingSequenceId,
-						toBN('0'),
-					],
-					log: decodedLogs[positionModifiedIdx],
-				});
-
-				// position liquidated
-				decodedEventEqual({
-					event: 'PositionLiquidated',
-					emittedFrom: perpsV2Market.address,
-					args: [
-						positionId,
-						flaggedAccount,
-						liquidatorAccount,
-						positionSize,
-						price,
-						flaggerFee.add(liquidatorFee),
-					],
-					log: decodedLogs[positionLiquidatedIdx],
-					bnCloseVariance: toUnit('0.001'),
-				});
-			};
 
 			it('Cannot liquidate nonexistent positions', async () => {
 				await assert.revert(perpsV2Market.flagPosition(noBalance), 'Position cannot be liquidated');
@@ -5761,19 +5763,94 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 		});
 
-		describe('flaggin and liquidation', () => {
+		describe('flagging and liquidation', () => {
+			const flagger = noBalance;
+			const liquidator = noBalance2;
+
+			let liquidationPrice1; //, liquidationPrice2, liquidationPrice3;
+			beforeEach(async () => {
+				await setPrice(baseAsset, toUnit('250'));
+				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
+				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
+				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader3 });
+				await perpsV2Market.modifyPosition(toUnit('40'), priceImpactDelta, { from: trader });
+				await perpsV2Market.modifyPosition(toUnit('20'), priceImpactDelta, { from: trader2 });
+				await perpsV2Market.modifyPosition(toUnit('-20'), priceImpactDelta, { from: trader3 });
+				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
+
+				liquidationPrice1 = (await perpsV2Market.liquidationPrice(trader)).price;
+				// liquidationPrice2 = (await perpsV2Market.liquidationPrice(trader2)).price;
+				// liquidationPrice3 = (await perpsV2Market.liquidationPrice(trader3)).price;
+
+				// Set keeper liquidation fee
+				await perpsV2MarketSettings.setKeeperLiquidationFee(toUnit('2'), { from: owner });
+			});
+
 			describe('Setting the oracle price at a price where account A is not open for flagging', () => {
-				// When a random account attempts to flag account A
-				// ❌ Then transaction reverts, due to the account not being open for flagging
+				it('Cannot liquidate nonexistent positions', async () => {
+					await assert.revert(
+						perpsV2Market.flagPosition(trader, { from: flagger }),
+						'Position cannot be liquidated'
+					);
+				});
 			});
 
 			describe('Setting the oracle price at a liquidation price of account A with an open position', () => {
-				// When a random account attempts to flag account A, who's position isn't already flagged
-				// ✅ Then the transaction succeeds and the flagger receives a liquidation reward
-				// When a random account attempts to flag account A, who's position isn't already flagged and account A has a pending order
-				// ✅ Then the transaction succeeds and the flagger receives a liquidation reward and pending orders are cancelled
-				// When a random account attempts to flag account A, who's position is already flagged
-				// ❌ Then transaction reverts, due to the account already being flagged
+				let newPrice;
+
+				beforeEach(async () => {
+					// Move price to liquidation zone for trader
+					newPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
+					await setPrice(baseAsset, newPrice);
+				});
+
+				describe("When a random account attempts to flag account A, who's position isn't already flagged", () => {
+					it('Then the transaction succeeds and the flagger and liquidator receives a liquidation reward', async () => {
+						const { size: positionSize, id: positionId } = await perpsV2Market.positions(trader);
+						const remainingMargin = (await perpsV2Market.remainingMargin(trader)).marginRemaining;
+						const fees = await computeFees(remainingMargin, positionSize, newPrice);
+
+						const txFlag = await perpsV2Market.flagPosition(trader, { from: flagger });
+						const txLiquidate = await perpsV2Market.liquidatePosition(trader, { from: liquidator });
+
+						assert.bnGt(fees.flaggerFee, toBN(0));
+						assert.bnLt(remainingMargin, fees.flaggerFee);
+
+						assert.bnClose(await sUSD.balanceOf(flagger), fees.flaggerFee, toUnit('0.001'));
+						assert.bnClose(await sUSD.balanceOf(liquidator), fees.liquidatorFee, toUnit('0.001'));
+
+						await assertFlagTx({
+							tx: txFlag,
+							positionId,
+							flaggedAccount: trader,
+							flaggerAccount: flagger,
+						});
+
+						await assertLiquidateTx({
+							tx: txLiquidate,
+							positionId,
+							flaggedAccount: trader,
+							flaggerAccount: flagger,
+							liquidatorAccount: liquidator,
+							positionSize,
+							price: (await perpsV2Market.assetPrice()).price,
+							fundingSequenceId: await perpsV2Market.fundingSequenceLength(),
+							flaggerFee: fees.flaggerFee,
+							liquidatorFee: fees.liquidatorFee,
+							feePoolFee: fees.feePoolFee,
+						});
+					});
+				});
+
+				describe("When a random account attempts to flag account A, who's position isn't already flagged and account A has a pending order", () => {
+					// ✅
+					it('Then the transaction succeeds and the flagger receives a liquidation reward and pending orders are cancelled', async () => {});
+				});
+
+				describe("When a random account attempts to flag account A, who's position is already flagged", () => {
+					// ❌
+					it('Then transaction reverts, due to the account already being flagged', async () => {});
+				});
 			});
 
 			describe('Setting Account A as flagged for liquidation', () => {
