@@ -83,9 +83,10 @@ module.exports = async ({
 		let filteredFunctions = [];
 		const baseAsset = toBytes32(marketConfig.asset);
 		const marketKey = toBytes32(marketConfig.marketKey);
-		const marketName = 'PerpsV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketProxyName = 'PerpsV2Proxy' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketStateName = 'PerpsV2MarketState' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketName = 'PerpsV2Market' + marketConfig.marketKey.slice('1'); // remove s prefix
+		const marketLiquidateName = 'PerpsV2MarketLiquidate' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketViewName = 'PerpsV2MarketViews' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketDelayedIntentName = 'PerpsV2DelayedIntent' + marketConfig.marketKey.slice('1'); // remove s prefix
 		const marketDelayedExecutionName =
@@ -135,6 +136,23 @@ module.exports = async ({
 			name: marketViewName,
 			source: 'PerpsV2MarketViews',
 			args: [perpsV2MarketState.address, account, addressOf(ReadProxyAddressResolver)],
+			force: true,
+			skipResolver: true,
+		});
+
+		// Liquidate
+		const previousPerpsV2MarketLiquidate = deployer.getExistingAddress({
+			name: marketLiquidateName,
+		});
+		const perpsV2MarketLiquidate = await deployer.deployContract({
+			name: marketLiquidateName,
+			source: 'PerpsV2MarketLiquidate',
+			args: [
+				perpsV2MarketProxy.address,
+				perpsV2MarketState.address,
+				account,
+				addressOf(ReadProxyAddressResolver),
+			],
 			force: true,
 			skipResolver: true,
 		});
@@ -196,6 +214,26 @@ module.exports = async ({
 		// Configure Views
 		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketViews, excludedFunctions));
 
+		// Configure Delayed Execution
+		if (stateOrProxyChanged || previousPerpsV2MarketLiquidate !== perpsV2MarketLiquidate.address) {
+			implementationChanged = true;
+			await runStep({
+				contract: `PerpsV2MarketState`,
+				target: perpsV2MarketState,
+				write: 'addAssociatedContracts',
+				writeArg: [[perpsV2MarketLiquidate.address]],
+			});
+
+			await runStep({
+				contract: `PerpsV2MarketLiquidate`,
+				target: perpsV2MarketLiquidate,
+				write: 'setProxy',
+				writeArg: [perpsV2MarketProxy.address],
+			});
+		}
+
+		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketLiquidate, excludedFunctions));
+
 		// Configure Delayed Intent
 		if (
 			stateOrProxyChanged ||
@@ -219,7 +257,7 @@ module.exports = async ({
 
 		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketDelayedIntent, excludedFunctions));
 
-		// Configure Delayed Intent
+		// Configure Delayed Execution
 		if (
 			stateOrProxyChanged ||
 			previousPerpsV2MarketDelayedExecution !== perpsV2MarketDelayedExecution.address
