@@ -5778,10 +5778,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		describe('flagging and liquidation', () => {
 			const flagger = noBalance;
 			const liquidator = noBalance2;
+			const originalPrice = toUnit('250');
 
 			let liquidationPrice1; //, liquidationPrice2, liquidationPrice3;
 			beforeEach(async () => {
-				await setPrice(baseAsset, toUnit('250'));
+				await setPrice(baseAsset, originalPrice);
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader3 });
@@ -5859,7 +5860,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						});
 
 						// get margin in delayed order (will be returned as fees)
-						const delayedOrder = await perpsV2Market.delayedOrders(trader2);
+						let delayedOrder = await perpsV2Market.delayedOrders(trader2);
+						assert.bnNotEqual(delayedOrder.sizeDelta, toUnit('0'));
 						const delayedOrderFees = toBN(delayedOrder.commitDeposit).add(
 							toBN(delayedOrder.keeperDeposit)
 						);
@@ -5885,6 +5887,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						const txLiquidate = await perpsV2Market.liquidatePosition(trader2, {
 							from: liquidator,
 						});
+
+						delayedOrder = await perpsV2Market.delayedOrders(trader2);
+						const position = await perpsV2Market.positions(trader2);
+						assert.bnEqual(delayedOrder.sizeDelta, toUnit('0'));
+						assert.bnEqual(position.size, toUnit('0'));
 
 						assert.bnGt(fees.flaggerFee, toBN(0));
 						assert.bnLt(remainingMargin, fees.flaggerFee);
@@ -5934,15 +5941,19 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 
 			describe('Setting Account A as flagged for liquidation', () => {
+				let flaggerBalanceBefore, liquidatorBalanceBefore;
 				beforeEach('flag the account', async () => {
 					const flaggingPrice = multiplyDecimal(liquidationPrice1, toUnit('0.995'));
 					await setPrice(baseAsset, flaggingPrice);
+
+					flaggerBalanceBefore = await sUSD.balanceOf(flagger);
+					liquidatorBalanceBefore = await sUSD.balanceOf(liquidator);
 
 					await perpsV2Market.flagPosition(trader, { from: flagger });
 				});
 
 				describe('When the price of liquidating A exceeds maxLiquidationDelta', () => {
-					beforeEach('set conditions to exceed maxLiquidationDelta', async () => {
+					beforeEach('set conditions', async () => {
 						const { size: positionSize } = await perpsV2Market.positions(trader);
 						const liquidationDeltaLimit = divideDecimal(positionSize, skewScale);
 
@@ -5954,11 +5965,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 								from: owner,
 							}
 						);
-
-						// // set maxPD to a large amount to prevent reverts when not tested
-						// await perpsV2MarketSettings.setMaxPD(marketKey, toUnit('10000'), {
-						// 	from: owner,
-						// });
 					});
 
 					it('When a random account attempts to liquidate account A', async () => {
@@ -5969,20 +5975,30 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					});
 
 					it('When a endorsed account attempts to force liquidate account A', async () => {
-						// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
 						await assert.revert(
 							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
 							'address not endorsed'
 						);
 
-						// const txLiquidate =
-						perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
-						// TOOD check fees
+						await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnEqual(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
 					});
 				});
 
 				describe('When the price impact of the liquidating A is below maxLiquidationDelta', () => {
-					beforeEach('set conditions to exceed maxLiquidationDelta', async () => {
+					beforeEach('set conditions', async () => {
 						const { size: positionSize } = await perpsV2Market.positions(trader);
 						const liquidationDeltaLimit = divideDecimal(positionSize, skewScale);
 
@@ -5995,34 +6011,93 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							}
 						);
 					});
-					// 	When a random account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+
 					it('When a random account attempts to liquidate account A', async () => {
-						// const txLiquidate =
-						perpsV2Market.liquidatePosition(trader, { from: liquidator });
-						// TOOD check fees
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await perpsV2Market.liquidatePosition(trader, { from: liquidator });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnGt(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
 					});
-					// 	When a endorsed account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds and the liquidator receives no reward, account A's position is closed and the flag is removed
+
 					it('When a endorsed account attempts to force liquidate account A', async () => {
-						// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
 						await assert.revert(
 							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
 							'address not endorsed'
 						);
 
-						// const txLiquidate =
-						perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
-						// TOOD check fees
+						await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnEqual(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
 					});
 				});
 
 				describe('When the price impact of the liquidating account A below maxLiquidationDelta and the price recovered that the account is no longer flaggable', () => {
-					// 	When a random account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+					beforeEach('set conditions', async () => {
+						const { size: positionSize } = await perpsV2Market.positions(trader);
+						const liquidationDeltaLimit = divideDecimal(positionSize, skewScale);
+
+						// set maxLiquidationDelta over the limit
+						await perpsV2MarketSettings.setMaxLiquidationDelta(
+							marketKey,
+							liquidationDeltaLimit.add(toBN(1)),
+							{
+								from: owner,
+							}
+						);
+
+						await setPrice(baseAsset, originalPrice);
+					});
+
+					it('When a random account attempts to liquidate account A', async () => {
+						// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await perpsV2Market.liquidatePosition(trader, { from: liquidator });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnGt(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
+					});
 				});
 
 				describe('When the instantaneous PD is above maxPD', () => {
+					beforeEach('set conditions', async () => {
+						const marketSkew = await perpsV2Market.marketSkew();
+						const pdLimit = divideDecimal(marketSkew.abs(), skewScale);
+
+						// set maxPD under the limit the limit
+						await perpsV2MarketSettings.setMaxPD(marketKey, pdLimit.sub(toBN(1)), {
+							from: owner,
+						});
+					});
 					// 	When a random account attempts to liquidate account A
 					// 	❌ Then transaction reverts, due to the maxPD being exceeded
 					// 	When a endorsed account attempts to liquidate account A
