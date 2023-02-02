@@ -781,6 +781,26 @@
 			"released": "both"
 		},
 		{
+			"sip": 293,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsDOT",
+					"OneNetAggregatorsADA"
+				],
+				"ovm": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsMATIC",
+					"OneNetAggregatorsUNI",
+					"OneNetAggregatorsAVAX",
+					"OneNetAggregatorsSOL"
+				]
+			}
+		},
+		{
 			"sip": 297,
 			"layer": "ovm",
 			"sources": {
@@ -1499,6 +1519,23 @@
 			},
 			"sips": [297],
 			"released": true
+		},
+		{
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [293]
+		},
+		{
+			"name": "Sadr (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [293]
 		}
 	]
 }
