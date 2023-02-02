@@ -7,25 +7,9 @@
 		"asset": "ETH",
 		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
 	},
-	"AAVE": {
-		"asset": "AAVE",
-		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9"
-	},
-	"DOT": {
-		"asset": "DOT",
-		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734"
-	},
 	"BTC": {
 		"asset": "BTC",
 		"feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"
-	},
-	"LINK": {
-		"asset": "LINK",
-		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c"
-	},
-	"ADA": {
-		"asset": "ADA",
-		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55"
 	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
