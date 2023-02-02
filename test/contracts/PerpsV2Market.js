@@ -5780,20 +5780,16 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			const liquidator = noBalance2;
 			const originalPrice = toUnit('250');
 
-			let liquidationPrice1; //, liquidationPrice2, liquidationPrice3;
+			let liquidationPrice1;
 			beforeEach(async () => {
 				await setPrice(baseAsset, originalPrice);
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
-				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader3 });
 				await perpsV2Market.modifyPosition(toUnit('40'), priceImpactDelta, { from: trader });
 				await perpsV2Market.modifyPosition(toUnit('20'), priceImpactDelta, { from: trader2 });
-				await perpsV2Market.modifyPosition(toUnit('-20'), priceImpactDelta, { from: trader3 });
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
 
 				liquidationPrice1 = (await perpsV2Market.liquidationPrice(trader)).price;
-				// liquidationPrice2 = (await perpsV2Market.liquidationPrice(trader2)).price;
-				// liquidationPrice3 = (await perpsV2Market.liquidationPrice(trader3)).price;
 
 				// Set keeper liquidation fee
 				await perpsV2MarketSettings.setKeeperLiquidationFee(toUnit('2'), { from: owner });
@@ -6098,32 +6094,147 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							from: owner,
 						});
 					});
-					// 	When a random account attempts to liquidate account A
-					// 	❌ Then transaction reverts, due to the maxPD being exceeded
-					// 	When a endorsed account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+
+					it('When a random account attempts to liquidate account A', async () => {
+						await assert.revert(
+							perpsV2Market.liquidatePosition(trader, { from: liquidator }),
+							'instantaneous P/D exceeded'
+						);
+					});
+
+					it('When a endorsed account attempts to liquidate account A', async () => {
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await assert.revert(
+							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
+							'address not endorsed'
+						);
+
+						await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnEqual(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
+					});
 				});
 
 				describe('When the instantaneous PD is below maxPD', () => {
-					// 	When a random account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
-					// 	When a endorsed account attempts to liquidate account A
-					// 	✅ Then the transaction succeeds account A's position is closed, the liquidator receives no reward and the flag is removed
+					beforeEach('set conditions', async () => {
+						const marketSkew = await perpsV2Market.marketSkew();
+						const pdLimit = divideDecimal(marketSkew.abs(), skewScale);
+
+						// set maxPD under the limit the limit
+						await perpsV2MarketSettings.setMaxPD(marketKey, pdLimit.add(toBN(1)), {
+							from: owner,
+						});
+					});
+
+					it('When a random account attempts to liquidate account A', async () => {
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await perpsV2Market.liquidatePosition(trader, { from: liquidator });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnGt(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
+					});
+
+					it('When a endorsed account attempts to liquidate account A', async () => {
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await assert.revert(
+							perpsV2Market.forceLiquidatePosition(trader, { from: liquidator }),
+							'address not endorsed'
+						);
+
+						await perpsV2Market.forceLiquidatePosition(trader, { from: endorsed });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnEqual(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
+					});
 				});
 
 				describe('When the instantaneous PD is below maxPD and the price recovered that Account A is no longer flaggable', () => {
-					describe('When a random account attempts to liquidate account A', () => {
-						// ✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+					beforeEach('set conditions', async () => {
+						const marketSkew = await perpsV2Market.marketSkew();
+						const pdLimit = divideDecimal(marketSkew.abs(), skewScale);
+
+						// set maxPD under the limit the limit
+						await perpsV2MarketSettings.setMaxPD(marketKey, pdLimit.add(toBN(1)), {
+							from: owner,
+						});
+
+						await setPrice(baseAsset, originalPrice);
 					});
-					describe('When account A attempts to transact (still flagged)', () => {
-						// When account A attempts to deposit sUSD into his position
-						// ❌ Then transaction reverts, as the account is flagged for liquidation
-						// When account A attempts to close his position
-						// ❌ Then transaction reverts, as the account is flagged for liquidation
-						// When account A attempts to increase his position
-						// ❌ Then transaction reverts, as the account is flagged for liquidation
-						// When account A attempts to decrease his position
-						// ❌ Then transaction reverts, as the account is flagged for liquidation
+
+					it('When a random account attempts to liquidate account A', async () => {
+						// ✅ Then the transaction succeeds and the liquidator receives keeperLiquidationFee as a reward, account A's position is closed and the flag is removed
+						assert.isTrue(await perpsV2Market.isFlagged(trader));
+						let position = await perpsV2Market.positions(trader);
+						assert.bnNotEqual(position.size, toUnit('0'));
+
+						await perpsV2Market.liquidatePosition(trader, { from: liquidator });
+
+						// position closed and flag removed
+						position = await perpsV2Market.positions(trader);
+						assert.isFalse(await perpsV2Market.isFlagged(trader));
+						assert.bnEqual(position.size, toUnit('0'));
+
+						// balances
+						assert.bnGt(await sUSD.balanceOf(flagger), flaggerBalanceBefore);
+						assert.bnGt(await sUSD.balanceOf(liquidator), liquidatorBalanceBefore);
+					});
+				});
+
+				describe('When account A attempts to transact (still flagged)', () => {
+					it('When account A attempts to deposit sUSD into his position', async () => {
+						await assert.revert(
+							perpsV2Market.transferMargin(toUnit('1'), { from: trader }),
+							'Position flagged'
+						);
+					});
+
+					it('When account A attempts to close his position', async () => {
+						await assert.revert(
+							perpsV2Market.closePosition(priceImpactDelta, { from: trader }),
+							'Position flagged'
+						);
+					});
+
+					it('When account A attempts to increase his position', async () => {
+						await assert.revert(
+							perpsV2Market.modifyPosition(toUnit('1'), priceImpactDelta, { from: trader }),
+							'Position flagged'
+						);
+					});
+
+					it('When account A attempts to decrease his position', async () => {
+						await assert.revert(
+							perpsV2Market.modifyPosition(toUnit('-1'), priceImpactDelta, { from: trader }),
+							'Position flagged'
+						);
 					});
 				});
 			});
