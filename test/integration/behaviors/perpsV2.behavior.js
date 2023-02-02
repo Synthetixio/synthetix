@@ -44,8 +44,9 @@ function itCanTrade({ ctx }) {
 			PerpsV2MarketData,
 			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
-			PerpsV2DelayedOrderETHPERP,
-			PerpsV2OffchainDelayedOrderETHPERP,
+			PerpsV2MarketLiquidateETHPERP,
+			PerpsV2MarketDelayedIntentETHPERP,
+			PerpsV2MarketDelayedExecutionETHPERP,
 			PerpsV2MarketViewsETHPERP,
 			PerpsV2ProxyETHPERP,
 			FuturesMarketBTC,
@@ -59,8 +60,9 @@ function itCanTrade({ ctx }) {
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
 				PerpsV2MarketETHPERP: PerpsV2MarketImplETHPERP,
-				PerpsV2DelayedOrderETHPERP,
-				PerpsV2OffchainDelayedOrderETHPERP,
+				PerpsV2MarketLiquidateETHPERP,
+				PerpsV2MarketDelayedIntentETHPERP,
+				PerpsV2MarketDelayedExecutionETHPERP,
 				PerpsV2MarketViewsETHPERP,
 				PerpsV2ProxyETHPERP,
 				FuturesMarketBTC,
@@ -75,8 +77,9 @@ function itCanTrade({ ctx }) {
 			const unifiedAbis = unifyAbis([
 				PerpsV2MarketImplETHPERP,
 				PerpsV2MarketViewsETHPERP,
-				PerpsV2DelayedOrderETHPERP,
-				PerpsV2OffchainDelayedOrderETHPERP,
+				PerpsV2MarketLiquidateETHPERP,
+				PerpsV2MarketDelayedIntentETHPERP,
+				PerpsV2MarketDelayedExecutionETHPERP,
 			]);
 			if (unifiedAbis && PerpsV2ProxyETHPERP) {
 				PerpsV2MarketETH = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
@@ -254,6 +257,7 @@ function itCanTrade({ ctx }) {
 
 						// liquidation tx
 						const otherCaller = PerpsV2MarketETH.connect(otherUser);
+						await (await otherCaller.flagPosition(someUser.address)).wait(); // wait for views to be correct
 						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
