@@ -37,7 +37,7 @@ function itCanTrade({ ctx }) {
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
 
-		let someUser, otherUser;
+		let owner, someUser, otherUser;
 		let FuturesMarketManager,
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
@@ -70,7 +70,7 @@ function itCanTrade({ ctx }) {
 				SynthsUSD,
 			} = ctx.contracts);
 
-			// owner = ctx.users.owner;
+			owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
@@ -256,9 +256,12 @@ function itCanTrade({ ctx }) {
 						assert.ok(await market.canLiquidate(someUser.address));
 
 						// liquidation tx
+						await (
+							await FuturesMarketManager.connect(owner).addEndorsedAddresses([otherUser.address])
+						).wait();
 						const otherCaller = PerpsV2MarketETH.connect(otherUser);
-						await (await otherCaller.flagPosition(someUser.address)).wait(); // wait for views to be correct
-						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
+						await (await otherCaller.flagPosition(someUser.address)).wait(); // flag
+						await (await otherCaller.forceLiquidatePosition(someUser.address)).wait(); // force liquidate (to prevent reverts due to exceeded price impact)
 
 						// position: rekt
 						const pos = await market.positions(someUser.address);
