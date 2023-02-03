@@ -15,38 +15,8 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sLINK",
-		"asset": "LINK",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sSOL",
-		"asset": "SOL",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sAVAX",
-		"asset": "AVAX",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sMATIC",
-		"asset": "MATIC",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
 		"name": "sEUR",
 		"asset": "EUR",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sAAVE",
-		"asset": "AAVE",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sUNI",
-		"asset": "UNI",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
