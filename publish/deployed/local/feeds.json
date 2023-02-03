@@ -14,5 +14,9 @@
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0x0"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x0"
 	}
 }
