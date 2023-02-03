@@ -17,9 +17,7 @@ function itCanRedeem({ ctx }) {
 		let synth;
 
 		before('target contracts and users', () => {
-			// sETH and sBTC can't be removed because the debt may be too large for removeSynth to not underflow
-			// during debt update, so sEUR is used here
-			synth = 'sEUR';
+			synth = 'sBTC';
 
 			({
 				Synthetix,

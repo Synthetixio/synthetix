@@ -22,22 +22,5 @@
 		"description": "Bitcoin",
 		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"asset": "LINK",
-		"category": "crypto",
-		"sign": "",
-		"description": "Chainlink",
-		"name": "sLINK",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"feed": "0x0",
-		"asset": "EUR",
-		"category": "forex",
-		"sign": "€",
-		"description": "Euro",
-		"name": "sEUR",
-		"subclass": "MultiCollateralSynth"
 	}
 ]
