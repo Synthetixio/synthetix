@@ -161,7 +161,13 @@
 	"TokenStatesLINK": {
 		"deploy": true
 	},
+	"TokenStatesEUR": {
+		"deploy": true
+	},
 	"ProxysETH": {
+		"deploy": true
+	},
+	"ProxysEUR": {
 		"deploy": true
 	},
 	"ProxysLINK": {
@@ -171,6 +177,9 @@
 		"deploy": true
 	},
 	"SynthsLINK": {
+		"deploy": true
+	},
+	"SynthsEUR": {
 		"deploy": true
 	},
 	"MockToken": {

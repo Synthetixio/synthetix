@@ -143,6 +143,15 @@
 	"SynthsLINK": {
 		"deploy": true
 	},
+	"TokenStatesEUR": {
+		"deploy": true
+	},
+	"ProxysEUR": {
+		"deploy": true
+	},
+	"SynthsEUR": {
+		"deploy": true
+	},
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},
