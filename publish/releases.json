@@ -802,6 +802,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 295,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 297,
 			"layer": "ovm",
 			"sources": {
@@ -820,6 +825,11 @@
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
 			"released": "both"
+		},
+		{
+			"sip": 2000,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1539,6 +1549,15 @@
 			},
 			"sips": [293],
 			"released": true
+		},
+		{
+			"name": "Eltanin (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 82
+			},
+			"sips": [295, 2000]
 		}
 	]
 }
