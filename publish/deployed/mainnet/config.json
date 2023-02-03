@@ -188,24 +188,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStatesLINK": {
-		"deploy": false
-	},
-	"ProxysLINK": {
-		"deploy": false
-	},
-	"SynthsLINK": {
-		"deploy": false
-	},
-	"TokenStatesADA": {
-		"deploy": false
-	},
-	"ProxysADA": {
-		"deploy": false
-	},
-	"SynthsADA": {
-		"deploy": false
-	},
 	"FlexibleStorage": {
 		"deploy": false
 	},
@@ -249,24 +231,6 @@
 		"deploy": false
 	},
 	"ShortingRewardssETH": {
-		"deploy": false
-	},
-	"TokenStatesAAVE": {
-		"deploy": false
-	},
-	"ProxysAAVE": {
-		"deploy": false
-	},
-	"SynthsAAVE": {
-		"deploy": false
-	},
-	"TokenStatesDOT": {
-		"deploy": false
-	},
-	"ProxysDOT": {
-		"deploy": false
-	},
-	"SynthsDOT": {
 		"deploy": false
 	},
 	"TokenStatesKRW": {
