@@ -122,15 +122,6 @@
 	"SynthsBTC": {
 		"deploy": false
 	},
-	"TokenStatesLINK": {
-		"deploy": false
-	},
-	"ProxysLINK": {
-		"deploy": false
-	},
-	"SynthsLINK": {
-		"deploy": false
-	},
 	"CollateralManagerState": {
 		"deploy": false
 	},
@@ -162,33 +153,6 @@
 		"deploy": false
 	},
 	"SynthetixDebtShare": {
-		"deploy": false
-	},
-	"TokenStatesSOL": {
-		"deploy": false
-	},
-	"ProxysSOL": {
-		"deploy": false
-	},
-	"SynthsSOL": {
-		"deploy": false
-	},
-	"TokenStatesAVAX": {
-		"deploy": false
-	},
-	"ProxysAVAX": {
-		"deploy": false
-	},
-	"SynthsAVAX": {
-		"deploy": false
-	},
-	"TokenStatesMATIC": {
-		"deploy": false
-	},
-	"ProxysMATIC": {
-		"deploy": false
-	},
-	"SynthsMATIC": {
 		"deploy": false
 	},
 	"TokenStatesEUR": {
@@ -228,24 +192,6 @@
 		"deploy": false
 	},
 	"FuturesMarketLINK": {
-		"deploy": false
-	},
-	"TokenStatesAAVE": {
-		"deploy": false
-	},
-	"ProxysAAVE": {
-		"deploy": false
-	},
-	"SynthsAAVE": {
-		"deploy": false
-	},
-	"TokenStatesUNI": {
-		"deploy": false
-	},
-	"ProxysUNI": {
-		"deploy": false
-	},
-	"SynthsUNI": {
 		"deploy": false
 	},
 	"FuturesMarketSOL": {
