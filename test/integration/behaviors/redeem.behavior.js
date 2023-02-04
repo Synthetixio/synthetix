@@ -17,7 +17,7 @@ function itCanRedeem({ ctx }) {
 		let synth;
 
 		before('target contracts and users', () => {
-			synth = 'sBTC';
+			synth = 'sETH';
 
 			({
 				Synthetix,
