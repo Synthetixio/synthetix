@@ -319,7 +319,7 @@ const deploy = async ({
 			loadAndCheckRequiredSources,
 		});
 	} else {
-		console.log(gray('\nExcluding Futures\n'));
+		console.log(gray(`\n------ EXCLUDE FUTURES ------\n`));
 	}
 
 	if (includePerpsV2) {
@@ -335,7 +335,7 @@ const deploy = async ({
 			loadAndCheckRequiredSources,
 		});
 	} else {
-		console.log(gray('\nExcluding PerpsV2\n'));
+		console.log(gray(`\n------ EXCLUDE PERPS V2 ------\n`));
 	}
 
 	await deployDappUtils({
