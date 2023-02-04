@@ -45,26 +45,6 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sLINK",
-		"asset": "LINK",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sADA",
-		"asset": "ADA",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sAAVE",
-		"asset": "AAVE",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sDOT",
-		"asset": "DOT",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
 		"name": "sETHBTC",
 		"asset": "ETHBTC",
 		"subclass": "MultiCollateralSynth"
