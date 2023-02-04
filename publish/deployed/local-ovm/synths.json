@@ -22,5 +22,13 @@
 		"description": "Bitcoin",
 		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
+		"name": "sLINK",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
