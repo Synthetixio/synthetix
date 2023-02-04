@@ -14,5 +14,9 @@
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0x0"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"feed": "0x0"
 	}
 }
