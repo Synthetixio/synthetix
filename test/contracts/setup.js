@@ -57,6 +57,7 @@ const constantsOverrides = {
 	EXCHANGE_DYNAMIC_FEE_THRESHOLD: toWei('0.004'),
 	EXCHANGE_MAX_DYNAMIC_FEE: toWei('0.05'),
 	FUTURES_MIN_KEEPER_FEE: toWei('20'),
+	FUTURES_MAX_KEEPER_FEE: toWei('1000'),
 };
 
 /**
@@ -1861,6 +1862,12 @@ const setupAllContracts = async ({
 						from: owner,
 					}
 				),
+				returnObj['PerpsV2MarketSettings'].setMaxKeeperFee(
+					constantsOverrides.FUTURES_MAX_KEEPER_FEE,
+					{
+						from: owner,
+					}
+				),
 				returnObj['PerpsV2MarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
@@ -1911,6 +1918,8 @@ const setupAllContracts = async ({
 
 							offchainMarketKey, // offchain market key
 							toUnit('0.06'), // offchain price divergence 6%
+
+							toWei('1'), // 1 liquidation premium multiplier
 						],
 						{ from: owner }
 					),

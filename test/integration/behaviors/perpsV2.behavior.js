@@ -366,6 +366,11 @@ function itCanTrade({ ctx }) {
 				assert.bnGte(minKeeperFee, toUnit(1));
 				assert.bnLt(minKeeperFee, toUnit(100));
 
+				// maxKeeperFee
+				const maxKeeperFee = await PerpsV2MarketSettings.maxKeeperFee();
+				assert.bnGte(maxKeeperFee, toUnit(100));
+				assert.bnLt(maxKeeperFee, toUnit(10000));
+
 				// minInitialMargin
 				const minInitialMargin = await PerpsV2MarketSettings.minInitialMargin();
 				assert.bnGt(minInitialMargin, toUnit(1));
