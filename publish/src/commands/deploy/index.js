@@ -306,6 +306,16 @@ const deploy = async ({
 		useOvm,
 	});
 
+	console.log(gray(`\n------ DEPLOY FUTURES MARKETS MANAGER (Legacy and PerpsV2) ------\n`));
+
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const futuresMarketManager = await deployer.deployContract({
+		name: 'FuturesMarketManager',
+		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
+		deps: ['ReadProxyAddressResolver'],
+	});
+
 	if (includeFutures) {
 		await deployFutures({
 			account,
@@ -317,9 +327,10 @@ const deploy = async ({
 			network,
 			deploymentPath,
 			loadAndCheckRequiredSources,
+			futuresMarketManager,
 		});
 	} else {
-		console.log(gray(`\n------ EXCLUDE FUTURES ------\n`));
+		console.log(gray(`\n------ EXCLUDE FUTURES MARKETS ------\n`));
 	}
 
 	if (includePerpsV2) {
@@ -333,9 +344,10 @@ const deploy = async ({
 			network,
 			deploymentPath,
 			loadAndCheckRequiredSources,
+			futuresMarketManager,
 		});
 	} else {
-		console.log(gray(`\n------ EXCLUDE PERPS V2 ------\n`));
+		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
 	}
 
 	await deployDappUtils({
