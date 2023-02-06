@@ -78,6 +78,8 @@ const deploy = async ({
 	useFork,
 	useOvm,
 	yes,
+	includeFutures,
+	includePerpsV2,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -246,7 +248,7 @@ const deploy = async ({
 	// track for use with solidity output
 	const runSteps = [];
 
-	const runStep = async opts => {
+	const runStep = async (opts, overrides) => {
 		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
 			signer,
@@ -259,6 +261,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			useFork,
+			...overrides,
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
@@ -304,30 +307,49 @@ const deploy = async ({
 		useOvm,
 	});
 
-	const { futuresMarketManager } = await deployFutures({
-		account,
-		addressOf,
-		getDeployParameter,
-		deployer,
-		runStep,
-		useOvm,
-		network,
-		deploymentPath,
-		loadAndCheckRequiredSources,
+	console.log(gray(`\n------ DEPLOY FUTURES MARKETS MANAGER (Legacy and PerpsV2) ------\n`));
+
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const futuresMarketManager = await deployer.deployContract({
+		name: 'FuturesMarketManager',
+		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
+		deps: ['ReadProxyAddressResolver'],
 	});
 
-	await deployPerpsV2({
-		account,
-		addressOf,
-		getDeployParameter,
-		deployer,
-		runStep,
-		useOvm,
-		network,
-		deploymentPath,
-		loadAndCheckRequiredSources,
-		futuresMarketManager,
-	});
+	if (includeFutures) {
+		await deployFutures({
+			account,
+			addressOf,
+			getDeployParameter,
+			deployer,
+			runStep,
+			useOvm,
+			network,
+			deploymentPath,
+			loadAndCheckRequiredSources,
+			futuresMarketManager,
+		});
+	} else {
+		console.log(gray(`\n------ EXCLUDE FUTURES MARKETS ------\n`));
+	}
+
+	if (includePerpsV2) {
+		await deployPerpsV2({
+			account,
+			addressOf,
+			getDeployParameter,
+			deployer,
+			runStep,
+			useOvm,
+			network,
+			deploymentPath,
+			loadAndCheckRequiredSources,
+			futuresMarketManager,
+		});
+	} else {
+		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
+	}
 
 	await deployDappUtils({
 		account,
@@ -410,12 +432,14 @@ const deploy = async ({
 		useOvm,
 	});
 
-	await configureOffchainPriceFeeds({
-		deployer,
-		runStep,
-		offchainFeeds,
-		useOvm,
-	});
+	if (includePerpsV2) {
+		await configureOffchainPriceFeeds({
+			deployer,
+			runStep,
+			offchainFeeds,
+			useOvm,
+		});
+	}
 
 	await configureSynths({
 		addressOf,
@@ -454,33 +478,37 @@ const deploy = async ({
 		runStep,
 	});
 
-	await configureFutures({
-		addressOf,
-		deployer,
-		loadAndCheckRequiredSources,
-		runStep,
-		getDeployParameter,
-		useOvm,
-		freshDeploy,
-		deploymentPath,
-		network,
-		generateSolidity,
-		yes,
-	});
+	if (includeFutures) {
+		await configureFutures({
+			addressOf,
+			deployer,
+			loadAndCheckRequiredSources,
+			runStep,
+			getDeployParameter,
+			useOvm,
+			freshDeploy,
+			deploymentPath,
+			network,
+			generateSolidity,
+			yes,
+		});
+	}
 
-	await configurePerpsV2({
-		addressOf,
-		deployer,
-		loadAndCheckRequiredSources,
-		runStep,
-		getDeployParameter,
-		useOvm,
-		freshDeploy,
-		deploymentPath,
-		network,
-		generateSolidity,
-		yes,
-	});
+	if (includePerpsV2) {
+		await configurePerpsV2({
+			addressOf,
+			deployer,
+			loadAndCheckRequiredSources,
+			runStep,
+			getDeployParameter,
+			useOvm,
+			freshDeploy,
+			deploymentPath,
+			network,
+			generateSolidity,
+			yes,
+		});
+	}
 
 	// await takeDebtSnapshotWhenRequired({
 	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
@@ -604,6 +632,11 @@ module.exports = {
 			.option(
 				'-x, --specify-contracts <value>',
 				'Ignore config.json  and specify contracts to be deployed (Comma separated list)'
+			)
+			.option('--include-future', 'Include legacy Futures (deployment and configuration)')
+			.option(
+				'--include-perps-v2',
+				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
