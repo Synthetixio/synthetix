@@ -317,6 +317,7 @@ module.exports = async ({
 		);
 		const { toRemove } = filteredLists(routes, filteredFunctionSelectors);
 
+		// Remove unnecessary selectors
 		for (const f of toRemove) {
 			await runStep({
 				contract: 'ProxyPerpsV2',
@@ -330,7 +331,17 @@ module.exports = async ({
 		}
 
 		// Add Missing selectors
-		for (const f of filteredFunctions) {
+		const toAdd = filteredFunctions.filter(
+			route =>
+				!routes.find(
+					item =>
+						item.selector === route.signature &&
+						item.isView === route.isView &&
+						item.implementation === route.contractAddress
+				)
+		);
+
+		for (const f of toAdd) {
 			await runStep({
 				contract: 'ProxyPerpsV2',
 				target: perpsV2MarketProxy,
