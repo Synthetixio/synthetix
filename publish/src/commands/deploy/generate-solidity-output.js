@@ -67,7 +67,7 @@ module.exports = async ({
 
 				const safeParseBytes32Bytes = input => {
 					try {
-						return parseBytes32String(input);
+						return `"${parseBytes32String(input)}"`;
 					} catch (e) {
 						console.log(`Attention: bytes32 string unable to parse ${input}`);
 						// if cannot parse, use the value as it is (i.e. feedIds)
@@ -79,7 +79,7 @@ module.exports = async ({
 					Array.isArray(input)
 						? input.map(decodeBytes32IfRequired)
 						: /^0x[0-9a-fA-F]{64}/.test(input)
-						? `"${safeParseBytes32Bytes(input)}"`
+						? `${safeParseBytes32Bytes(input)}`
 						: input;
 				const useVariableForContractNameIfRequired = input =>
 					Array.isArray(input)
