@@ -804,7 +804,8 @@
 		{
 			"sip": 295,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 297,
@@ -829,7 +830,8 @@
 		{
 			"sip": 2000,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1557,7 +1559,8 @@
 				"major": 2,
 				"minor": 82
 			},
-			"sips": [295, 2000]
+			"sips": [295, 2000],
+			"released": true
 		}
 	]
 }
