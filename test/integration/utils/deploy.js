@@ -54,6 +54,8 @@ async function deployInstance({
 		useFork,
 		useOvm,
 		yes: true,
+		includeFutures: true,
+		includePerpsV2: true,
 	});
 }
 
