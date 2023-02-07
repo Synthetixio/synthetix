@@ -99,6 +99,14 @@ contract Migration_EltaninOptimism is BaseMigration {
         contracts[5] = address(systemstatus_i);
     }
 
+    function migrate2() external onlyOwner {
+        futuresmarketmanager_addProxiedMarkets_1();
+    }
+
+    function migrate3() external onlyOwner {
+        futuresmarketmanager_addProxiedMarkets_2();
+    }
+
     function migrate() external onlyOwner {
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
@@ -155,7 +163,6 @@ contract Migration_EltaninOptimism is BaseMigration {
 
         // MIGRATION
         perpsv2exchangerate_addAssociatedContracts_0();
-        futuresmarketmanager_addProxiedMarkets_1();
         // Import all new contracts into the address resolver;
         addressresolver_importAddresses_2();
         // Ensure the ExchangeRates contract has the standalone feed for ATOM;
@@ -283,45 +290,45 @@ contract Migration_EltaninOptimism is BaseMigration {
             0x84c2dde9633d93d1bcad84e7dc41c9d56578b7ec52fabedc1f335d673df0a7c1
         );
 
-        perpsv2marketsettings_i.setTakerFee("sBTCPERP", 10000000000000000);
-        perpsv2marketsettings_i.setMakerFee("sBTCPERP", 7000000000000000);
-        perpsv2marketsettings_i.setTakerFeeDelayedOrder("sBTCPERP", 1000000000000000);
-        perpsv2marketsettings_i.setMakerFeeDelayedOrder("sBTCPERP", 500000000000000);
-        perpsv2marketsettings_i.setTakerFeeOffchainDelayedOrder("sBTCPERP", 1000000000000000);
-        perpsv2marketsettings_i.setMakerFeeOffchainDelayedOrder("sBTCPERP", 500000000000000);
-        perpsv2marketsettings_i.setNextPriceConfirmWindow("sBTCPERP", 2);
-        perpsv2marketsettings_i.setDelayedOrderConfirmWindow("sBTCPERP", 120);
-        perpsv2marketsettings_i.setMinDelayTimeDelta("sBTCPERP", 60);
-        perpsv2marketsettings_i.setMaxDelayTimeDelta("sBTCPERP", 6000);
-        perpsv2marketsettings_i.setOffchainDelayedOrderMinAge("sBTCPERP", 15);
-        perpsv2marketsettings_i.setOffchainDelayedOrderMaxAge("sBTCPERP", 120);
-        perpsv2marketsettings_i.setMaxLeverage("sBTCPERP", 100000000000000000000);
-        perpsv2marketsettings_i.setMaxMarketValue("sBTCPERP", 1000000000000000000000);
-        perpsv2marketsettings_i.setMaxFundingVelocity("sBTCPERP", 3000000000000000000);
-        perpsv2marketsettings_i.setSkewScale("sBTCPERP", 1000000000000000000000000);
-        perpsv2marketsettings_i.setOffchainMarketKey("sBTCPERP", "ocBTCPERP");
-        perpsv2marketsettings_i.setOffchainPriceDivergence("sBTCPERP", 20000000000000000);
-        perpsv2marketsettings_i.setLiquidationPremiumMultiplier("sBTCPERP", 1000000000000000000);
+        // perpsv2marketsettings_i.setTakerFee("sBTCPERP", 10000000000000000);
+        // perpsv2marketsettings_i.setMakerFee("sBTCPERP", 7000000000000000);
+        // perpsv2marketsettings_i.setTakerFeeDelayedOrder("sBTCPERP", 1000000000000000);
+        // perpsv2marketsettings_i.setMakerFeeDelayedOrder("sBTCPERP", 500000000000000);
+        // perpsv2marketsettings_i.setTakerFeeOffchainDelayedOrder("sBTCPERP", 1000000000000000);
+        // perpsv2marketsettings_i.setMakerFeeOffchainDelayedOrder("sBTCPERP", 500000000000000);
+        // perpsv2marketsettings_i.setNextPriceConfirmWindow("sBTCPERP", 2);
+        // perpsv2marketsettings_i.setDelayedOrderConfirmWindow("sBTCPERP", 120);
+        // perpsv2marketsettings_i.setMinDelayTimeDelta("sBTCPERP", 60);
+        // perpsv2marketsettings_i.setMaxDelayTimeDelta("sBTCPERP", 6000);
+        // perpsv2marketsettings_i.setOffchainDelayedOrderMinAge("sBTCPERP", 15);
+        // perpsv2marketsettings_i.setOffchainDelayedOrderMaxAge("sBTCPERP", 120);
+        // perpsv2marketsettings_i.setMaxLeverage("sBTCPERP", 100000000000000000000);
+        // perpsv2marketsettings_i.setMaxMarketValue("sBTCPERP", 1000000000000000000000);
+        // perpsv2marketsettings_i.setMaxFundingVelocity("sBTCPERP", 3000000000000000000);
+        // perpsv2marketsettings_i.setSkewScale("sBTCPERP", 1000000000000000000000000);
+        // perpsv2marketsettings_i.setOffchainMarketKey("sBTCPERP", "ocBTCPERP");
+        // perpsv2marketsettings_i.setOffchainPriceDivergence("sBTCPERP", 20000000000000000);
+        // perpsv2marketsettings_i.setLiquidationPremiumMultiplier("sBTCPERP", 1000000000000000000);
 
-        perpsv2marketsettings_i.setTakerFee("sLINKPERP", 10000000000000000);
-        perpsv2marketsettings_i.setMakerFee("sLINKPERP", 7000000000000000);
-        perpsv2marketsettings_i.setTakerFeeDelayedOrder("sLINKPERP", 1000000000000000);
-        perpsv2marketsettings_i.setMakerFeeDelayedOrder("sLINKPERP", 500000000000000);
-        perpsv2marketsettings_i.setTakerFeeOffchainDelayedOrder("sLINKPERP", 1000000000000000);
-        perpsv2marketsettings_i.setMakerFeeOffchainDelayedOrder("sLINKPERP", 500000000000000);
-        perpsv2marketsettings_i.setNextPriceConfirmWindow("sLINKPERP", 2);
-        perpsv2marketsettings_i.setDelayedOrderConfirmWindow("sLINKPERP", 120);
-        perpsv2marketsettings_i.setMinDelayTimeDelta("sLINKPERP", 60);
-        perpsv2marketsettings_i.setMaxDelayTimeDelta("sLINKPERP", 6000);
-        perpsv2marketsettings_i.setOffchainDelayedOrderMinAge("sLINKPERP", 15);
-        perpsv2marketsettings_i.setOffchainDelayedOrderMaxAge("sLINKPERP", 120);
-        perpsv2marketsettings_i.setMaxLeverage("sLINKPERP", 100000000000000000000);
-        perpsv2marketsettings_i.setMaxMarketValue("sLINKPERP", 1000000000000000000000);
-        perpsv2marketsettings_i.setMaxFundingVelocity("sLINKPERP", 3000000000000000000);
-        perpsv2marketsettings_i.setSkewScale("sLINKPERP", 1000000000000000000000000);
-        perpsv2marketsettings_i.setOffchainMarketKey("sLINKPERP", "ocLINKPERP");
-        perpsv2marketsettings_i.setOffchainPriceDivergence("sLINKPERP", 20000000000000000);
-        perpsv2marketsettings_i.setLiquidationPremiumMultiplier("sLINKPERP", 1000000000000000000);
+        // perpsv2marketsettings_i.setTakerFee("sLINKPERP", 10000000000000000);
+        // perpsv2marketsettings_i.setMakerFee("sLINKPERP", 7000000000000000);
+        // perpsv2marketsettings_i.setTakerFeeDelayedOrder("sLINKPERP", 1000000000000000);
+        // perpsv2marketsettings_i.setMakerFeeDelayedOrder("sLINKPERP", 500000000000000);
+        // perpsv2marketsettings_i.setTakerFeeOffchainDelayedOrder("sLINKPERP", 1000000000000000);
+        // perpsv2marketsettings_i.setMakerFeeOffchainDelayedOrder("sLINKPERP", 500000000000000);
+        // perpsv2marketsettings_i.setNextPriceConfirmWindow("sLINKPERP", 2);
+        // perpsv2marketsettings_i.setDelayedOrderConfirmWindow("sLINKPERP", 120);
+        // perpsv2marketsettings_i.setMinDelayTimeDelta("sLINKPERP", 60);
+        // perpsv2marketsettings_i.setMaxDelayTimeDelta("sLINKPERP", 6000);
+        // perpsv2marketsettings_i.setOffchainDelayedOrderMinAge("sLINKPERP", 15);
+        // perpsv2marketsettings_i.setOffchainDelayedOrderMaxAge("sLINKPERP", 120);
+        // perpsv2marketsettings_i.setMaxLeverage("sLINKPERP", 100000000000000000000);
+        // perpsv2marketsettings_i.setMaxMarketValue("sLINKPERP", 1000000000000000000000);
+        // perpsv2marketsettings_i.setMaxFundingVelocity("sLINKPERP", 3000000000000000000);
+        // perpsv2marketsettings_i.setSkewScale("sLINKPERP", 1000000000000000000000000);
+        // perpsv2marketsettings_i.setOffchainMarketKey("sLINKPERP", "ocLINKPERP");
+        // perpsv2marketsettings_i.setOffchainPriceDivergence("sLINKPERP", 20000000000000000);
+        // perpsv2marketsettings_i.setLiquidationPremiumMultiplier("sLINKPERP", 1000000000000000000);
 
         // perpsv2marketsettings_i.setTakerFee("sSOLPERP", 10000000000000000);
         // perpsv2marketsettings_i.setMakerFee("sSOLPERP", 7000000000000000);
@@ -813,7 +820,7 @@ contract Migration_EltaninOptimism is BaseMigration {
     }
 
     function futuresmarketmanager_addProxiedMarkets_1() internal {
-        address[] memory futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0 = new address[](22);
+        address[] memory futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0 = new address[](11);
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[0] = address(0x59b007E9ea8F89b069c43F8f45834d30853e3699);
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[1] = address(0x31A1659Ca00F617E86Dc765B6494Afe70a5A9c1A);
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[2] = address(0x0EA09D97b4084d859328ec4bF8eBCF9ecCA26F1D);
@@ -825,17 +832,22 @@ contract Migration_EltaninOptimism is BaseMigration {
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[8] = address(0x139F94E4f0e1101c1464a321CBA815c34d58B5D9);
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[9] = address(0x0940B0A96C5e1ba33AEE331a9f950Bb2a6F2Fb25);
         futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[10] = address(0x442b69937a0daf9D46439a71567fABE6Cb69FBaf);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[11] = address(0x98cCbC721cc05E28a125943D69039B39BE6A21e9);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[12] = address(0x549dbDFfbd47bD5639f9348eBE82E63e2f9F777A);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[13] = address(0xdcB8438c979fA030581314e5A5Df42bbFEd744a0);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[14] = address(0x87AE62c5720DAB812BDacba66cc24839440048d1);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[15] = address(0xbB16C7B3244DFA1a6BF83Fcce3EE4560837763CD);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[16] = address(0x3a52b21816168dfe35bE99b7C5fc209f17a0aDb1);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[17] = address(0x27665271210aCff4Fab08AD9Bb657E91866471F0);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[18] = address(0xC18f85A6DD3Bcd0516a1CA08d3B1f0A4E191A2C4);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[19] = address(0xC8fCd6fB4D15dD7C455373297dEF375a08942eCe);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[20] = address(0x9De146b5663b82F44E5052dEDe2aA3Fd4CBcDC99);
-        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[21] = address(0x1dAd8808D8aC58a0df912aDC4b215ca3B93D6C49);
+        futuresmarketmanager_i.addProxiedMarkets(futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0);
+    }
+
+    function futuresmarketmanager_addProxiedMarkets_2() internal {
+        address[] memory futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0 = new address[](11);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[0] = address(0x98cCbC721cc05E28a125943D69039B39BE6A21e9);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[1] = address(0x549dbDFfbd47bD5639f9348eBE82E63e2f9F777A);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[2] = address(0xdcB8438c979fA030581314e5A5Df42bbFEd744a0);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[3] = address(0x87AE62c5720DAB812BDacba66cc24839440048d1);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[4] = address(0xbB16C7B3244DFA1a6BF83Fcce3EE4560837763CD);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[5] = address(0x3a52b21816168dfe35bE99b7C5fc209f17a0aDb1);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[6] = address(0x27665271210aCff4Fab08AD9Bb657E91866471F0);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[7] = address(0xC18f85A6DD3Bcd0516a1CA08d3B1f0A4E191A2C4);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[8] = address(0xC8fCd6fB4D15dD7C455373297dEF375a08942eCe);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[9] = address(0x9De146b5663b82F44E5052dEDe2aA3Fd4CBcDC99);
+        futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0[10] = address(0x1dAd8808D8aC58a0df912aDC4b215ca3B93D6C49);
         futuresmarketmanager_i.addProxiedMarkets(futuresmarketmanager_addProxiedMarkets_marketsToAdd_1_0);
     }
 
