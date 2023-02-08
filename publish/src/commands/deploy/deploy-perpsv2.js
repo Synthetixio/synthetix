@@ -276,27 +276,29 @@ module.exports = async ({
 			previousPerpsV2MarketDelayedIntent !== perpsV2MarketDelayedIntent.address
 		) {
 			implementationChanged = true;
-			await runStep({
-				contract: `PerpsV2MarketState`,
-				target: perpsV2MarketState,
-				write: 'addAssociatedContracts',
-				writeArg: [[perpsV2MarketDelayedIntent.address]],
+			await runStep(
+				{
+					contract: `PerpsV2MarketState`,
+					target: perpsV2MarketState,
+					write: 'addAssociatedContracts',
+					writeArg: [[perpsV2MarketDelayedIntent.address]],
 				},
 				{
 					generateSolidity: !isNewMarket,
-  			}
-      );
+				}
+			);
 
-			await runStep({
-				contract: `PerpsV2MarketDelayedIntent`,
-				target: perpsV2MarketDelayedIntent,
-				write: 'setProxy',
-				writeArg: [perpsV2MarketProxy.address],
+			await runStep(
+				{
+					contract: `PerpsV2MarketDelayedIntent`,
+					target: perpsV2MarketDelayedIntent,
+					write: 'setProxy',
+					writeArg: [perpsV2MarketProxy.address],
 				},
 				{
 					generateSolidity: !isNewMarket,
-  			}
-      );
+				}
+			);
 		}
 
 		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketDelayedIntent, excludedFunctions));
@@ -307,22 +309,24 @@ module.exports = async ({
 			previousPerpsV2MarketDelayedExecution !== perpsV2MarketDelayedExecution.address
 		) {
 			implementationChanged = true;
-			await runStep({
-				contract: `PerpsV2MarketState`,
-				target: perpsV2MarketState,
-				write: 'addAssociatedContracts',
-				writeArg: [[perpsV2MarketDelayedExecution.address]],
+			await runStep(
+				{
+					contract: `PerpsV2MarketState`,
+					target: perpsV2MarketState,
+					write: 'addAssociatedContracts',
+					writeArg: [[perpsV2MarketDelayedExecution.address]],
 				},
 				{
 					generateSolidity: !isNewMarket,
 				}
 			);
 
-			await runStep({
-				contract: `PerpsV2MarketDelayedExecution`,
-				target: perpsV2MarketDelayedExecution,
-				write: 'setProxy',
-				writeArg: [perpsV2MarketProxy.address],
+			await runStep(
+				{
+					contract: `PerpsV2MarketDelayedExecution`,
+					target: perpsV2MarketDelayedExecution,
+					write: 'setProxy',
+					writeArg: [perpsV2MarketProxy.address],
 				},
 				{
 					generateSolidity: !isNewMarket,
@@ -337,22 +341,24 @@ module.exports = async ({
 		// Configure Market
 		if (stateOrProxyChanged || previousPerpsV2Market !== perpsV2Market.address) {
 			implementationChanged = true;
-			await runStep({
-				contract: `PerpsV2MarketState`,
-				target: perpsV2MarketState,
-				write: 'addAssociatedContracts',
-				writeArg: [[perpsV2Market.address]],
+			await runStep(
+				{
+					contract: `PerpsV2MarketState`,
+					target: perpsV2MarketState,
+					write: 'addAssociatedContracts',
+					writeArg: [[perpsV2Market.address]],
 				},
 				{
 					generateSolidity: !isNewMarket,
 				}
 			);
 
-			await runStep({
-				contract: `PerpsV2Market`,
-				target: perpsV2Market,
-				write: 'setProxy',
-				writeArg: [perpsV2MarketProxy.address],
+			await runStep(
+				{
+					contract: `PerpsV2Market`,
+					target: perpsV2Market,
+					write: 'setProxy',
+					writeArg: [perpsV2MarketProxy.address],
 				},
 				{
 					generateSolidity: !isNewMarket,
@@ -379,14 +385,15 @@ module.exports = async ({
 
 		// Remove unnecessary selectors
 		for (const f of toRemove) {
-			await runStep({
-				contract: 'ProxyPerpsV2',
-				target: perpsV2MarketProxy,
-				read: 'getRoute',
-				readArg: [f],
-				expected: readResult => readResult.implementation === ethers.constants.AddressZero,
-				write: 'removeRoute',
-				writeArg: [f],
+			await runStep(
+				{
+					contract: 'ProxyPerpsV2',
+					target: perpsV2MarketProxy,
+					read: 'getRoute',
+					readArg: [f],
+					expected: readResult => readResult.implementation === ethers.constants.AddressZero,
+					write: 'removeRoute',
+					writeArg: [f],
 				},
 				{
 					generateSolidity: !isNewMarket,
@@ -406,17 +413,18 @@ module.exports = async ({
 		);
 
 		for (const f of toAdd) {
-			await runStep({
-				contract: 'ProxyPerpsV2',
-				target: perpsV2MarketProxy,
-				read: 'getRoute',
-				readArg: [f.signature],
-				expected: readResult =>
-					readResult.selector === f.signature &&
-					readResult.implementation === f.contractAddress &&
-					readResult.isView === f.isView,
-				write: 'addRoute',
-				writeArg: [f.signature, f.contractAddress, f.isView],
+			await runStep(
+				{
+					contract: 'ProxyPerpsV2',
+					target: perpsV2MarketProxy,
+					read: 'getRoute',
+					readArg: [f.signature],
+					expected: readResult =>
+						readResult.selector === f.signature &&
+						readResult.implementation === f.contractAddress &&
+						readResult.isView === f.isView,
+					write: 'addRoute',
+					writeArg: [f.signature, f.contractAddress, f.isView],
 				},
 				{
 					generateSolidity: !isNewMarket,
