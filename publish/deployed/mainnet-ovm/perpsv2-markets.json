@@ -2,11 +2,11 @@
 	{
 		"marketKey": "sETHPERP",
 		"asset": "sETH",
-		"makerFee": "0.007",
-		"takerFee": "0.01",
+		"makerFee": "0.0075",
+		"takerFee": "0.0075",
 		"overrideCommitFee": "0",
-		"takerFeeDelayedOrder": "0.001",
-		"makerFeeDelayedOrder": "0.0005",
+		"takerFeeDelayedOrder": "0.0015",
+		"makerFeeDelayedOrder": "0.0015",
 		"takerFeeOffchainDelayedOrder": "0.001",
 		"makerFeeOffchainDelayedOrder": "0.0005",
 		"nextPriceConfirmWindow": "2",
@@ -16,7 +16,7 @@
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "120",
 		"maxLeverage": "100",
-		"maxMarketValue": "1000",
+		"maxMarketValue": "5000",
 		"maxFundingVelocity": "3",
 		"skewScale": "1000000",
 		"offchainPriceDivergence": "0.02",
@@ -48,8 +48,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBTCPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sLINKPERP",
@@ -74,8 +74,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocLINKPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sSOLPERP",
@@ -100,8 +100,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocSOLPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sAVAXPERP",
@@ -126,8 +126,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAVAXPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sAAVEPERP",
@@ -152,8 +152,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAAVEPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sUNIPERP",
@@ -178,8 +178,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocUNIPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sMATICPERP",
@@ -204,8 +204,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocMATICPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sAPEPERP",
@@ -230,8 +230,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAPEPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sDYDXPERP",
@@ -256,8 +256,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocDYDXPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sBNBPERP",
@@ -282,8 +282,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBNBPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sOPPERP",
@@ -308,8 +308,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocOPPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sDOGEPERP",
@@ -334,8 +334,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocDOGEPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sXAUPERP",
@@ -360,8 +360,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocXAUPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sXAGPERP",
@@ -386,8 +386,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocXAGPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sEURPERP",
@@ -412,8 +412,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocEURPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sATOMPERP",
@@ -438,8 +438,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocATOMPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sAXSPERP",
@@ -464,8 +464,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAXSPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sFLOWPERP",
@@ -490,8 +490,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocFLOWPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sFTMPERP",
@@ -516,8 +516,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocFTMPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sNEARPERP",
@@ -542,8 +542,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocNEARPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sAUDPERP",
@@ -568,8 +568,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAUDPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sGBPPERP",
@@ -594,7 +594,7 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocGBPPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
