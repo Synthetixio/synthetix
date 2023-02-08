@@ -75,6 +75,34 @@
 		"asset": "DOGE",
 		"feed": "0xC6066533917f034Cf610c08e1fe5e9c7eADe0f54"
 	},
+	"ATOM": {
+		"asset": "ATOM",
+		"feed": "0xEF89db2eA46B4aD4E333466B6A486b809e613F39"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"feed": "0x805a61D54bb686e57F02D1EC96A1491C7aF40893"
+	},
+	"FLOW": {
+		"asset": "FLOW",
+		"feed": "0x2fF1EB7D0ceC35959F0248E9354c3248c6683D9b"
+	},
+	"FTM": {
+		"asset": "FTM",
+		"feed": "0xc19d58652d6BfC6Db6FB3691eDA6Aa7f3379E4E9"
+	},
+	"NEAR": {
+		"asset": "NEAR",
+		"feed": "0xca6fa4b8CB365C02cd3Ba70544EFffe78f63ac82"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"feed": "0x39be70E93D2D285C9E71be7f70FC5a45A7777B14"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"feed": "0x540D48C01F946e729174517E013Ad0bdaE5F08C0"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",

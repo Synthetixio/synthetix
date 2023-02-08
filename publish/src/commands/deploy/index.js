@@ -248,7 +248,7 @@ const deploy = async ({
 	// track for use with solidity output
 	const runSteps = [];
 
-	const runStep = async opts => {
+	const runStep = async (opts, overrides) => {
 		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
 			signer,
@@ -261,6 +261,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			useFork,
+			...overrides,
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op

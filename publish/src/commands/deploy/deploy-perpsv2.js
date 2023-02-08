@@ -72,6 +72,33 @@ module.exports = async ({
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
+	const existingMarketAddresses = await futuresMarketManager['allMarkets(bool)'](true);
+	const existingMarkets = [];
+	for (const marketAddress of existingMarketAddresses) {
+		const market = new ethers.Contract(
+			marketAddress,
+			[
+				{
+					constant: true,
+					inputs: [],
+					name: 'marketKey',
+					outputs: [
+						{
+							internalType: 'bytes32',
+							name: 'key',
+							type: 'bytes32',
+						},
+					],
+					payable: false,
+					stateMutability: 'view',
+					type: 'function',
+				},
+			],
+			deployer.provider
+		);
+		existingMarkets.push(await market.marketKey());
+	}
+
 	const deployedPerpsV2Markets = [];
 	const perpMarketsImplementationUpdated = [];
 	const exchangeRateAssociateContractAddresses = [];
@@ -92,6 +119,10 @@ module.exports = async ({
 		const marketDelayedExecutionName =
 			'PerpsV2DelayedExecution' + marketConfig.marketKey.slice('1'); // remove s prefix
 
+		const isNewMarket = !existingMarkets.includes(marketKey);
+		if (isNewMarket) {
+			console.log(gray(`market ${marketConfig.marketKey} is a new market.`));
+		}
 		// Deploy contracts
 		// Proxy
 		const previousPerpsV2MarketProxy = deployer.getExistingAddress({
@@ -203,12 +234,17 @@ module.exports = async ({
 		let implementationChanged = false;
 
 		if (stateChanged) {
-			await runStep({
-				contract: `PerpsV2MarketState`,
-				target: perpsV2MarketState,
-				write: 'removeAssociatedContracts',
-				writeArg: [[account]],
-			});
+			await runStep(
+				{
+					contract: `PerpsV2MarketState`,
+					target: perpsV2MarketState,
+					write: 'removeAssociatedContracts',
+					writeArg: [[account]],
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 		}
 
 		// Configure Views
@@ -245,14 +281,22 @@ module.exports = async ({
 				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
 				writeArg: [[perpsV2MarketDelayedIntent.address]],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+  			}
+      );
 
 			await runStep({
 				contract: `PerpsV2MarketDelayedIntent`,
 				target: perpsV2MarketDelayedIntent,
 				write: 'setProxy',
 				writeArg: [perpsV2MarketProxy.address],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+  			}
+      );
 		}
 
 		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketDelayedIntent, excludedFunctions));
@@ -268,14 +312,22 @@ module.exports = async ({
 				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
 				writeArg: [[perpsV2MarketDelayedExecution.address]],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 
 			await runStep({
 				contract: `PerpsV2MarketDelayedExecution`,
 				target: perpsV2MarketDelayedExecution,
 				write: 'setProxy',
 				writeArg: [perpsV2MarketProxy.address],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 		}
 
 		filteredFunctions.push(
@@ -290,14 +342,22 @@ module.exports = async ({
 				target: perpsV2MarketState,
 				write: 'addAssociatedContracts',
 				writeArg: [[perpsV2Market.address]],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 
 			await runStep({
 				contract: `PerpsV2Market`,
 				target: perpsV2Market,
 				write: 'setProxy',
 				writeArg: [perpsV2MarketProxy.address],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 		}
 
 		filteredFunctions.push(...getFunctionSignatures(perpsV2Market, excludedFunctions));
@@ -327,7 +387,11 @@ module.exports = async ({
 				expected: readResult => readResult.implementation === ethers.constants.AddressZero,
 				write: 'removeRoute',
 				writeArg: [f],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 		}
 
 		// Add Missing selectors
@@ -353,7 +417,11 @@ module.exports = async ({
 					readResult.isView === f.isView,
 				write: 'addRoute',
 				writeArg: [f.signature, f.contractAddress, f.isView],
-			});
+				},
+				{
+					generateSolidity: !isNewMarket,
+				}
+			);
 		}
 
 		if (perpsV2MarketProxy) {
