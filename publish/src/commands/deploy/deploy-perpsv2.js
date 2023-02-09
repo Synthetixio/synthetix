@@ -250,7 +250,7 @@ module.exports = async ({
 		// Configure Views
 		filteredFunctions.push(...getFunctionSignatures(perpsV2MarketViews, excludedFunctions));
 
-		// Configure Delayed Execution
+		// Configure Market Liquidate
 		if (stateOrProxyChanged || previousPerpsV2MarketLiquidate !== perpsV2MarketLiquidate.address) {
 			implementationChanged = true;
 			await runStep({
