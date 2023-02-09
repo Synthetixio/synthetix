@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const { toBytes32 } = require('../../..');
 
 // Perps V2 Proxy
 const excludedFunctions = [
@@ -161,11 +162,7 @@ const deployMarketImplementations = async ({
 	return { implementations };
 };
 
-const associateToPerpsV2ExchangeRate = async ({
-	runStep,
-	perpsV2ExchangeRate,
-	implememtations,
-}) => {
+const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implememtations }) => {
 	const currentAddresses = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
 
 	const requiredAddresses = implememtations
@@ -220,13 +217,115 @@ const linkToState = async ({ runStep, perpsV2MarketState, implememtations }) => 
 	});
 };
 
-const deployStateMigration = async ({ oldStateContract, newStateContract }) => {};
-const migrateState = async () => {};
-const pauseMarket = async () => {};
-const recoverExpectedPauseState = async () => {};
+const deployStateMigration = async ({
+	deployer,
+	owner,
+	marketKey,
+	migrationContractName,
+	oldStateContractAddress,
+	newStateContractAddress,
+}) => {
+	const marketMigrationName = migrationContractName + marketKey.slice('1'); // remove s prefix
+
+	const previousContractAddress = deployer.getExistingAddress({
+		name: migrationContractName,
+	});
+
+	const newContract = await deployer.deployContract({
+		name: marketMigrationName,
+		source: migrationContractName,
+		args: [owner, oldStateContractAddress, newStateContractAddress],
+		force: true,
+		skipResolver: true,
+	});
+
+	const isSameContract = previousContractAddress === newContract.address;
+
+	return { contract: newContract, updated: !isSameContract };
+};
+
+const migrateState = async ({ runStep, migrationContract }) => {
+	await runStep({
+		target: migrationContract,
+		write: 'execute',
+	});
+};
+
+const pauseMarket = async ({ marketKey, ocMarketKey, runStep, SystemStatus }) => {
+	const result = {};
+	let isPaused;
+
+	const marketKeyBytes = toBytes32(marketKey);
+	isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+	result.marketPrePausedStatus = isPaused;
+	if (!isPaused) {
+		await runStep({
+			contract: 'SystemStatus',
+			target: SystemStatus,
+			write: 'suspendFuturesMarket',
+			writeArg: [marketKeyBytes, 80],
+			comment: 'Ensure perps V2 market is paused before upgrading',
+		});
+	}
+
+	if (ocMarketKey) {
+		const ocMarketKeyBytes = toBytes32(ocMarketKey);
+		isPaused = (await SystemStatus.futuresMarketSuspension(ocMarketKeyBytes)).suspended;
+		result.ocMarketPrePausedStatus = isPaused;
+		if (!isPaused) {
+			await runStep({
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				write: 'suspendFuturesMarket',
+				writeArg: [ocMarketKeyBytes, 80],
+				comment: 'Ensure perps V2 oc market is paused before upgrading',
+			});
+		}
+	}
+
+	return result;
+};
+
+const recoverExpectedPauseStatus = async ({
+	marketKey,
+	ocMarketKey,
+	runStep,
+	SystemStatus,
+	expectedMarketPaused,
+	expectedOcMarketPaused,
+}) => {
+	let isPaused;
+
+	const marketKeyBytes = toBytes32(marketKey);
+	isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+	if (isPaused && !expectedMarketPaused) {
+		await runStep({
+			contract: 'SystemStatus',
+			target: SystemStatus,
+			write: 'resumeFuturesMarket',
+			writeArg: [marketKeyBytes],
+			comment: 'Ensure perpsV2 market is un-paused according to previous status',
+		});
+	}
+
+	if (ocMarketKey) {
+		const ocMarketKeyBytes = toBytes32(ocMarketKey);
+		isPaused = (await SystemStatus.futuresMarketSuspension(ocMarketKeyBytes)).suspended;
+		if (isPaused && !expectedOcMarketPaused) {
+			await runStep({
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				write: 'suspendFuturesMarket',
+				writeArg: [ocMarketKeyBytes, 80],
+				comment: 'Ensure perpsV2 oc market is un-paused according to previous status',
+			});
+		}
+	}
+};
+
 const configureMarket = async () => {};
-const rebuildCaches = async () => {};
 const linkToMarketManager = async () => {};
+const rebuildCaches = async () => {};
 
 module.exports = {
 	excludedFunctions,
@@ -235,13 +334,13 @@ module.exports = {
 	deployMarketProxy,
 	deployMarketState,
 	deployMarketImplementations,
-	associateToPerpsV2ExchangeRate,
-	linkToState,
 	deployStateMigration,
-	migrateState,
-	pauseMarket,
-	recoverExpectedPauseState,
+	linkToPerpsExchangeRate,
+	linkToState,
+	linkToMarketManager,
 	configureMarket,
 	rebuildCaches,
-	linkToMarketManager,
+	migrateState,
+	pauseMarket,
+	recoverExpectedPauseStatus,
 };
