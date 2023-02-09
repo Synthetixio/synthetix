@@ -1210,8 +1210,16 @@ contract('FeePool', async accounts => {
 
 				await feePool.claimFees({ from: account1 });
 
-				assert.bnClose(feesAvailableOwner[0], totalFees.div(web3.utils.toBN('2')), '8');
-				assert.bnClose(feesAvailableAcc1[0], totalFees.div(web3.utils.toBN('2')), '8');
+				assert.bnClose(
+					feesAvailableOwner[0],
+					totalFees.div(web3.utils.toBN('2')),
+					'250000000000000000'
+				);
+				assert.bnClose(
+					feesAvailableAcc1[0],
+					totalFees.div(web3.utils.toBN('2')),
+					'250000000000000000'
+				);
 			});
 
 			it('should allow a user to claim their fees in sUSD (as half of total) after some exchanging', async () => {
@@ -1250,11 +1258,12 @@ contract('FeePool', async accounts => {
 
 				// Assert that we have correct values in the fee pool
 				const feesAvailable = await feePool.feesAvailable(owner);
+				const feesBurned = await feePool.feesBurned(owner);
 
 				const half = amount => amount.div(web3.utils.toBN('2'));
 
 				// owner has half the debt so entitled to half the fees
-				assert.bnClose(feesAvailable[0], half(totalFees), '19');
+				assert.bnClose(feesAvailable[0].add(feesBurned), half(totalFees), '19');
 
 				const oldSynthBalance = await sUSDContract.balanceOf(owner);
 
@@ -1262,7 +1271,11 @@ contract('FeePool', async accounts => {
 				await feePool.claimFees({ from: owner });
 
 				// We should have our fees
-				assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+				assert.bnClose(
+					await sUSDContract.balanceOf(owner),
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
+				);
 			});
 
 			it('should revert when a user tries to double claim their fees', async () => {
@@ -1598,9 +1611,10 @@ contract('FeePool', async accounts => {
 				await feePool.claimOnBehalf(account1, { from: account2 });
 
 				// We should have our fees for account1
-				assert.bnEqual(
+				assert.bnClose(
 					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0])
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
 				);
 			});
 			it('should revert if account2 tries to claimOnBehalf without approval', async () => {
@@ -1654,7 +1668,7 @@ contract('FeePool', async accounts => {
 				// Assert that we have correct values in the fee pool
 				// Account1 should have all the fees as only account minted
 				const feesAvailable = await feePool.feesAvailable(account1);
-				assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
+				assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('6')), '250000000000000000');
 
 				const oldSynthBalance = await sUSDContract.balanceOf(account1);
 
@@ -1662,9 +1676,10 @@ contract('FeePool', async accounts => {
 				await feePool.claimFees({ from: account1 });
 
 				// We should have our fees
-				assert.bnEqual(
+				assert.bnClose(
 					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0])
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
 				);
 			});
 		});

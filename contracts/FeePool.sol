@@ -482,7 +482,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice The total fees available in the system to be withdrawnn in sUSD
+     * @notice The total fees available in the system to be withdrawn in sUSD.
      */
     function totalFeesAvailable() external view returns (uint) {
         uint totalFees = 0;
@@ -497,17 +497,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice The total fees that were already burned (i.e. claimed).
+     * @notice The total fees that were already burned (i.e. claimed) in the previous fee period [1].
      */
     function totalFeesBurned() external view returns (uint) {
-        uint totalFees = 0;
-
-        // Fees in fee period [0] are not yet burned
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = totalFees.add(_recentFeePeriodsStorage(i).feesClaimed);
-        }
-
-        return totalFees;
+        return _recentFeePeriodsStorage(1).feesClaimed;
     }
 
     /**
@@ -531,7 +524,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      */
     function feesAvailable(address account) public view returns (uint, uint) {
         // Add up the fees
-        uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
+        uint[FEE_PERIOD_LENGTH][2] memory userFees = feesByPeriod(account);
 
         uint totalFees = 0;
         uint totalRewards = 0;
@@ -548,31 +541,24 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice The total amount of fees burned for a specific account.
+     * @notice The total amount of fees burned for a specific account in the previous period [1].
+     * Note: Fees in the current fee period [0] are not yet burned.
      */
     function feesBurned(address account) public view returns (uint) {
-        // Add up the fees
-        uint[2][FEE_PERIOD_LENGTH] memory userFees = feesByPeriod(account);
-
-        uint totalFees = 0;
-
-        // Fees & Rewards in fee period [0] are not yet burned
-        for (uint i = 1; i < FEE_PERIOD_LENGTH; i++) {
-            totalFees = totalFees.add(userFees[i][0]);
-        }
-
-        // Return totalFees in sUSD
-        return totalFees;
+        uint[FEE_PERIOD_LENGTH][2] memory userFees = feesByPeriod(account);
+        return userFees[1][0];
     }
 
     /**
-     * @notice The amount of fees to be burned for an account during the current fee period.
+     * @notice The amount of fees to be burned for an account during the current fee period [0].
+     * Note: this returns an approximate value based on the current system rate. Any changes in debt shares may affect the outcome of the final amount.
+     * This also does not consider pending fees in the wrappers since they are distributed at fee period close.
      */
-    function feesToBurn(address account) public view returns (uint) {
-        return
-            _recentFeePeriodsStorage(0).feesToDistribute.multiplyDecimal(
-                synthetixDebtShare().balanceOf(account).divideDecimal(synthetixDebtShare().totalSupply())
-            );
+    function feesToBurn(address account) public view returns (uint feesFromPeriod) {
+        ISynthetixDebtShare sds = synthetixDebtShare();
+        uint userOwnershipPercentage = sds.sharePercent(account);
+        (feesFromPeriod, ) = _feesAndRewardsFromPeriod(0, userOwnershipPercentage);
+        return feesFromPeriod;
     }
 
     function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
@@ -606,7 +592,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      * @notice Calculates fees by period for an account, priced in sUSD
      * @param account The address you want to query the fees for
      */
-    function feesByPeriod(address account) public view returns (uint[2][FEE_PERIOD_LENGTH] memory results) {
+    function feesByPeriod(address account) public view returns (uint[FEE_PERIOD_LENGTH][2] memory results) {
         // What's the user's debt entry index and the debt they owe to the system at current feePeriod
         uint userOwnershipPercentage;
         ISynthetixDebtShare sds = synthetixDebtShare();
