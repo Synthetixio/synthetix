@@ -807,6 +807,12 @@
 			"released": "both"
 		},
 		{
+			"sip": 295,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 297,
 			"layer": "ovm",
 			"sources": {
@@ -825,6 +831,12 @@
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
 			"released": "both"
+		},
+		{
+			"sip": 2000,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1546,19 +1558,29 @@
 			"released": true
 		},
 		{
-			"name": "Sadr",
+			"name": "Eltanin (Optimism)",
+			"ovm": true,
 			"version": {
 				"major": 2,
-				"minor": 81
+				"minor": 82
+			},
+			"sips": [295, 2000],
+			"released": true
+		},
+		{
+			"name": "Schedar",
+			"version": {
+				"major": 2,
+				"minor": 83
 			},
 			"sips": [255]
 		},
 		{
-			"name": "Sadr (Optimism)",
+			"name": "Schedar (Optimism)",
 			"ovm": true,
 			"version": {
 				"major": 2,
-				"minor": 81
+				"minor": 83
 			},
 			"sips": [255]
 		}
