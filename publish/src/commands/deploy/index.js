@@ -346,6 +346,8 @@ const deploy = async ({
 			deploymentPath,
 			loadAndCheckRequiredSources,
 			futuresMarketManager,
+			generateSolidity,
+			yes,
 		});
 	} else {
 		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));

@@ -54,7 +54,7 @@ const filteredLists = (originalList, newList) => {
 	return { toRemove, toKeep, toAdd };
 };
 
-const isNewMarket = (existingMarkets, marketKey) => existingMarkets.includes(marketKey);
+const isNewMarket = ({ existingMarkets, marketKey }) => existingMarkets.includes(marketKey);
 
 const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
 	const marketProxyName = 'PerpsV2Proxy' + marketKey.slice('1'); // remove s prefix
@@ -93,13 +93,13 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 
 	const isSameContract = previousContractAddress === newContract.address;
 
-	return { contract: newContract, updated: !isSameContract };
+	return { contract: newContract, updated: !isSameContract, previousContractAddress };
 };
 
 const deployMarketImplementations = async ({
 	deployer,
 	owner,
-	addressResolverAddress, // addressOf(ReadProxyAddressResolver),
+	addressResolverAddress,
 	marketKey,
 	proxyAddress,
 	stateAddress,
@@ -424,11 +424,10 @@ const configureMarket = async ({
 	confirmAction,
 	marketKey,
 	marketConfig,
-	PerpsV2MarketSettings,
+	perpsV2MarketSettings,
 }) => {
 	const marketKeyBytes = toBytes32(marketConfig.marketKey);
 	const offchainMarketKey = marketConfig.offchainMarketKey;
-	const offchainMarketKeyBytes = toBytes32(offchainMarketKey);
 
 	const expectedParameters = [
 		ethers.utils.parseUnits(marketConfig.takerFee),
@@ -448,20 +447,20 @@ const configureMarket = async ({
 		marketConfig.maxDelayTimeDelta,
 		marketConfig.offchainDelayedOrderMinAge,
 		marketConfig.offchainDelayedOrderMaxAge,
-		offchainMarketKeyBytes,
+		toBytes32(offchainMarketKey),
 		ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
 		ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
 		ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
 		ethers.utils.parseUnits(marketConfig.maxPD),
 	];
 
-	const currentSettings = await PerpsV2MarketSettings.parameters(marketKeyBytes);
+	const currentSettings = await perpsV2MarketSettings.parameters(marketKeyBytes);
 
 	if (JSON.stringify(expectedParameters) !== JSON.stringify(currentSettings)) {
 		// configurations doesn't match
 		await runStep({
 			contract: 'PerpsV2MarketSettings',
-			target: PerpsV2MarketSettings,
+			target: perpsV2MarketSettings,
 			write: 'setParameters',
 			writeArg: [marketKeyBytes, expectedParameters],
 		});
@@ -470,7 +469,6 @@ const configureMarket = async ({
 	// pause or resume market according to config
 	await setPausedMode({
 		paused: marketConfig.paused,
-		marketKeyBytes,
 		marketKey,
 		runStep,
 		SystemStatus,
@@ -482,7 +480,6 @@ const configureMarket = async ({
 	// pause or resume offchain market according to config
 	await setPausedMode({
 		paused: marketConfig.offchainPaused,
-		marketKeyBytes: offchainMarketKeyBytes,
 		marketKey: offchainMarketKey,
 		runStep,
 		SystemStatus,
@@ -497,11 +494,12 @@ async function setPausedMode({
 	SystemStatus,
 	marketKey,
 	paused,
-	marketKeyBytes,
 	generateSolidity,
 	yes,
 	confirmAction,
 }) {
+	const marketKeyBytes = toBytes32(marketKey);
+
 	function migrationContractNoACLWarning(actionMessage) {
 		console.log(
 			yellow(
