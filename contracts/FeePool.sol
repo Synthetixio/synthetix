@@ -288,8 +288,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _recentFeePeriodsStorage(0).allNetworksDebtSharesSupply = allNetworksDebtSharesSupply;
         _recentFeePeriodsStorage(0).allNetworksSnxBackedDebt = allNetworksSnxBackedDebt;
 
-        // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
-        FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
+        // Note:  periodClosing is the current period & periodToRollover is the last open claimable period
+        FeePeriod storage periodClosing = _recentFeePeriodsStorage(0);
         FeePeriod storage periodToRollover = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 1);
 
         // Any unclaimed fees from the last period in the array roll back one period.
@@ -297,26 +297,21 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // have already claimed from the old period, available in the new period.
         // The subtraction is important so we don't create a ticking time bomb of an ever growing
         // number of fees that can never decrease and will eventually overflow at the end of the fee pool.
-        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute = periodToRollover
+        _recentFeePeriodsStorage(0).feesToDistribute = periodToRollover
             .feesToDistribute
             .sub(periodToRollover.feesClaimed)
             .add(periodClosing.feesToDistribute);
-        _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).rewardsToDistribute = periodToRollover
+        _recentFeePeriodsStorage(0).rewardsToDistribute = periodToRollover
             .rewardsToDistribute
             .sub(periodToRollover.rewardsClaimed)
             .add(periodClosing.rewardsToDistribute);
 
         // Note: As of SIP-255, all sUSD fee are now automatically burned and are effectively shared amongst stakers in the form of reduced debt.
-        if (_recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute > 0) {
-            issuer().burnSynthsWithoutDebt(
-                sUSD,
-                FEE_ADDRESS,
-                _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesToDistribute
-            );
+        if (_recentFeePeriodsStorage(0).feesToDistribute > 0) {
+            issuer().burnSynthsWithoutDebt(sUSD, FEE_ADDRESS, _recentFeePeriodsStorage(0).feesToDistribute);
 
             // Mark the burnt fees as claimed.
-            _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2).feesClaimed = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2)
-                .feesToDistribute;
+            _recentFeePeriodsStorage(0).feesClaimed = _recentFeePeriodsStorage(0).feesToDistribute;
         }
 
         // Shift the previous fee periods across to make room for the new one.
@@ -386,10 +381,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Record the address has claimed for this period
         _setLastFeeWithdrawal(claimingAddress, _recentFeePeriodsStorage(1).feePeriodId);
 
-        if (availableFees > 0) {
-            // Mark the fees as paid since they were already burned.
-            feesPaid = availableFees;
-        }
+        // Mark the fees as paid since they were already burned.
+        feesPaid = availableFees;
 
         if (availableRewards > 0) {
             // Record the reward payment in our recentFeePeriods
