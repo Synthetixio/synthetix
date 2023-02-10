@@ -1013,8 +1013,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     modifier onlyTrustedMinters() {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
-        require(msg.sender == bridgeL1 || msg.sender == bridgeL2, "only trusted minters");
-        require(bridgeL1 == address(0) || bridgeL2 == address(0), "one minter must be 0x0");
+        address feePool = resolver.getAddress(CONTRACT_FEEPOOL);
+        require(msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool, "only trusted minters");
         _;
     }
 
