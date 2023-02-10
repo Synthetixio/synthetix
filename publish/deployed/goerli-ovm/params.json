@@ -28,6 +28,10 @@
 		"value": "2000000000000000000"
 	},
 	{
+		"name": "FUTURES_LIQUIDATION_BUFFER_RATIO",
+		"value": "10000000000000000"
+	},
+	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
 			"SYNTHS": ["sUSD", "sBTC", "sETH"],
