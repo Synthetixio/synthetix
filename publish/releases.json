@@ -707,6 +707,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 255,
+			"layer": "both",
+			"sources": ["FeePool", "Issuer"]
+		},
+		{
 			"sip": 257,
 			"layer": "both",
 			"sources": ["ExchangeRates"],
@@ -781,6 +786,33 @@
 			"released": "both"
 		},
 		{
+			"sip": 293,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsDOT",
+					"OneNetAggregatorsADA"
+				],
+				"ovm": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsMATIC",
+					"OneNetAggregatorsUNI",
+					"OneNetAggregatorsAVAX",
+					"OneNetAggregatorsSOL"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 295,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 297,
 			"layer": "ovm",
 			"sources": {
@@ -799,6 +831,12 @@
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
 			"released": "both"
+		},
+		{
+			"sip": 2000,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1497,17 +1535,54 @@
 				"major": 2,
 				"minor": 80
 			},
-			"sips": [297],
+			"sips": [279, 280, 281, 285, 297],
 			"released": true
 		},
 		{
-			"name": "Xxxx (Optimism)",
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [293],
+			"released": true
+		},
+		{
+			"name": "Sadr (Optimism)",
 			"ovm": true,
 			"version": {
 				"major": 2,
 				"minor": 81
 			},
-			"sips": [297]
+			"sips": [293],
+			"released": true
+		},
+		{
+			"name": "Eltanin (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 82
+			},
+			"sips": [295, 2000],
+			"released": true
+		},
+		{
+			"name": "Schedar",
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255]
+		},
+		{
+			"name": "Schedar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255]
 		}
 	]
 }

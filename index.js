@@ -480,6 +480,47 @@ const getFuturesMarkets = ({
 	});
 };
 
+const getPerpsMarkets = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	let perpsMarkets;
+
+	if (!deploymentPath && (!path || !fs)) {
+		perpsMarkets = data[getFolderNameForNetwork({ network, useOvm })].perpsv2Markets;
+	} else {
+		const pathToPerpsMarketsList = deploymentPath
+			? path.join(deploymentPath, constants.PERPS_V2_MARKETS_FILENAME)
+			: getPathToNetwork({
+					network,
+					path,
+					useOvm,
+					file: constants.PERPS_V2_MARKETS_FILENAME,
+			  });
+
+		if (!fs.existsSync(pathToPerpsMarketsList)) {
+			perpsMarkets = [];
+		} else {
+			perpsMarkets = JSON.parse(fs.readFileSync(pathToPerpsMarketsList)) || [];
+		}
+	}
+	return perpsMarkets.map(perpsMarket => {
+		/**
+		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
+		 * Unfortunately due to some historical reasons 'sBTC' and 'sETH' does not follow this format
+		 * We adjust for that here.
+		 */
+		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH'];
+		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(perpsMarket.asset);
+		const assetKey = assetKeyNeedsAdjustment ? perpsMarket.asset.slice(1) : perpsMarket.asset;
+		// mixin the asset details
+		return Object.assign({}, assets[assetKey], perpsMarket);
+	});
+};
+
 const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, path }) => {
 	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, PerpsV2Proxied) => {
 		const proxyPrefix = 'PerpsV2Proxy';
@@ -903,6 +944,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getSynths',
 		'getTarget',
 		'getFuturesMarkets',
+		'getPerpsMarkets',
 		'getPerpsV2ProxiedMarkets',
 		'getTokens',
 		'getUsers',
@@ -936,6 +978,7 @@ module.exports = {
 	getOffchainFeeds,
 	getSynths,
 	getFuturesMarkets,
+	getPerpsMarkets,
 	getPerpsV2ProxiedMarkets,
 	getTarget,
 	getTokens,

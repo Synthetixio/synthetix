@@ -33,5 +33,14 @@
 		"description": "Chainlink",
 		"name": "sLINK",
 		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"feed": "0x0",
+		"asset": "ETHBTC",
+		"category": "crypto",
+		"sign": "",
+		"description": "ETHBTC Ratio",
+		"name": "sETHBTC",
+		"subclass": "MultiCollateralSynth"
 	}
 ]

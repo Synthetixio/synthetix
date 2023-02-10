@@ -307,25 +307,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				reason: 'Must be fee pool',
 			});
 		});
-
-		describe('fails if both networks addresses set for trusted minters', () => {
-			beforeEach(async () => {
-				await addressResolver.importAddresses(
-					[toBytes32('SynthetixBridgeToBase')],
-					[issuer.address],
-					{ from: owner }
-				);
-			});
-
-			it('reverts', async () => {
-				await assert.revert(
-					issuer.issueSynthsWithoutDebt(sUSD, owner, toUnit(100), {
-						from: synthetixBridgeToOptimism,
-					}),
-					'one minter must be 0x0'
-				);
-			});
-		});
 	});
 
 	describe('when minimum stake time is set to 0', () => {

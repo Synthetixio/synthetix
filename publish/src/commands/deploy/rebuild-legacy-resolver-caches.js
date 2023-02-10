@@ -40,7 +40,6 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 				SynthiXRP: '0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8',
 				Synths1INCH: '0x0E8Fa2339314AB7E164818F26207897bBe29C3af',
 				SynthsAAPL: '0x815CeF3b7773f35428B4353073B086ecB658f73C',
-				SynthsADA: '0xC22e51FA362654ea453B4018B616ef6f6ab3b779',
 				SynthsAMZN: '0x9530FA32a3059114AC20A5812870Da12D97d1174',
 				SynthsBNB: '0xda3c83750b1FA31Fda838136ef3f853b41cb7a5a',
 				SynthsCEX: '0x2acfe6265D358d982cB1c3B521199973CD443C71',
@@ -72,6 +71,12 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 
 				// Synths deprecated during Denebola (v2.73)
 				SynthsDEFI: '0x918b1dbf0917FdD74D03fB9434915E2ECEc89286',
+
+				// Synths deprecated during Sadr (v2.81)
+				SynthsAAVE: '0x942Eb6e8c029EB22103743C99985aF4F4515a559',
+				SynthsLINK: '0xDF69bC4541b86Aa4c5A470B4347E730c38b2c3B2',
+				SynthsDOT: '0x75A0c1597137AA36B40b6a515D997F9a6c6eefEB',
+				SynthsADA: '0x91b82d62Ff322b8e02b86f33E9A99a813437830d',
 			};
 		} else if (useOvm) {
 			// Get legacy contracts for L2.
@@ -79,6 +84,14 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 				// Sargas v2.50 CollateralShort contract, replaced in Kochab v2.71.
 				// This still holds some funds, so ensure its cache is up to date.
 				CollateralShortLegacy: '0xEbCe9728E2fDdC26C9f4B00df5180BdC5e184953',
+
+				// Synths deprecated during Sadr (v2.81)
+				SynthsAAVE: '0x34783A738DdC355cD7c737D4101b20622681332a',
+				SynthsLINK: '0x0F6877e0Bb54a0739C6173A814B39D5127804123',
+				SynthsMATIC: '0xf49C194954b6B91855aC06D6C88Be316da60eD96',
+				SynthsUNI: '0xcF2E165D2359E3C4dFF1E10eC40dBB5a745223A9',
+				SynthsAVAX: '0x368A5126fF8e659004b6f9C9F723E15632e2B428',
+				SynthsSOL: '0x04B50a5992Ea2281E14d43494d656698EA9C24dD',
 			};
 		}
 
