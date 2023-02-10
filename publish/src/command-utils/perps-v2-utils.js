@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const { gray, yellow } = require('chalk');
 const { toBytes32 } = require('../../..');
 
 // Perps V2 Proxy
@@ -358,80 +359,212 @@ const migrateState = async ({ runStep, migration }) => {
 	});
 };
 
-const pauseMarket = async ({ marketKey, ocMarketKey, runStep, SystemStatus }) => {
-	const result = {};
-	let isPaused;
+// const isMarketPaused = async ({ marketKey, SystemStatus }) => {
+// 	const marketKeyBytes = toBytes32(marketKey);
+// 	return (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+// };
 
-	const marketKeyBytes = toBytes32(marketKey);
-	isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-	result.marketPrePausedStatus = isPaused;
-	if (!isPaused) {
+// const ensureMarketPausedStatus = async ({ marketKey, SystemStatus, runStep, expectedPaused }) => {
+// 	let marketWasPaused;
+
+// 	const marketKeyBytes = toBytes32(marketKey);
+// 	marketWasPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+// 	if (marketWasPaused === expectedPaused) {
+// 		return marketWasPaused;
+// 	}
+
+// 	if (expectedPaused) {
+// 		await runStep({
+// 			contract: 'SystemStatus',
+// 			target: SystemStatus,
+// 			write: 'suspendFuturesMarket',
+// 			writeArg: [marketKeyBytes, 80],
+// 			comment: 'Ensure perpsV2 market is paused according to expected status',
+// 		});
+// 	} else {
+// 		await runStep({
+// 			contract: 'SystemStatus',
+// 			target: SystemStatus,
+// 			write: 'resumeFuturesMarket',
+// 			writeArg: [marketKeyBytes],
+// 			comment: 'Ensure perpsV2 market is not paused according to expected status',
+// 		});
+// 	}
+
+// 	return marketWasPaused;
+// };
+
+const rebuildCaches = async ({ runStep, AddressResolver, implememtations }) => {
+	const requireCache = [];
+	for (const implememtation of implememtations) {
+		const isCached = await implememtation.target.isResolverCached();
+		if (!isCached) {
+			requireCache.push(implememtation.target.address);
+		}
+	}
+
+	if (requireCache.length > 0) {
+		await runStep({
+			gasLimit: 7e6,
+			contract: 'AddressResolver',
+			target: AddressResolver,
+			publiclyCallable: true, // does not require owner
+			write: 'rebuildCaches',
+			writeArg: [requireCache],
+			comment: 'Rebuild the resolver caches in the market implementations',
+		});
+	}
+};
+
+const configureMarket = async ({
+	runStep,
+	SystemStatus,
+	generateSolidity,
+	yes,
+	confirmAction,
+	marketKey,
+	marketConfig,
+	PerpsV2MarketSettings,
+}) => {
+	const marketKeyBytes = toBytes32(marketConfig.marketKey);
+	const offchainMarketKey = marketConfig.offchainMarketKey;
+	const offchainMarketKeyBytes = toBytes32(offchainMarketKey);
+
+	const expectedParameters = [
+		ethers.utils.parseUnits(marketConfig.takerFee),
+		ethers.utils.parseUnits(marketConfig.makerFee),
+		ethers.utils.parseUnits(marketConfig.overrideCommitFee),
+		ethers.utils.parseUnits(marketConfig.takerFeeDelayedOrder),
+		ethers.utils.parseUnits(marketConfig.makerFeeDelayedOrder),
+		ethers.utils.parseUnits(marketConfig.takerFeeOffchainDelayedOrder),
+		ethers.utils.parseUnits(marketConfig.makerFeeOffchainDelayedOrder),
+		ethers.utils.parseUnits(marketConfig.maxLeverage),
+		ethers.utils.parseUnits(marketConfig.maxMarketValue),
+		ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
+		ethers.utils.parseUnits(marketConfig.skewScale),
+		marketConfig.nextPriceConfirmWindow,
+		marketConfig.delayedOrderConfirmWindow,
+		marketConfig.minDelayTimeDelta,
+		marketConfig.maxDelayTimeDelta,
+		marketConfig.offchainDelayedOrderMinAge,
+		marketConfig.offchainDelayedOrderMaxAge,
+		offchainMarketKeyBytes,
+		ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
+		ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
+		ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
+		ethers.utils.parseUnits(marketConfig.maxPD),
+	];
+
+	const currentSettings = await PerpsV2MarketSettings.parameters(marketKeyBytes);
+
+	if (JSON.stringify(expectedParameters) !== JSON.stringify(currentSettings)) {
+		// configurations doesn't match
+		await runStep({
+			contract: 'PerpsV2MarketSettings',
+			target: PerpsV2MarketSettings,
+			write: 'setParameters',
+			writeArg: [marketKeyBytes, expectedParameters],
+		});
+	}
+
+	// pause or resume market according to config
+	await setPausedMode({
+		paused: marketConfig.paused,
+		marketKeyBytes,
+		marketKey,
+		runStep,
+		SystemStatus,
+		generateSolidity,
+		yes,
+		confirmAction,
+	});
+
+	// pause or resume offchain market according to config
+	await setPausedMode({
+		paused: marketConfig.offchainPaused,
+		marketKeyBytes: offchainMarketKeyBytes,
+		marketKey: offchainMarketKey,
+		runStep,
+		SystemStatus,
+		generateSolidity,
+		yes,
+		confirmAction,
+	});
+};
+
+async function setPausedMode({
+	runStep,
+	SystemStatus,
+	marketKey,
+	paused,
+	marketKeyBytes,
+	generateSolidity,
+	yes,
+	confirmAction,
+}) {
+	function migrationContractNoACLWarning(actionMessage) {
+		console.log(
+			yellow(
+				`⚠⚠⚠ WARNING: the step is trying to ${actionMessage}, but 'generateSolidity' is true. `,
+				`The migration contract will not have the SystemStatus ACL permissions to perform this step, `,
+				`so it should be EDITED OUT of the migration contract and performed separately (by rerunning `,
+				`the deploy script).`
+			)
+		);
+	}
+
+	const shouldPause = paused; // config value
+	const isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+
+	if (shouldPause & !isPaused) {
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			write: 'suspendFuturesMarket',
 			writeArg: [marketKeyBytes, 80],
-			comment: 'Ensure perps V2 market is paused before upgrading',
+			comment: 'Ensure perpsV2 market is paused according to config',
 		});
-	}
+		if (generateSolidity) {
+			migrationContractNoACLWarning(`pause ${marketKey} perpsV2 market`);
+		}
+	} else if (isPaused & !shouldPause) {
+		let resume;
 
-	if (ocMarketKey) {
-		const ocMarketKeyBytes = toBytes32(ocMarketKey);
-		isPaused = (await SystemStatus.futuresMarketSuspension(ocMarketKeyBytes)).suspended;
-		result.ocMarketPrePausedStatus = isPaused;
-		if (!isPaused) {
+		if (!yes) {
+			// in case we're trying to resume something that doesn't need to be resumed
+			console.log(
+				yellow(
+					`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
+					`but according to config should be resumed. Confirm that this market should`,
+					`be resumed in this release and it's not a misconfiguration issue.`
+				)
+			);
+			try {
+				await confirmAction(gray('Unpause the market? (y/n) '));
+				resume = true;
+			} catch (err) {
+				console.log(gray('Market will remain paused'));
+				resume = false;
+			}
+		} else {
+			// yes mode (e.g. tests)
+			resume = true;
+		}
+
+		if (resume) {
 			await runStep({
 				contract: 'SystemStatus',
 				target: SystemStatus,
-				write: 'suspendFuturesMarket',
-				writeArg: [ocMarketKeyBytes, 80],
-				comment: 'Ensure perps V2 oc market is paused before upgrading',
+				write: 'resumeFuturesMarket',
+				writeArg: [marketKeyBytes],
+				comment: 'Ensure perpsV2 market is un-paused according to config',
 			});
+			if (generateSolidity) {
+				migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
+			}
 		}
 	}
-
-	return result;
-};
-
-const recoverExpectedPauseStatus = async ({
-	marketKey,
-	ocMarketKey,
-	runStep,
-	SystemStatus,
-	expectedMarketPaused,
-	expectedOcMarketPaused,
-}) => {
-	let isPaused;
-
-	const marketKeyBytes = toBytes32(marketKey);
-	isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-	if (isPaused && !expectedMarketPaused) {
-		await runStep({
-			contract: 'SystemStatus',
-			target: SystemStatus,
-			write: 'resumeFuturesMarket',
-			writeArg: [marketKeyBytes],
-			comment: 'Ensure perpsV2 market is un-paused according to previous status',
-		});
-	}
-
-	if (ocMarketKey) {
-		const ocMarketKeyBytes = toBytes32(ocMarketKey);
-		isPaused = (await SystemStatus.futuresMarketSuspension(ocMarketKeyBytes)).suspended;
-		if (isPaused && !expectedOcMarketPaused) {
-			await runStep({
-				contract: 'SystemStatus',
-				target: SystemStatus,
-				write: 'suspendFuturesMarket',
-				writeArg: [ocMarketKeyBytes, 80],
-				comment: 'Ensure perpsV2 oc market is un-paused according to previous status',
-			});
-		}
-	}
-};
-
-const configureMarket = async () => {};
-const rebuildCaches = async () => {};
+}
 
 module.exports = {
 	excludedFunctions,
@@ -448,6 +581,5 @@ module.exports = {
 	configureMarket,
 	rebuildCaches,
 	migrateState,
-	pauseMarket,
-	recoverExpectedPauseStatus,
+	setPausedMode,
 };
