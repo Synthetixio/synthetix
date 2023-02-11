@@ -1,7 +1,6 @@
 'use strict';
 
 const { gray } = require('chalk');
-const { toBytes32 } = require('../../../..');
 const { confirmAction } = require('../../util');
 
 const ethers = require('ethers');
@@ -113,8 +112,8 @@ module.exports = async ({
 			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
 		);
 
-		const baseAsset = toBytes32(marketConfig.asset);
-		const marketKey = toBytes32(marketConfig.marketKey);
+		const baseAsset = marketConfig.asset;
+		const marketKey = marketConfig.marketKey;
 
 		if (isNewMarket({ existingMarkets, marketKey })) {
 			console.log(gray(`market ${marketConfig.marketKey} is a new market.`));
@@ -133,11 +132,11 @@ module.exports = async ({
 		});
 
 		// Market Implmenentations
-		const implementations = await deployMarketImplementations({
+		const { implementations } = await deployMarketImplementations({
 			deployer,
 			owner: account,
 			addressResolverAddress: addressOf(ReadProxyAddressResolver),
-			marketKey,
+			marketKey: marketConfig.marketKey,
 			proxyAddress: deployedMarketProxy.contract.address,
 			stateAddress: deployedMarketState.contract.address,
 		});
@@ -185,8 +184,8 @@ module.exports = async ({
 
 		await linkToProxy({
 			runStep,
-			perpsV2MarketProxy: deployMarketProxy.contract,
-			implementations: deployMarketImplementations,
+			perpsV2MarketProxy: deployedMarketProxy.contract,
+			implementations,
 		});
 
 		await configureMarket({
@@ -269,7 +268,7 @@ module.exports = async ({
 	// 		});
 	// 	}
 
-	// 	// implememtation was updated, but not the market (proxy)
+	// 	// implementation was updated, but not the market (proxy)
 	// 	marketImplementationsUpdated = perpMarketsImplementationUpdated.filter((element) =>
 	// 		toKeep.includes(element)
 	// 	);

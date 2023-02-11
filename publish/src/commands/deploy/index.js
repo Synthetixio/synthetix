@@ -80,6 +80,7 @@ const deploy = async ({
 	yes,
 	includeFutures,
 	includePerpsV2,
+	perpsV2MigrateContract,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -348,6 +349,7 @@ const deploy = async ({
 			futuresMarketManager,
 			generateSolidity,
 			yes,
+			migrationContractName: perpsV2MigrateContract,
 		});
 	} else {
 		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
@@ -640,6 +642,7 @@ module.exports = {
 				'--include-perps-v2',
 				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
+			.option('--perps-v2-migration-contract', 'PerpsV2 State Migration contract name')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(async (...args) => {

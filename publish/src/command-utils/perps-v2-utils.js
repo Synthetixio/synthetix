@@ -54,7 +54,8 @@ const filteredLists = (originalList, newList) => {
 	return { toRemove, toKeep, toAdd };
 };
 
-const isNewMarket = ({ existingMarkets, marketKey }) => existingMarkets.includes(marketKey);
+const isNewMarket = ({ existingMarkets, marketKey }) =>
+	existingMarkets.includes(toBytes32(marketKey));
 
 const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
 	const marketProxyName = 'PerpsV2Proxy' + marketKey.slice('1'); // remove s prefix
@@ -78,6 +79,8 @@ const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
 
 const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 	const marketStateName = 'PerpsV2MarketState' + marketKey.slice('1'); // remove s prefix
+	const baseAssetB32 = toBytes32(baseAsset);
+	const marketKeyB32 = toBytes32(marketKey);
 
 	const previousContractAddress = deployer.getExistingAddress({
 		name: marketStateName,
@@ -86,7 +89,7 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 	const newContract = await deployer.deployContract({
 		name: marketStateName,
 		source: 'PerpsV2MarketState',
-		args: [owner, owner, baseAsset, marketKey],
+		args: [owner, [owner], baseAssetB32, marketKeyB32],
 		force: true,
 		skipResolver: true,
 	});
@@ -109,7 +112,7 @@ const deployMarketImplementations = async ({
 			contract: 'PerpsV2Market',
 		},
 		{
-			source: 'PerpsV2MarketLiquidate',
+			contract: 'PerpsV2MarketLiquidate',
 		},
 		{
 			contract: 'PerpsV2MarketDelayedIntent',
@@ -129,21 +132,21 @@ const deployMarketImplementations = async ({
 
 	const implementations = [];
 
-	for (const implememtation of implementationConfigurations) {
-		const name = implememtation.nameKey
-			? implememtation.nameKey
-			: implememtation.source + marketKey.slice('1'); // remove s prefix
+	for (const implementation of implementationConfigurations) {
+		const name =
+			(implementation.nameKey ? implementation.nameKey : implementation.contract) +
+			marketKey.slice('1'); // remove s prefix
 
 		const previousContractAddress = deployer.getExistingAddress({ name });
 		const args = [];
-		if (!implememtation.isView) {
+		if (!implementation.isView) {
 			// PerpsV2MarketViews don't use the proxy in the constructor
 			args.push(proxyAddress);
 		}
-		args.push([stateAddress, owner, addressResolverAddress]);
+		args.push(stateAddress, owner, addressResolverAddress);
 		const newContract = await deployer.deployContract({
-			name: implememtation.nameKey ? implememtation.nameKey : implememtation.contract,
-			source: implememtation.contract,
+			name: name,
+			source: implementation.contract,
 			args,
 			force: true,
 			skipResolver: true,
@@ -152,10 +155,11 @@ const deployMarketImplementations = async ({
 		const isSameContract = previousContractAddress === newContract.address;
 
 		implementations.push({
-			contract: implememtation.contract,
+			contract: implementation.contract,
 			target: newContract,
-			updateState: !implememtation.isView,
-			useExchangeRate: implememtation.useExchangeRate,
+			isView: implementation.isView,
+			updateState: !implementation.isView,
+			useExchangeRate: implementation.useExchangeRate,
 			updated: !isSameContract,
 			functionSignatures: getFunctionSignatures(newContract, excludedFunctions),
 		});
@@ -164,10 +168,10 @@ const deployMarketImplementations = async ({
 	return { implementations };
 };
 
-const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implememtations }) => {
+const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implementations }) => {
 	const currentAddresses = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
 
-	const requiredAddresses = implememtations
+	const requiredAddresses = implementations
 		.filter(imp => imp.useExchangeRate)
 		.map(item => item.target.address);
 
@@ -193,12 +197,12 @@ const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implememt
 	}
 };
 
-const linkToState = async ({ runStep, perpsV2MarketState, implememtations }) => {
+const linkToState = async ({ runStep, perpsV2MarketState, implementations }) => {
 	// get current associated contracts
 	const currentAddresses = Array.from(await perpsV2MarketState.associatedContracts());
 
 	// get list of associated contracts from implementations
-	const requiredAddresses = implememtations
+	const requiredAddresses = implementations
 		.filter(imp => imp.updateState)
 		.map(item => item.target.address);
 
@@ -219,12 +223,15 @@ const linkToState = async ({ runStep, perpsV2MarketState, implememtations }) => 
 	});
 };
 
-const linkToProxy = async ({ runStep, perpsV2MarketProxy, implememtations }) => {
+const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => {
 	// Set the proxy for the implementations
-	for (const implememtation of implememtations) {
+	for (const implementation of implementations) {
+		if (implementation.isView) {
+			continue;
+		}
 		await runStep({
-			contract: implememtation.contract,
-			target: implememtation.target,
+			contract: implementation.contract,
+			target: implementation.target,
 			write: 'setProxy',
 			writeArg: [perpsV2MarketProxy.address],
 		});
@@ -232,8 +239,8 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implememtations }) => 
 
 	// compile signatures
 	let filteredFunctions = [];
-	for (const implememtation of implememtations) {
-		filteredFunctions.push(...implememtation.functionSignatures);
+	for (const implementation of implementations) {
+		filteredFunctions.push(...implementation.functionSignatures);
 	}
 	// Remove duplicate selectors and order by selectors
 	filteredFunctions = filteredFunctions
@@ -394,12 +401,12 @@ const migrateState = async ({ runStep, migration }) => {
 // 	return marketWasPaused;
 // };
 
-const rebuildCaches = async ({ runStep, AddressResolver, implememtations }) => {
+const rebuildCaches = async ({ runStep, AddressResolver, implementations }) => {
 	const requireCache = [];
-	for (const implememtation of implememtations) {
-		const isCached = await implememtation.target.isResolverCached();
+	for (const implementation of implementations) {
+		const isCached = await implementation.target.isResolverCached();
 		if (!isCached) {
-			requireCache.push(implememtation.target.address);
+			requireCache.push(implementation.target.address);
 		}
 	}
 
