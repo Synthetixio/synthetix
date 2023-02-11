@@ -707,6 +707,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 255,
+			"layer": "both",
+			"sources": ["FeePool", "Issuer"]
+		},
+		{
 			"sip": 257,
 			"layer": "both",
 			"sources": ["ExchangeRates"],
@@ -1561,6 +1566,23 @@
 			},
 			"sips": [295, 2000],
 			"released": true
+		},
+		{
+			"name": "Schedar",
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255]
+		},
+		{
+			"name": "Schedar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255]
 		}
 	]
 }
