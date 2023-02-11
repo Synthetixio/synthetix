@@ -1,5 +1,5 @@
 const Mocha = require('mocha');
-const { types, task, subtask } = require('hardhat/config');
+const { task, subtask } = require('hardhat/config');
 const { TASK_TEST_RUN_MOCHA_TESTS } = require('hardhat/builtin-tasks/task-names');
 const { gray, yellow } = require('chalk');
 const optimizeIfRequired = require('../util/optimizeIfRequired');
