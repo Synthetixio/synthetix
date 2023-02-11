@@ -401,12 +401,14 @@ const migrateState = async ({ runStep, migration }) => {
 // 	return marketWasPaused;
 // };
 
-const rebuildCaches = async ({ runStep, AddressResolver, implementations }) => {
+const rebuildCaches = async ({ deployer, runStep, updatedContracts }) => {
+	const { AddressResolver } = deployer.deployedContracts;
+
 	const requireCache = [];
-	for (const implementation of implementations) {
-		const isCached = await implementation.target.isResolverCached();
+	for (const contract of updatedContracts) {
+		const isCached = await contract.isResolverCached();
 		if (!isCached) {
-			requireCache.push(implementation.target.address);
+			requireCache.push(contract.address);
 		}
 	}
 
@@ -423,9 +425,15 @@ const rebuildCaches = async ({ runStep, AddressResolver, implementations }) => {
 	}
 };
 
+const importAddresses = async ({ deployer, runStep, updatedContracts }) => {
+	console.log(deployer);
+	console.log(runStep);
+	console.log(updatedContracts);
+};
+
 const configureMarket = async ({
 	runStep,
-	SystemStatus,
+	deployer,
 	generateSolidity,
 	yes,
 	confirmAction,
@@ -433,6 +441,8 @@ const configureMarket = async ({
 	marketConfig,
 	perpsV2MarketSettings,
 }) => {
+	const { SystemStatus } = deployer.deployedContracts;
+
 	const marketKeyBytes = toBytes32(marketConfig.marketKey);
 	const offchainMarketKey = marketConfig.offchainMarketKey;
 
@@ -448,12 +458,12 @@ const configureMarket = async ({
 		ethers.utils.parseUnits(marketConfig.maxMarketValue),
 		ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
 		ethers.utils.parseUnits(marketConfig.skewScale),
-		marketConfig.nextPriceConfirmWindow,
-		marketConfig.delayedOrderConfirmWindow,
-		marketConfig.minDelayTimeDelta,
-		marketConfig.maxDelayTimeDelta,
-		marketConfig.offchainDelayedOrderMinAge,
-		marketConfig.offchainDelayedOrderMaxAge,
+		ethers.BigNumber.from(marketConfig.nextPriceConfirmWindow),
+		ethers.BigNumber.from(marketConfig.delayedOrderConfirmWindow),
+		ethers.BigNumber.from(marketConfig.minDelayTimeDelta),
+		ethers.BigNumber.from(marketConfig.maxDelayTimeDelta),
+		ethers.BigNumber.from(marketConfig.offchainDelayedOrderMinAge),
+		ethers.BigNumber.from(marketConfig.offchainDelayedOrderMaxAge),
 		toBytes32(offchainMarketKey),
 		ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
 		ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
@@ -489,7 +499,7 @@ const configureMarket = async ({
 		paused: marketConfig.offchainPaused,
 		marketKey: offchainMarketKey,
 		runStep,
-		SystemStatus,
+		deployer,
 		generateSolidity,
 		yes,
 		confirmAction,
@@ -498,13 +508,14 @@ const configureMarket = async ({
 
 async function setPausedMode({
 	runStep,
-	SystemStatus,
+	deployer,
 	marketKey,
 	paused,
 	generateSolidity,
 	yes,
 	confirmAction,
 }) {
+	const { SystemStatus } = deployer.deployedContracts;
 	const marketKeyBytes = toBytes32(marketKey);
 
 	function migrationContractNoACLWarning(actionMessage) {
@@ -584,6 +595,7 @@ module.exports = {
 	linkToState,
 	linkToMarketManager,
 	configureMarket,
+	importAddresses,
 	rebuildCaches,
 	migrateState,
 	setPausedMode,

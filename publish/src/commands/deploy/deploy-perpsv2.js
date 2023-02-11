@@ -34,13 +34,15 @@ module.exports = async ({
 	yes,
 	migrationContractName,
 }) => {
-	const { ReadProxyAddressResolver, SystemStatus, AddressResolver } = deployer.deployedContracts;
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// ----------------
 	// PerpsV2 market setup
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY AND CONFIGURE PERPS V2 MARKETS ------\n`));
+
+	const updatedContracts = [];
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
@@ -52,6 +54,8 @@ module.exports = async ({
 	if (!useOvm) {
 		return;
 	}
+
+	updatedContracts.push(futuresMarketManager);
 
 	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -65,16 +69,19 @@ module.exports = async ({
 		args: [addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
-
 	const perpsV2MarketSettings = await deployer.deployContract({
 		name: 'PerpsV2MarketSettings',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
+	updatedContracts.push(perpsV2MarketSettings);
+
 	const perpsV2ExchangeRate = await deployer.deployContract({
 		name: 'PerpsV2ExchangeRate',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
+
+	updatedContracts.push(perpsV2ExchangeRate);
 
 	const existingMarketAddresses = await futuresMarketManager['allMarkets(bool)'](true);
 	const existingMarkets = [];
@@ -145,7 +152,7 @@ module.exports = async ({
 		await setPausedMode({
 			marketKey,
 			paused: true,
-			SystemStatus,
+			deployer,
 			runStep,
 			generateSolidity,
 			yes,
@@ -188,18 +195,29 @@ module.exports = async ({
 			implementations,
 		});
 
+		console.log('LLEGO ACA');
+
+		for (const implementation of implementations) {
+			updatedContracts.push(implementation.target);
+			// if (implementation.updated) {
+			// 	updatedContracts.push(implementation.contract);
+			// }
+		}
+		console.log('LLEGO ACA 2');
+
+		await rebuildCaches({ runStep, deployer, updatedContracts });
+		console.log('LLEGO ACA 3');
+
 		await configureMarket({
 			marketKey,
 			marketConfig,
 			perpsV2MarketSettings,
-			SystemStatus,
+			deployer,
 			runStep,
 			generateSolidity,
 			yes,
 			confirmAction,
 		});
-
-		await rebuildCaches({ runStep, AddressResolver, implementations });
 
 		await linkToMarketManager({
 			runStep,

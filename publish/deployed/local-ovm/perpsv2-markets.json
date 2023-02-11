@@ -22,6 +22,8 @@
 		"offchainPriceDivergence": "0.05",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBTCPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -48,6 +50,8 @@
 		"offchainPriceDivergence": "0.05",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocETHPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": false,
 		"offchainPaused": false
 	}

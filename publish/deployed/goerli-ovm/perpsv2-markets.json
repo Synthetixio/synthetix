@@ -22,6 +22,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocETHPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -48,6 +50,8 @@
 		"offchainPriceDivergence": "0.05",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBTCPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": false,
 		"offchainPaused": true
 	},
@@ -75,6 +79,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocLINKPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -101,6 +107,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocSOLPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -127,6 +135,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAVAXPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -153,6 +163,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAAVEPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -179,6 +191,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocUNIPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -205,6 +219,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocMATICPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -231,6 +247,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAPEPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -257,6 +275,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocDYDXPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -283,6 +303,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBNBPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -309,6 +331,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocOPPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -335,6 +359,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocDOGEPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -361,6 +387,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocXAUPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -387,6 +415,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocXAGPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -413,6 +443,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocEURPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -439,6 +471,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocATOMPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -465,6 +499,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAXSPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -491,6 +527,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocFLOWPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -517,6 +555,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocFTMPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -543,6 +583,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocNEARPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -569,6 +611,8 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocAUDPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -595,7 +639,9 @@
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocGBPPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
 		"paused": true,
 		"offchainPaused": true
 	}
- ]
+]
