@@ -29,7 +29,7 @@ task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('native', 'Compile with the native solc compiler')
-	// .addFlag('parallel', 'Run tests in parallel')
+	.addFlag('parallel', 'Run tests in parallel')
 	.addOptionalParam('jobs', 'Max number of worker processes for parallel runs', 4, types.int)
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
@@ -42,11 +42,11 @@ task('test')
 
 		optimizeIfRequired({ hre, taskArguments });
 
-		// if (parallel) {
-		// 	console.log(gray(`Running tests in parallel. Jobs count: ${jobs}`));
-		// 	hre.config.mocha.parallel = true;
-		// 	hre.config.mocha.jobs = jobs;
-		// }
+		if (parallel) {
+			console.log(gray(`Running tests in parallel. Jobs count: ${jobs}`));
+			hre.config.mocha.parallel = true;
+			hre.config.mocha.jobs = jobs;
+		}
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
