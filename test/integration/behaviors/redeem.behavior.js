@@ -18,8 +18,8 @@ function itCanRedeem({ ctx }) {
 
 		before('target contracts and users', () => {
 			// sETH can't be removed because the debt may be too large for removeSynth to not underflow
-			// during debt update, so sETHBTC is used for local tests, and sBTC is used for fork tests
-			synth = !ctx.useFork ? 'sETHBTC' : 'sBTC';
+			// during debt update, so sBTC is used for fork tests, and sETHBTC is used for local tests
+			synth = ctx.useFork ? 'sBTC' : 'sETHBTC';
 
 			({
 				Synthetix,
