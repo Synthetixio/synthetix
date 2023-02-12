@@ -31,6 +31,8 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 		await _getsUSD({ ctx, user, amount });
 	} else if (symbol === 'sETHBTC') {
 		await _getSynth({ ctx, symbol, user, amount });
+	} else if (symbol === 'sBTC') {
+		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'sETH') {
 		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'ETH') {
