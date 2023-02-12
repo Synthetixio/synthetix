@@ -17,9 +17,9 @@ function itCanRedeem({ ctx }) {
 		let synth;
 
 		before('target contracts and users', () => {
-			// sETH or sBTC can't be removed because the debt may be too large for removeSynth to not underflow
-			// during debt update, so sREDEEMER is used instead
-			synth = 'sREDEEMER';
+			// sBTC can't be removed because the debt may be too large for removeSynth to not underflow
+			// during debt update, so sETH is used instead
+			synth = 'sETH';
 
 			({
 				Synthetix,
