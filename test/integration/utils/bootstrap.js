@@ -61,7 +61,7 @@ function bootstrapL2({ ctx }) {
 			ctx,
 			symbol: 'SNX',
 			user: ctx.users.owner,
-			balance: ethers.utils.parseEther('10000000'),
+			balance: ethers.utils.parseEther('1000000'),
 		});
 
 		// this causes spurious nonce issues and should only be used when needed
@@ -107,7 +107,7 @@ function bootstrapDual({ ctx }) {
 			ctx: ctx.l2,
 			symbol: 'SNX',
 			user: ctx.l2.users.owner,
-			balance: ethers.utils.parseEther('10000000'),
+			balance: ethers.utils.parseEther('1000000'),
 		});
 
 		// this causes spurious nonce issues and should only be used when needed
