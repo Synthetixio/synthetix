@@ -19,9 +19,51 @@ const {
 	configureMarket,
 	rebuildCaches,
 	migrateState,
+	importAddresses,
 } = require('../../command-utils/perps-v2-utils');
 
-module.exports = async ({
+const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) => {
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+
+	// ----------------
+	// PerpsV2 market setup
+	// ----------------
+
+	console.log(gray(`\n------ DEPLOY PERPS V2 GENERICS  ------\n`));
+
+	const futuresMarketManager = await deployer.deployContract({
+		name: 'FuturesMarketManager',
+		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
+		deps: ['ReadProxyAddressResolver'],
+	});
+
+	if (!useOvm) {
+		return;
+	}
+
+	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
+	// I've colocated it here for now.
+	await deployer.deployContract({
+		name: 'PerpsV2MarketData',
+		args: [addressOf(ReadProxyAddressResolver)],
+		deps: ['AddressResolver'],
+	});
+
+	await deployer.deployContract({
+		name: 'PerpsV2MarketSettings',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'PerpsV2ExchangeRate',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
+
+	return { futuresMarketManager };
+};
+
+const deployPerpsV2Markets = async ({
 	account,
 	addressOf,
 	loadAndCheckRequiredSources,
@@ -33,6 +75,7 @@ module.exports = async ({
 	generateSolidity,
 	yes,
 	migrationContractName,
+	limitPromise,
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
@@ -195,18 +238,19 @@ module.exports = async ({
 			implementations,
 		});
 
-		console.log('LLEGO ACA');
-
 		for (const implementation of implementations) {
 			updatedContracts.push(implementation.target);
-			// if (implementation.updated) {
-			// 	updatedContracts.push(implementation.contract);
-			// }
 		}
-		console.log('LLEGO ACA 2');
+
+		await importAddresses({
+			runStep,
+			deployer,
+			addressOf,
+			limitPromise,
+			resolvedContracts: [{ name: 'PerpsV2MarketSettings', contract: perpsV2MarketSettings }],
+		});
 
 		await rebuildCaches({ runStep, deployer, updatedContracts });
-		console.log('LLEGO ACA 3');
 
 		await configureMarket({
 			marketKey,
@@ -291,4 +335,9 @@ module.exports = async ({
 	// 		toKeep.includes(element)
 	// 	);
 	// }
+};
+
+module.exports = {
+	deployPerpsV2Generics,
+	deployPerpsV2Markets,
 };

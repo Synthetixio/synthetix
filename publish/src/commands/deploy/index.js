@@ -36,7 +36,7 @@ const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
-const deployPerpsV2 = require('./deploy-perpsv2');
+const { deployPerpsV2Generics, deployPerpsV2Markets } = require('./deploy-perpsv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -308,15 +308,33 @@ const deploy = async ({
 		useOvm,
 	});
 
-	console.log(gray(`\n------ DEPLOY FUTURES MARKETS MANAGER (Legacy and PerpsV2) ------\n`));
-
-	const { ReadProxyAddressResolver } = deployer.deployedContracts;
-	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesMarketManager',
-		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
-		deps: ['ReadProxyAddressResolver'],
+	const { futuresMarketManager } = await deployPerpsV2Generics({
+		account,
+		addressOf,
+		deployer,
+		useOvm,
 	});
+
+	if (includePerpsV2) {
+		await deployPerpsV2Markets({
+			account,
+			addressOf,
+			getDeployParameter,
+			deployer,
+			runStep,
+			useOvm,
+			network,
+			deploymentPath,
+			loadAndCheckRequiredSources,
+			futuresMarketManager,
+			generateSolidity,
+			yes,
+			migrationContractName: perpsV2MigrateContract,
+			limitPromise,
+		});
+	} else {
+		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
+	}
 
 	if (includeFutures) {
 		await deployFutures({
@@ -332,27 +350,7 @@ const deploy = async ({
 			futuresMarketManager,
 		});
 	} else {
-		console.log(gray(`\n------ EXCLUDE FUTURES MARKETS ------\n`));
-	}
-
-	if (includePerpsV2) {
-		await deployPerpsV2({
-			account,
-			addressOf,
-			getDeployParameter,
-			deployer,
-			runStep,
-			useOvm,
-			network,
-			deploymentPath,
-			loadAndCheckRequiredSources,
-			futuresMarketManager,
-			generateSolidity,
-			yes,
-			migrationContractName: perpsV2MigrateContract,
-		});
-	} else {
-		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
+		console.log(gray(`\n------ EXCLUDE LEGACY FUTURES MARKETS ------\n`));
 	}
 
 	await deployDappUtils({

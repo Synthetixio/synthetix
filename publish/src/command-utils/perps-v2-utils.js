@@ -1,5 +1,5 @@
 const ethers = require('ethers');
-const { gray, yellow } = require('chalk');
+const { gray, green, yellow } = require('chalk');
 const { toBytes32 } = require('../../..');
 
 // Perps V2 Proxy
@@ -425,10 +425,80 @@ const rebuildCaches = async ({ deployer, runStep, updatedContracts }) => {
 	}
 };
 
-const importAddresses = async ({ deployer, runStep, updatedContracts }) => {
-	console.log(deployer);
-	console.log(runStep);
-	console.log(updatedContracts);
+const importAddresses = async ({
+	deployer,
+	runStep,
+	addressOf,
+	limitPromise,
+	resolvedContracts,
+}) => {
+	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
+
+	// Note: RPAR.setTarget(AR) MUST go before the addresses are imported into the resolver.
+	// most of the time it will be a no-op but when there's a new AddressResolver, it's critical
+	if (AddressResolver && ReadProxyAddressResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: ReadProxyAddressResolver,
+			read: 'target',
+			expected: input => input === addressOf(AddressResolver),
+			write: 'setTarget',
+			writeArg: addressOf(AddressResolver),
+			comment: 'set the target of the address resolver proxy to the latest resolver',
+		});
+	}
+
+	const addressArgs = [[], []];
+	const allContracts = Object.entries(deployer.deployedContracts);
+	await Promise.all(
+		allContracts
+			// ignore adding contracts with the skipResolver and library options
+			.filter(([, contract]) => !contract.skipResolver && !contract.library)
+			.map(([name, contract]) => {
+				return limitPromise(async () => {
+					const currentAddress = await AddressResolver.getAddress(toBytes32(name));
+
+					// only import ext: addresses if they have never been imported before
+					if (currentAddress !== contract.address) {
+						console.log(green(`${name} needs to be imported to the AddressResolver`));
+
+						addressArgs[0].push(toBytes32(name));
+						addressArgs[1].push(contract.address);
+					}
+				});
+			})
+	);
+
+	// await Promise.all(
+	// 	resolvedContracts.map(([name, contract]) => {
+	// 		return limitPromise(async () => {
+	// 			const currentAddress = await AddressResolver.getAddress(toBytes32(name));
+
+	// 			// only import ext: addresses if they have never been imported before
+	// 			if (currentAddress !== contract.address) {
+	// 				console.log(green(`${name} needs to be imported to the AddressResolver`));
+
+	// 				addressArgs[0].push(toBytes32(name));
+	// 				addressArgs[1].push(contract.address);
+
+	// 				// const { source, address } = contract;
+	// 				// newContractsBeingAdded[contract.address] = { name, source, address, contract };
+	// 			}
+	// 		});
+	// 	})
+	// );
+
+	await runStep({
+		gasLimit: 6e6, // higher gas required for mainnet
+		contract: 'AddressResolver',
+		target: AddressResolver,
+		read: 'areAddressesImported',
+		readArg: addressArgs,
+		expected: input => input,
+		write: 'importAddresses',
+		writeArg: addressArgs,
+		comment: 'Import all new contracts into the address resolver',
+	});
 };
 
 const configureMarket = async ({
