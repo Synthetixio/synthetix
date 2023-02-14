@@ -640,7 +640,7 @@ module.exports = {
 				'--include-perps-v2',
 				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
-			.option('--perps-v2-migration-contract', 'PerpsV2 State Migration contract name')
+			.option('--perps-v2-migrate-contract [value]', 'PerpsV2 State Migration contract name')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(async (...args) => {
