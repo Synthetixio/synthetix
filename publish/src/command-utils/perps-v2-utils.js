@@ -516,40 +516,87 @@ const configureMarket = async ({
 	const marketKeyBytes = toBytes32(marketConfig.marketKey);
 	const offchainMarketKey = marketConfig.offchainMarketKey;
 
-	const expectedParameters = [
-		ethers.utils.parseUnits(marketConfig.takerFee),
-		ethers.utils.parseUnits(marketConfig.makerFee),
-		ethers.utils.parseUnits(marketConfig.overrideCommitFee),
-		ethers.utils.parseUnits(marketConfig.takerFeeDelayedOrder),
-		ethers.utils.parseUnits(marketConfig.makerFeeDelayedOrder),
-		ethers.utils.parseUnits(marketConfig.takerFeeOffchainDelayedOrder),
-		ethers.utils.parseUnits(marketConfig.makerFeeOffchainDelayedOrder),
-		ethers.utils.parseUnits(marketConfig.maxLeverage),
-		ethers.utils.parseUnits(marketConfig.maxMarketValue),
-		ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
-		ethers.utils.parseUnits(marketConfig.skewScale),
-		ethers.BigNumber.from(marketConfig.nextPriceConfirmWindow),
-		ethers.BigNumber.from(marketConfig.delayedOrderConfirmWindow),
-		ethers.BigNumber.from(marketConfig.minDelayTimeDelta),
-		ethers.BigNumber.from(marketConfig.maxDelayTimeDelta),
-		ethers.BigNumber.from(marketConfig.offchainDelayedOrderMinAge),
-		ethers.BigNumber.from(marketConfig.offchainDelayedOrderMaxAge),
-		toBytes32(offchainMarketKey),
-		ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
-		ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
-		ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
-		ethers.utils.parseUnits(marketConfig.maxPD),
-	];
+	// const expectedParameters = [
+	// 	ethers.utils.parseUnits(marketConfig.takerFee),
+	// 	ethers.utils.parseUnits(marketConfig.makerFee),
+	// 	ethers.utils.parseUnits(marketConfig.overrideCommitFee),
+	// 	ethers.utils.parseUnits(marketConfig.takerFeeDelayedOrder),
+	// 	ethers.utils.parseUnits(marketConfig.makerFeeDelayedOrder),
+	// 	ethers.utils.parseUnits(marketConfig.takerFeeOffchainDelayedOrder),
+	// 	ethers.utils.parseUnits(marketConfig.makerFeeOffchainDelayedOrder),
+	// 	ethers.utils.parseUnits(marketConfig.maxLeverage),
+	// 	ethers.utils.parseUnits(marketConfig.maxMarketValue),
+	// 	ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
+	// 	ethers.utils.parseUnits(marketConfig.skewScale),
+	// 	ethers.BigNumber.from(marketConfig.nextPriceConfirmWindow),
+	// 	ethers.BigNumber.from(marketConfig.delayedOrderConfirmWindow),
+	// 	ethers.BigNumber.from(marketConfig.minDelayTimeDelta),
+	// 	ethers.BigNumber.from(marketConfig.maxDelayTimeDelta),
+	// 	ethers.BigNumber.from(marketConfig.offchainDelayedOrderMinAge),
+	// 	ethers.BigNumber.from(marketConfig.offchainDelayedOrderMaxAge),
+	// 	toBytes32(offchainMarketKey),
+	// 	ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
+	// 	ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
+	// 	ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
+	// 	ethers.utils.parseUnits(marketConfig.maxPD),
+	// ];
 
-	const currentSettings = await perpsV2MarketSettings.parameters(marketKeyBytes);
+	// const currentSettings = await perpsV2MarketSettings.parameters(marketKeyBytes);
 
-	if (JSON.stringify(expectedParameters) !== JSON.stringify(currentSettings)) {
-		// configurations doesn't match
+	// if (JSON.stringify(expectedParameters) !== JSON.stringify(currentSettings)) {
+	// 	// configurations doesn't match
+	// 	await runStep({
+	// 		contract: 'PerpsV2MarketSettings',
+	// 		target: perpsV2MarketSettings,
+	// 		write: 'setParameters',
+	// 		writeArg: [marketKeyBytes, expectedParameters],
+	// 	});
+	// }
+
+	const settings = {
+		takerFee: ethers.utils.parseUnits(marketConfig.takerFee),
+		makerFee: ethers.utils.parseUnits(marketConfig.makerFee),
+		takerFeeDelayedOrder: ethers.utils.parseUnits(marketConfig.takerFeeDelayedOrder),
+		makerFeeDelayedOrder: ethers.utils.parseUnits(marketConfig.makerFeeDelayedOrder),
+		takerFeeOffchainDelayedOrder: ethers.utils.parseUnits(
+			marketConfig.takerFeeOffchainDelayedOrder
+		),
+		makerFeeOffchainDelayedOrder: ethers.utils.parseUnits(
+			marketConfig.makerFeeOffchainDelayedOrder
+		),
+		nextPriceConfirmWindow: marketConfig.nextPriceConfirmWindow,
+		delayedOrderConfirmWindow: marketConfig.delayedOrderConfirmWindow,
+		minDelayTimeDelta: marketConfig.minDelayTimeDelta,
+		maxDelayTimeDelta: marketConfig.maxDelayTimeDelta,
+		offchainDelayedOrderMinAge: marketConfig.offchainDelayedOrderMinAge,
+		offchainDelayedOrderMaxAge: marketConfig.offchainDelayedOrderMaxAge,
+		maxLeverage: ethers.utils.parseUnits(marketConfig.maxLeverage),
+		maxMarketValue: ethers.utils.parseUnits(marketConfig.maxMarketValue),
+		maxFundingVelocity: ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
+		skewScale: ethers.utils.parseUnits(marketConfig.skewScale),
+		offchainMarketKey: toBytes32(offchainMarketKey),
+		offchainPriceDivergence: ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
+		liquidationPremiumMultiplier: ethers.utils.parseUnits(
+			marketConfig.liquidationPremiumMultiplier
+		),
+		maxLiquidationDelta: ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
+		maxPD: ethers.utils.parseUnits(marketConfig.maxPD),
+	};
+
+	console.log('SSSSSSSSSSS', settings);
+	for (const setting in settings) {
+		console.log('SSSSSSSSSSS', setting);
+		const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
+		const value = settings[setting];
+
 		await runStep({
 			contract: 'PerpsV2MarketSettings',
 			target: perpsV2MarketSettings,
-			write: 'setParameters',
-			writeArg: [marketKeyBytes, expectedParameters],
+			read: setting,
+			readArg: [marketKeyBytes],
+			expected: input => input === value,
+			write: `set${capSetting}`,
+			writeArg: [marketKeyBytes, value],
 		});
 	}
 
