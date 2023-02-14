@@ -2007,8 +2007,8 @@ const setupAllContracts = async ({
 							60, // 60s minimum delay time in seconds
 							120, // 120s maximum delay time in seconds
 
-							15, // 20s offchain min delay window
-							60, // 20s offchain max delay window
+							15, // 15s offchain min delay window
+							60, // 60s offchain max delay window
 
 							offchainMarketKey, // offchain market key
 							toUnit('0.06'), // offchain price divergence 6%

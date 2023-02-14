@@ -85,6 +85,7 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAKER_FEE);
     }
 
+    // TODO: Remove me
     function _overrideCommitFee(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_OVERRIDE_COMMIT_FEE);
     }

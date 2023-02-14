@@ -193,15 +193,10 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
                 "cannot cancel yet"
             );
         } else {
-            if (account != messageSender) {
-                // this is someone else (like a keeper)
-                // cancellation by third party is only possible when execution cannot be attempted any longer
-                // otherwise someone might try to grief an account by cancelling for the keeper fee
-                require(
-                    _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
-                    "cannot be cancelled by keeper yet"
-                );
-            }
+            require(
+                _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
+                "cannot be cancelled by keeper yet"
+            );
         }
     }
 
@@ -265,9 +260,6 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
             _manager().issueSUSD(messageSender, order.keeperDeposit);
         }
 
-        // pay the commitDeposit as fee to the FeePool
-        _manager().payFee(order.commitDeposit);
-
         // important!! position of the account, not the msg.sender
         marketState.deleteDelayedOrder(account);
         emitDelayedOrderRemoved(account, currentRoundId, order);
@@ -282,6 +274,8 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         uint makerFee
     ) internal notFlagged(account) {
         // handle the fees and refunds according to the mechanism rules
+        //
+        // legacy - commitDeposit will _always_ be $0 as we no longer charge a commitDeposit
         uint toRefund = order.commitDeposit; // refund the commitment deposit
 
         // refund keeperFee to margin if it's the account holder

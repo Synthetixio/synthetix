@@ -197,16 +197,9 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
             _revertIfError(status);
         }
 
-        // deduct fees from margin
-        //
-        // commitDeposit is simply the maker/taker fee. note the dynamic fee rate is 0 since for the purposes of the
-        // commitment deposit it is not important since at the time of the order execution it will be refunded and the
-        // correct dynamic fee will be charged.
-        // If the overrideCommitFee is set (value > 0) use this one instead.
-        uint commitDeposit = _overrideCommitFee(marketKey) > 0 ? _overrideCommitFee(marketKey) : _orderFee(params, 0);
         uint keeperDeposit = _minKeeperFee();
 
-        _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(commitDeposit + keeperDeposit));
+        _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(keeperDeposit));
         emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
@@ -216,7 +209,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
                 sizeDelta: int128(sizeDelta),
                 priceImpactDelta: uint128(priceImpactDelta),
                 targetRoundId: isOffchain ? 0 : uint128(targetRoundId),
-                commitDeposit: uint128(commitDeposit),
+                commitDeposit: 0, // legacy - no longer charging a commitDeposit on submission.
                 keeperDeposit: uint128(keeperDeposit), // offchain orders do _not_ have an executableAtTime as it's based on price age.
                 executableAtTime: isOffchain ? 0 : block.timestamp + desiredTimeDelta, // zero out - not used and minimise confusion.
                 intentionTime: block.timestamp,
