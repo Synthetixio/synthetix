@@ -716,13 +716,12 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let commitFee, keeperFee, updateFeedData;
+			let keeperFee, updateFeedData;
 
 			beforeEach(async () => {
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
 				// commitFee is the fee that would be charged for a trade when order is submitted
-				commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			});
 
 			async function submitOffchainOrderAndDelay(delay, feedTimeOffset = 0) {
@@ -748,8 +747,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			describe('execution reverts', () => {
 				describe('if min age was not reached', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -776,8 +773,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if max age was exceeded for order', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -804,8 +799,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if max age was exceeded for price', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -839,8 +832,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('orders on time', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -891,8 +882,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if off-chain price is zero', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -918,8 +907,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('off-chain is a lot higher than diverts', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -945,8 +932,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('on-chain is a lot higher than diverts', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -974,7 +959,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
 						const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
 						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
