@@ -29,7 +29,7 @@ const configureStandalonePriceFeeds = require('./configure-standalone-price-feed
 const configureOffchainPriceFeeds = require('./configure-offchain-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
-const configurePerpsV2 = require('./configure-perpsv2');
+// const configurePerpsV2 = require('./configure-perpsv2');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
@@ -496,21 +496,21 @@ const deploy = async ({
 		});
 	}
 
-	if (includePerpsV2) {
-		await configurePerpsV2({
-			addressOf,
-			deployer,
-			loadAndCheckRequiredSources,
-			runStep,
-			getDeployParameter,
-			useOvm,
-			freshDeploy,
-			deploymentPath,
-			network,
-			generateSolidity,
-			yes,
-		});
-	}
+	// if (includePerpsV2) {
+	// 	await configurePerpsV2({
+	// 		addressOf,
+	// 		deployer,
+	// 		loadAndCheckRequiredSources,
+	// 		runStep,
+	// 		getDeployParameter,
+	// 		useOvm,
+	// 		freshDeploy,
+	// 		deploymentPath,
+	// 		network,
+	// 		generateSolidity,
+	// 		yes,
+	// 	});
+	// }
 
 	// await takeDebtSnapshotWhenRequired({
 	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,

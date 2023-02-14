@@ -11,7 +11,6 @@ const {
 	deployMarketState,
 	deployMarketImplementations,
 	deployStateMigration,
-	setPausedMode,
 	linkToPerpsExchangeRate,
 	linkToProxy,
 	linkToState,
@@ -20,6 +19,8 @@ const {
 	rebuildCaches,
 	migrateState,
 	importAddresses,
+	pauseMarket,
+	resumeMarket,
 } = require('../../command-utils/perps-v2-utils');
 
 const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) => {
@@ -75,6 +76,7 @@ const deployPerpsV2Markets = async ({
 	generateSolidity,
 	yes,
 	migrationContractName,
+	futuresMarketManager,
 	limitPromise,
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -86,13 +88,6 @@ const deployPerpsV2Markets = async ({
 	console.log(gray(`\n------ DEPLOY AND CONFIGURE PERPS V2 MARKETS ------\n`));
 
 	const updatedContracts = [];
-
-	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesMarketManager',
-		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
-		deps: ['ReadProxyAddressResolver'],
-	});
 
 	if (!useOvm) {
 		return;
@@ -165,7 +160,8 @@ const deployPerpsV2Markets = async ({
 		const baseAsset = marketConfig.asset;
 		const marketKey = marketConfig.marketKey;
 
-		if (isNewMarket({ existingMarkets, marketKey })) {
+		const newMarket = isNewMarket({ existingMarkets, marketKey });
+		if (newMarket) {
 			console.log(gray(`market ${marketConfig.marketKey} is a new market.`));
 		}
 
@@ -187,25 +183,24 @@ const deployPerpsV2Markets = async ({
 			owner: account,
 			addressResolverAddress: addressOf(ReadProxyAddressResolver),
 			marketKey: marketConfig.marketKey,
-			proxyAddress: deployedMarketProxy.contract.address,
-			stateAddress: deployedMarketState.contract.address,
+			marketProxy: deployedMarketProxy,
+			marketState: deployedMarketState,
 		});
 
 		// Pause market to start linking/configuring
-		await setPausedMode({
-			marketKey,
-			paused: true,
-			deployer,
-			runStep,
-			generateSolidity,
-			yes,
-			confirmAction,
-		});
+		const { wasPaused } = newMarket
+			? true
+			: await pauseMarket({
+					marketKey,
+					deployer,
+					runStep,
+					generateSolidity,
+			  });
 
 		// Link/configure contracts relationships
 		await linkToState({
 			runStep,
-			perpsV2MarketState: deployedMarketState.contract,
+			perpsV2MarketState: deployedMarketState,
 			implementations,
 		});
 
@@ -217,14 +212,14 @@ const deployPerpsV2Markets = async ({
 
 		// STATE MIGRATION
 		const deployedStateMigration =
-			!isNewMarket && deployMarketState.updated
+			!newMarket && deployedMarketState.updated
 				? await deployStateMigration({
 						deployer,
 						owner: account,
 						marketKey,
 						migrationContractName,
-						oldStateContractAddress: deployMarketState.oldContractAddress,
-						newStateContractAddress: deployMarketState.oldContractAddress,
+						oldStateContractAddress: deployedMarketState.previousContractAddress,
+						newStateContractAddress: deployedMarketState.target.address,
 				  })
 				: undefined;
 
@@ -234,7 +229,7 @@ const deployPerpsV2Markets = async ({
 
 		await linkToProxy({
 			runStep,
-			perpsV2MarketProxy: deployedMarketProxy.contract,
+			perpsV2MarketProxy: deployedMarketProxy,
 			implementations,
 		});
 
@@ -255,6 +250,7 @@ const deployPerpsV2Markets = async ({
 		await configureMarket({
 			marketKey,
 			marketConfig,
+			newMarket,
 			perpsV2MarketSettings,
 			deployer,
 			runStep,
@@ -266,24 +262,36 @@ const deployPerpsV2Markets = async ({
 		await linkToMarketManager({
 			runStep,
 			futuresMarketManager,
-			proxies: [deployMarketProxy.contract],
+			proxies: [deployMarketProxy.target],
 		});
-		///
-		///
-		///
-		///
-		///
-		///
-		///
 
-		///
-		///
-		///
-		///
-		///
-		///
-		/// / TODO CLEAN
+		// Resume market if needed after linking/configuring
+		if (!newMarket && !wasPaused) {
+			await resumeMarket({
+				marketKey,
+				deployer,
+				runStep,
+				generateSolidity,
+				yes,
+				confirmAction,
+			});
+		}
 	}
+	///
+	///
+	///
+	///
+	///
+	///
+	///
+
+	///
+	///
+	///
+	///
+	///
+	///
+	/// / TODO CLEAN
 	// // Update markets implementations if its needed.
 	// if (futuresMarketManager && marketImplementationsUpdated.length > 0) {
 	// 	await runStep({

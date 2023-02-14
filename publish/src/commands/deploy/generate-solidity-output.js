@@ -151,6 +151,11 @@ module.exports = async ({
 	}
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
+	const dedupedSourcesAddedToSolidity = [
+		...new Set(
+			contractsAddedToSolidity.map(contract => sourceOf(deployer.deployedContracts[contract]))
+		),
+	];
 
 	const { releaseName } = getNextRelease({ useOvm });
 
@@ -162,9 +167,8 @@ module.exports = async ({
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
-${contractsAddedToSolidity
-	.map(contract => {
-		const contractSource = sourceOf(deployer.deployedContracts[contract]);
+${dedupedSourcesAddedToSolidity
+	.map(contractSource => {
 		// support legacy contracts in "legacy" subfolder
 		return `import "../${
 			/^Legacy/.test(contractSource) ? `legacy/${contractSource}` : contractSource

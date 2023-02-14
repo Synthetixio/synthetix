@@ -74,7 +74,7 @@ const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
 
 	const isSameContract = previousContractAddress === newContract.address;
 
-	return { contract: newContract, updated: !isSameContract };
+	return { target: newContract, contract: marketProxyName, updated: !isSameContract };
 };
 
 const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
@@ -96,7 +96,12 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 
 	const isSameContract = previousContractAddress === newContract.address;
 
-	return { contract: newContract, updated: !isSameContract, previousContractAddress };
+	return {
+		target: newContract,
+		contract: marketStateName,
+		updated: !isSameContract,
+		previousContractAddress,
+	};
 };
 
 const deployMarketImplementations = async ({
@@ -104,8 +109,8 @@ const deployMarketImplementations = async ({
 	owner,
 	addressResolverAddress,
 	marketKey,
-	proxyAddress,
-	stateAddress,
+	marketProxy,
+	marketState,
 }) => {
 	const implementationConfigurations = [
 		{
@@ -130,6 +135,9 @@ const deployMarketImplementations = async ({
 		},
 	];
 
+	const marketStateAddress = marketState.target.address;
+	const marketProxyAddress = marketProxy.target.address;
+
 	const implementations = [];
 
 	for (const implementation of implementationConfigurations) {
@@ -141,9 +149,9 @@ const deployMarketImplementations = async ({
 		const args = [];
 		if (!implementation.isView) {
 			// PerpsV2MarketViews don't use the proxy in the constructor
-			args.push(proxyAddress);
+			args.push(marketProxyAddress);
 		}
-		args.push(stateAddress, owner, addressResolverAddress);
+		args.push(marketStateAddress, owner, addressResolverAddress);
 		const newContract = await deployer.deployContract({
 			name: name,
 			source: implementation.contract,
@@ -155,7 +163,7 @@ const deployMarketImplementations = async ({
 		const isSameContract = previousContractAddress === newContract.address;
 
 		implementations.push({
-			contract: implementation.contract,
+			contract: name,
 			target: newContract,
 			isView: implementation.isView,
 			updateState: !implementation.isView,
@@ -199,7 +207,7 @@ const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implement
 
 const linkToState = async ({ runStep, perpsV2MarketState, implementations }) => {
 	// get current associated contracts
-	const currentAddresses = Array.from(await perpsV2MarketState.associatedContracts());
+	const currentAddresses = Array.from(await perpsV2MarketState.target.associatedContracts());
 
 	// get list of associated contracts from implementations
 	const requiredAddresses = implementations
@@ -209,15 +217,15 @@ const linkToState = async ({ runStep, perpsV2MarketState, implementations }) => 
 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
 
 	await runStep({
-		contract: 'PerpsV2MarketState',
-		target: perpsV2MarketState,
+		contract: perpsV2MarketState.contract,
+		target: perpsV2MarketState.target,
 		write: 'removeAssociatedContracts',
 		writeArg: [toRemove],
 	});
 
 	await runStep({
-		contract: 'PerpsV2MarketState',
-		target: perpsV2MarketState,
+		contract: perpsV2MarketState.contract,
+		target: perpsV2MarketState.target,
 		write: 'addAssociatedContracts',
 		writeArg: [toAdd],
 	});
@@ -229,11 +237,12 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 		if (implementation.isView) {
 			continue;
 		}
+
 		await runStep({
 			contract: implementation.contract,
 			target: implementation.target,
 			write: 'setProxy',
-			writeArg: [perpsV2MarketProxy.address],
+			writeArg: [perpsV2MarketProxy.target.address],
 		});
 	}
 
@@ -249,28 +258,23 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 
 	// Remove unknown selectors
 	const filteredFunctionSelectors = filteredFunctions.map(ff => ff.signature);
-	const routesLength = await perpsV2MarketProxy.getRoutesLength();
-	const routes = (await perpsV2MarketProxy.getRoutesPage(0, routesLength)).map(
+	const routesLength = await perpsV2MarketProxy.target.getRoutesLength();
+	const routes = (await perpsV2MarketProxy.target.getRoutesPage(0, routesLength)).map(
 		route => route.selector
 	);
 	const { toRemove } = filteredLists(routes, filteredFunctionSelectors);
 
 	// Remove unnecessary selectors
 	for (const f of toRemove) {
-		await runStep(
-			{
-				contract: 'ProxyPerpsV2',
-				target: perpsV2MarketProxy,
-				read: 'getRoute',
-				readArg: [f],
-				expected: readResult => readResult.implementation === ethers.constants.AddressZero,
-				write: 'removeRoute',
-				writeArg: [f],
-			},
-			{
-				generateSolidity: !isNewMarket,
-			}
-		);
+		await runStep({
+			contract: perpsV2MarketProxy.contract,
+			target: perpsV2MarketProxy.target,
+			read: 'getRoute',
+			readArg: [f],
+			expected: readResult => readResult.implementation === ethers.constants.AddressZero,
+			write: 'removeRoute',
+			writeArg: [f],
+		});
 	}
 
 	// Add Missing selectors
@@ -285,23 +289,18 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 	);
 
 	for (const f of toAdd) {
-		await runStep(
-			{
-				contract: 'ProxyPerpsV2',
-				target: perpsV2MarketProxy,
-				read: 'getRoute',
-				readArg: [f.signature],
-				expected: readResult =>
-					readResult.selector === f.signature &&
-					readResult.implementation === f.contractAddress &&
-					readResult.isView === f.isView,
-				write: 'addRoute',
-				writeArg: [f.signature, f.contractAddress, f.isView],
-			},
-			{
-				generateSolidity: !isNewMarket,
-			}
-		);
+		await runStep({
+			contract: perpsV2MarketProxy.contract,
+			target: perpsV2MarketProxy.target,
+			read: 'getRoute',
+			readArg: [f.signature],
+			expected: readResult =>
+				readResult.selector === f.signature &&
+				readResult.implementation === f.contractAddress &&
+				readResult.isView === f.isView,
+			write: 'addRoute',
+			writeArg: [f.signature, f.contractAddress, f.isView],
+		});
 	}
 };
 
@@ -504,6 +503,7 @@ const importAddresses = async ({
 const configureMarket = async ({
 	runStep,
 	deployer,
+	newMarket,
 	generateSolidity,
 	yes,
 	confirmAction,
@@ -511,47 +511,8 @@ const configureMarket = async ({
 	marketConfig,
 	perpsV2MarketSettings,
 }) => {
-	const { SystemStatus } = deployer.deployedContracts;
-
 	const marketKeyBytes = toBytes32(marketConfig.marketKey);
 	const offchainMarketKey = marketConfig.offchainMarketKey;
-
-	// const expectedParameters = [
-	// 	ethers.utils.parseUnits(marketConfig.takerFee),
-	// 	ethers.utils.parseUnits(marketConfig.makerFee),
-	// 	ethers.utils.parseUnits(marketConfig.overrideCommitFee),
-	// 	ethers.utils.parseUnits(marketConfig.takerFeeDelayedOrder),
-	// 	ethers.utils.parseUnits(marketConfig.makerFeeDelayedOrder),
-	// 	ethers.utils.parseUnits(marketConfig.takerFeeOffchainDelayedOrder),
-	// 	ethers.utils.parseUnits(marketConfig.makerFeeOffchainDelayedOrder),
-	// 	ethers.utils.parseUnits(marketConfig.maxLeverage),
-	// 	ethers.utils.parseUnits(marketConfig.maxMarketValue),
-	// 	ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
-	// 	ethers.utils.parseUnits(marketConfig.skewScale),
-	// 	ethers.BigNumber.from(marketConfig.nextPriceConfirmWindow),
-	// 	ethers.BigNumber.from(marketConfig.delayedOrderConfirmWindow),
-	// 	ethers.BigNumber.from(marketConfig.minDelayTimeDelta),
-	// 	ethers.BigNumber.from(marketConfig.maxDelayTimeDelta),
-	// 	ethers.BigNumber.from(marketConfig.offchainDelayedOrderMinAge),
-	// 	ethers.BigNumber.from(marketConfig.offchainDelayedOrderMaxAge),
-	// 	toBytes32(offchainMarketKey),
-	// 	ethers.utils.parseUnits(marketConfig.offchainPriceDivergence),
-	// 	ethers.utils.parseUnits(marketConfig.liquidationPremiumMultiplier),
-	// 	ethers.utils.parseUnits(marketConfig.maxLiquidationDelta),
-	// 	ethers.utils.parseUnits(marketConfig.maxPD),
-	// ];
-
-	// const currentSettings = await perpsV2MarketSettings.parameters(marketKeyBytes);
-
-	// if (JSON.stringify(expectedParameters) !== JSON.stringify(currentSettings)) {
-	// 	// configurations doesn't match
-	// 	await runStep({
-	// 		contract: 'PerpsV2MarketSettings',
-	// 		target: perpsV2MarketSettings,
-	// 		write: 'setParameters',
-	// 		writeArg: [marketKeyBytes, expectedParameters],
-	// 	});
-	// }
 
 	const settings = {
 		takerFee: ethers.utils.parseUnits(marketConfig.takerFee),
@@ -583,9 +544,7 @@ const configureMarket = async ({
 		maxPD: ethers.utils.parseUnits(marketConfig.maxPD),
 	};
 
-	console.log('SSSSSSSSSSS', settings);
 	for (const setting in settings) {
-		console.log('SSSSSSSSSSS', setting);
 		const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
 		const value = settings[setting];
 
@@ -600,56 +559,77 @@ const configureMarket = async ({
 		});
 	}
 
-	// pause or resume market according to config
-	await setPausedMode({
-		paused: marketConfig.paused,
-		marketKey,
-		runStep,
-		SystemStatus,
-		generateSolidity,
-		yes,
-		confirmAction,
-	});
+	if (newMarket) {
+		// pause or resume market according to config
+		await setPausedMode({
+			paused: marketConfig.paused,
+			marketKey,
+			runStep,
+			deployer,
+			generateSolidity,
+			yes,
+			confirmAction,
+		});
 
-	// pause or resume offchain market according to config
-	await setPausedMode({
-		paused: marketConfig.offchainPaused,
-		marketKey: offchainMarketKey,
-		runStep,
-		deployer,
-		generateSolidity,
-		yes,
-		confirmAction,
-	});
+		// pause or resume offchain market according to config
+		await setPausedMode({
+			paused: marketConfig.offchainPaused,
+			marketKey: offchainMarketKey,
+			runStep,
+			deployer,
+			generateSolidity,
+			yes,
+			confirmAction,
+		});
+	}
 };
 
 async function setPausedMode({
+	paused,
+	marketKey,
 	runStep,
 	deployer,
-	marketKey,
-	paused,
 	generateSolidity,
 	yes,
 	confirmAction,
 }) {
+	if (paused) {
+		await pauseMarket({
+			marketKey,
+			deployer,
+			runStep,
+			generateSolidity,
+		});
+	} else {
+		await resumeMarket({
+			marketKey,
+			deployer,
+			runStep,
+			generateSolidity,
+			yes,
+			confirmAction,
+		});
+	}
+}
+
+function migrationContractNoACLWarning(actionMessage) {
+	console.log(
+		yellow(
+			`⚠⚠⚠ WARNING: the step is trying to ${actionMessage}, but 'generateSolidity' is true. `,
+			`The migration contract will not have the SystemStatus ACL permissions to perform this step, `,
+			`so it should be EDITED OUT of the migration contract and performed separately (by rerunning `,
+			`the deploy script).`
+		)
+	);
+}
+
+async function pauseMarket({ runStep, deployer, marketKey, generateSolidity }) {
 	const { SystemStatus } = deployer.deployedContracts;
 	const marketKeyBytes = toBytes32(marketKey);
 
-	function migrationContractNoACLWarning(actionMessage) {
-		console.log(
-			yellow(
-				`⚠⚠⚠ WARNING: the step is trying to ${actionMessage}, but 'generateSolidity' is true. `,
-				`The migration contract will not have the SystemStatus ACL permissions to perform this step, `,
-				`so it should be EDITED OUT of the migration contract and performed separately (by rerunning `,
-				`the deploy script).`
-			)
-		);
-	}
-
-	const shouldPause = paused; // config value
 	const isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
 
-	if (shouldPause & !isPaused) {
+	if (!isPaused) {
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
@@ -660,41 +640,55 @@ async function setPausedMode({
 		if (generateSolidity) {
 			migrationContractNoACLWarning(`pause ${marketKey} perpsV2 market`);
 		}
-	} else if (isPaused & !shouldPause) {
-		let resume;
+	}
 
-		if (!yes) {
-			// in case we're trying to resume something that doesn't need to be resumed
-			console.log(
-				yellow(
-					`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
-					`but according to config should be resumed. Confirm that this market should`,
-					`be resumed in this release and it's not a misconfiguration issue.`
-				)
-			);
-			try {
-				await confirmAction(gray('Unpause the market? (y/n) '));
-				resume = true;
-			} catch (err) {
-				console.log(gray('Market will remain paused'));
-				resume = false;
-			}
-		} else {
-			// yes mode (e.g. tests)
+	return { wasPaused: isPaused };
+}
+
+async function resumeMarket({
+	runStep,
+	deployer,
+	marketKey,
+	generateSolidity,
+	yes,
+	confirmAction,
+}) {
+	const { SystemStatus } = deployer.deployedContracts;
+	const marketKeyBytes = toBytes32(marketKey);
+
+	let resume;
+
+	if (!yes) {
+		// in case we're trying to resume something that doesn't need to be resumed
+		console.log(
+			yellow(
+				`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
+				`but according to config should be resumed. Confirm that this market should`,
+				`be resumed in this release and it's not a misconfiguration issue.`
+			)
+		);
+		try {
+			await confirmAction(gray('Unpause the market? (y/n) '));
 			resume = true;
+		} catch (err) {
+			console.log(gray('Market will remain paused'));
+			resume = false;
 		}
+	} else {
+		// yes mode (e.g. tests)
+		resume = true;
+	}
 
-		if (resume) {
-			await runStep({
-				contract: 'SystemStatus',
-				target: SystemStatus,
-				write: 'resumeFuturesMarket',
-				writeArg: [marketKeyBytes],
-				comment: 'Ensure perpsV2 market is un-paused according to config',
-			});
-			if (generateSolidity) {
-				migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
-			}
+	if (resume) {
+		await runStep({
+			contract: 'SystemStatus',
+			target: SystemStatus,
+			write: 'resumeFuturesMarket',
+			writeArg: [marketKeyBytes],
+			comment: 'Ensure perpsV2 market is un-paused according to config',
+		});
+		if (generateSolidity) {
+			migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
 		}
 	}
 }
@@ -715,5 +709,6 @@ module.exports = {
 	importAddresses,
 	rebuildCaches,
 	migrateState,
-	setPausedMode,
+	pauseMarket,
+	resumeMarket,
 };
