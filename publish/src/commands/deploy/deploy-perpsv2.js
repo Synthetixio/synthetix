@@ -224,7 +224,7 @@ const deployPerpsV2Markets = async ({
 				: undefined;
 
 		if (deployedStateMigration) {
-			await migrateState({ runStep, migration: deployStateMigration });
+			await migrateState({ runStep, migration: deployedStateMigration });
 		}
 
 		await linkToProxy({

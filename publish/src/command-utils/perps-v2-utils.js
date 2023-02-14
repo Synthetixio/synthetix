@@ -354,7 +354,7 @@ const deployStateMigration = async ({
 
 	const isSameContract = previousContractAddress === newContract.address;
 
-	return { target: newContract, contract: migrationContractName, updated: !isSameContract };
+	return { target: newContract, contract: marketMigrationName, updated: !isSameContract };
 };
 
 const migrateState = async ({ runStep, migration }) => {
