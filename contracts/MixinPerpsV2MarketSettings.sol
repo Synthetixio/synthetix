@@ -17,7 +17,6 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     // Per-market settings
     bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
-    bytes32 internal constant PARAMETER_OVERRIDE_COMMIT_FEE = "overrideCommitFee";
     bytes32 internal constant PARAMETER_TAKER_FEE_DELAYED_ORDER = "takerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_MAKER_FEE_DELAYED_ORDER = "makerFeeDelayedOrder";
     bytes32 internal constant PARAMETER_TAKER_FEE_OFFCHAIN_DELAYED_ORDER = "takerFeeOffchainDelayedOrder";
@@ -85,11 +84,6 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAKER_FEE);
     }
 
-    // TODO: Remove me
-    function _overrideCommitFee(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_OVERRIDE_COMMIT_FEE);
-    }
-
     function _takerFeeDelayedOrder(bytes32 _marketKey) internal view returns (uint) {
         return _parameter(_marketKey, PARAMETER_TAKER_FEE_DELAYED_ORDER);
     }
@@ -148,10 +142,10 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _offchainMarketKey(bytes32 _marketKey) internal view returns (bytes32) {
         return
-            _flexibleStorage().getBytes32Value(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY))
-            );
+        _flexibleStorage().getBytes32Value(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY))
+        );
     }
 
     function _offchainPriceDivergence(bytes32 _marketKey) internal view returns (uint) {
