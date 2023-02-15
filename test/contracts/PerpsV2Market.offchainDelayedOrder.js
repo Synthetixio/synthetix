@@ -721,7 +721,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			beforeEach(async () => {
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
-				// commitFee is the fee that would be charged for a trade when order is submitted
 			});
 
 			async function submitOffchainOrderAndDelay(delay, feedTimeOffset = 0) {
@@ -958,12 +957,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				describe('if off-chain virtual market is paused', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
 						const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 						await setOnchainPrice(baseAsset, price);
-
 						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
 
 						updateFeedData = await getFeedUpdateData({
