@@ -1029,7 +1029,6 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					[
 						toUnit('0.005'), // 0.5% taker fee
 						toUnit('0.001'), // 0.1% maker fee
-						toUnit('0'), // 0% override commit fee for delayed/offchain order
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
 						toUnit('0.00005'), // 0.005% taker fee offchain delayed order
