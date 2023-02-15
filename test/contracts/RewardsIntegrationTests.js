@@ -103,6 +103,7 @@ contract('Rewards Integration Tests', accounts => {
 	const twoFifths = amount => amount.div(web3.utils.toBN('5')).mul(web3.utils.toBN('2'));
 
 	// PERCENTAGES
+	const onePercent = toUnit('0.01');
 	const twentyPercent = toUnit('0.2');
 	const fortyPercent = toUnit('0.4');
 	const fiftyPercent = toUnit('0.5');
@@ -682,9 +683,9 @@ contract('Rewards Integration Tests', accounts => {
 			// console.log('Account1.effectiveDebtRatioForPeriod', acc1Ownership.toString());
 			// console.log('Account2.effectiveDebtRatioForPeriod', acc2Ownership.toString());
 			// console.log('Account3.effectiveDebtRatioForPeriod', acc3Ownership.toString());
-			assert.bnClose(acc1Ownership, fortyPercent, '6010'); // add on a delta of ~6010 to handle 27 digit precision errors
-			assert.bnClose(acc2Ownership, fortyPercent, '6010');
-			assert.bnClose(acc3Ownership, twentyPercent, '89000');
+			assert.bnClose(acc1Ownership, fortyPercent, acc1Ownership.mul(onePercent)); // add on a delta to handle shifts in debt share values
+			assert.bnClose(acc2Ownership, fortyPercent, acc2Ownership.mul(onePercent));
+			assert.bnClose(acc3Ownership, twentyPercent, acc3Ownership.mul(onePercent));
 
 			// await logFeesByPeriod(account1);
 			// await logFeesByPeriod(account2);
@@ -720,17 +721,17 @@ contract('Rewards Integration Tests', accounts => {
 			assert.bnClose(
 				account1EscrowEntry2.escrowAmount,
 				twoFifths(periodTwoMintableSupply),
-				gweiTolerance
+				account1EscrowEntry2.escrowAmount.mul(onePercent) // add on a delta to handle shifts in debt share values
 			);
 			assert.bnClose(
 				account2EscrowEntry2.escrowAmount,
 				twoFifths(periodTwoMintableSupply),
-				gweiTolerance
+				account2EscrowEntry2.escrowAmount.mul(onePercent)
 			);
 			assert.bnClose(
 				account3EscrowEntry1.escrowAmount,
 				oneFifth(periodTwoMintableSupply),
-				gweiTolerance
+				account3EscrowEntry1.escrowAmount.mul(onePercent)
 			);
 
 			// Commenting out this logic for now (v2.14.x) - needs to be relooked at -JJ
@@ -1013,8 +1014,8 @@ contract('Rewards Integration Tests', accounts => {
 			});
 
 			const newUSDBalance = await sUSDContract.balanceOf(account2);
-			// We should have our fees
-			assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+			// sUSD balance remains unchanged since the fees are burned.
+			assert.bnEqual(newUSDBalance, oldsUSDBalance);
 
 			const period = await feePool.recentFeePeriods(1);
 			period.index = 1;
