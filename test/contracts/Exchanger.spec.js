@@ -1,7 +1,7 @@
 'use strict';
 
 const { artifacts, contract, web3 } = require('hardhat');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 const BN = require('bn.js');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -1249,7 +1249,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								let debtCacheSpy;
 								beforeEach(async () => {
 									// populate with a mocked DebtCache so we can inspect it
-									debtCacheSpy = await smockit(artifacts.require('DebtCache').abi);
+									debtCacheSpy = await smock.fake('DebtCache');
 									await resolver.importAddresses([toBytes32('DebtCache')], [debtCacheSpy.address], {
 										from: owner,
 									});
@@ -1375,7 +1375,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 												});
 												it('and the debt cache sync is not called', async () => {
-													assert.equal(debtCacheSpy.smocked.updateCachedSynthDebts.calls.length, 0);
+													assert.equal(debtCacheSpy.updateCachedSynthDebts.calls.length, 0);
 												});
 											});
 										});
@@ -1521,14 +1521,8 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 													});
 													it('and the debt cache is called', async () => {
-														assert.equal(
-															debtCacheSpy.smocked.updateCachedSynthDebts.calls.length,
-															1
-														);
-														assert.equal(
-															debtCacheSpy.smocked.updateCachedSynthDebts.calls[0][0],
-															sEUR
-														);
+														assert.equal(debtCacheSpy.updateCachedSynthDebts.calls.length, 1);
+														assert.equal(debtCacheSpy.updateCachedSynthDebts.calls[0][0], sEUR);
 													});
 												});
 												describe('when settle() is invoked and the exchange fee rate has changed', () => {

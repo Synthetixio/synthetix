@@ -182,7 +182,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			let duration = YEAR;
 			it('should revert appending a vesting entry from account1', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
+				mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 				await assert.revert(
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('1'), duration, {
@@ -193,7 +193,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 			it('should revert appending a vesting entry with a zero amount', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1'));
+				mocks['Synthetix'].balanceOf.returns(parseEther('1'));
 
 				await assert.revert(
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('0'), duration, {
@@ -204,7 +204,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 			it('should revert appending a vesting entry if there is not enough SNX in the contracts balance', async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1'));
+				mocks['Synthetix'].balanceOf.returns(parseEther('1'));
 
 				await assert.revert(
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('10'), duration, {
@@ -217,7 +217,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				duration = 0;
 
 				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
+				mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 				await assert.revert(
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('10'), duration, {
@@ -230,7 +230,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				duration = (await baseRewardEscrowV2.max_duration()).add(toUnit(1));
 
 				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
+				mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 				await assert.revert(
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('10'), duration, {
@@ -251,7 +251,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					escrowAmount = toUnit('10');
 
 					// Transfer of SNX to the escrow must occur before creating an entry
-					mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
+					mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 					// Append vesting entry
 					await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
@@ -313,13 +313,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 		let duration, entryID;
 		beforeEach(async () => {
 			// approve rewardEscrow to spend SNX
-			mocks['Synthetix'].smocked.allowance.will.return.with(parseEther('10'));
+			mocks['Synthetix'].allowance.returns(parseEther('10'));
 
 			// stub transferFrom
-			mocks['Synthetix'].smocked.transferFrom.will.return.with(true);
+			mocks['Synthetix'].transferFrom.returns(true);
 
 			// stub balanceOf
-			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
+			mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 			duration = 1 * YEAR;
 		});
@@ -1139,7 +1139,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		let entryID1, entryID2, entryID3;
 		beforeEach(async () => {
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
-			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
+			mocks['Synthetix'].balanceOf.returns(parseEther('1000'));
 
 			// Add a few vesting entries as the feepool address
 			entryID1 = await baseRewardEscrowV2.nextEntryId();
@@ -1158,7 +1158,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			// ensure Issuer.debtBalanceOf returns 0
-			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+			mocks['Issuer'].debtBalanceOf.returns('0');
 		});
 		assertWithFallback('should return the vesting schedules for account1', async e => {
 			const entries = await e.getVestingSchedules(account1, 0, 3);
@@ -1189,7 +1189,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		const numberOfEntries = 260; // 5 years of entries
 		beforeEach(async () => {
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
-			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
+			mocks['Synthetix'].balanceOf.returns(parseEther('1000'));
 
 			// add a 260 escrow entries
 			for (var i = 0; i < numberOfEntries; i++) {
@@ -1199,7 +1199,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			}
 
 			// ensure Issuer.debtBalanceOf returns 0
-			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+			mocks['Issuer'].debtBalanceOf.returns('0');
 		});
 		assertWithFallback('should return the vesting schedules for account1', async e => {
 			const entries = await e.getVestingSchedules(account1, 0, numberOfEntries);
@@ -1234,7 +1234,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 		beforeEach(async () => {
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
-			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
+			mocks['Synthetix'].balanceOf.returns(parseEther('1000'));
 
 			escrowAmount1 = toUnit('200');
 			escrowAmount2 = toUnit('300');
@@ -1257,7 +1257,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			// ensure Issuer.debtBalanceOf returns 0
-			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+			mocks['Issuer'].debtBalanceOf.returns('0');
 		});
 
 		it('user should have three vesting entries', async () => {
@@ -1295,7 +1295,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('reverts when user nominating has any debt balance', async () => {
-				mocks['Issuer'].smocked.debtBalanceOf.will.return.with('1');
+				mocks['Issuer'].debtBalanceOf.returns('1');
 
 				await assert.revert(
 					baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 }),

@@ -1,7 +1,7 @@
 'use strict';
 
 const { artifacts, web3 } = require('hardhat');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 const { prepareSmocks, prepareFlexibleStorageSmock } = require('./helpers');
 const { divideDecimal, multiplyDecimal } = require('../utils')();
 const {
@@ -65,9 +65,9 @@ module.exports = function({ accounts }) {
 		systemSourceRate,
 		systemDestinationRate,
 	}) => {
-		this.mocks.ExchangeRates.smocked[
+		this.mocks.ExchangeRates[
 			'effectiveAtomicValueAndRates((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),uint256,(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
-		].will.return.with((srcKey, amount, destKey) => {
+		].returns((srcKey, amount, destKey) => {
 			amount = amount.toString(); // seems to be passed to smock as a number
 
 			// For ease of comparison when mocking, atomicRate is specified in the
@@ -119,7 +119,7 @@ module.exports = function({ accounts }) {
 		whenMockedToAllowExchangeInvocationChecks: cb => {
 			describe(`when mocked to allow invocation checks`, () => {
 				beforeEach(async () => {
-					this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(toBytes32());
+					this.mocks.Synthetix.synthsByAddress.returns(toBytes32());
 				});
 				cb();
 			});
@@ -127,11 +127,7 @@ module.exports = function({ accounts }) {
 		whenMockedWithExchangeRatesValidity: ({ valid = true }, cb) => {
 			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with([
-						0,
-						false,
-						!valid,
-					]);
+					this.mocks.ExchangeRates.rateWithSafetyChecks.returns([0, false, !valid]);
 				});
 				cb();
 			});
@@ -139,7 +135,7 @@ module.exports = function({ accounts }) {
 		whenMockedWithExchangeRatesValidityAtRound: ({ valid = true }, cb) => {
 			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.anyRateIsInvalidAtRound.will.return.with(!valid);
+					this.mocks.ExchangeRates.anyRateIsInvalidAtRound.returns(!valid);
 				});
 				cb();
 			});
@@ -147,8 +143,8 @@ module.exports = function({ accounts }) {
 		whenMockedWithNoPriorExchangesToSettle: cb => {
 			describe(`when mocked with no prior exchanges to settle`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeState.smocked.getMaxTimestamp.will.return.with('0');
-					this.mocks.ExchangeState.smocked.getLengthOfEntries.will.return.with('0');
+					this.mocks.ExchangeState.getMaxTimestamp.returns('0');
+					this.mocks.ExchangeState.getLengthOfEntries.returns('0');
 				});
 				cb();
 			});
@@ -197,9 +193,11 @@ module.exports = function({ accounts }) {
 		whenMockedEffectiveRateAsEqual: cb => {
 			describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.effectiveValueAndRates.will.return.with(
-						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
-					);
+					this.mocks.ExchangeRates.effectiveValueAndRates.returns((srcKey, amount, destKey) => [
+						amount,
+						(1e18).toString(),
+						(1e18).toString(),
+					]);
 				});
 				cb();
 			});
@@ -207,7 +205,7 @@ module.exports = function({ accounts }) {
 		whenMockedEffectiveRateAsEqualAtRound: cb => {
 			describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.effectiveValueAndRatesAtRound.will.return.with(
+					this.mocks.ExchangeRates.effectiveValueAndRatesAtRound.returns(
 						(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
 					);
 				});
@@ -217,9 +215,7 @@ module.exports = function({ accounts }) {
 		whenMockedLastNRates: cb => {
 			describe(`when mocked 1e18 as last n rates`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.ratesAndUpdatedTimeForCurrencyLastNRounds.will.return.with(
-						[[], []]
-					);
+					this.mocks.ExchangeRates.ratesAndUpdatedTimeForCurrencyLastNRounds.returns([[], []]);
 				});
 				cb();
 			});
@@ -244,9 +240,9 @@ module.exports = function({ accounts }) {
 				volatile ? 'volatile' : 'not volatile'
 			}`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked[
+					this.mocks.ExchangeRates[
 						'synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
-					].will.return.with(synthToCheck => (synthToCheck === synth ? volatile : false));
+					].returns(synthToCheck => (synthToCheck === synth ? volatile : false));
 				});
 			});
 		},
@@ -263,20 +259,18 @@ module.exports = function({ accounts }) {
 						systemDestinationRate,
 					});
 
-					this.mocks.ExchangeRates.smocked.effectiveValue.will.return.with(
-						(srcKey, sourceAmount, destKey) => {
-							sourceAmount = sourceAmount.toString(); // passed from smock as a number
+					this.mocks.ExchangeRates.effectiveValue.returns((srcKey, sourceAmount, destKey) => {
+						sourceAmount = sourceAmount.toString(); // passed from smock as a number
 
-							const [sourceRate, destinationRate] =
-								srcKey === sourceCurrency
-									? [systemSourceRate, systemDestinationRate]
-									: [systemDestinationRate, systemSourceRate];
-							return divideDecimal(
-								multiplyDecimal(sourceAmount, sourceRate),
-								destinationRate
-							).toString();
-						}
-					);
+						const [sourceRate, destinationRate] =
+							srcKey === sourceCurrency
+								? [systemSourceRate, systemDestinationRate]
+								: [systemDestinationRate, systemSourceRate];
+						return divideDecimal(
+							multiplyDecimal(sourceAmount, sourceRate),
+							destinationRate
+						).toString();
+					});
 				});
 
 				cb();
@@ -286,11 +280,11 @@ module.exports = function({ accounts }) {
 			describe(`when mocked a synth to burn`, () => {
 				beforeEach(async () => {
 					// create and share the one synth for all Issuer.synths() calls
-					this.mocks.synth = await smockit(artifacts.require('Synth').abi);
-					this.mocks.synth.smocked.proxy.will.return.with(web3.eth.accounts.create().address);
-					this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
+					this.mocks.synth = await smock.fake('Synth');
+					this.mocks.synth.proxy.returns(web3.eth.accounts.create().address);
+					this.mocks.Issuer.synths.returns(currencyKey => {
 						// but when currency
-						this.mocks.synth.smocked.currencyKey.will.return.with(currencyKey);
+						this.mocks.synth.currencyKey.returns(currencyKey);
 						return this.mocks.synth.address;
 					});
 				});
@@ -300,16 +294,16 @@ module.exports = function({ accounts }) {
 		whenMockedSusdAndSethSeparatelyToIssueAndBurn: cb => {
 			describe(`when mocked sUSD and sETH`, () => {
 				async function mockSynth(currencyKey) {
-					const synth = await smockit(artifacts.require('Synth').abi);
-					synth.smocked.currencyKey.will.return.with(currencyKey);
-					synth.smocked.proxy.will.return.with(web3.eth.accounts.create().address);
+					const synth = await smock.fake('Synth');
+					synth.currencyKey.returns(currencyKey);
+					synth.proxy.returns(web3.eth.accounts.create().address);
 					return synth;
 				}
 
 				beforeEach(async () => {
 					this.mocks.sUSD = await mockSynth(sUSD);
 					this.mocks.sETH = await mockSynth(sETH);
-					this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
+					this.mocks.Issuer.synths.returns(currencyKey => {
 						if (currencyKey === sUSD) {
 							return this.mocks.sUSD.address;
 						} else if (currencyKey === sETH) {
@@ -326,8 +320,8 @@ module.exports = function({ accounts }) {
 		whenMockedExchangeStatePersistance: cb => {
 			describe(`when mocking exchange state persistance`, () => {
 				beforeEach(async () => {
-					this.mocks.ExchangeRates.smocked.getCurrentRoundId.will.return.with('0');
-					this.mocks.ExchangeState.smocked.appendExchangeEntry.will.return();
+					this.mocks.ExchangeRates.getCurrentRoundId.returns('0');
+					this.mocks.ExchangeState.appendExchangeEntry.will.return();
 				});
 				cb();
 			});
@@ -335,7 +329,7 @@ module.exports = function({ accounts }) {
 		whenMockedFeePool: cb => {
 			describe('when mocked fee pool', () => {
 				beforeEach(async () => {
-					this.mocks.FeePool.smocked.FEE_ADDRESS.will.return.with(
+					this.mocks.FeePool.FEE_ADDRESS.returns(
 						getUsers({ network: 'mainnet', user: 'fee' }).address
 					);
 				});

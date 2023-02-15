@@ -1,7 +1,7 @@
 const { ethers, contract, artifacts, web3 } = require('hardhat');
 const chalk = require('chalk');
 const { assert } = require('./common');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { currentTime, fastForward, toUnit } = require('../utils')();
 
@@ -32,7 +32,7 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('mock other contracts used by OwnerRelayOnOptimism', async () => {
-		MockedMessenger = await smockit(
+		MockedMessenger = await smock(
 			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
 			ethers.provider
 		);
@@ -45,14 +45,11 @@ contract('OwnerRelayOnOptimism', () => {
 			to: MockedMessengerSigner.address,
 		});
 
-		MockedOwned1OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
-		MockedOwned2OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
+		MockedOwned1OnL2 = await smock.fake('Owned').abi, ethers.provider);
+		MockedOwned2OnL2 = await smock.fake('Owned').abi, ethers.provider);
 
-		MockedAddressResolver = await smockit(
-			artifacts.require('AddressResolver').abi,
-			ethers.provider
-		);
-		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
+		MockedAddressResolver = await smock.fake('AddressResolver').abi, ethers.provider);
+		MockedAddressResolver.requireAndGetAddress.returns(nameBytes => {
 			const name = ethers.utils.toUtf8String(nameBytes);
 
 			if (name.includes('ext:Messenger')) {
@@ -161,10 +158,10 @@ contract('OwnerRelayOnOptimism', () => {
 
 		before('mock the target contracts nominateNewOwner(...) function', async () => {
 			// Allows us to record the data it receives
-			MockedOwned1OnL2.smocked.nominateNewOwner.will.return.with(newOwner => {
+			MockedOwned1OnL2.nominateNewOwner.returns(newOwner => {
 				relayedMessageData = newOwner;
 			});
-			MockedOwned2OnL2.smocked.nominateNewOwner.will.return.with(newOwner => {
+			MockedOwned2OnL2.nominateNewOwner.returns(newOwner => {
 				relayedMessageData = newOwner;
 			});
 		});
@@ -180,7 +177,7 @@ contract('OwnerRelayOnOptimism', () => {
 				let sendMessageError;
 
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
-					MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+					MockedMessenger.xDomainMessageSender.returns(
 						ethers.Wallet.createRandom().address
 					);
 				});
@@ -204,7 +201,7 @@ contract('OwnerRelayOnOptimism', () => {
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
-						MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+						MockedMessenger.xDomainMessageSender.returns(
 							mockedOwnerRelayOnEthereumAddress
 						);
 					}
@@ -242,7 +239,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 			describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
-					MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+					MockedMessenger.xDomainMessageSender.returns(
 						ethers.Wallet.createRandom().address
 					);
 				});
@@ -268,7 +265,7 @@ contract('OwnerRelayOnOptimism', () => {
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
-						MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+						MockedMessenger.xDomainMessageSender.returns(
 							mockedOwnerRelayOnEthereumAddress
 						);
 					}

@@ -4,6 +4,8 @@ const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
+const { expect } = require('chai');
+
 const { ensureOnlyExpectedMutativeFunctions, trimUtf8EscapeChars } = require('./helpers');
 
 const {
@@ -293,12 +295,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 					describe('settle()', () => {
 						behaviors.whenSettlementCalled({ user: owner }, () => {
 							it('then Exchanger.settle() is invoked with the correct params', async () => {
-								assert.equal(this.mocks.Exchanger.smocked.settle.calls.length, 1);
-								assert.equal(
-									this.mocks.Exchanger.smocked.settle.calls[0][0],
-									this.instance.address
-								);
-								assert.equal(this.mocks.Exchanger.smocked.settle.calls[0][1], toBytes32('sBTC'));
+								expect(this.mocks.Exchanger.settle).to.have.length(0);
+								this.mocks.Exchanger.settle.returnsAtCall(0, this.instance.address);
+								this.mocks.Exchanger.settle.returndAtCall(1, toBytes32('sBTC'));
 							});
 							it('then Exchanger.settle() emits a Settled event with the supply and balance params', () => {
 								assert.eventEqual(this.txn, 'Settled', [amount, amount]);
@@ -307,9 +306,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 								assert.equal(await this.instance.balanceOf(owner), '0');
 							});
 							it('then the user is transferred the balance of the synth', async () => {
-								assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
-								assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
-								assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], amount);
+								expect(this.mocks.Synth.transfer).to.have.length(0);
+								await this.mocks.Synth.transfer.returnsAtCall(0, owner);
+								await this.mocks.Synth.transfer.returnsAtCall(1, amount);
 							});
 							behaviors.whenSettlementCalled({ user: owner }, () => {
 								it('then Exchanger.settle() does not emit another settlement', () => {
@@ -324,9 +323,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 						behaviors.whenMockedSettlementOwing({ reclaim: 333 }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
 								it('then the user is transferred the remaining balance of the synths', async () => {
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '666');
+									expect(this.mocks.Synth.transfer).to.have.length(0);
+									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
+									await this.mocks.Synth.transfer.returnsAtCall(1, '666');
 								});
 							});
 						});
@@ -334,9 +333,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 						behaviors.whenMockedSettlementOwing({ rebate: 1 }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
 								it('then the user is transferred the entire balance of the synths', async () => {
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '1000');
+									expect(this.mocks.Synth.transfer).to.have.length(0);
+									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
+									await this.mocks.Synth.transfer.returnsAtCall(1, '1000');
 								});
 							});
 						});
@@ -344,9 +343,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 						behaviors.whenUserTransfersAwayTokens({ amount: '666', from: owner }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
 								it('then the user is transferred their portion balance of the synths', async () => {
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
-									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '333');
+									expect(this.mocks.Synth.transfer).to.have.length(0);
+									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
+									await this.mocks.Synth.transfer.returnsAtCall(1, '333');
 								});
 							});
 
@@ -354,9 +353,9 @@ contract('VirtualSynth (unit tests)', async accounts => {
 								// total synths is 999 - 300 = 699. User has 1/3 of the vSynth supply
 								behaviors.whenSettlementCalled({ user: owner }, () => {
 									it('then the user is transferred their portion balance of the synths', async () => {
-										assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
-										assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
-										assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '233');
+										expect(this.mocks.Synth.transfer).to.have.length(0);
+										await this.mocks.Synth.transfer.returnsAtCall(0, owner);
+										await this.mocks.Synth.transfer.returnsAtCall(1, '233');
 									});
 								});
 							});

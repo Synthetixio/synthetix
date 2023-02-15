@@ -1,7 +1,7 @@
 const chalk = require('chalk');
 const { ethers, contract, artifacts } = require('hardhat');
 const { assert } = require('./common');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const {
 	defaults: { CROSS_DOMAIN_RELAY_GAS_LIMIT },
@@ -27,26 +27,20 @@ contract('OwnerRelayOnEthereum', () => {
 	});
 
 	before('mock other contracts used by OwnerRelayOnEthereum', async () => {
-		MockedMessenger = await smockit(
+		MockedMessenger = await smock(
 			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
 			ethers.provider
 		);
 
-		MockedOwnerRelayOnOptimism = await smockit(
+		MockedOwnerRelayOnOptimism = await smock(
 			artifacts.require('OwnerRelayOnOptimism').abi,
 			ethers.provider
 		);
 
-		MockedFlexibleStorage = await smockit(
-			artifacts.require('FlexibleStorage').abi,
-			ethers.provider
-		);
+		MockedFlexibleStorage = await smock.fake('FlexibleStorage').abi, ethers.provider);
 
-		MockedAddressResolver = await smockit(
-			artifacts.require('AddressResolver').abi,
-			ethers.provider
-		);
-		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
+		MockedAddressResolver = await smock.fake('AddressResolver').abi, ethers.provider);
+		MockedAddressResolver.requireAndGetAddress.returns(nameBytes => {
 			const name = ethers.utils.toUtf8String(nameBytes);
 
 			if (name.includes('ext:Messenger')) {
@@ -149,7 +143,7 @@ contract('OwnerRelayOnEthereum', () => {
 		};
 
 		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
-			MockedFlexibleStorage.smocked.getUIntValue.will.return.with(
+			MockedFlexibleStorage.getUIntValue.returns(
 				(contractNameBytes, valueNameBytes) => {
 					const contractName = ethers.utils.toUtf8String(contractNameBytes);
 					const valueName = ethers.utils.toUtf8String(valueNameBytes);
@@ -172,7 +166,7 @@ contract('OwnerRelayOnEthereum', () => {
 
 		before('mock Optimism Messenger.sendMessage(...)', async () => {
 			// Allows us to record what Messenger.sendMessage gets called with
-			MockedMessenger.smocked.sendMessage.will.return.with(
+			MockedMessenger.sendMessage.returns(
 				(contractOnL2, messageData, crossDomainGasLimit) => {
 					relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
 				}

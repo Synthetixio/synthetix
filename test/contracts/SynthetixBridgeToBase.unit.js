@@ -3,7 +3,8 @@ const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
+const { expect } = require('chai');
 
 const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
 
@@ -42,20 +43,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let exchangeRates;
 		let systemStatus;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
+			messenger = await smock.fake('iAbs_BaseCrossDomainMessenger', {
 				address: smockedMessenger,
 			});
 
-			rewardEscrow = await smockit(
-				artifacts.require('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2').abi
-			);
+			rewardEscrow = await smock.fake('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2');
 
-			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
-			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
-			feePool = await smockit(artifacts.require('FeePool').abi);
-			issuer = await smockit(artifacts.require('Issuer').abi);
-			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
-			systemStatus = await smockit(artifacts.require('SystemStatus').abi);
+			mintableSynthetix = await smock.fake('MintableSynthetix');
+			flexibleStorage = await smock.fake('FlexibleStorage');
+			feePool = await smock.fake('FeePool');
+			issuer = await smock.fake('Issuer');
+			exchangeRates = await smock.fake('ExchangeRates');
+			systemStatus = await smock.fake('SystemStatus');
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
@@ -87,14 +86,14 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 		beforeEach(async () => {
 			// stubs
-			mintableSynthetix.smocked.burnSecondary.will.return.with(() => {});
-			mintableSynthetix.smocked.mintSecondary.will.return.with(() => {});
-			mintableSynthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
-			mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => web3.utils.toWei('1'));
-			messenger.smocked.sendMessage.will.return.with(() => {});
-			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
-			rewardEscrow.smocked.importVestingEntries.will.return.with(() => {});
-			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
+			mintableSynthetix.burnSecondary.returns(() => {});
+			mintableSynthetix.mintSecondary.returns(() => {});
+			mintableSynthetix.balanceOf.returns(() => web3.utils.toWei('1'));
+			mintableSynthetix.transferableSynthetix.returns(() => web3.utils.toWei('1'));
+			messenger.sendMessage.returns(() => {});
+			messenger.xDomainMessageSender.returns(() => snxBridgeToOptimism);
+			rewardEscrow.importVestingEntries.returns(() => {});
+			flexibleStorage.getUIntValue.returns(() => '3000000');
 		});
 
 		describe('when the target is deployed', () => {
@@ -126,7 +125,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should only allow the L1 bridge to invoke importVestingEntries() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
-						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						messenger.xDomainMessageSender.returns(() => randomAddress);
 						await assert.revert(
 							instance.finalizeEscrowMigration(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
@@ -150,9 +149,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('importVestingEntries is called (via rewardEscrowV2)', async () => {
-						assert.equal(rewardEscrow.smocked.importVestingEntries.calls[0][0], user1);
-						assert.bnEqual(rewardEscrow.smocked.importVestingEntries.calls[0][1], escrowedAmount);
-						assert.bnEqual(rewardEscrow.smocked.importVestingEntries.calls[0][2], emptyArray);
+						rewardEscrow.importVestingEntries.returnsAtCall(0, user1);
+						rewardEscrow.importVestingEntries.returnsAtCall(1, escrowedAmount);
+						rewardEscrow.importVestingEntries.returnsAtCall(2, emptyArray);
 					});
 
 					it('should emit a ImportedVestingEntries event', async () => {
@@ -168,7 +167,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			describe('withdraw', () => {
 				describe('failure modes', () => {
 					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
-						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
+						mintableSynthetix.transferableSynthetix.returns(() => '0');
 						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
 					});
 					it('does not work when initiation has been suspended', async () => {
@@ -187,21 +186,21 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('then SNX is burned via mintableSyntetix.burnSecondary', async () => {
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
+						expect(mintableSynthetix.burnSecondary).to.have.length(0);
+						mintableSynthetix.burnSecondary.returnsAtCall(0, user1);
+						mintableSynthetix.burnSecondary.returnsAtCall(1, amount);
 					});
 
 					it('the message is relayed', async () => {
-						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
-						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
+						expect(messenger.sendMessage).to.have.length(0);
+						messenger.sendMessage.returnsAtCall(0, snxBridgeToOptimism);
 						const expectedData = getDataOfEncodedFncCall({
 							fnc: 'finalizeWithdrawal',
 							args: [user1, amount],
 						});
 
-						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
-						assert.equal(messenger.smocked.sendMessage.calls[0][2], gasLimit.toString());
+						messenger.sendMessage.returnsAtCall(1, expectedData);
+						messenger.sendMessage.returnsAtCall(2, gasLimit.toString());
 					});
 
 					it('and a WithdrawalInitiated event is emitted', async () => {
@@ -217,7 +216,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			describe('withdrawTo', () => {
 				describe('failure modes', () => {
 					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
-						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
+						mintableSynthetix.transferableSynthetix.returns(() => '0');
 						await assert.revert(
 							instance.withdrawTo(randomAddress, '1'),
 							'Not enough transferable SNX'
@@ -239,21 +238,21 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('then SNX is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
-						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
+						expect(mintableSynthetix.burnSecondary).to.have.length(0);
+						mintableSynthetix.burnSecondary.returnsAtCall(0, user1);
+						mintableSynthetix.burnSecondary.returnsAtCall(1, amount);
 					});
 
 					it('the message is relayed', async () => {
-						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
-						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
+						expect(messenger.sendMessage).to.have.length(0);
+						messenger.sendMessage.returnsAtCall(0, snxBridgeToOptimism);
 						const expectedData = getDataOfEncodedFncCall({
 							fnc: 'finalizeWithdrawal',
 							args: [randomAddress, amount],
 						});
 
-						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
-						assert.equal(messenger.smocked.sendMessage.calls[0][2], gasLimit.toString());
+						messenger.sendMessage.returnsAtCall(1, expectedData);
+						messenger.sendMessage.returnsAtCall(2, gasLimit.toString());
 					});
 
 					it('and a WithdrawalInitiated event is emitted', async () => {
@@ -280,7 +279,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should only allow the L1 bridge to invoke finalizeDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
-						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						messenger.xDomainMessageSender.returns(() => randomAddress);
 						await assert.revert(
 							instance.finalizeDeposit(user1, 100, {
 								from: smockedMessenger,
@@ -307,12 +306,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('then SNX is minted via MintableSynthetix.mintSecondary', async () => {
-						assert.equal(mintableSynthetix.smocked.mintSecondary.calls.length, 1);
-						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
-						assert.equal(
-							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
-							finalizeDepositAmount
-						);
+						expect(mintableSynthetix.mintSecondary).to.have.length(0);
+						mintableSynthetix.mintSecondary.returnsAtCall(0, user1);
+						mintableSynthetix.mintSecondary.returnsAtCall(1, finalizeDepositAmount);
 					});
 				});
 			});
@@ -331,7 +327,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should only allow the L1 bridge to invoke finalizeRewardDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
-						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						messenger.xDomainMessageSender.returns(() => randomAddress);
 						await assert.revert(
 							instance.finalizeRewardDeposit(user1, 100, {
 								from: smockedMessenger,
@@ -361,11 +357,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('then SNX is minted via MintbaleSynthetix.mintSecondary', async () => {
-						assert.equal(mintableSynthetix.smocked.mintSecondaryRewards.calls.length, 1);
-						assert.equal(
-							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),
-							finalizeRewardDepositAmount
-						);
+						expect(mintableSynthetix.mintSecondaryRewards).to.have.length(0);
+						mintableSynthetix.mintSecondaryRewards.returnsAtCall(0, finalizeRewardDepositAmount);
 					});
 				});
 			});
@@ -384,7 +377,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should only allow the L1 bridge to invoke finalizeFeePeriodClose() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
-						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						messenger.xDomainMessageSender.returns(() => randomAddress);
 						await assert.revert(
 							instance.finalizeFeePeriodClose(1, 1, {
 								from: smockedMessenger,
@@ -407,9 +400,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('then SNX is minted via MintableSynthetix.mintSecondary', async () => {
-						assert.equal(feePool.smocked.closeSecondary.calls.length, 1);
-						assert.equal(feePool.smocked.closeSecondary.calls[0][0].toString(), '1');
-						assert.equal(feePool.smocked.closeSecondary.calls[0][1].toString(), '2');
+						expect(feePool.closeSecondary).to.have.length(0);
+						feePool.closeSecondary.returnsAtCall(0, '1');
+						feePool.closeSecondary.returnsAtCall(1, '2');
 					});
 				});
 			});

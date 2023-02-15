@@ -30,7 +30,7 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const {
 	toBytes32,
@@ -134,7 +134,7 @@ contract('FeePool', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		synthetixBridgeToOptimism = await smockit(artifacts.require('SynthetixBridgeToOptimism').abi);
+		synthetixBridgeToOptimism = await smock.fake('SynthetixBridgeToOptimism');
 
 		// import special address for relayer so we can call as it
 		await addressResolver.importAddresses(
@@ -859,14 +859,14 @@ contract('FeePool', async accounts => {
 
 				await feePool.closeCurrentFeePeriod({ from: account1 });
 
-				assert.equal(synthetixBridgeToOptimism.smocked.closeFeePeriod.calls.length, 1);
+				assert.equal(synthetixBridgeToOptimism.closeFeePeriod.calls.length, 1);
 
 				assert.equal(
-					synthetixBridgeToOptimism.smocked.closeFeePeriod.calls[0][0].toString(),
+					synthetixBridgeToOptimism.closeFeePeriod.calls[0][0].toString(),
 					'500000000000000000000'
 				);
 				assert.equal(
-					synthetixBridgeToOptimism.smocked.closeFeePeriod.calls[0][1].toString(),
+					synthetixBridgeToOptimism.closeFeePeriod.calls[0][1].toString(),
 					'500000000000000000000'
 				);
 			});

@@ -303,7 +303,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														});
 														it('emits a VirtualSynthCreated event with the correct underlying synth and amount', async () => {
 															assert.eventEqual(txn, 'VirtualSynthCreated', {
-																synth: this.mocks.synth.smocked.proxy.will.returnValue,
+																synth: this.mocks.synth.proxy.will.returnValue,
 																currencyKey: sETH,
 																amount: amountIn,
 																recipient: owner,
@@ -321,7 +321,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 															it('the vSynth has the correct synth', async () => {
 																assert.equal(
 																	await vSynth.synth(),
-																	this.mocks.synth.smocked.proxy.will.returnValue
+																	this.mocks.synth.proxy.will.returnValue
 																);
 															});
 															it('the vSynth has the correct resolver', async () => {
@@ -332,14 +332,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																assert.bnEqual(await vSynth.balanceOf(owner), amountIn);
 															});
 															it('and the synth has been issued to the vSynth', async () => {
-																assert.equal(
-																	this.mocks.synth.smocked.issue.calls[0][0],
-																	vSynth.address
-																);
-																assert.bnEqual(
-																	this.mocks.synth.smocked.issue.calls[0][1],
-																	amountIn
-																);
+																assert.equal(this.mocks.synth.issue.calls[0][0], vSynth.address);
+																assert.bnEqual(this.mocks.synth.issue.calls[0][1], amountIn);
 															});
 															it('the vSynth is an ERC-1167 minimal proxy instead of a full Virtual Synth', async () => {
 																const vSynthCode = await web3.eth.getCode(vSynth.address);
@@ -515,11 +509,10 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
 														() => {
 															beforeEach('attempt exchange', async () => {
-																this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
-																	currencyKey =>
-																		currencyKey === sETH
-																			? [badRate.toString(), true, false]
-																			: [lastRate.toString(), false, false]
+																this.mocks.ExchangeRates.rateWithSafetyChecks.returns(currencyKey =>
+																	currencyKey === sETH
+																		? [badRate.toString(), true, false]
+																		: [lastRate.toString(), false, false]
 																);
 																await this.instance.exchangeAtomically(
 																	...getExchangeArgs({
@@ -529,10 +522,10 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																);
 															});
 															it('did not issue or burn synths', async () => {
-																assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
-																assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
-																assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
-																assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+																assert.equal(this.mocks.sUSD.issue.calls.length, 0);
+																assert.equal(this.mocks.sETH.issue.calls.length, 0);
+																assert.equal(this.mocks.sUSD.burn.calls.length, 0);
+																assert.equal(this.mocks.sETH.burn.calls.length, 0);
 															});
 														}
 													);
@@ -552,11 +545,10 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 														{ setting: 'atomicMaxVolumePerBlock', value: maxAtomicValuePerBlock },
 														() => {
 															beforeEach('attempt exchange', async () => {
-																this.mocks.ExchangeRates.smocked.rateWithSafetyChecks.will.return.with(
-																	currencyKey =>
-																		currencyKey === sETH
-																			? [badRate.toString(), true, false]
-																			: [lastRate.toString(), false, false]
+																this.mocks.ExchangeRates.rateWithSafetyChecks.returns(currencyKey =>
+																	currencyKey === sETH
+																		? [badRate.toString(), true, false]
+																		: [lastRate.toString(), false, false]
 																);
 																await this.instance.exchangeAtomically(
 																	...getExchangeArgs({
@@ -566,10 +558,10 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																);
 															});
 															it('did not issue or burn synths', async () => {
-																assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
-																assert.equal(this.mocks.sETH.smocked.issue.calls.length, 0);
-																assert.equal(this.mocks.sUSD.smocked.burn.calls.length, 0);
-																assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+																assert.equal(this.mocks.sUSD.issue.calls.length, 0);
+																assert.equal(this.mocks.sETH.issue.calls.length, 0);
+																assert.equal(this.mocks.sUSD.burn.calls.length, 0);
+																assert.equal(this.mocks.sETH.burn.calls.length, 0);
 															});
 														}
 													);
@@ -591,9 +583,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 															value: maxAtomicValuePerBlock,
 															type: 'uint',
 														});
-														this.mocks.CircuitBreaker.smocked.isDeviationAboveThreshold.will.return.with(
-															true
-														);
+														this.mocks.CircuitBreaker.isDeviationAboveThreshold.returns(true);
 														await assert.revert(
 															this.instance.exchangeAtomically(...getExchangeArgs()),
 															'Atomic rate deviates too much'
@@ -673,22 +663,16 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																						);
 																					});
 																					it('burned correct amount of sUSD', () => {
-																						assert.equal(
-																							this.mocks.sUSD.smocked.burn.calls[0][0],
-																							owner
-																						);
+																						assert.equal(this.mocks.sUSD.burn.calls[0][0], owner);
 																						assert.bnEqual(
-																							this.mocks.sUSD.smocked.burn.calls[0][1],
+																							this.mocks.sUSD.burn.calls[0][1],
 																							amountIn
 																						);
 																					});
 																					it('issued correct amount of sETH', () => {
-																						assert.equal(
-																							this.mocks.sETH.smocked.issue.calls[0][0],
-																							owner
-																						);
+																						assert.equal(this.mocks.sETH.issue.calls[0][0], owner);
 																						assert.bnEqual(
-																							this.mocks.sETH.smocked.issue.calls[0][1],
+																							this.mocks.sETH.issue.calls[0][1],
 																							expectedAmountReceived
 																						);
 																					});
@@ -699,7 +683,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																						);
 																					});
 																					it('updated debt cache', () => {
-																						const debtCacheUpdateCall = this.mocks.DebtCache.smocked
+																						const debtCacheUpdateCall = this.mocks.DebtCache
 																							.updateCachedSynthDebtsWithRates;
 																						assert.deepEqual(debtCacheUpdateCall.calls[0][0], [
 																							sUSD,
@@ -712,7 +696,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					});
 																					it('asked Synthetix to emit an exchange event', () => {
 																						const synthetixEmitExchangeCall = this.mocks.Synthetix
-																							.smocked.emitSynthExchange;
+																							.emitSynthExchange;
 																						assert.equal(
 																							synthetixEmitExchangeCall.calls[0][0],
 																							owner
@@ -740,7 +724,7 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					});
 																					it('asked Synthetix to emit an atomic exchange event', () => {
 																						const synthetixEmitAtomicExchangeCall = this.mocks
-																							.Synthetix.smocked.emitAtomicSynthExchange;
+																							.Synthetix.emitAtomicSynthExchange;
 																						assert.equal(
 																							synthetixEmitAtomicExchangeCall.calls[0][0],
 																							owner
@@ -768,8 +752,8 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					});
 																					it('did not add any fee reclamation entries to exchange state', () => {
 																						assert.equal(
-																							this.mocks.ExchangeState.smocked.appendExchangeEntry
-																								.calls.length,
+																							this.mocks.ExchangeState.appendExchangeEntry.calls
+																								.length,
 																							0
 																						);
 																					});
@@ -778,24 +762,23 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					if (toBN(exchangeFeeRate).isZero()) {
 																						it('did not report a fee', () => {
 																							assert.equal(
-																								this.mocks.FeePool.smocked.recordFeePaid.calls
-																									.length,
+																								this.mocks.FeePool.recordFeePaid.calls.length,
 																								0
 																							);
 																						});
 																					} else {
 																						it('remitted correct fee to fee pool', () => {
 																							assert.equal(
-																								this.mocks.sUSD.smocked.issue.calls[0][0],
+																								this.mocks.sUSD.issue.calls[0][0],
 																								getUsers({ network: 'mainnet', user: 'fee' })
 																									.address
 																							);
 																							assert.bnEqual(
-																								this.mocks.sUSD.smocked.issue.calls[0][1],
+																								this.mocks.sUSD.issue.calls[0][1],
 																								expectedFee
 																							);
 																							assert.bnEqual(
-																								this.mocks.FeePool.smocked.recordFeePaid.calls[0],
+																								this.mocks.FeePool.recordFeePaid.calls[0],
 																								expectedFee
 																							);
 																						});
@@ -803,14 +786,14 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					if (!tradingRewardsEnabled) {
 																						it('did not report trading rewards', () => {
 																							assert.equal(
-																								this.mocks.TradingRewards.smocked
+																								this.mocks.TradingRewards
 																									.recordExchangeFeeForAccount.calls.length,
 																								0
 																							);
 																						});
 																					} else {
 																						it('reported trading rewards', () => {
-																							const trRecordCall = this.mocks.TradingRewards.smocked
+																							const trRecordCall = this.mocks.TradingRewards
 																								.recordExchangeFeeForAccount;
 																							assert.bnEqual(trRecordCall.calls[0][0], expectedFee);
 																							assert.equal(trRecordCall.calls[0][1], owner);
@@ -819,15 +802,15 @@ contract('ExchangerWithFeeRecAlternatives (unit tests)', async accounts => {
 																					if (!trackingCode) {
 																						it('did not ask Synthetix to emit tracking event', () => {
 																							assert.equal(
-																								this.mocks.Synthetix.smocked.emitExchangeTracking
-																									.calls.length,
+																								this.mocks.Synthetix.emitExchangeTracking.calls
+																									.length,
 																								0
 																							);
 																						});
 																					} else {
 																						it('asked Synthetix to emit tracking event', () => {
 																							const synthetixEmitTrackingCall = this.mocks.Synthetix
-																								.smocked.emitExchangeTracking;
+																								.emitExchangeTracking;
 																							assert.equal(
 																								synthetixEmitTrackingCall.calls[0][0],
 																								trackingCode
