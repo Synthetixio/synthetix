@@ -16,37 +16,37 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Schedar is BaseMigration {
-    // https://goerli.etherscan.io/address/0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
-    address public constant OWNER = 0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
+    // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://goerli.etherscan.io/address/0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB
-    AddressResolver public constant addressresolver_i = AddressResolver(0x0C80ff30d1e09135ec60cfe52B2c2EaE1B2f42AB);
-    // https://goerli.etherscan.io/address/0x4FC6f7C8Ff4f0D535315F1E6e84897c89367b47E
-    Proxy public constant proxyfeepool_i = Proxy(0x4FC6f7C8Ff4f0D535315F1E6e84897c89367b47E);
-    // https://goerli.etherscan.io/address/0x5cB8210159f486dFE8Dc779357ee5A15B8f233bC
+    // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
+    // https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309
+    Proxy public constant proxyfeepool_i = Proxy(0xb440DD674e1243644791a4AdfE3A2AbB0A92d309);
+    // https://etherscan.io/address/0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB
     FeePoolEternalStorage public constant feepooleternalstorage_i =
-        FeePoolEternalStorage(0x5cB8210159f486dFE8Dc779357ee5A15B8f233bC);
-    // https://goerli.etherscan.io/address/0x31541f35F6Bd061f4A894fB7eEE565f81EE50df3
-    SystemStatus public constant systemstatus_i = SystemStatus(0x31541f35F6Bd061f4A894fB7eEE565f81EE50df3);
-    // https://goerli.etherscan.io/address/0x249BCCbFD33FA6653Db02aE2349444EF25E9B41d
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x249BCCbFD33FA6653Db02aE2349444EF25E9B41d);
-    // https://goerli.etherscan.io/address/0x73d7fC96547eECCb3121dA7c0661554BE3e49236
-    FeePool public constant feepool_i = FeePool(0x73d7fC96547eECCb3121dA7c0661554BE3e49236);
-    // https://goerli.etherscan.io/address/0xA584bCE07004E17C246a7082aB680616853f3890
-    Issuer public constant issuer_i = Issuer(0xA584bCE07004E17C246a7082aB680616853f3890);
+        FeePoolEternalStorage(0xC9DFff5fA5605fd94F8B7927b892F2B57391e8bB);
+    // https://etherscan.io/address/0x696c905F8F8c006cA46e9808fE7e00049507798F
+    SystemStatus public constant systemstatus_i = SystemStatus(0x696c905F8F8c006cA46e9808fE7e00049507798F);
+    // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
+    RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
+    // https://etherscan.io/address/0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618
+    FeePool public constant feepool_i = FeePool(0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618);
+    // https://etherscan.io/address/0x2eb6860FAdC59910bF187965da8714d91F20f4dB
+    Issuer public constant issuer_i = Issuer(0x2eb6860FAdC59910bF187965da8714d91F20f4dB);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://goerli.etherscan.io/address/0x73d7fC96547eECCb3121dA7c0661554BE3e49236
-    address public constant new_FeePool_contract = 0x73d7fC96547eECCb3121dA7c0661554BE3e49236;
-    // https://goerli.etherscan.io/address/0xA584bCE07004E17C246a7082aB680616853f3890
-    address public constant new_Issuer_contract = 0xA584bCE07004E17C246a7082aB680616853f3890;
+    // https://etherscan.io/address/0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618
+    address public constant new_FeePool_contract = 0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618;
+    // https://etherscan.io/address/0x2eb6860FAdC59910bF187965da8714d91F20f4dB
+    address public constant new_Issuer_contract = 0x2eb6860FAdC59910bF187965da8714d91F20f4dB;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -129,41 +129,48 @@ contract Migration_Schedar is BaseMigration {
 
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x4300a068B3826aCEFaE7062b411aF467a34Bf3A6);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x6Ce575c870ce744e245Ef8400b6d89412C35c328);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xAc86855865CbF31c8f9FBB68C749AD5Bd72802e3);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xaeA0065E146FD75Dc24465961a583827284D405a);
         addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(new_Issuer_contract);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x1427Bc44755d9Aa317535B1feE38922760Aa4e65);
-        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0xa69768003543eBe5DD91E787278D99FfF9aD6095);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x8f01E7815583C5Be70e4608Fde3DdE7DcC29592f);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0xB7774b79f83191eFF5F159889d1e7A5A242e2244);
-        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x4556b9761b2aC071D1665FAe01faA255a53d1307);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x7D2bEB18a21468808E16fD1fbe9637eFa98D0777);
-        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x0376Bdaf9C97E2e454C83e728154eC621df23958);
-        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0x6d20C286D94a603A1cdE80D1f8e5f44Bc22550C0);
-        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(new_FeePool_contract);
-        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0xFC0E6442fC16e1caf52baa31f8043D8BE78AEb0D);
-        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0x671C874C43B571878D6a90C5AA27288096eEac21);
-        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0xc656c18721594f9E98B0C805AB9c21Bda5B44f4C);
-        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0x601A1Cf1a34d9cF0020dCCD361c155Fe54CE24fB);
-        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0xc30BECA82f1f60DC0e4d3490428525985eef4D74);
-        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x183B4A053CbA70a420E581918008Ef8e65d95E05);
-        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0xf1D0Ee19af243bcbC140A2259290B490E4df92A9);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x39Ea01a0298C315d149a490E34B59Dbf2EC7e48F);
+        addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(0x02f9bC46beD33acdB9cb002fe346734CeF8a9480);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x10A5F7D9D65bCc2734763444D4940a31b109275f);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0xa8E31E3C38aDD6052A9407298FAEB8fD393A6cF9);
+        addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xE1cc2332852B2Ac0dA59A1f9D3051829f4eF3c1C);
+        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0xfb020CA7f4e8C4a5bBBe060f59a249c6275d2b69);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0xdc883b9d9Ee16f74bE08826E68dF4C9D9d26e8bD);
+        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0xBb5b03E920cF702De5A3bA9Fc1445aF4B3919c88);
+        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0xdAe6C79c46aB3B280Ca28259000695529cbD1339);
+        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x1cB004a8e84a5CE95C1fF895EE603BaC8EC506c7);
+        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0x5D4C724BFe3a228Ff0E29125Ac1571FE093700a4);
+        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0x07C1E81C345A7c58d7c24072EFc5D929BD0647AD);
+        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0xC1AAE9d18bBe386B102435a8632C8063d31e747C);
+        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0x5c8344bcdC38F1aB5EB5C1d4a35DdEeA522B5DfA);
+        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0xaa03aB31b55DceEeF845C8d17890CC61cD98eD04);
+        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x1F2c3a1046c32729862fcB038369696e3273a516);
+        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(new_FeePool_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
     function addressresolver_rebuildCaches_2() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](2);
-        addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x32A0BAA5Acec418a85Fd032f0292893B8E4f743B);
-        addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0x86bfC5Be44f5DE1673824c0d0d1CCEA1306cD40e);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](9);
+        addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0x883A0E7b329Df75476d9378462522CF2f78Fab3d);
+        addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0x89FCb32F29e509cc42d0C8b6f058C993013A843F);
+        addressresolver_rebuildCaches_destinations_2_0[2] = MixinResolver(0x8e9757479D5ad4E7f9d951B60d39F5220b893d6c);
+        addressresolver_rebuildCaches_destinations_2_0[3] = MixinResolver(0xf79603a71144e415730C1A6f57F366E4Ea962C00);
+        addressresolver_rebuildCaches_destinations_2_0[4] = MixinResolver(0x1620Aa736939597891C1940CF0d28b82566F9390);
+        addressresolver_rebuildCaches_destinations_2_0[5] = MixinResolver(0x9f231dBE53D460f359B2B8CC47574493caA5B7Bf);
+        addressresolver_rebuildCaches_destinations_2_0[6] = MixinResolver(0xeAcaEd9581294b1b5cfb6B941d4B8B81B2005437);
+        addressresolver_rebuildCaches_destinations_2_0[7] = MixinResolver(0xe533139Af961c9747356D947838c98451015e234);
+        addressresolver_rebuildCaches_destinations_2_0[8] = MixinResolver(0x067e398605E84F2D0aEEC1806e62768C5110DCc6);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
     }
 
     function importFeePeriod_0() internal {
-        // https://goerli.etherscan.io/address/0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034;
-        FeePool existingFeePool = FeePool(0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034);
-        // https://goerli.etherscan.io/address/0x73d7fC96547eECCb3121dA7c0661554BE3e49236;
-        FeePool newFeePool = FeePool(0x73d7fC96547eECCb3121dA7c0661554BE3e49236);
+        // https://etherscan.io/address/0x3B2f389AeE480238A49E3A9985cd6815370712eB;
+        FeePool existingFeePool = FeePool(0x3B2f389AeE480238A49E3A9985cd6815370712eB);
+        // https://etherscan.io/address/0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618;
+        FeePool newFeePool = FeePool(0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618);
         (
             uint64 feePeriodId_0,
             uint64 unused_0,
@@ -185,10 +192,10 @@ contract Migration_Schedar is BaseMigration {
     }
 
     function importFeePeriod_1() internal {
-        // https://goerli.etherscan.io/address/0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034;
-        FeePool existingFeePool = FeePool(0x9D9aAf3ED4E4A708834F148f9b9d0d12Ba0a8034);
-        // https://goerli.etherscan.io/address/0x73d7fC96547eECCb3121dA7c0661554BE3e49236;
-        FeePool newFeePool = FeePool(0x73d7fC96547eECCb3121dA7c0661554BE3e49236);
+        // https://etherscan.io/address/0x3B2f389AeE480238A49E3A9985cd6815370712eB;
+        FeePool existingFeePool = FeePool(0x3B2f389AeE480238A49E3A9985cd6815370712eB);
+        // https://etherscan.io/address/0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618;
+        FeePool newFeePool = FeePool(0x83105D7CDd2fd9b8185BFF1cb56bB1595a618618);
         (
             uint64 feePeriodId_1,
             uint64 unused_1,
@@ -210,10 +217,17 @@ contract Migration_Schedar is BaseMigration {
     }
 
     function issuer_addSynths_11() internal {
-        ISynth[] memory issuer_addSynths_synthsToAdd_11_0 = new ISynth[](3);
-        issuer_addSynths_synthsToAdd_11_0[0] = ISynth(0x8f01E7815583C5Be70e4608Fde3DdE7DcC29592f);
-        issuer_addSynths_synthsToAdd_11_0[1] = ISynth(0xB7774b79f83191eFF5F159889d1e7A5A242e2244);
-        issuer_addSynths_synthsToAdd_11_0[2] = ISynth(0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c);
+        ISynth[] memory issuer_addSynths_synthsToAdd_11_0 = new ISynth[](10);
+        issuer_addSynths_synthsToAdd_11_0[0] = ISynth(0x10A5F7D9D65bCc2734763444D4940a31b109275f);
+        issuer_addSynths_synthsToAdd_11_0[1] = ISynth(0xa8E31E3C38aDD6052A9407298FAEB8fD393A6cF9);
+        issuer_addSynths_synthsToAdd_11_0[2] = ISynth(0xE1cc2332852B2Ac0dA59A1f9D3051829f4eF3c1C);
+        issuer_addSynths_synthsToAdd_11_0[3] = ISynth(0xfb020CA7f4e8C4a5bBBe060f59a249c6275d2b69);
+        issuer_addSynths_synthsToAdd_11_0[4] = ISynth(0xdc883b9d9Ee16f74bE08826E68dF4C9D9d26e8bD);
+        issuer_addSynths_synthsToAdd_11_0[5] = ISynth(0xBb5b03E920cF702De5A3bA9Fc1445aF4B3919c88);
+        issuer_addSynths_synthsToAdd_11_0[6] = ISynth(0xdAe6C79c46aB3B280Ca28259000695529cbD1339);
+        issuer_addSynths_synthsToAdd_11_0[7] = ISynth(0x1cB004a8e84a5CE95C1fF895EE603BaC8EC506c7);
+        issuer_addSynths_synthsToAdd_11_0[8] = ISynth(0x5D4C724BFe3a228Ff0E29125Ac1571FE093700a4);
+        issuer_addSynths_synthsToAdd_11_0[9] = ISynth(0x07C1E81C345A7c58d7c24072EFc5D929BD0647AD);
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_11_0);
     }
 }
