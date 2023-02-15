@@ -103,10 +103,8 @@ const owner = async ({
 
 	let safeBatchSubmitter;
 	if (!useFork && !isTest) {
-		console.log('SSSSS IS TEST 2');
 		safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
 	}
-	console.log('SSSSS IS TEST 3');
 
 	if (!safeBatchSubmitter) {
 		console.log(gray('New owner is not a Gnosis safe.'));

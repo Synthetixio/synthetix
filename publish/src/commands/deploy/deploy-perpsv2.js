@@ -83,6 +83,7 @@ const deployPerpsV2Markets = async ({
 		ReadProxyAddressResolver,
 		PerpsV2MarketSettings: perpsV2MarketSettings,
 		PerpsV2ExchangeRate: perpsV2ExchangeRate,
+		SystemStatus,
 	} = deployer.deployedContracts;
 
 	// ----------------
@@ -132,6 +133,14 @@ const deployPerpsV2Markets = async ({
 	// const deployedPerpsV2Markets = [];
 	// const perpMarketsImplementationUpdated = [];
 	// const exchangeRateAssociateContractAddresses = [];
+
+	// Grant futures pause/resume ACL to owner
+	await runStep({
+		contract: 'SystemStatus',
+		target: SystemStatus,
+		write: 'updateAccessControl',
+		writeArg: ['Futures', account, true, true],
+	});
 
 	for (const marketConfig of perpsv2Markets) {
 		console.log(
@@ -243,7 +252,7 @@ const deployPerpsV2Markets = async ({
 		await linkToMarketManager({
 			runStep,
 			futuresMarketManager,
-			proxies: [deployMarketProxy.target],
+			proxies: [deployedMarketProxy.target.address],
 		});
 
 		// Resume market if needed after linking/configuring
@@ -258,6 +267,15 @@ const deployPerpsV2Markets = async ({
 			});
 		}
 	}
+
+	// Revoke futures pause/resume ACL to owner
+	await runStep({
+		contract: 'SystemStatus',
+		target: SystemStatus,
+		write: 'updateAccessControl',
+		writeArg: ['Futures', account, false, false],
+	});
+
 	///
 	///
 	///

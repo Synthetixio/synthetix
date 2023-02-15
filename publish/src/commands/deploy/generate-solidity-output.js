@@ -43,9 +43,6 @@ module.exports = async ({
 		runIndex,
 		{ skipSolidity, contract, target, writeArg, write, comment, customSolidity },
 	] of Object.entries(runSteps)) {
-		if (contract === undefined) {
-			console.log('SSSSS UNDEFINED', { runIndex, target, writeArg, write, comment });
-		}
 		if (skipSolidity || contract.library) {
 			continue;
 		}
