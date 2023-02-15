@@ -126,7 +126,7 @@
 		"solc": "^0.5.16",
 		"solhint": "^3.3.4",
 		"solidifier": "^2.2.3",
-		"solidity-coverage": "^0.7.17",
+		"solidity-coverage": "^0.8.2",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
 		"web3": "^1.7.0",
