@@ -709,7 +709,8 @@
 		{
 			"sip": 255,
 			"layer": "both",
-			"sources": ["FeePool", "Issuer"]
+			"sources": ["FeePool", "Issuer"],
+			"released": "both"
 		},
 		{
 			"sip": 257,
@@ -1573,7 +1574,8 @@
 				"major": 2,
 				"minor": 83
 			},
-			"sips": [255]
+			"sips": [255],
+			"released": true
 		},
 		{
 			"name": "Schedar (Optimism)",
@@ -1582,7 +1584,8 @@
 				"major": 2,
 				"minor": 83
 			},
-			"sips": [255]
+			"sips": [255],
+			"released": true
 		}
 	]
 }
