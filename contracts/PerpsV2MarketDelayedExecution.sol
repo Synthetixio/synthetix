@@ -244,8 +244,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         _confirmCanCancel(account, order, currentRoundId);
 
         if (account == messageSender) {
-            // this is account owner
-            // refund keeper fee to margin
+            // this is account owner - refund keeper fee to margin
             Position memory position = marketState.positions(account);
 
             // cancelling an order does not induce a fillPrice as no skew has moved.
@@ -258,6 +257,14 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         } else {
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
+        }
+
+        // note: pay debt pool in the event there is any commitFee
+        //
+        // this should never occur but may during release as there may be lingering orders to be cancelled
+        // which was submitted with a commitFee either before or during the upgrade.
+        if (order.commitDeposit > 0) {
+            _manager().payFee(order.commitDeposit);
         }
 
         // important!! position of the account, not the msg.sender
@@ -275,7 +282,8 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
     ) internal notFlagged(account) {
         // handle the fees and refunds according to the mechanism rules
         //
-        // legacy - commitDeposit will _always_ be $0 as we no longer charge a commitDeposit
+        // note: commitDeposit will always be 0 as we no longer charge a commitDeposit on submit. however,
+        // during upgrade there may be pending orders for execution with a commitDeposit.
         uint toRefund = order.commitDeposit; // refund the commitment deposit
 
         // refund keeperFee to margin if it's the account holder
