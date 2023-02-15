@@ -142,10 +142,10 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _offchainMarketKey(bytes32 _marketKey) internal view returns (bytes32) {
         return
-        _flexibleStorage().getBytes32Value(
-            SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY))
-        );
+            _flexibleStorage().getBytes32Value(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(_marketKey, PARAMETER_OFFCHAIN_MARKET_KEY))
+            );
     }
 
     function _offchainPriceDivergence(bytes32 _marketKey) internal view returns (uint) {

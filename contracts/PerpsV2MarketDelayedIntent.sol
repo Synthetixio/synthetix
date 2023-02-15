@@ -209,7 +209,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
                 sizeDelta: int128(sizeDelta),
                 priceImpactDelta: uint128(priceImpactDelta),
                 targetRoundId: isOffchain ? 0 : uint128(targetRoundId),
-                commitDeposit: 0, // legacy - no longer charging a commitDeposit on submission.
+                commitDeposit: 0, // note: legacy as no longer charge a commitFee on submit
                 keeperDeposit: uint128(keeperDeposit), // offchain orders do _not_ have an executableAtTime as it's based on price age.
                 executableAtTime: isOffchain ? 0 : block.timestamp + desiredTimeDelta, // zero out - not used and minimise confusion.
                 intentionTime: block.timestamp,
