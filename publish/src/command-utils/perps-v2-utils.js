@@ -544,6 +544,8 @@ const configureMarket = async ({
 		maxPD: ethers.utils.parseUnits(marketConfig.maxPD),
 	};
 
+	// const currentParams = await perpsV2MarketSettings.parameters(marketKeyBytes);
+	// console.log(currentParams);
 	for (const setting in settings) {
 		const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
 		const value = settings[setting];

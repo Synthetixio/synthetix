@@ -79,7 +79,11 @@ const deployPerpsV2Markets = async ({
 	futuresMarketManager,
 	limitPromise,
 }) => {
-	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const {
+		ReadProxyAddressResolver,
+		PerpsV2MarketSettings: perpsV2MarketSettings,
+		PerpsV2ExchangeRate: perpsV2ExchangeRate,
+	} = deployer.deployedContracts;
 
 	// ----------------
 	// PerpsV2 market setup
@@ -93,33 +97,10 @@ const deployPerpsV2Markets = async ({
 		return;
 	}
 
-	updatedContracts.push(futuresMarketManager);
-
 	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
-
-	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
-	// I've colocated it here for now.
-	await deployer.deployContract({
-		name: 'PerpsV2MarketData',
-		args: [addressOf(ReadProxyAddressResolver)],
-		deps: ['AddressResolver'],
-	});
-	const perpsV2MarketSettings = await deployer.deployContract({
-		name: 'PerpsV2MarketSettings',
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
-
-	updatedContracts.push(perpsV2MarketSettings);
-
-	const perpsV2ExchangeRate = await deployer.deployContract({
-		name: 'PerpsV2ExchangeRate',
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
-
-	updatedContracts.push(perpsV2ExchangeRate);
 
 	const existingMarketAddresses = await futuresMarketManager['allMarkets(bool)'](true);
 	const existingMarkets = [];

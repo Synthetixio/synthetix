@@ -44,6 +44,8 @@ const deployMigration = async ({
 	useOvm,
 	buildPath = DEFAULTS.buildPath,
 	privateKey,
+	overrideProviderUrl,
+	skipVerification,
 	yes,
 	dryRun = false,
 	migrationLibrary = false,
@@ -82,7 +84,9 @@ const deployMigration = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const effectiveProviderUrl = overrideProviderUrl || providerUrl;
+
+	const provider = new ethers.providers.JsonRpcProvider(effectiveProviderUrl);
 
 	const ownerAddress = getUsers({ user: 'owner' }).address;
 
@@ -96,6 +100,7 @@ const deployMigration = async ({
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
+		'Skip contracts verification': skipVerification ? yellow('⚠ true') : green('NO'),
 		Network: network,
 		'Use OVM': useOvm,
 		Gas: `Base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`,
@@ -110,6 +115,7 @@ const deployMigration = async ({
 		'Release Name': releaseName,
 		'Deployer account:': signer.address,
 		'Using migration library:': migrationLibrary,
+		'Provider URL': effectiveProviderUrl,
 	});
 
 	if (!yes) {
@@ -246,27 +252,29 @@ const deployMigration = async ({
 		});
 	}
 
-	if (migrationLibrary) {
-		// verify lib
-		await verifyContract({
-			deployedContract: deployedLib,
-			contractName: libName,
-			buildPath,
-			etherscanUrl,
-			useOvm,
-		});
-		// verify contract
-		await verifyContract({
-			deployedContract,
-			contractName,
-			buildPath,
-			etherscanUrl,
-			useOvm,
-			linkedLibraryName: libName,
-			linkedLibraryAddress: deployedLib.address,
-		});
-	} else {
-		await verifyContract({ deployedContract, contractName, buildPath, etherscanUrl, useOvm });
+	if (!skipVerification) {
+		if (migrationLibrary) {
+			// verify lib
+			await verifyContract({
+				deployedContract: deployedLib,
+				contractName: libName,
+				buildPath,
+				etherscanUrl,
+				useOvm,
+			});
+			// verify contract
+			await verifyContract({
+				deployedContract,
+				contractName,
+				buildPath,
+				etherscanUrl,
+				useOvm,
+				linkedLibraryName: libName,
+				linkedLibraryAddress: deployedLib.address,
+			});
+		} else {
+			await verifyContract({ deployedContract, contractName, buildPath, etherscanUrl, useOvm });
+		}
 	}
 
 	console.log(gray(`Done.`));
@@ -354,11 +362,13 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
+			.option('-p, --override-provider-url <value>', 'Override .env PROVIDER_URL.')
 			.option('--use-ovm', 'Use OVM')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
+			.option('--skip-verification', 'Skip etherscan contract verification')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
