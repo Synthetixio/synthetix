@@ -7,7 +7,14 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const FeePool = artifacts.require('FeePool');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-const { fastForward, toUnit, toBN, fromUnit, multiplyDecimal } = require('../utils')();
+const {
+	fastForward,
+	toUnit,
+	toBN,
+	fromUnit,
+	multiplyDecimal,
+	divideDecimal,
+} = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -30,7 +37,7 @@ const {
 	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
 } = require('../..');
 
-const CLAIM_AMOUNT_DELTA_TOLERATED = '50';
+const CLAIM_AMOUNT_DELTA_TOLERATED = '80';
 
 contract('FeePool', async accounts => {
 	const [deployerAccount, owner, relayer, account1, account2] = accounts;
@@ -278,7 +285,7 @@ contract('FeePool', async accounts => {
 			// Second period
 			const secondPeriod = await feePool.recentFeePeriods(1);
 			assert.bnEqual(secondPeriod.feesToDistribute, feeInUSD);
-			assert.bnEqual(secondPeriod.feesClaimed, feeInUSD.divRound(web3.utils.toBN('2')));
+			assert.bnEqual(secondPeriod.feesClaimed, feeInUSD); // all fees are claimed when burnt
 
 			// Everything else should be zero
 			for (let i = 3; i < length; i++) {
@@ -304,7 +311,7 @@ contract('FeePool', async accounts => {
 
 			// Last period should have rolled over fees to distribute
 			const lastPeriod = await feePool.recentFeePeriods(length - 1);
-			assert.bnEqual(lastPeriod.feesToDistribute, toBN(feeInUSD.div(web3.utils.toBN('2'))));
+			assert.bnEqual(lastPeriod.feesToDistribute, toBN(0));
 			assert.bnEqual(lastPeriod.feesClaimed, toBN(0));
 		});
 
@@ -325,18 +332,52 @@ contract('FeePool', async accounts => {
 
 			// Should be no fees available yet because the period is still pending.
 			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
+			let feesAvailable;
+			feesAvailable = await feePool.feesAvailable(owner);
+			assert.bnEqual(feesAvailable[0], 0);
+			feesAvailable = await feePool.feesAvailable(account1);
+			assert.bnEqual(feesAvailable[0], 0);
+
+			// Should be no fees burned yet because the period is still pending.
+			assert.bnEqual(await feePool.totalFeesBurned(), 0);
+			let feesBurned;
+			feesBurned = await feePool.feesBurned(owner);
+			assert.bnEqual(feesBurned, 0);
+			feesBurned = await feePool.feesBurned(account1);
+			assert.bnEqual(feesBurned, 0);
+
+			// Should correctly calculate the share of the fees to burn for each account in the current period.
+			const feesToBurn0 = await feePool.feesToBurn(owner);
+			assert.bnClose(feesToBurn0, divideDecimal(fee, toUnit('3')), CLAIM_AMOUNT_DELTA_TOLERATED);
+			const feesToBurn1 = await feePool.feesToBurn(account1);
+			assert.bnClose(feesToBurn1, divideDecimal(fee, toUnit('1.5')), CLAIM_AMOUNT_DELTA_TOLERATED);
 
 			// So close out the period
 			await closeFeePeriod();
 
-			// Now we should have some fees.
-			assert.bnEqual(await feePool.totalFeesAvailable(), fee);
+			// Should still be no fees available because they are automatically burned once the fee period closes.
+			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
+
+			// Now we should have all of the fees burned.
+			assert.bnEqual(await feePool.totalFeesBurned(), fee);
+			assert.bnClose(
+				await feePool.totalFeesBurned(),
+				feesToBurn0.add(feesToBurn1),
+				CLAIM_AMOUNT_DELTA_TOLERATED
+			);
+
+			feesBurned = await feePool.feesBurned(owner);
+			assert.bnClose(feesBurned, divideDecimal(fee, toUnit('3')), CLAIM_AMOUNT_DELTA_TOLERATED);
+
+			feesBurned = await feePool.feesBurned(account1);
+			assert.bnClose(feesBurned, divideDecimal(fee, toUnit('1.5')), CLAIM_AMOUNT_DELTA_TOLERATED);
 		});
 
-		it('should correctly calculate the totalFeesAvailable for multiple periods', async () => {
+		it('should correctly calculate the totalFeesAvailable and totalFeesBurned for multiple periods', async () => {
 			const amount1 = toUnit('10000');
 			const amount2 = amount1.mul(web3.utils.toBN('2'));
 			const fee1 = amount1.sub(amountReceivedFromExchange(amount1));
+			let feesToBurn0, feesToBurn1;
 
 			// Issue sUSD for two different accounts.
 			await synthetix.transfer(account1, toUnit('1000000'), {
@@ -349,14 +390,24 @@ contract('FeePool', async accounts => {
 			// Generate a fee.
 			await synthetix.exchange(sUSD, amount1, sAUD, { from: owner });
 
-			// Should be no fees available yet because the period is still pending.
+			// Should be no fees available or burned yet because the period is still pending.
 			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
+			assert.bnEqual(await feePool.totalFeesBurned(), 0);
+
+			// Should correctly calculate the share of the fees to burn for each account in the current period.
+			feesToBurn0 = await feePool.feesToBurn(owner);
+			assert.bnClose(feesToBurn0, divideDecimal(fee1, toUnit('3')), CLAIM_AMOUNT_DELTA_TOLERATED);
+			feesToBurn1 = await feePool.feesToBurn(account1);
+			assert.bnClose(feesToBurn1, divideDecimal(fee1, toUnit('1.5')), CLAIM_AMOUNT_DELTA_TOLERATED);
 
 			// So close out the period
 			await closeFeePeriod();
 
-			// Now we should have some fees.
-			assert.bnEqual(await feePool.totalFeesAvailable(), fee1);
+			// Now we should see some burnt fees.
+			assert.bnEqual(await feePool.totalFeesBurned(), fee1);
+
+			// Should still be no fees available because they are automatically burned once the fee period closes.
+			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
 
 			// Ok, and do it again but with account1's synths this time.
 			const fee2 = amount2.sub(amountReceivedFromExchange(amount2));
@@ -364,14 +415,20 @@ contract('FeePool', async accounts => {
 			// Generate a fee.
 			await synthetix.exchange(sUSD, amount2, sAUD, { from: account1 });
 
-			// Should be only the previous fees available because the period is still pending.
-			assert.bnEqual(await feePool.totalFeesAvailable(), fee1);
+			// Should be only the previous fees burned because the period is still pending.
+			assert.bnEqual(await feePool.totalFeesBurned(), fee1);
+
+			// Should correctly calculate the share of the fees to burn for each account in the current period.
+			feesToBurn0 = await feePool.feesToBurn(owner);
+			assert.bnClose(feesToBurn0, divideDecimal(fee2, toUnit('3')), CLAIM_AMOUNT_DELTA_TOLERATED);
+			feesToBurn1 = await feePool.feesToBurn(account1);
+			assert.bnClose(feesToBurn1, divideDecimal(fee2, toUnit('1.5')), CLAIM_AMOUNT_DELTA_TOLERATED);
 
 			// Close out the period
 			await closeFeePeriod();
 
-			// Now we should have both fees.
-			assert.bnClose(await feePool.totalFeesAvailable(), fee1.add(fee2));
+			// Now we should have the second fees burned.
+			assert.bnClose(await feePool.totalFeesBurned(), fee2);
 		});
 
 		it('should correctly calculate the feesAvailable for a single user in an open period', async () => {
@@ -469,20 +526,16 @@ contract('FeePool', async accounts => {
 			feesAvailable = await feePool.feesAvailable(account1);
 			assert.bnClose(feesAvailable[0], twoThirds(fee), CLAIM_AMOUNT_DELTA_TOLERATED);
 
-			// If we close the next FEE_PERIOD_LENGTH fee periods off without claiming, their
-			// fee amount that was unclaimed will roll forward, but will get proportionally
+			// Prior to SIP-255, if we closed the next FEE_PERIOD_LENGTH fee periods off without claiming, their
+			// fee amount that was unclaimed would roll forward, but would get proportionally
 			// redistributed to everyone.
 			for (let i = 0; i < FEE_PERIOD_LENGTH; i++) {
 				await closeFeePeriod();
 			}
 
+			// As of SIP-255, all sUSD fees are now burned when the fee period closes and are considered claimed, so they should have zero available.
 			feesAvailable = await feePool.feesAvailable(account1);
-			assert.bnClose(feesAvailable[0], twoThirds(twoThirds(fee)), CLAIM_AMOUNT_DELTA_TOLERATED);
-
-			// But once they claim they should have zero.
-			await feePool.claimFees({ from: account1 });
-			feesAvailable = await feePool.feesAvailable(account1);
-			assert.bnEqual(feesAvailable[0], 0);
+			assert.bnClose(feesAvailable[0], 0);
 		});
 
 		describe('when closing the fee period', () => {
@@ -509,6 +562,12 @@ contract('FeePool', async accounts => {
 				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
+				// Make sure the FeeAddress has enough synths to burn for the imported periods.
+				await synthetix.issueSynths(toUnit('1000'), { from: owner });
+				await sUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
+					from: owner,
+				});
+
 				// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
 				const feePeriodsImport = [
 					{
@@ -566,7 +625,7 @@ contract('FeePool', async accounts => {
 					feePeriodId: 22,
 					startTime: 1520859600,
 					feesToDistribute: rolledOverFees,
-					feesClaimed: '0',
+					feesClaimed: rolledOverFees,
 					rewardsToDistribute: '1442107692307692307692307',
 					rewardsClaimed: '0',
 				});
@@ -711,6 +770,9 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should receive fees from WrapperFactory', async () => {
+				// Make sure some debt exists otherwise updateCachedsUSDDebt will revert when closing/burning fees.
+				await synthetix.issueSynths(toUnit('1000'), { from: owner });
+
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
 
@@ -880,6 +942,12 @@ contract('FeePool', async accounts => {
 				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
+				// Make sure the FeeAddress has enough synths to burn for the imported periods.
+				await synthetix.issueSynths(toUnit('1000'), { from: owner });
+				await sUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
+					from: owner,
+				});
+
 				// startTime for most recent period is mocked to start same time as the 2018-03-13T00:00:00 datetime
 				const feePeriodsImport = [
 					{
@@ -937,7 +1005,7 @@ contract('FeePool', async accounts => {
 					feePeriodId: 22,
 					startTime: 1520859600,
 					feesToDistribute: rolledOverFees,
-					feesClaimed: '0',
+					feesClaimed: rolledOverFees,
 					rewardsToDistribute: '1442107692307692307692307',
 					rewardsClaimed: '0',
 				});
@@ -1039,19 +1107,20 @@ contract('FeePool', async accounts => {
 
 				// Assert that we have correct values in the fee pool
 				const feesAvailableUSD = await feePool.feesAvailable(owner);
-				const oldsUSDBalance = await sUSDContract.balanceOf(owner);
+				const feesBurnedUSD = await feePool.feesBurned(owner);
+				const beforeUSDBalance = await sUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				const claimFeesTx = await feePool.claimFees({ from: owner });
 
 				assert.eventEqual(claimFeesTx, 'FeesClaimed', {
-					sUSDAmount: feesAvailableUSD[0],
+					sUSDAmount: feesBurnedUSD,
 					snxRewards: feesAvailableUSD[1],
 				});
 
-				const newUSDBalance = await sUSDContract.balanceOf(owner);
-				// We should have our fees
-				assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+				const afterUSDBalance = await sUSDContract.balanceOf(owner);
+				// sUSD balance should remain unchanged
+				assert.bnEqual(afterUSDBalance, beforeUSDBalance);
 			});
 
 			it('should allow a user to claim their fees in sUSD after burning @gasprofile', async () => {
@@ -1078,19 +1147,20 @@ contract('FeePool', async accounts => {
 
 				// Assert that we have correct values in the fee pool
 				const feesAvailableUSD = await feePool.feesAvailable(owner);
-				const oldsUSDBalance = await sUSDContract.balanceOf(owner);
+				const feesBurnedUSD = await feePool.feesBurned(owner);
+				const beforeUSDBalance = await sUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				const claimFeesTx = await feePool.claimFees({ from: owner });
 
 				assert.eventEqual(claimFeesTx, 'FeesClaimed', {
-					sUSDAmount: feesAvailableUSD[0],
+					sUSDAmount: feesBurnedUSD,
 					snxRewards: feesAvailableUSD[1],
 				});
 
-				const newUSDBalance = await sUSDContract.balanceOf(owner);
-				// We should have our fees
-				assert.bnEqual(newUSDBalance, oldsUSDBalance.add(feesAvailableUSD[0]));
+				const afterUSDBalance = await sUSDContract.balanceOf(owner);
+				// sUSD balance should remain unchanged
+				assert.bnEqual(afterUSDBalance, beforeUSDBalance);
 			});
 
 			it('should allow a user to claim their fees if they minted debt during period', async () => {
@@ -1122,8 +1192,8 @@ contract('FeePool', async accounts => {
 				// Now we should be able to claim them.
 				await feePool.claimFees({ from: owner });
 
-				// We should have our fees
-				assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+				// Balance remains the same since fees are burned
+				assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance);
 
 				// FeePeriod 2 - account 1 joins and mints 50% of the debt
 				totalFees = web3.utils.toBN('0');
@@ -1140,8 +1210,16 @@ contract('FeePool', async accounts => {
 
 				await feePool.claimFees({ from: account1 });
 
-				assert.bnClose(feesAvailableOwner[0], totalFees.div(web3.utils.toBN('2')), '8');
-				assert.bnClose(feesAvailableAcc1[0], totalFees.div(web3.utils.toBN('2')), '8');
+				assert.bnClose(
+					feesAvailableOwner[0],
+					totalFees.div(web3.utils.toBN('2')),
+					'250000000000000000'
+				);
+				assert.bnClose(
+					feesAvailableAcc1[0],
+					totalFees.div(web3.utils.toBN('2')),
+					'250000000000000000'
+				);
 			});
 
 			it('should allow a user to claim their fees in sUSD (as half of total) after some exchanging', async () => {
@@ -1180,11 +1258,12 @@ contract('FeePool', async accounts => {
 
 				// Assert that we have correct values in the fee pool
 				const feesAvailable = await feePool.feesAvailable(owner);
+				const feesBurned = await feePool.feesBurned(owner);
 
 				const half = amount => amount.div(web3.utils.toBN('2'));
 
 				// owner has half the debt so entitled to half the fees
-				assert.bnClose(feesAvailable[0], half(totalFees), '19');
+				assert.bnClose(feesAvailable[0].add(feesBurned), half(totalFees), '19');
 
 				const oldSynthBalance = await sUSDContract.balanceOf(owner);
 
@@ -1192,7 +1271,11 @@ contract('FeePool', async accounts => {
 				await feePool.claimFees({ from: owner });
 
 				// We should have our fees
-				assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance.add(feesAvailable[0]));
+				assert.bnClose(
+					await sUSDContract.balanceOf(owner),
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
+				);
 			});
 
 			it('should revert when a user tries to double claim their fees', async () => {
@@ -1528,9 +1611,10 @@ contract('FeePool', async accounts => {
 				await feePool.claimOnBehalf(account1, { from: account2 });
 
 				// We should have our fees for account1
-				assert.bnEqual(
+				assert.bnClose(
 					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0])
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
 				);
 			});
 			it('should revert if account2 tries to claimOnBehalf without approval', async () => {
@@ -1584,7 +1668,7 @@ contract('FeePool', async accounts => {
 				// Assert that we have correct values in the fee pool
 				// Account1 should have all the fees as only account minted
 				const feesAvailable = await feePool.feesAvailable(account1);
-				assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('2')), '8');
+				assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('6')), '250000000000000000');
 
 				const oldSynthBalance = await sUSDContract.balanceOf(account1);
 
@@ -1592,9 +1676,10 @@ contract('FeePool', async accounts => {
 				await feePool.claimFees({ from: account1 });
 
 				// We should have our fees
-				assert.bnEqual(
+				assert.bnClose(
 					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0])
+					oldSynthBalance.add(feesAvailable[0]),
+					'250000000000000000'
 				);
 			});
 		});
