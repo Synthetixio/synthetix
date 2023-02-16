@@ -61,6 +61,8 @@ interface IPerpsV2MarketConsolidated {
 
     function fundingLastRecomputed() external view returns (uint32 timestamp);
 
+    function fundingRateLastRecomputed() external view returns (int128 fundingRate);
+
     function fundingSequence(uint index) external view returns (int128 netFunding);
 
     function positions(address account) external view returns (Position memory);
