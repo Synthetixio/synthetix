@@ -56,7 +56,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 		let flexibleStorage;
 		beforeEach(async () => {
-			messenger = await smock.fake('iAbs_BaseCrossDomainMessenger').abi, {
+			messenger = await smock.fake('iAbs_BaseCrossDomainMessenger', {
 				address: smockedMessenger,
 			});
 
@@ -592,10 +592,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(synthetix.transferFrom.calls.length, 1);
 						assert.equal(synthetix.transferFrom.calls[0][0], SynthetixBridgeEscrow);
 						assert.equal(synthetix.transferFrom.calls[0][1], user1);
-						assert.equal(
-							synthetix.transferFrom.calls[0][2].toString(),
-							finalizeWithdrawalAmount
-						);
+						assert.equal(synthetix.transferFrom.calls[0][2].toString(), finalizeWithdrawalAmount);
 					});
 				});
 			});

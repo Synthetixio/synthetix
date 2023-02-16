@@ -37,9 +37,9 @@ contract('OwnerRelayOnEthereum', () => {
 			ethers.provider
 		);
 
-		MockedFlexibleStorage = await smock.fake('FlexibleStorage').abi, ethers.provider);
+		MockedFlexibleStorage = await smock.fake('FlexibleStorage', ethers.provider);
 
-		MockedAddressResolver = await smock.fake('AddressResolver').abi, ethers.provider);
+		MockedAddressResolver = await smock.fake('AddressResolver', ethers.provider);
 		MockedAddressResolver.requireAndGetAddress.returns(nameBytes => {
 			const name = ethers.utils.toUtf8String(nameBytes);
 
@@ -143,34 +143,30 @@ contract('OwnerRelayOnEthereum', () => {
 		};
 
 		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
-			MockedFlexibleStorage.getUIntValue.returns(
-				(contractNameBytes, valueNameBytes) => {
-					const contractName = ethers.utils.toUtf8String(contractNameBytes);
-					const valueName = ethers.utils.toUtf8String(valueNameBytes);
+			MockedFlexibleStorage.getUIntValue.returns((contractNameBytes, valueNameBytes) => {
+				const contractName = ethers.utils.toUtf8String(contractNameBytes);
+				const valueName = ethers.utils.toUtf8String(valueNameBytes);
 
-					if (
-						contractName.includes('SystemSettings') &&
-						valueName.includes('crossDomainRelayGasLimit')
-					) {
-						return CROSS_DOMAIN_RELAY_GAS_LIMIT;
-					} else {
-						console.log(
-							chalk.red(
-								`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`
-							)
-						);
-					}
+				if (
+					contractName.includes('SystemSettings') &&
+					valueName.includes('crossDomainRelayGasLimit')
+				) {
+					return CROSS_DOMAIN_RELAY_GAS_LIMIT;
+				} else {
+					console.log(
+						chalk.red(
+							`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`
+						)
+					);
 				}
-			);
+			});
 		});
 
 		before('mock Optimism Messenger.sendMessage(...)', async () => {
 			// Allows us to record what Messenger.sendMessage gets called with
-			MockedMessenger.sendMessage.returns(
-				(contractOnL2, messageData, crossDomainGasLimit) => {
-					relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
-				}
-			);
+			MockedMessenger.sendMessage.returns((contractOnL2, messageData, crossDomainGasLimit) => {
+				relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
+			});
 		});
 
 		describe('when initiating a single relay', () => {

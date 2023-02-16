@@ -45,10 +45,10 @@ contract('OwnerRelayOnOptimism', () => {
 			to: MockedMessengerSigner.address,
 		});
 
-		MockedOwned1OnL2 = await smock.fake('Owned').abi, ethers.provider);
-		MockedOwned2OnL2 = await smock.fake('Owned').abi, ethers.provider);
+		MockedOwned1OnL2 = await smock.fake('Owned', ethers.provider);
+		MockedOwned2OnL2 = await smock.fake('Owned', ethers.provider);
 
-		MockedAddressResolver = await smock.fake('AddressResolver').abi, ethers.provider);
+		MockedAddressResolver = await smock.fake('AddressResolver', ethers.provider);
 		MockedAddressResolver.requireAndGetAddress.returns(nameBytes => {
 			const name = ethers.utils.toUtf8String(nameBytes);
 
@@ -177,9 +177,7 @@ contract('OwnerRelayOnOptimism', () => {
 				let sendMessageError;
 
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
-					MockedMessenger.xDomainMessageSender.returns(
-						ethers.Wallet.createRandom().address
-					);
+					MockedMessenger.xDomainMessageSender.returns(ethers.Wallet.createRandom().address);
 				});
 
 				before('attempt to finalize the relay', async () => {
@@ -201,9 +199,7 @@ contract('OwnerRelayOnOptimism', () => {
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
-						MockedMessenger.xDomainMessageSender.returns(
-							mockedOwnerRelayOnEthereumAddress
-						);
+						MockedMessenger.xDomainMessageSender.returns(mockedOwnerRelayOnEthereumAddress);
 					}
 				);
 
@@ -239,9 +235,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 			describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
-					MockedMessenger.xDomainMessageSender.returns(
-						ethers.Wallet.createRandom().address
-					);
+					MockedMessenger.xDomainMessageSender.returns(ethers.Wallet.createRandom().address);
 				});
 
 				before('attempt to finalize the relay batch', async () => {
@@ -265,9 +259,7 @@ contract('OwnerRelayOnOptimism', () => {
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
-						MockedMessenger.xDomainMessageSender.returns(
-							mockedOwnerRelayOnEthereumAddress
-						);
+						MockedMessenger.xDomainMessageSender.returns(mockedOwnerRelayOnEthereumAddress);
 					}
 				);
 
