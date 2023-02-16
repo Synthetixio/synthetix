@@ -62,6 +62,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
+     * The funding rate last time it was recomputed..
+     */
+    function fundingRateLastRecomputed() external view returns (int128) {
+        return marketState.fundingRateLastRecomputed();
+    }
+
+    /*
      * The number of entries in the funding sequence.
      */
     function fundingSequence(uint index) external view returns (int128) {
