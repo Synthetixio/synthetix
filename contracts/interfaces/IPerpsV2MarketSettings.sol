@@ -5,7 +5,6 @@ interface IPerpsV2MarketSettings {
     struct Parameters {
         uint takerFee;
         uint makerFee;
-        uint overrideCommitFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
@@ -64,8 +63,6 @@ interface IPerpsV2MarketSettings {
     function offchainPriceDivergence(bytes32 _marketKey) external view returns (uint);
 
     function liquidationPremiumMultiplier(bytes32 _marketKey) external view returns (uint);
-
-    function overrideCommitFee(bytes32 _marketKey) external view returns (uint);
 
     function maxPD(bytes32 _marketKey) external view returns (uint);
 
