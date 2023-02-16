@@ -855,7 +855,7 @@
 					"PerpsV2MarketSettings",
 					"PerpsV2ExchangeRate",
 					"PerpsV2Market[A-Z]+",
-					"PerpsV2MarketState+",
+					"PerpsV2MarketState.+",
 					"PerpsV2MarketViews.+",
 					"PerpsV2DelayedIntent.+",
 					"PerpsV2DelayedExecution.+",
