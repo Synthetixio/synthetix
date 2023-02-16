@@ -183,16 +183,7 @@ const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implement
 		.filter(imp => imp.useExchangeRate)
 		.map(item => item.target.address);
 
-	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
-
-	if (toRemove.length > 0) {
-		await runStep({
-			contract: 'PerpsV2ExchangeRate',
-			target: perpsV2ExchangeRate,
-			write: 'removeAssociatedContracts',
-			writeArg: [toRemove],
-		});
-	}
+	const { toAdd } = filteredLists(currentAddresses, requiredAddresses);
 
 	if (toAdd.length > 0) {
 		await runStep({
@@ -365,41 +356,6 @@ const migrateState = async ({ runStep, migration }) => {
 	});
 };
 
-// const isMarketPaused = async ({ marketKey, SystemStatus }) => {
-// 	const marketKeyBytes = toBytes32(marketKey);
-// 	return (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-// };
-
-// const ensureMarketPausedStatus = async ({ marketKey, SystemStatus, runStep, expectedPaused }) => {
-// 	let marketWasPaused;
-
-// 	const marketKeyBytes = toBytes32(marketKey);
-// 	marketWasPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-// 	if (marketWasPaused === expectedPaused) {
-// 		return marketWasPaused;
-// 	}
-
-// 	if (expectedPaused) {
-// 		await runStep({
-// 			contract: 'SystemStatus',
-// 			target: SystemStatus,
-// 			write: 'suspendFuturesMarket',
-// 			writeArg: [marketKeyBytes, 80],
-// 			comment: 'Ensure perpsV2 market is paused according to expected status',
-// 		});
-// 	} else {
-// 		await runStep({
-// 			contract: 'SystemStatus',
-// 			target: SystemStatus,
-// 			write: 'resumeFuturesMarket',
-// 			writeArg: [marketKeyBytes],
-// 			comment: 'Ensure perpsV2 market is not paused according to expected status',
-// 		});
-// 	}
-
-// 	return marketWasPaused;
-// };
-
 const rebuildCaches = async ({ deployer, runStep, updatedContracts }) => {
 	const { AddressResolver } = deployer.deployedContracts;
 
@@ -467,25 +423,6 @@ const importAddresses = async ({
 				});
 			})
 	);
-
-	// await Promise.all(
-	// 	resolvedContracts.map(([name, contract]) => {
-	// 		return limitPromise(async () => {
-	// 			const currentAddress = await AddressResolver.getAddress(toBytes32(name));
-
-	// 			// only import ext: addresses if they have never been imported before
-	// 			if (currentAddress !== contract.address) {
-	// 				console.log(green(`${name} needs to be imported to the AddressResolver`));
-
-	// 				addressArgs[0].push(toBytes32(name));
-	// 				addressArgs[1].push(contract.address);
-
-	// 				// const { source, address } = contract;
-	// 				// newContractsBeingAdded[contract.address] = { name, source, address, contract };
-	// 			}
-	// 		});
-	// 	})
-	// );
 
 	await runStep({
 		gasLimit: 6e6, // higher gas required for mainnet

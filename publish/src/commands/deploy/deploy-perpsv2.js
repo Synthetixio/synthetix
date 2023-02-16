@@ -1,7 +1,8 @@
 'use strict';
 
-const { gray } = require('chalk');
+const { gray, yellow } = require('chalk');
 const { confirmAction } = require('../../util');
+const { toBytes32 } = require('../../../..');
 
 const ethers = require('ethers');
 
@@ -78,6 +79,7 @@ const deployPerpsV2Markets = async ({
 	migrationContractName,
 	futuresMarketManager,
 	limitPromise,
+	specificMarkets,
 }) => {
 	const {
 		ReadProxyAddressResolver,
@@ -139,10 +141,18 @@ const deployPerpsV2Markets = async ({
 		contract: 'SystemStatus',
 		target: SystemStatus,
 		write: 'updateAccessControl',
-		writeArg: ['Futures', account, true, true],
+		writeArg: [toBytes32('Futures'), account, true, true],
 	});
 
 	for (const marketConfig of perpsv2Markets) {
+		if (specificMarkets && !specificMarkets.includes(marketConfig.marketKey)) {
+			console.log(
+				yellow(
+					`Excluding markte ${marketConfig.marketKey} since is not flaged for deploy in the command line`
+				)
+			);
+			continue;
+		}
 		console.log(
 			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
 		);
@@ -273,8 +283,69 @@ const deployPerpsV2Markets = async ({
 		contract: 'SystemStatus',
 		target: SystemStatus,
 		write: 'updateAccessControl',
-		writeArg: ['Futures', account, false, false],
+		writeArg: [toBytes32('Futures'), account, false, false],
 	});
+};
+
+const cleanupPerpsV2Config = async ({ account, addressOf, deployer, useOvm }) => {
+	console.log({ account, addressOf, deployer, useOvm });
+
+	// EXCHANGE - REMOVE UNUSED ADDRESSES
+	// const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implementations }) => {
+	// 	const currentAddresses = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
+
+	// 	const requiredAddresses = implementations
+	// 		.filter(imp => imp.useExchangeRate)
+	// 		.map(item => item.target.address);
+
+	// 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
+
+	// 	if (toRemove.length > 0) {
+	// 		await runStep({
+	// 			contract: 'PerpsV2ExchangeRate',
+	// 			target: perpsV2ExchangeRate,
+	// 			write: 'removeAssociatedContracts',
+	// 			writeArg: [toRemove],
+	// 		});
+	// 	}
+
+	// 	if (toAdd.length > 0) {
+	// 		await runStep({
+	// 			contract: 'PerpsV2ExchangeRate',
+	// 			target: perpsV2ExchangeRate,
+	// 			write: 'addAssociatedContracts',
+	// 			writeArg: [toAdd],
+	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
+	// 		});
+	// 	}
+	// };
+
+	// REMOVE UNUSED PROXIES
+	// const linkToMarketManager = async ({ runStep, futuresMarketManager, proxies }) => {
+	// 	const managerKnownMarkets = Array.from(
+	// 		await futuresMarketManager['allMarkets(bool)'](true)
+	// 	).sort();
+	// 	const { toKeep, toAdd } = filteredLists(managerKnownMarkets, proxies);
+
+	// 	if (toAdd.length > 0) {
+	// 		await runStep({
+	// 			contract: 'FuturesMarketManager',
+	// 			target: futuresMarketManager,
+	// 			write: 'addProxiedMarkets',
+	// 			writeArg: [toAdd],
+	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
+	// 		});
+	// 	}
+
+	// 	if (toKeep.length > 0) {
+	// 		await runStep({
+	// 			contract: 'FuturesMarketManager',
+	// 			target: futuresMarketManager,
+	// 			write: 'updateMarketsImplementations',
+	// 			writeArg: [toKeep],
+	// 		});
+	// 	}
+	// };
 
 	///
 	///
@@ -283,7 +354,6 @@ const deployPerpsV2Markets = async ({
 	///
 	///
 	///
-
 	///
 	///
 	///
@@ -300,16 +370,13 @@ const deployPerpsV2Markets = async ({
 	// 		writeArg: [marketImplementationsUpdated],
 	// 	});
 	// }
-
 	// Replace the relevant markets in the manager (if any)
 	// let marketImplementationsUpdated = perpMarketsImplementationUpdated;
 	// if (futuresMarketManager && deployedPerpsV2Markets.length > 0) {
 	// 	const managerKnownMarkets = Array.from(
 	// 		await futuresMarketManager['allMarkets(bool)'](true)
 	// 	).sort();
-
 	// 	const { toRemove, toKeep, toAdd } = filteredLists(managerKnownMarkets, deployedPerpsV2Markets);
-
 	// 	if (toRemove.length > 0) {
 	// 		await runStep({
 	// 			contract: `FuturesMarketManager`,
@@ -321,7 +388,6 @@ const deployPerpsV2Markets = async ({
 	// 			writeArg: [toRemove],
 	// 		});
 	// 	}
-
 	// 	if (toAdd.length > 0) {
 	// 		await runStep({
 	// 			contract: `FuturesMarketManager`,
@@ -336,15 +402,71 @@ const deployPerpsV2Markets = async ({
 	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
 	// 		});
 	// 	}
-
 	// 	// implementation was updated, but not the market (proxy)
 	// 	marketImplementationsUpdated = perpMarketsImplementationUpdated.filter((element) =>
 	// 		toKeep.includes(element)
 	// 	);
 	// }
+
+	// SNIPPETS
+	// const isMarketPaused = async ({ marketKey, SystemStatus }) => {
+	// 	const marketKeyBytes = toBytes32(marketKey);
+	// 	return (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+	// };
+
+	// const ensureMarketPausedStatus = async ({ marketKey, SystemStatus, runStep, expectedPaused }) => {
+	// 	let marketWasPaused;
+
+	// 	const marketKeyBytes = toBytes32(marketKey);
+	// 	marketWasPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
+	// 	if (marketWasPaused === expectedPaused) {
+	// 		return marketWasPaused;
+	// 	}
+
+	// 	if (expectedPaused) {
+	// 		await runStep({
+	// 			contract: 'SystemStatus',
+	// 			target: SystemStatus,
+	// 			write: 'suspendFuturesMarket',
+	// 			writeArg: [marketKeyBytes, 80],
+	// 			comment: 'Ensure perpsV2 market is paused according to expected status',
+	// 		});
+	// 	} else {
+	// 		await runStep({
+	// 			contract: 'SystemStatus',
+	// 			target: SystemStatus,
+	// 			write: 'resumeFuturesMarket',
+	// 			writeArg: [marketKeyBytes],
+	// 			comment: 'Ensure perpsV2 market is not paused according to expected status',
+	// 		});
+	// 	}
+
+	// 	return marketWasPaused;
+	// };
+
+	// OTHER SNIPPETS
+	// await Promise.all(
+	// 	resolvedContracts.map(([name, contract]) => {
+	// 		return limitPromise(async () => {
+	// 			const currentAddress = await AddressResolver.getAddress(toBytes32(name));
+
+	// 			// only import ext: addresses if they have never been imported before
+	// 			if (currentAddress !== contract.address) {
+	// 				console.log(green(`${name} needs to be imported to the AddressResolver`));
+
+	// 				addressArgs[0].push(toBytes32(name));
+	// 				addressArgs[1].push(contract.address);
+
+	// 				// const { source, address } = contract;
+	// 				// newContractsBeingAdded[contract.address] = { name, source, address, contract };
+	// 			}
+	// 		});
+	// 	})
+	// );
 };
 
 module.exports = {
 	deployPerpsV2Generics,
 	deployPerpsV2Markets,
+	cleanupPerpsV2Config,
 };
