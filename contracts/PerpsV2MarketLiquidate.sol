@@ -156,7 +156,17 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         if (order.sizeDelta != 0) {
             Position memory position = marketState.positions(account);
             _updatePositionMargin(account, position, order.sizeDelta, price, int(order.commitDeposit + order.keeperDeposit));
-            emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
+            emitPositionModified(
+                position.id,
+                account,
+                position.margin,
+                position.size,
+                0,
+                price,
+                fundingIndex,
+                0,
+                marketState.marketSkew()
+            );
 
             marketState.deleteDelayedOrder(account);
         }
@@ -218,7 +228,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         // Unflag position.
         marketState.unflag(account);
 
-        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
+        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0, marketState.marketSkew());
 
         emitPositionLiquidated(position.id, account, messageSender, position.size, price, totalFees);
     }

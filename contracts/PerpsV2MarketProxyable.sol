@@ -274,7 +274,8 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             params.sizeDelta,
             params.fillPrice,
             fundingIndex,
-            fee
+            fee,
+            marketState.marketSkew()
         );
     }
 
@@ -292,10 +293,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     );
     bytes32 internal constant POSITIONMODIFIED_SIG =
-        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
+        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256,int256)");
 
     function emitPositionModified(
         uint id,
@@ -305,10 +307,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     ) internal {
         proxy._emit(
-            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee, skew),
             3,
             POSITIONMODIFIED_SIG,
             bytes32(id),

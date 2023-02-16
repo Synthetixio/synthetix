@@ -143,7 +143,17 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
         emitMarginTransferred(sender, marginDelta);
 
-        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
+        emitPositionModified(
+            position.id,
+            sender,
+            position.margin,
+            position.size,
+            0,
+            price,
+            _latestFundingIndex(),
+            0,
+            marketState.marketSkew()
+        );
     }
 
     /*
