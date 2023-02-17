@@ -243,7 +243,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, toBN(0)],
 				log: decodedLogs[1],
 			});
 			decodedEventEqual({
@@ -517,7 +517,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					decodedEventEqual({
 						event: 'PositionModified',
 						emittedFrom: perpsV2Market.address,
-						args: [toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, toBN(2), 0],
+						args: [
+							toBN('1'),
+							trader,
+							currentMargin.add(keeperFee),
+							0,
+							0,
+							price,
+							toBN(2),
+							0,
+							toBN(0),
+						],
 						log: decodedLogs[1],
 					});
 				} else {
@@ -1024,7 +1034,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				targetPrice,
 				feeRate,
 				tradeDetails,
-				updateFeedData
+				updateFeedData,
+				preSkew = toBN(0)
 			) {
 				const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 
@@ -1078,7 +1089,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, currentOffchainPrice, toBN(2), 0],
+					args: [
+						toBN('1'),
+						trader,
+						expectedMargin,
+						0,
+						0,
+						currentOffchainPrice,
+						toBN(2),
+						0,
+						preSkew,
+					],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
 
@@ -1094,7 +1115,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, size, size, targetPrice, toBN(2), expectedFee],
+					args: [
+						toBN('1'),
+						trader,
+						expectedMargin,
+						size,
+						size,
+						targetPrice,
+						toBN(2),
+						expectedFee,
+						preSkew.add(size),
+					],
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
@@ -1211,7 +1242,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								tradeDetails,
-								updateFeedData
+								updateFeedData,
+								size.mul(toBN(-2))
 							);
 						});
 
@@ -1222,7 +1254,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								tradeDetails,
-								updateFeedData
+								updateFeedData,
+								size.mul(toBN(-2))
 							);
 						});
 					});
