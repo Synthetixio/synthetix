@@ -2,16 +2,16 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
-const { mockToken } = require('./setup');
+const { mockToken } = require('../contracts/setup');
 
 const {
 	prepareSmocks,
 	ensureOnlyExpectedMutativeFunctions,
 	getDecodedLogs,
 	decodedEventEqual,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
