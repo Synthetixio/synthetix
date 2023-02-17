@@ -1,6 +1,6 @@
 const { artifacts, contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const ExternStateToken = artifacts.require('ExternStateToken');
 const PublicEST = artifacts.require('PublicEST');
@@ -11,7 +11,10 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../contracts/helpers');
 
 contract('ExternStateToken', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;

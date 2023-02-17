@@ -2,14 +2,14 @@
 
 const { artifacts, contract, web3 } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	getEventByName,
 	buildMinimalProxyCode,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const { divideDecimal, multiplyDecimal, toUnit } = require('../utils')();
 

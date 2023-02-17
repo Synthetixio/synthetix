@@ -1,10 +1,13 @@
 'use strict';
 const w3utils = require('web3-utils');
 const { artifacts, contract } = require('hardhat');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { setupContract } = require('./setup');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
+const { setupContract } = require('../contracts/setup');
 const { toUnit } = require('../utils')();
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../contracts/helpers');
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },

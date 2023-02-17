@@ -2,17 +2,17 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
 const { fastForward, toUnit } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('../contracts/setup');
 
 const {
 	setExchangeFeeRateForSynths,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const { toBytes32 } = require('../..');
 

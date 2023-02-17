@@ -2,7 +2,7 @@
 
 const { artifacts, web3 } = require('hardhat');
 const { smock } = require('@defi-wonderland/smock');
-const { prepareSmocks, prepareFlexibleStorageSmock } = require('./helpers');
+const { prepareSmocks, prepareFlexibleStorageSmock } = require('../contracts/helpers');
 const { divideDecimal, multiplyDecimal } = require('../utils')();
 const {
 	getUsers,

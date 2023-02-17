@@ -2,11 +2,14 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('../contracts/helpers');
 
 const { isBN } = require('web3-utils');
 

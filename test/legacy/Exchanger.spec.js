@@ -3,7 +3,7 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { smock } = require('@defi-wonderland/smock');
 const BN = require('bn.js');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 const { expect } = require('chai');
 
 const ethers = require('ethers');
@@ -25,7 +25,7 @@ const {
 		EXCHANGE_DYNAMIC_FEE_THRESHOLD,
 		EXCHANGE_MAX_DYNAMIC_FEE,
 	},
-} = require('./setup');
+} = require('../contracts/setup');
 
 const {
 	getDecodedLogs,
@@ -37,7 +37,7 @@ const {
 	updateRatesWithDefaults,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const {
 	toBytes32,
