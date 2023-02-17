@@ -1991,7 +1991,6 @@ const setupAllContracts = async ({
 						[
 							toWei('0.003'), // 0.3% taker fee
 							toWei('0.001'), // 0.1% maker fee
-							toWei('0'), // 0 override commit fee
 							toWei('0.0005'), // 0.05% taker fee delayed order
 							toWei('0.0001'), // 0.01% maker fee delayed order
 							toWei('0.00005'), // 0.005% taker fee offchain delayed order
@@ -2007,8 +2006,8 @@ const setupAllContracts = async ({
 							60, // 60s minimum delay time in seconds
 							120, // 120s maximum delay time in seconds
 
-							15, // 20s offchain min delay window
-							60, // 20s offchain max delay window
+							15, // 15s offchain min delay window
+							60, // 60s offchain max delay window
 
 							offchainMarketKey, // offchain market key
 							toUnit('0.06'), // offchain price divergence 6%

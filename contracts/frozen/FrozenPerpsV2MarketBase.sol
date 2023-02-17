@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 import "./../Owned.sol";
 
 // Inheritance
-import "./../MixinPerpsV2MarketSettings.sol";
+import "./FrozenMixinPerpsV2MarketSettings.sol";
 import "./../interfaces/IPerpsV2MarketBaseTypes.sol";
 
 // Libraries
@@ -32,7 +32,7 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketBase
-contract FrozenPerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketBaseTypes {
+contract FrozenPerpsV2MarketBase is Owned, FrozenMixinPerpsV2MarketSettings, IPerpsV2MarketBaseTypes {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -82,7 +82,7 @@ contract FrozenPerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2M
         address _marketState,
         address _owner,
         address _resolver
-    ) public MixinPerpsV2MarketSettings(_resolver) Owned(_owner) {
+    ) public FrozenMixinPerpsV2MarketSettings(_resolver) Owned(_owner) {
         marketState = IPerpsV2MarketState(_marketState);
 
         // Set up the mapping between error codes and their revert messages.
@@ -104,7 +104,7 @@ contract FrozenPerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2M
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = FrozenMixinPerpsV2MarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_EXRATES;

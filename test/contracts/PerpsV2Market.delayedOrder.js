@@ -21,8 +21,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		circuitBreaker,
 		sUSD,
 		systemSettings,
-		systemStatus,
-		feePool;
+		systemStatus;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -73,7 +72,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
-			FeePool: feePool,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 		} = await setupAllContracts({
@@ -116,7 +114,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price, fillPrice, desiredTimeDelta, minDelayTimeDelta;
+	let margin, size, price, fillPrice, desiredTimeDelta, minDelayTimeDelta, confirmTimeWindow;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -126,6 +124,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		price = toUnit('200');
 		desiredTimeDelta = 60;
 		minDelayTimeDelta = 60;
+		confirmTimeWindow = 30;
 		await setPrice(baseAsset, price);
 		fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, 0))[0];
 	});
@@ -134,7 +133,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 			const tx = await perpsV2Market.submitDelayedOrder(size, priceImpactDelta, desiredTimeDelta, {
 				from: trader,
@@ -144,13 +142,13 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
-			assert.bnEqual(order.commitDeposit, orderFee);
+			assert.bnEqual(order.commitDeposit, 0);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + desiredTimeDelta);
 
 			// check margin
 			const position = await perpsV2Market.positions(trader);
-			const expectedMargin = margin.sub(orderFee.add(keeperFee));
+			const expectedMargin = margin.sub(keeperFee);
 			assert.bnEqual(position.margin, expectedMargin);
 
 			// The relevant events are properly emitted
@@ -176,7 +174,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					roundId.add(toBN(1)),
 					txBlock.timestamp,
 					order.executableAtTime,
-					orderFee,
+					0,
 					keeperFee,
 				],
 				log: decodedLogs[2],
@@ -418,7 +416,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 			const tx = await perpsV2Market.submitDelayedOrderWithTracking(
@@ -436,7 +433,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, roundId.add(toBN(1)));
-			assert.bnEqual(order.commitDeposit, orderFee);
+			assert.bnEqual(order.commitDeposit, 0);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, txBlock.timestamp + desiredTimeDelta);
 			assert.bnEqual(order.trackingCode, trackingCode);
@@ -457,7 +454,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					roundId.add(toBN(1)),
 					txBlock.timestamp,
 					order.executableAtTime,
-					orderFee,
+					0,
 					keeperFee,
 					trackingCode,
 				],
@@ -601,7 +598,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let roundId, orderFee, keeperFee;
+			let roundId, keeperFee;
 
 			// helper function to check cancellation tx effects
 			async function checkCancellation(from) {
@@ -621,12 +618,15 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					hash: tx.tx,
 					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 				});
+				const decodedLogNames = decodedLogs.map(({ name }) => name);
 
 				if (from === trader) {
+					assert.deepEqual(decodedLogNames, [
+						'FundingRecomputed',
+						'PositionModified',
+						'DelayedOrderRemoved',
+					]);
 					// trader gets refunded
-					assert.equal(decodedLogs.length, 4);
-					// keeper fee was refunded
-					// PositionModified
 					decodedEventEqual({
 						event: 'PositionModified',
 						emittedFrom: perpsV2Market.address,
@@ -645,7 +645,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					});
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 3);
+					assert.deepEqual(decodedLogNames, ['Issued', 'DelayedOrderRemoved']);
 					decodedEventEqual({
 						event: 'Issued',
 						emittedFrom: sUSD.address,
@@ -654,17 +654,10 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					});
 				}
 
-				// commitFee (equal to orderFee) paid to fee pool
-				decodedEventEqual({
-					event: 'Issued',
-					emittedFrom: sUSD.address,
-					args: [await feePool.FEE_ADDRESS(), orderFee],
-					log: decodedLogs.slice(-2, -1)[0], // [-2]
-				});
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, false, roundId, size, roundId.add(toBN(1)), orderFee, keeperFee],
+					args: [trader, false, roundId, size, roundId.add(toBN(1)), 0, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
@@ -680,7 +673,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
 				await perpsV2Market.submitDelayedOrder(size, priceImpactDelta, desiredTimeDelta, {
 					from: trader,
@@ -688,7 +680,10 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			});
 
 			it('cannot cancel if perps markets are suspended', async () => {
+				// Fast-forward to allow for cancelling but revert because suspended.
 				await systemStatus.suspendFutures(toUnit(0), { from: owner });
+				await fastForward(minDelayTimeDelta + confirmTimeWindow + 1); // ff min + confirm + 1s buffer.
+
 				await assert.revert(
 					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
 					'Futures markets are suspended'
@@ -696,24 +691,36 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			});
 
 			it('cannot cancel if market is suspended', async () => {
+				// Fast-forward to allow for cancelling but revert because suspended.
 				await systemStatus.suspendFuturesMarket(marketKey, toUnit(0), { from: owner });
+				await fastForward(minDelayTimeDelta + confirmTimeWindow + 1); // ff min + confirm + 1s buffer.
+
 				await assert.revert(
 					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
 					'Market suspended'
 				);
 			});
 
-			describe('account owner can cancel', () => {
+			describe('account owner cannot cancel', () => {
 				it('in same round', async () => {
-					await checkCancellation(trader);
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						'cannot be cancelled by keeper yet'
+					);
 				});
 
 				it('in target round', async () => {
 					await setPrice(baseAsset, price);
-					await checkCancellation(trader);
+					await assert.revert(
+						perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+						'cannot be cancelled by keeper yet'
+					);
 				});
+			});
 
+			describe('account owner can cancel', () => {
 				it('after confirmation window', async () => {
+					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
@@ -735,10 +742,16 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				});
 
 				it('by account owner', async () => {
+					await setPrice(baseAsset, price);
+					await setPrice(baseAsset, price);
+					await setPrice(baseAsset, price);
+					await setPrice(baseAsset, price);
+					// can only be cancellable after confirmation window
 					await checkCancellation(trader);
 				});
 
 				it('by non-account owner, after confirmation window', async () => {
+					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
 					await setPrice(baseAsset, price);
@@ -801,7 +814,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 					// time has moved forward (no change to round) but not enough.
 					const order = await perpsV2MarketState.delayedOrders(trader);
-					const exectuableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
+					const executableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
 					await fastForward(ffDelta); // fast-forward by 5 seconds
 					await assert.revert(
 						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
@@ -809,7 +822,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					);
 
 					// time has moved forward, order is executable but cancellable
-					await fastForward(exectuableAtTimeDelta - ffDelta + 1);
+					await fastForward(executableAtTimeDelta - ffDelta + 1);
 					await assert.revert(
 						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
 						'cannot be cancelled by keeper yet'
@@ -838,7 +851,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let roundId, orderFee, keeperFee;
+			let roundId, keeperFee;
 
 			beforeEach(async () => {
 				// the beginning of each test, `trader` submits a delayed order with `size`.
@@ -849,8 +862,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
-				// commitFee is the fee that would be charged for a trade when order is submitted
-				orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 
 				await perpsV2Market.submitDelayedOrder(size, priceImpactDelta, desiredTimeDelta, {
 					from: trader,
@@ -957,13 +968,22 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					contracts: [sUSD, perpsV2Market, perpsV2MarketDelayedIntent],
 				});
 
-				let expectedRefund = orderFee; // at least the commitFee is refunded
+				let expectedRefund = toUnit('0'); // $0 refund because we don't take a commitFee.
 				if (from === trader) {
 					// trader gets refunded keeperFee
 					expectedRefund = expectedRefund.add(keeperFee);
 					// no event for keeper payment
 					assert.equal(decodedLogs.length, 5);
-					// funding, position(refund), issued (exchange fee), position(trade), order removed
+					assert.deepEqual(
+						decodedLogs.map(({ name }) => name),
+						[
+							'FundingRecomputed',
+							'PositionModified',
+							'Issued',
+							'PositionModified',
+							'DelayedOrderRemoved',
+						]
+					);
 				} else {
 					// keeper gets paid
 					assert.equal(decodedLogs.length, 6);
@@ -1015,7 +1035,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, false, roundId, size, roundId.add(toBN(1)), orderFee, keeperFee],
+					args: [trader, false, roundId, size, roundId.add(toBN(1)), toUnit('0'), keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
@@ -1253,12 +1273,16 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				await setPrice(baseAsset, spikedPrice);
 			});
 
-			it('canceling an order works', async () => {
-				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
+			it('cannot cancel an order', async () => {
+				await assert.revert(
+					perpsV2Market.cancelDelayedOrder(trader, { from: trader }),
+					'cannot be cancelled by keeper yet'
+				);
 			});
 
 			it('submitting an order reverts', async () => {
 				// cancel existing
+				await fastForward(minDelayTimeDelta + confirmTimeWindow + 1); // ff min + confirm + 1s buffer.
 				await perpsV2Market.cancelDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
