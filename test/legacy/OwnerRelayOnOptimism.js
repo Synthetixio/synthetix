@@ -1,8 +1,8 @@
 const { ethers, contract, artifacts, web3 } = require('hardhat');
 const chalk = require('chalk');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { smock } = require('@defi-wonderland/smock');
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('../contracts/helpers');
 const { currentTime, fastForward, toUnit } = require('../utils')();
 
 contract('OwnerRelayOnOptimism', () => {

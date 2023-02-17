@@ -2,18 +2,18 @@
 
 const { contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
 const { toUnit, fastForward } = require('../utils')();
 
-const { setupAllContracts, setupContract, mockToken } = require('./setup');
+const { setupAllContracts, setupContract, mockToken } = require('../contracts/setup');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const {
 	toBytes32,

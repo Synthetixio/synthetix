@@ -2,7 +2,7 @@
 
 const { contract, web3 } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
 const {
 	fastForward,
@@ -18,9 +18,9 @@ const {
 	setStatus,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
-const { mockToken, setupAllContracts } = require('./setup');
+const { mockToken, setupAllContracts } = require('../contracts/setup');
 
 const { toBytes32 } = require('../..');
 const { artifacts } = require('hardhat');

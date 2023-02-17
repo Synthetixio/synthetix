@@ -2,13 +2,16 @@
 
 const { contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const { toUnit } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('../contracts/setup');
 
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+} = require('../contracts/helpers');
 
 let collateral, synths;
 

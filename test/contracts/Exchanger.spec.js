@@ -4,6 +4,7 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { smock } = require('@defi-wonderland/smock');
 const BN = require('bn.js');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { expect } = require('chai');
 
 const ethers = require('ethers');
 
@@ -1375,7 +1376,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 												});
 												it('and the debt cache sync is not called', async () => {
-													assert.equal(debtCacheSpy.updateCachedSynthDebts.calls.length, 0);
+													expect(debtCacheSpy.updateCachedSynthDebts).to.have.length(0);
 												});
 											});
 										});
@@ -1521,8 +1522,8 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 													});
 													it('and the debt cache is called', async () => {
-														assert.equal(debtCacheSpy.updateCachedSynthDebts.calls.length, 1);
-														assert.equal(debtCacheSpy.updateCachedSynthDebts.calls[0][0], sEUR);
+														expect(debtCacheSpy.updateCachedSynthDebts).to.have.length(0);
+														debtCacheSpy.updateCachedSynthDebts.returnsAtCall(0, sEUR);
 													});
 												});
 												describe('when settle() is invoked and the exchange fee rate has changed', () => {

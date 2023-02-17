@@ -2,7 +2,7 @@
 
 const { contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
 const {
 	fastForward,
@@ -13,14 +13,14 @@ const {
 	divideDecimal,
 } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('../contracts/setup');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	setExchangeFeeRateForSynths,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const {
 	toBytes32,

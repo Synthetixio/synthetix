@@ -4,7 +4,7 @@ const { artifacts } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 
-const { prepareSmocks } = require('./helpers');
+const { prepareSmocks } = require('../contracts/helpers');
 
 const VirtualSynth = artifacts.require('VirtualSynth');
 

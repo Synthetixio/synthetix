@@ -1,8 +1,8 @@
 const chalk = require('chalk');
 const { ethers, contract, artifacts } = require('hardhat');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { smock } = require('@defi-wonderland/smock');
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('../contracts/helpers');
 const {
 	defaults: { CROSS_DOMAIN_RELAY_GAS_LIMIT },
 } = require('../..');

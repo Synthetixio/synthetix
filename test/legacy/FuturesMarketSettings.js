@@ -3,14 +3,14 @@ const { artifacts, contract } = require('hardhat');
 const { toBytes32 } = require('../..');
 const { toUnit, toBN } = require('../utils')();
 
-const { mockGenericContractFnc, setupAllContracts } = require('./setup');
-const { assert } = require('./common');
+const { mockGenericContractFnc, setupAllContracts } = require('../contracts/setup');
+const { assert } = require('../contracts/common');
 const {
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const BN = require('bn.js');
 

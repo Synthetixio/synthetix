@@ -6,14 +6,14 @@ const { currentTime, fastForward, toUnit, multiplyDecimal, divideDecimal } = req
 const {
 	setupAllContracts,
 	constantsOverrides: { EXCHANGE_DYNAMIC_FEE_THRESHOLD },
-} = require('./setup');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+} = require('../contracts/setup');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 const {
 	getDecodedLogs,
 	decodedEventEqual,
 	ensureOnlyExpectedMutativeFunctions,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const MockExchanger = artifacts.require('MockExchanger');
 

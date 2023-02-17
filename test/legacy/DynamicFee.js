@@ -1,5 +1,5 @@
 const { contract, artifacts } = require('hardhat');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { toUnit, toBN } = require('../utils')();
 const SafeDecimalMath = artifacts.require('SafeDecimalMath');
 const TestableDynamicFee = artifacts.require('TestableDynamicFee');

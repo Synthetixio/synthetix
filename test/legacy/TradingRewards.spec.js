@@ -1,7 +1,7 @@
 const { contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { assert, addSnapshotBeforeRestoreAfter } = require('./common');
-const { setupAllContracts } = require('./setup');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
+const { setupAllContracts } = require('../contracts/setup');
 const { toUnit, multiplyDecimal } = require('../utils')();
 const {
 	setExchangeFeeRateForSynths,
@@ -9,7 +9,7 @@ const {
 	decodedEventEqual,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 const { toBytes32 } = require('../..');
 
 /*

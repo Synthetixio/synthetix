@@ -10,9 +10,9 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { setupAllContracts, setupContract } = require('./setup');
+} = require('../contracts/helpers');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
+const { setupAllContracts, setupContract } = require('../contracts/setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 let CollateralManager;

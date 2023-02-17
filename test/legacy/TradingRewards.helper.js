@@ -1,5 +1,5 @@
 const cloneDeep = require('lodash.clonedeep');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { web3 } = require('hardhat');
 const { toBN, isHex } = web3.utils;
 const {

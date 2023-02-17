@@ -2,9 +2,9 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { toWei, toBN } = web3.utils;
 const { toBytes32 } = require('../../');
 const { toUnit } = require('../utils')();
-const { setupContract, setupAllContracts } = require('./setup');
-const { assert } = require('./common');
-const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
+const { setupContract, setupAllContracts } = require('../contracts/setup');
+const { assert } = require('../contracts/common');
+const { setupPriceAggregators, updateAggregatorRates } = require('../contracts/helpers');
 
 const FuturesMarket = artifacts.require('FuturesMarket');
 

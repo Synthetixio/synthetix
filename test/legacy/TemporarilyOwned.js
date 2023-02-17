@@ -2,9 +2,9 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { currentTime, fastForward } = require('../utils')();
-const { onlyGivenAddressCanInvoke } = require('./helpers');
+const { onlyGivenAddressCanInvoke } = require('../contracts/helpers');
 
 const TestableTempOwnedFactory = artifacts.require('TestableTempOwned');
 

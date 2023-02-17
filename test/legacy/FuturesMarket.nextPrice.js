@@ -3,9 +3,13 @@ const { toBytes32 } = require('../..');
 const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBN } = web3.utils;
 
-const { setupAllContracts } = require('./setup');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual, updateAggregatorRates } = require('./helpers');
+const { setupAllContracts } = require('../contracts/setup');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	updateAggregatorRates,
+} = require('../contracts/helpers');
 
 contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 	let futuresMarketSettings,

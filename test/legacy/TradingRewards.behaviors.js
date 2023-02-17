@@ -1,5 +1,5 @@
 const { web3 } = require('hardhat');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 const { toBN } = web3.utils;
 const helper = require('./TradingRewards.helper');
 

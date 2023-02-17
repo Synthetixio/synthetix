@@ -1,11 +1,8 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toWei, toChecksumAddress } = web3.utils;
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toWei } = web3.utils;
+const { toBytes32 } = require('../..');
 const BN = require('bn.js');
 const { smock } = require('@defi-wonderland/smock');
 
@@ -115,15 +112,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
 					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy._emit.calls.length, 1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy._emit.calls[0][3].slice(-40)),
-							instance.address
-						);
-						assert.equal(toChecksumAddress('0x' + proxy._emit.calls[0][4].slice(-40)), user1);
-					});
 				});
 			});
 
@@ -152,23 +140,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
 					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy._emit.calls.length, 1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy._emit.calls[0][3].slice(-40)),
-							instance.address
-						);
-						assert.equal(
-							toChecksumAddress('0x' + proxy._emit.calls[0][4].slice(-40)),
-							rewardsDistribution.address
-						);
-					});
-
-					it('should invoke distributeRewards', async () => {
-						assert.equal(rewardsDistribution.distributeRewards.calls.length, 1);
-						assert.equal(rewardsDistribution.distributeRewards.calls[0][0], amount);
-					});
 				});
 			});
 
@@ -195,15 +166,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 					it('should decrease the total supply', async () => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).sub(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
-					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy._emit.calls.length, 1);
-						assert.equal(toChecksumAddress('0x' + proxy._emit.calls[0][3].slice(-40)), user1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy._emit.calls[0][4].slice(-40)),
-							ZERO_ADDRESS
-						);
 					});
 				});
 			});

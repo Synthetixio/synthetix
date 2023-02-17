@@ -3,6 +3,7 @@
 const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { expect } = require('chai');
 
 const FeePool = artifacts.require('FeePool');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
@@ -859,16 +860,10 @@ contract('FeePool', async accounts => {
 
 				await feePool.closeCurrentFeePeriod({ from: account1 });
 
-				assert.equal(synthetixBridgeToOptimism.closeFeePeriod.calls.length, 1);
+				expect(synthetixBridgeToOptimism.closeFeePeriod).to.have.length(0);
 
-				assert.equal(
-					synthetixBridgeToOptimism.closeFeePeriod.calls[0][0].toString(),
-					'500000000000000000000'
-				);
-				assert.equal(
-					synthetixBridgeToOptimism.closeFeePeriod.calls[0][1].toString(),
-					'500000000000000000000'
-				);
+				synthetixBridgeToOptimism.closeFeePeriod.returnsAtCall(0, '500000000000000000000');
+				synthetixBridgeToOptimism.closeFeePeriod.returnsAtCall(1, '500000000000000000000');
 			});
 		});
 

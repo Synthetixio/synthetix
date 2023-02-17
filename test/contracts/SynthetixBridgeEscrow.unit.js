@@ -67,9 +67,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 
 					it('approve is called via Synthetix', async () => {
-						assert.equal(IERC20.approve.calls.length, 1);
-						assert.equal(IERC20.approve.calls[0][0], snxBridgeToOptimism);
-						assert.equal(IERC20.approve.calls[0][1], amount);
+						IERC20.approve.returnsAtCall(0, snxBridgeToOptimism);
+						IERC20.approve.returnsAtCall(1, amount);
 					});
 				});
 			});

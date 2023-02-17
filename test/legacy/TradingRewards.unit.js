@@ -1,7 +1,7 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { assert } = require('./common');
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { mockToken } = require('./setup');
+const { assert } = require('../contracts/common');
+const { ensureOnlyExpectedMutativeFunctions } = require('../contracts/helpers');
+const { mockToken } = require('../contracts/setup');
 const { toWei, toBN } = web3.utils;
 const { toUnit } = require('../utils')();
 const helper = require('./TradingRewards.helper');

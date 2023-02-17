@@ -2,11 +2,14 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const { expect } = require('chai');
 
-const { ensureOnlyExpectedMutativeFunctions, trimUtf8EscapeChars } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	trimUtf8EscapeChars,
+} = require('../contracts/helpers');
 
 const {
 	toBytes32,
