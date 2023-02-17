@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, artifacts } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 

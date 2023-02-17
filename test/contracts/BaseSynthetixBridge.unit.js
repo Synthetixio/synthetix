@@ -4,7 +4,6 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { toBytes32 } = require('../..');
 const { smock } = require('@defi-wonderland/smock');
-const { expect } = require('chai');
 
 const { toUnit } = require('../utils')();
 
