@@ -838,6 +838,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							price,
 							toBN(3),
 							fee,
+							toUnit('-35'), // skew
 						],
 						log: decodedLogs[2],
 						bnCloseVariance: toUnit('0.01'),
@@ -1350,6 +1351,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						(await perpsV2Market.assetPrice()).price,
 						await perpsV2Market.fundingSequenceLength(),
 						toBN('0'),
+						toBN('0'),
 					],
 					log: decodedLogs[3],
 				});
@@ -1399,6 +1401,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						toBN('0'),
 						(await perpsV2Market.assetPrice()).price,
 						await perpsV2Market.fundingSequenceLength(),
+						toBN('0'),
 						toBN('0'),
 					],
 					log: decodedLogs[3],
@@ -1542,7 +1545,17 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					args: [
+						toBN('1'),
+						trader,
+						margin.sub(fee),
+						size,
+						size,
+						fillPrice,
+						toBN(2),
+						fee,
+						toUnit('10'),
+					],
 					log: decodedLogs[2],
 				});
 			});
@@ -1595,7 +1608,17 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					args: [
+						toBN('1'),
+						trader,
+						margin.sub(fee),
+						size,
+						size,
+						fillPrice,
+						toBN(2),
+						fee,
+						toUnit('-30'),
+					],
 					log: decodedLogs[2],
 				});
 			});
@@ -1606,11 +1629,13 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.transferMargin(margin, { from: trader2 });
 				const price = toUnit('200');
 				await setPrice(baseAsset, price);
+				let skew = toBN(0);
 
 				// trader1 has a position (100bps price impact & 6x long).
 				await perpsV2Market.modifyPosition(toUnit('30'), toUnit('0.01'), {
 					from: trader,
 				});
+				skew = skew.add(toUnit('30'));
 
 				// Price impact:
 				//
@@ -1627,11 +1652,12 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const tx = await perpsV2Market.modifyPosition(size, reasonablePriceImpact, {
 					from: trader2,
 				});
+				skew = skew.add(size);
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice, toBN(2), fee, skew],
 					log: decodedLogs[2],
 				});
 			});
@@ -1683,7 +1709,17 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, margin.sub(fee), size, size, fillPrice, toBN(2), fee],
+				args: [
+					toBN('1'),
+					trader,
+					margin.sub(fee),
+					size,
+					size,
+					fillPrice,
+					toBN(2),
+					fee,
+					toUnit('50'),
+				],
 				log: decodedLogs[2],
 			});
 		});
@@ -2175,6 +2211,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						(await perpsV2Market.assetPrice()).price,
 						await perpsV2Market.fundingSequenceLength(),
 						multiplyDecimal(toUnit(2000), makerFee),
+						toBN('0'),
 					],
 					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.1'),
@@ -4366,6 +4403,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	});
 
 	describe('PerpsV2 Liquidations', () => {
+		let skew = toBN(0);
+
 		const computeFees = async (remainingMargin, positionSize, price) => {
 			const min = (a, b) => (a.lt(b) ? a : b);
 			const max = (a, b) => (a.gt(b) ? a : b);
@@ -4436,6 +4475,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			flaggerFee,
 			liquidatorFee = toBN(0),
 			feePoolFee = toBN(0),
+			skew,
 		}) => {
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, perpsV2Market] });
 			const events = ['FundingRecomputed', 'Issued'];
@@ -4512,6 +4552,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					price,
 					fundingSequenceId,
 					toBN('0'),
+					skew,
 				],
 				log: decodedLogs[positionModifiedIdx],
 			});
@@ -5081,6 +5122,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 		describe('liquidatePosition', () => {
 			beforeEach(async () => {
+				skew = toBN(0);
 				await setPrice(baseAsset, toUnit('250'));
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
@@ -5088,6 +5130,10 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.modifyPosition(toUnit('40'), priceImpactDelta, { from: trader });
 				await perpsV2Market.modifyPosition(toUnit('20'), priceImpactDelta, { from: trader2 });
 				await perpsV2Market.modifyPosition(toUnit('-20'), priceImpactDelta, { from: trader3 });
+				skew = skew
+					.add(toUnit('40'))
+					.add(toUnit('20'))
+					.add(toUnit('-20'));
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
 			});
 
@@ -5257,6 +5303,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					flaggerFee: fees.flaggerFee,
 					liquidatorFee: fees.liquidatorFee,
 					feePoolFee: fees.feePoolFee,
+					skew: skew.sub(toBN(positionSize)),
 				});
 			});
 
@@ -5308,6 +5355,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					flaggerFee: fees.flaggerFee,
 					liquidatorFee: fees.liquidatorFee,
 					feePoolFee: fees.feePoolFee,
+					skew: skew.sub(toBN(positionSize)),
 				});
 			});
 
@@ -5360,6 +5408,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					flaggerFee: fees.flaggerFee,
 					liquidatorFee: fees.liquidatorFee,
 					feePoolFee: fees.feePoolFee,
+					skew: skew.sub(toBN(positionSize)),
 				});
 			});
 
@@ -5449,6 +5498,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					flaggerFee: fees.flaggerFee,
 					liquidatorFee: fees.liquidatorFee,
 					feePoolFee: fees.feePoolFee,
+					skew: skew.sub(toBN(positionSize)),
 				});
 			});
 
@@ -5502,6 +5552,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					flaggerFee: fees.flaggerFee,
 					liquidatorFee: fees.liquidatorFee,
 					feePoolFee: fees.feePoolFee,
+					skew: skew.sub(toBN(positionSize)),
 				});
 			});
 
@@ -5782,12 +5833,14 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 			let liquidationPrice1;
 			beforeEach(async () => {
+				skew = toBN(0);
 				await setPrice(baseAsset, originalPrice);
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
 				await perpsV2Market.modifyPosition(toUnit('40'), priceImpactDelta, { from: trader });
 				await perpsV2Market.modifyPosition(toUnit('20'), priceImpactDelta, { from: trader2 });
 				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
+				skew = skew.add(toUnit('40')).add(toUnit('20'));
 
 				liquidationPrice1 = (await perpsV2Market.liquidationPrice(trader)).price;
 
@@ -5843,6 +5896,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							flaggerFee: fees.flaggerFee,
 							liquidatorFee: fees.liquidatorFee,
 							feePoolFee: fees.feePoolFee,
+							skew: skew.sub(toBN(positionSize)),
 						});
 					});
 				});
@@ -5915,6 +5969,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							flaggerFee: fees.flaggerFee,
 							liquidatorFee: fees.liquidatorFee,
 							feePoolFee: fees.feePoolFee,
+							skew: skew.sub(toBN(positionSize)),
 						});
 					});
 				});
@@ -6558,6 +6613,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						fillPrice,
 						toBN(3),
 						expectedFee,
+						orderSize,
 					],
 					log: decodedLogs[2],
 					bnCloseVariance: toUnit('0.0000001'),
