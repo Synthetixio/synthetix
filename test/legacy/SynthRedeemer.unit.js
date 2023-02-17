@@ -5,13 +5,13 @@ const { smock } = require('@defi-wonderland/smock');
 const {
 	utils: { parseEther },
 } = require('ethers');
-const { assert } = require('./common');
+const { assert } = require('../contracts/common');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	prepareSmocks,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
 const {
 	constants: { ZERO_ADDRESS },
