@@ -267,7 +267,7 @@ const deploy = async ({
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
-		if (!noop) {
+		if (!noop && !(overrides && overrides.generateSolidity === false)) {
 			runSteps.push(opts);
 		}
 
