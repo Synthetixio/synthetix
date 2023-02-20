@@ -200,7 +200,17 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint keeperDeposit = _minKeeperFee();
 
         _updatePositionMargin(messageSender, position, sizeDelta, fillPrice, -int(keeperDeposit));
-        emitPositionModified(position.id, messageSender, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
+        emitPositionModified(
+            position.id,
+            messageSender,
+            position.margin,
+            position.size,
+            0,
+            fillPrice,
+            fundingIndex,
+            0,
+            marketState.marketSkew()
+        );
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =

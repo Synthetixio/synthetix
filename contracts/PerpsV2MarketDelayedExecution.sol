@@ -253,7 +253,17 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
             _updatePositionMargin(account, position, order.sizeDelta, price, int(order.keeperDeposit));
 
             // emit event for modifying the position (add the fee to margin)
-            emitPositionModified(position.id, account, position.margin, position.size, 0, price, fundingIndex, 0);
+            emitPositionModified(
+                position.id,
+                account,
+                position.margin,
+                position.size,
+                0,
+                price,
+                fundingIndex,
+                0,
+                marketState.marketSkew()
+            );
         } else {
             // send keeper fee to keeper
             _manager().issueSUSD(messageSender, order.keeperDeposit);
@@ -304,7 +314,17 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         // if the order later fails this is reverted of course
         _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
         // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(position.id, account, position.margin, position.size, 0, fillPrice, fundingIndex, 0);
+        emitPositionModified(
+            position.id,
+            account,
+            position.margin,
+            position.size,
+            0,
+            fillPrice,
+            fundingIndex,
+            0,
+            marketState.marketSkew()
+        );
 
         // execute or revert
         _trade(

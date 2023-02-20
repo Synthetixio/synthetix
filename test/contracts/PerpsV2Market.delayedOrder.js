@@ -161,7 +161,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, toBN(0)],
 				log: decodedLogs[1],
 			});
 			decodedEventEqual({
@@ -630,7 +630,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					decodedEventEqual({
 						event: 'PositionModified',
 						emittedFrom: perpsV2Market.address,
-						args: [toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, toBN(2), 0],
+						args: [
+							toBN('1'),
+							trader,
+							currentMargin.add(keeperFee),
+							0,
+							0,
+							price,
+							toBN(2),
+							0,
+							toBN(0),
+						],
 						log: decodedLogs[1],
 					});
 				} else {
@@ -931,7 +941,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			// targetPrice: the price that the order should be executed at
 			// feeRate: expected exchange fee rate
 			// tradeDetails: trade details of the same trade if it would happen as spot
-			async function checkExecution(from, targetPrice, feeRate, tradeDetails) {
+			async function checkExecution(from, targetPrice, feeRate, tradeDetails, preSkew = toBN(0)) {
 				const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 
 				// note we need to calc the fillPrice _before_ executing the order because the p/d applied is based
@@ -992,7 +1002,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
+					args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, preSkew],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
 
@@ -1008,7 +1018,17 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, size, size, targetPrice, toBN(2), expectedFee],
+					args: [
+						toBN('1'),
+						trader,
+						expectedMargin,
+						size,
+						size,
+						targetPrice,
+						toBN(2),
+						expectedFee,
+						preSkew.add(size),
+					],
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
@@ -1102,11 +1122,23 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, tradeDetails);
+							await checkExecution(
+								trader,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								tradeDetails,
+								size.mul(toBN(-2))
+							);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetFillPrice, makerFeeDelayedOrder, tradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								tradeDetails,
+								size.mul(toBN(-2))
+							);
 						});
 					});
 
@@ -1191,11 +1223,23 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 						});
 
 						it('from account owner', async () => {
-							await checkExecution(trader, targetFillPrice, makerFeeDelayedOrder, tradeDetails);
+							await checkExecution(
+								trader,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								tradeDetails,
+								size.mul(toBN(-2))
+							);
 						});
 
 						it('from keeper', async () => {
-							await checkExecution(trader2, targetFillPrice, makerFeeDelayedOrder, tradeDetails);
+							await checkExecution(
+								trader2,
+								targetFillPrice,
+								makerFeeDelayedOrder,
+								tradeDetails,
+								size.mul(toBN(-2))
+							);
 						});
 					});
 				});
