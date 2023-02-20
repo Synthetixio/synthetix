@@ -352,7 +352,7 @@ jobs:
       - run:
           name: Coverage
           command: |
-            TEST_FILES="{$(circleci tests glob "test/contracts/*.js" | \
+            TEST_FILES="{$(circleci tests glob "test/contracts/*.js" "test/legacy/*.js" | \
               circleci tests split --split-by=timings | xargs | sed -e 's/ /,/g')}"
             npm run coverage -- --testfiles "$TEST_FILES"
       - run:
