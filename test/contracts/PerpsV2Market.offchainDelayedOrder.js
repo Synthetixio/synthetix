@@ -603,14 +603,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						'cannot cancel yet'
 					);
 
-					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
-					ffDelta = executionExpiredDelay - ffDelta;
+					// time has moved forward, almost to reach the time it will be too late for update the price
+					ffDelta = executionExpiredDelay - 10 - ffDelta;
 					await fastForward(ffDelta);
 					const updateFeedData = await getFeedUpdateData({
 						id: defaultFeedId,
 						price: feedBaseFromUNIT(offChainPrice),
 						conf: feedBaseFromUNIT(confidence),
 					});
+					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
+					ffDelta = executionExpiredDelay - ffDelta;
+					await fastForward(ffDelta);
 
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),

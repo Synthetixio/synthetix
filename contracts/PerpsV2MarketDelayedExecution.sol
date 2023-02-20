@@ -125,7 +125,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
 
         require((executionTimestamp > order.intentionTime), "price not updated");
         require((executionTimestamp - order.intentionTime > minAge), "executability not reached");
-        require((executionTimestamp - order.intentionTime < maxAge), "order too old, use cancel");
+        require((block.timestamp - order.intentionTime < maxAge), "order too old, use cancel");
 
         _executeDelayedOrder(
             account,
