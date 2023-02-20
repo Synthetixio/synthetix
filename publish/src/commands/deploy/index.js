@@ -82,6 +82,7 @@ const deploy = async ({
 	includePerpsV2,
 	perpsV2MigrateContract,
 	perpsV2Markets,
+	stepName = '',
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -538,6 +539,7 @@ const deploy = async ({
 			runSteps,
 			sourceOf,
 			useOvm,
+			stepName,
 		});
 	}
 };
@@ -649,6 +651,10 @@ module.exports = {
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'--step-name <value>',
+				'Optional: Step name to add to migration contract if generate solidity is used.'
+			)
 			.action(async (...args) => {
 				try {
 					await deploy(...args);

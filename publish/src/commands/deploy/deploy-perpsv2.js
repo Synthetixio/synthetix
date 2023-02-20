@@ -197,19 +197,6 @@ const deployPerpsV2Markets = async ({
 					generateSolidity,
 			  });
 
-		// Link/configure contracts relationships
-		await linkToState({
-			runStep,
-			perpsV2MarketState: deployedMarketState,
-			implementations,
-		});
-
-		await linkToPerpsExchangeRate({
-			runStep,
-			perpsV2ExchangeRate,
-			implementations,
-		});
-
 		// STATE MIGRATION
 		const deployedStateMigration =
 			!newMarket && deployedMarketState.updated
@@ -224,8 +211,23 @@ const deployPerpsV2Markets = async ({
 				: undefined;
 
 		if (deployedStateMigration) {
+			// run the migration
 			await migrateState({ runStep, migration: deployedStateMigration });
 		}
+
+		// Link/configure contracts relationships
+		await linkToState({
+			runStep,
+			perpsV2MarketState: deployedMarketState,
+			implementations,
+			deployedStateMigration,
+		});
+
+		await linkToPerpsExchangeRate({
+			runStep,
+			perpsV2ExchangeRate,
+			implementations,
+		});
 
 		await linkToProxy({
 			runStep,

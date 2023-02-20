@@ -30,6 +30,7 @@ module.exports = async ({
 	runSteps,
 	sourceOf,
 	useOvm,
+	stepName = '',
 }) => {
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
@@ -182,7 +183,7 @@ interface ISynthetixNamedContract {
 }
 
 // solhint-disable contract-name-camelcase
-contract Migration_${releaseName} is BaseMigration {
+contract Migration_${releaseName}${stepName} is BaseMigration {
 	${generateExplorerComment({ address: ownerAddress })};
 	address public constant OWNER = ${ownerAddress};
 
@@ -276,7 +277,7 @@ contract Migration_${releaseName} is BaseMigration {
 		'..',
 		CONTRACTS_FOLDER,
 		MIGRATIONS_FOLDER,
-		`Migration_${releaseName}.sol`
+		`Migration_${releaseName}${stepName}.sol`
 	);
 	fs.writeFileSync(migrationContractPath, solidity);
 
