@@ -207,19 +207,27 @@ const linkToState = async ({ runStep, perpsV2MarketState, implementations }) => 
 
 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
 
-	await runStep({
-		contract: perpsV2MarketState.contract,
-		target: perpsV2MarketState.target,
-		write: 'removeAssociatedContracts',
-		writeArg: [toRemove],
-	});
+	const overrides = perpsV2MarketState.updated ? { generateSolidity: false } : {};
 
-	await runStep({
-		contract: perpsV2MarketState.contract,
-		target: perpsV2MarketState.target,
-		write: 'addAssociatedContracts',
-		writeArg: [toAdd],
-	});
+	await runStep(
+		{
+			contract: perpsV2MarketState.contract,
+			target: perpsV2MarketState.target,
+			write: 'removeAssociatedContracts',
+			writeArg: [toRemove],
+		},
+		overrides
+	);
+
+	await runStep(
+		{
+			contract: perpsV2MarketState.contract,
+			target: perpsV2MarketState.target,
+			write: 'addAssociatedContracts',
+			writeArg: [toAdd],
+		},
+		overrides
+	);
 };
 
 const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => {
@@ -356,27 +364,30 @@ const migrateState = async ({ runStep, migration }) => {
 	});
 };
 
-const rebuildCaches = async ({ deployer, runStep, updatedContracts }) => {
+const rebuildCaches = async ({ deployer, runStep, implementations }) => {
 	const { AddressResolver } = deployer.deployedContracts;
 
 	const requireCache = [];
-	for (const contract of updatedContracts) {
-		const isCached = await contract.isResolverCached();
+	for (const implementation of implementations) {
+		const isCached = await implementation.target.isResolverCached();
 		if (!isCached) {
-			requireCache.push(contract.address);
+			requireCache.push(implementation.target.address);
 		}
 	}
 
 	if (requireCache.length > 0) {
-		await runStep({
-			gasLimit: 7e6,
-			contract: 'AddressResolver',
-			target: AddressResolver,
-			publiclyCallable: true, // does not require owner
-			write: 'rebuildCaches',
-			writeArg: [requireCache],
-			comment: 'Rebuild the resolver caches in the market implementations',
-		});
+		await runStep(
+			{
+				gasLimit: 7e6,
+				contract: 'AddressResolver',
+				target: AddressResolver,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildCaches',
+				writeArg: [requireCache],
+				comment: 'Rebuild the resolver caches in the market implementations',
+			},
+			{ generateSolidity: false }
+		);
 	}
 };
 
@@ -483,6 +494,7 @@ const configureMarket = async ({
 
 	// const currentParams = await perpsV2MarketSettings.parameters(marketKeyBytes);
 	// console.log(currentParams);
+
 	for (const setting in settings) {
 		const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
 		const value = settings[setting];

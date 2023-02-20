@@ -245,7 +245,7 @@ const deployPerpsV2Markets = async ({
 			resolvedContracts: [{ name: 'PerpsV2MarketSettings', contract: perpsV2MarketSettings }],
 		});
 
-		await rebuildCaches({ runStep, deployer, updatedContracts });
+		await rebuildCaches({ runStep, deployer, implementations });
 
 		await configureMarket({
 			marketKey,
