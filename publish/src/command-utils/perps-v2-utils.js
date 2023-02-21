@@ -404,13 +404,7 @@ const rebuildCaches = async ({ deployer, runStep, implementations }) => {
 	}
 };
 
-const importAddresses = async ({
-	deployer,
-	runStep,
-	addressOf,
-	limitPromise,
-	resolvedContracts,
-}) => {
+const importAddresses = async ({ deployer, runStep, addressOf, limitPromise }) => {
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// Note: RPAR.setTarget(AR) MUST go before the addresses are imported into the resolver.

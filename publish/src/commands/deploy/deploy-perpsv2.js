@@ -148,11 +148,12 @@ const deployPerpsV2Markets = async ({
 		if (specificMarkets && !specificMarkets.includes(marketConfig.marketKey)) {
 			console.log(
 				yellow(
-					`Excluding markte ${marketConfig.marketKey} since is not flaged for deploy in the command line`
+					`Excluding market ${marketConfig.marketKey} since is not flaged for deploy in the command line`
 				)
 			);
 			continue;
 		}
+
 		console.log(
 			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
 		);
@@ -239,12 +240,17 @@ const deployPerpsV2Markets = async ({
 			updatedContracts.push(implementation.target);
 		}
 
+		await linkToMarketManager({
+			runStep,
+			futuresMarketManager,
+			proxies: [deployedMarketProxy.target.address],
+		});
+
 		await importAddresses({
 			runStep,
 			deployer,
 			addressOf,
 			limitPromise,
-			resolvedContracts: [{ name: 'PerpsV2MarketSettings', contract: perpsV2MarketSettings }],
 		});
 
 		await rebuildCaches({ runStep, deployer, implementations });
@@ -259,12 +265,6 @@ const deployPerpsV2Markets = async ({
 			generateSolidity,
 			yes,
 			confirmAction,
-		});
-
-		await linkToMarketManager({
-			runStep,
-			futuresMarketManager,
-			proxies: [deployedMarketProxy.target.address],
 		});
 
 		// Resume market if needed after linking/configuring
