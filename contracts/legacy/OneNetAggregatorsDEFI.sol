@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./BaseOneNetAggregator.sol";
+import "../BaseOneNetAggregator.sol";
 
 contract OneNetAggregatorsDEFI is BaseOneNetAggregator {
     bytes32 public constant CONTRACT_NAME = "OneNetAggregatorsDEFI";

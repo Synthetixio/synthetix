@@ -1,14 +1,14 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Owned.sol";
-import "./LimitedSetup.sol";
+import "../Owned.sol";
+import "../LimitedSetup.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "../SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IFeePool.sol";
+import "../interfaces/IFeePool.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/feepoolstate
 contract FeePoolState is Owned, LimitedSetup {
