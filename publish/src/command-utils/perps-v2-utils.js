@@ -196,23 +196,14 @@ const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implement
 	}
 };
 
-const linkToState = async ({
-	runStep,
-	perpsV2MarketState,
-	implementations,
-	deployedStateMigration,
-}) => {
+const linkToState = async ({ runStep, perpsV2MarketState, implementations }) => {
 	// get current associated contracts
 	const currentAddresses = Array.from(await perpsV2MarketState.target.associatedContracts());
 
 	// get list of associated contracts from implementations
-	const implementationAddresses = implementations
+	const requiredAddresses = implementations
 		.filter(imp => imp.updateState)
 		.map(item => item.target.address);
-
-	const requiredAddresses = deployedStateMigration
-		? [...implementationAddresses, deployedStateMigration.target.address]
-		: implementationAddresses;
 
 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
 
@@ -340,41 +331,6 @@ const linkToMarketManager = async ({ runStep, futuresMarketManager, proxies }) =
 			writeArg: [toKeep],
 		});
 	}
-};
-
-const deployStateMigration = async ({
-	deployer,
-	owner,
-	marketKey,
-	migrationContractName,
-	oldStateContractAddress,
-	newStateContractAddress,
-}) => {
-	const marketMigrationName = migrationContractName + marketKey.slice('1'); // remove s prefix
-
-	const previousContractAddress = deployer.getExistingAddress({
-		name: migrationContractName,
-	});
-
-	const newContract = await deployer.deployContract({
-		name: marketMigrationName,
-		source: migrationContractName,
-		args: [owner, oldStateContractAddress, newStateContractAddress],
-		force: true,
-		skipResolver: true,
-	});
-
-	const isSameContract = previousContractAddress === newContract.address;
-
-	return { target: newContract, contract: marketMigrationName, updated: !isSameContract };
-};
-
-const migrateState = async ({ runStep, migration }) => {
-	await runStep({
-		contract: migration.contract,
-		target: migration.target,
-		write: 'execute',
-	});
 };
 
 const rebuildCaches = async ({ deployer, runStep, implementations }) => {
@@ -657,7 +613,6 @@ module.exports = {
 	deployMarketProxy,
 	deployMarketState,
 	deployMarketImplementations,
-	deployStateMigration,
 	linkToPerpsExchangeRate,
 	linkToProxy,
 	linkToState,
@@ -665,7 +620,6 @@ module.exports = {
 	configureMarket,
 	importAddresses,
 	rebuildCaches,
-	migrateState,
 	pauseMarket,
 	resumeMarket,
 };

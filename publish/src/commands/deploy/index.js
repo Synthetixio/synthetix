@@ -80,7 +80,6 @@ const deploy = async ({
 	yes,
 	includeFutures,
 	includePerpsV2,
-	perpsV2MigrateContract,
 	perpsV2Markets,
 	stepName = '',
 } = {}) => {
@@ -331,9 +330,8 @@ const deploy = async ({
 			futuresMarketManager,
 			generateSolidity,
 			yes,
-			migrationContractName: perpsV2MigrateContract,
-			limitPromise,
 			specificMarkets: perpsV2Markets,
+			limitPromise,
 		});
 	} else {
 		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
@@ -644,7 +642,6 @@ module.exports = {
 				'--include-perps-v2',
 				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
-			.option('--perps-v2-migrate-contract <value>', 'PerpsV2 State Migration contract name')
 			.option(
 				'--perps-v2-markets <market...>',
 				'PerpsV2 Markets to deplot/upgrade. If not present will process all markets'

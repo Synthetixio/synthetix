@@ -11,14 +11,12 @@ const {
 	deployMarketProxy,
 	deployMarketState,
 	deployMarketImplementations,
-	deployStateMigration,
 	linkToPerpsExchangeRate,
 	linkToProxy,
 	linkToState,
 	linkToMarketManager,
 	configureMarket,
 	rebuildCaches,
-	migrateState,
 	importAddresses,
 	pauseMarket,
 	resumeMarket,
@@ -76,7 +74,6 @@ const deployPerpsV2Markets = async ({
 	useOvm,
 	generateSolidity,
 	yes,
-	migrationContractName,
 	futuresMarketManager,
 	limitPromise,
 	specificMarkets,
@@ -198,30 +195,11 @@ const deployPerpsV2Markets = async ({
 					generateSolidity,
 			  });
 
-		// STATE MIGRATION
-		const deployedStateMigration =
-			!newMarket && deployedMarketState.updated
-				? await deployStateMigration({
-						deployer,
-						owner: account,
-						marketKey,
-						migrationContractName,
-						oldStateContractAddress: deployedMarketState.previousContractAddress,
-						newStateContractAddress: deployedMarketState.target.address,
-				  })
-				: undefined;
-
-		if (deployedStateMigration) {
-			// run the migration
-			await migrateState({ runStep, migration: deployedStateMigration });
-		}
-
 		// Link/configure contracts relationships
 		await linkToState({
 			runStep,
 			perpsV2MarketState: deployedMarketState,
 			implementations,
-			deployedStateMigration,
 		});
 
 		await linkToPerpsExchangeRate({
