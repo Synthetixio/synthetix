@@ -27,19 +27,19 @@ defaultValue = "5000000000"
 [setting.rate_btc]
 defaultValue = "50000000000"
 
-[provision.aggregator_snx]
+[import.aggregator_snx]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_snx %>"
 options.timestamp = "1558469483"
 options.salt = "snx"
 
-[provision.aggregator_eth]
+[import.aggregator_eth]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
 options.timestamp = "1558469483"
 options.salt = "eth"
 
-[provision.aggregator_btc]
+[import.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
 options.timestamp = "1558469483"
@@ -185,10 +185,10 @@ from = "<%= settings.owner %>"
 func = "addAggregator"
 args = [
     "0x534e580000000000000000000000000000000000000000000000000000000000",
-    "<%= provisions.aggregator_snx.contracts.aggregator.address %>",
+    "<%= imports.aggregator_snx.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "provision.aggregator_snx"]
+depends = ["invoke.accept_ownership", "import.aggregator_snx"]
 
 [invoke.set_aggregator_eth]
 target = ["ExchangeRates"]
@@ -197,10 +197,10 @@ from = "<%= settings.owner %>"
 func = "addAggregator"
 args = [
     "0x4554480000000000000000000000000000000000000000000000000000000000",
-    "<%= provisions.aggregator_eth.contracts.aggregator.address %>",
+    "<%= imports.aggregator_eth.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "provision.aggregator_eth"]
+depends = ["invoke.accept_ownership", "import.aggregator_eth"]
 
 [invoke.set_aggregator_btc]
 target = ["ExchangeRates"]
@@ -209,10 +209,10 @@ from = "<%= settings.owner %>"
 func = "addAggregator"
 args = [
     "0x4254430000000000000000000000000000000000000000000000000000000000",
-    "<%= provisions.aggregator_btc.contracts.aggregator.address %>",
+    "<%= imports.aggregator_btc.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "provision.aggregator_btc"]
+depends = ["invoke.accept_ownership", "import.aggregator_btc"]
 
 [invoke.increase_snapshot_stale_time]
 target = ["SystemSettings"]
