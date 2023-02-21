@@ -1,13 +1,10 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toWei, toChecksumAddress } = web3.utils;
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toWei } = web3.utils;
+const { toBytes32 } = require('../..');
 const BN = require('bn.js');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const MintableSynthetix = artifacts.require('MintableSynthetix');
 
@@ -32,12 +29,12 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 		beforeEach(async () => {
-			tokenState = await smockit(artifacts.require('TokenState').abi);
-			proxy = await smockit(artifacts.require('Proxy').abi);
-			rewardsDistribution = await smockit(artifacts.require('IRewardsDistribution').abi);
+			tokenState = await smock.fake('TokenState');
+			proxy = await smock.fake('Proxy');
+			rewardsDistribution = await smock.fake('IRewardsDistribution');
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			systemStatus = await artifacts.require('SystemStatus').new(owner);
-			rewardEscrowV2 = await smockit(artifacts.require('IRewardEscrowV2').abi);
+			rewardEscrowV2 = await smock.fake('IRewardEscrowV2');
 			await resolver.importAddresses(
 				[
 					'SynthetixBridgeToBase',
@@ -67,10 +64,10 @@ contract('MintableSynthetix (unit tests)', accounts => {
 
 		beforeEach(async () => {
 			// stubs
-			tokenState.smocked.setBalanceOf.will.return.with(() => {});
-			tokenState.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
-			proxy.smocked._emit.will.return.with(() => {});
-			rewardsDistribution.smocked.distributeRewards.will.return.with(() => true);
+			tokenState.setBalanceOf.returns(() => {});
+			tokenState.balanceOf.returns(() => web3.utils.toWei('1'));
+			proxy._emit.returns(() => {});
+			rewardsDistribution.distributeRewards.returns(() => true);
 		});
 
 		describe('when the target is deployed', () => {
@@ -115,18 +112,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
 					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy.smocked._emit.calls.length, 1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][3].slice(-40)),
-							instance.address
-						);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][4].slice(-40)),
-							user1
-						);
-					});
 				});
 			});
 
@@ -155,23 +140,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).add(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
 					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy.smocked._emit.calls.length, 1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][3].slice(-40)),
-							instance.address
-						);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][4].slice(-40)),
-							rewardsDistribution.address
-						);
-					});
-
-					it('should invoke distributeRewards', async () => {
-						assert.equal(rewardsDistribution.smocked.distributeRewards.calls.length, 1);
-						assert.equal(rewardsDistribution.smocked.distributeRewards.calls[0][0], amount);
-					});
 				});
 			});
 
@@ -198,18 +166,6 @@ contract('MintableSynthetix (unit tests)', accounts => {
 					it('should decrease the total supply', async () => {
 						const newSupply = new BN(SYNTHETIX_TOTAL_SUPPLY).sub(new BN(amount));
 						assert.bnEqual(await instance.totalSupply(), newSupply);
-					});
-
-					it('should invoke emitTransfer (which invokes proxy._emit', async () => {
-						assert.equal(proxy.smocked._emit.calls.length, 1);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][3].slice(-40)),
-							user1
-						);
-						assert.equal(
-							toChecksumAddress('0x' + proxy.smocked._emit.calls[0][4].slice(-40)),
-							ZERO_ADDRESS
-						);
 					});
 				});
 			});

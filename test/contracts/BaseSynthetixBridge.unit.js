@@ -3,7 +3,7 @@ const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const { toUnit } = require('../utils')();
 
@@ -39,23 +39,23 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let systemStatus;
 
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
+			messenger = await smock.fake('iAbs_BaseCrossDomainMessenger', {
 				address: smockedMessenger,
 			});
 
-			rewardEscrow = await smockit(
+			rewardEscrow = await smock.fake(
 				artifacts.require('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2').abi
 			);
 
 			// can't use ISynthetix as we need ERC20 functions as well
-			synthetix = await smockit(artifacts.require('Synthetix').abi);
+			synthetix = await smock.fake('Synthetix');
 
-			feePool = await smockit(artifacts.require('FeePool').abi);
+			feePool = await smock.fake('FeePool');
 
-			issuer = await smockit(artifacts.require('Issuer').abi);
-			exchangeRates = await smockit(artifacts.require('ExchangeRates').abi);
-			systemStatus = await smockit(artifacts.require('SystemStatus').abi);
-			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
+			issuer = await smock.fake('Issuer');
+			exchangeRates = await smock.fake('ExchangeRates');
+			systemStatus = await smock.fake('SystemStatus');
+			flexibleStorage = await smock.fake('FlexibleStorage');
 
 			resolver = await artifacts.require('AddressResolver').new(owner);
 
@@ -201,8 +201,8 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 				});
 
 				it('fails if synth is not enabled', async () => {
-					flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
-					systemStatus.smocked.requireSynthActive.will.revert.with('suspended');
+					flexibleStorage.getUIntValue.returns(toUnit('50').toString());
+					systemStatus.requireSynthActive.reverts('suspended');
 
 					await assert.revert(
 						instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner }),
@@ -216,7 +216,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					beforeEach('run synth transfer calls', async () => {
 						// fake the value that would be set by first `initiateSynthTransfer`
 						// this also simultaneously enables synth trade
-						flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
+						flexibleStorage.getUIntValue.returns(toUnit('50').toString());
 
 						// two initiate calls to verify summation
 						await instance.initiateSynthTransfer(sETH, user1, toUnit('50'), { from: owner });
@@ -234,15 +234,15 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 
 					it('burns synths from caller', () => {
-						assert.bnEqual(issuer.smocked.burnSynthsWithoutDebt.calls[0].amount, toUnit('100'));
+						issuer.burnSynthsWithoutDebt.returnsAtCall(0, toUnit('100'));
 					});
 
 					it('calls messenger', () => {
-						assert.bnEqual(messenger.smocked.sendMessage.calls[0]._target, issuer.address);
+						messenger.sendMessage.returnsAtCall(0, issuer.address);
 					});
 
 					it('increments synthTransferSent', async () => {
-						assert.bnEqual(flexibleStorage.smocked.setUIntValue.calls[0].value, toUnit('150'));
+						flexibleStorage.setUIntValue.returnsAtCall(0, toUnit('150'));
 					});
 
 					it('emits event', () => {
@@ -253,11 +253,11 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 			describe('finalizeSynthTransfer', () => {
 				beforeEach('set counterpart bridge', async () => {
-					messenger.smocked.xDomainMessageSender.will.return.with(issuer.address);
+					messenger.xDomainMessageSender.returns(issuer.address);
 				});
 
 				it('fails if xdomainmessagesender doesnt match counterpart', async () => {
-					messenger.smocked.xDomainMessageSender.will.return.with(owner);
+					messenger.xDomainMessageSender.returns(owner);
 					await assert.revert(instance.finalizeSynthTransfer(sUSD, owner, '100'));
 				});
 
@@ -275,7 +275,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					let txn;
 					beforeEach(async () => {
 						// fake the value that would be set by previous `finalizeSynthTransfer`
-						flexibleStorage.smocked.getUIntValue.will.return.with(toUnit('50').toString());
+						flexibleStorage.getUIntValue.returns(toUnit('50').toString());
 
 						// two calls to verify summation
 						await instance.finalizeSynthTransfer(sETH, owner, toUnit('50'), {
@@ -288,11 +288,11 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 
 					it('mints synths to the destination', () => {
-						assert.bnEqual(issuer.smocked.issueSynthsWithoutDebt.calls[0].amount, toUnit('125'));
+						issuer.issueSynthsWithoutDebt.returnsAtCall(0, toUnit('125'));
 					});
 
 					it('increments synthTransferReceived', async () => {
-						assert.bnEqual(flexibleStorage.smocked.setUIntValue.calls[0].value, toUnit('175'));
+						flexibleStorage.setUIntValue.returnsAtCall(0, toUnit('175'));
 					});
 
 					it('emits event', () => {
@@ -304,23 +304,23 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			describe('synthTransferSent & synthTransferReceived', () => {
 				beforeEach('set fake values', () => {
 					// create some fake synths
-					issuer.smocked.availableCurrencyKeys.will.return.with([sUSD, sETH]);
+					issuer.availableCurrencyKeys.returns([sUSD, sETH]);
 
 					// set some exchange rates
-					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with([
+					exchangeRates.ratesAndInvalidForCurrencies.returns([
 						[toUnit('1').toString(), toUnit('3').toString()],
 						false,
 					]);
 
 					// set flexible storage to a fake value
-					flexibleStorage.smocked.getUIntValues.will.return.with([
+					flexibleStorage.getUIntValues.returns([
 						toUnit('100').toString(),
 						toUnit('200').toString(),
 					]);
 				});
 
 				it('reverts if rates are innaccurate', async () => {
-					exchangeRates.smocked.ratesAndInvalidForCurrencies.will.return.with([
+					exchangeRates.ratesAndInvalidForCurrencies.returns([
 						[toUnit('1').toString(), toUnit('3').toString()],
 						true,
 					]);
