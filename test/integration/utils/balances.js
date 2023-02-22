@@ -5,8 +5,10 @@ const { toBytes32 } = require('../../..');
 async function ensureBalance({ ctx, symbol, user, balance }) {
 	const currentBalance = await _readBalance({ ctx, symbol, user });
 
+	console.log('====== ENSURE_BALANCE 1', currentBalance.toString(), balance.toString());
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
+		console.log('====== ENSURE_BALANCE 2', amount.toString());
 
 		await _getAmount({ ctx, symbol, user, amount });
 	}
@@ -23,6 +25,7 @@ async function _readBalance({ ctx, symbol, user }) {
 }
 
 async function _getAmount({ ctx, symbol, user, amount }) {
+	console.log('====== GET_AMOUNT 1', symbol);
 	if (symbol === 'SNX') {
 		await _getSNX({ ctx, user, amount });
 	} else if (symbol === 'WETH') {
@@ -158,6 +161,7 @@ async function _getsUSD({ ctx, user, amount }) {
 	let tx;
 
 	const requiredSNX = await _getSNXAmountRequiredForsUSDAmount({ ctx, amount });
+	console.log('====== GET_SUSD 1', requiredSNX.toString());
 	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
