@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, artifacts } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -10,7 +10,7 @@ const { toUnit, toPreciseUnit } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const { toBytes32 } = require('../..');
 
@@ -42,11 +42,11 @@ contract('OneNetAggregators', async accounts => {
 			contract: 'OneNetAggregatorIssuedSynths',
 		});
 
-		mockIssuer = await smockit(artifacts.require('Issuer').abi);
-		mockSynthetixDebtShare = await smockit(artifacts.require('SynthetixDebtShare').abi);
+		mockIssuer = await smock.fake('Issuer');
+		mockSynthetixDebtShare = await smock.fake('SynthetixDebtShare');
 
-		mockIssuer.smocked.totalIssuedSynths.will.return.with(ethers.utils.parseEther('500'));
-		mockSynthetixDebtShare.smocked.totalSupply.will.return.with(ethers.utils.parseEther('1000'));
+		mockIssuer.totalIssuedSynths.returns(ethers.utils.parseEther('500'));
+		mockSynthetixDebtShare.totalSupply.returns(ethers.utils.parseEther('1000'));
 
 		await addressResolver.importAddresses(
 			[toBytes32('Issuer'), toBytes32('SynthetixDebtShare')],
