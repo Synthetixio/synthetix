@@ -12,7 +12,7 @@ const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanTrade({ ctx }) {
-	describe('opening positions', function() {
+	describe('opening positions ', function() {
 		this.retries(0);
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
