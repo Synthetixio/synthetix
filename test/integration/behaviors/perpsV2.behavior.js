@@ -37,7 +37,7 @@ function itCanTrade({ ctx }) {
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
 
-		let someUser, otherUser;
+		let owner, someUser, otherUser;
 		let FuturesMarketManager,
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
@@ -68,7 +68,7 @@ function itCanTrade({ ctx }) {
 				SynthsUSD,
 			} = ctx.contracts);
 
-			// owner = ctx.users.owner;
+			owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
@@ -193,6 +193,9 @@ function itCanTrade({ ctx }) {
 						// reset to known margin
 						await market.withdrawAllMargin();
 						await market.transferMargin(margin);
+
+						// ensure maxLeverage is set to 100 (mainnet vs localhost config)
+						await PerpsV2MarketSettings.connect(owner).setMaxLeverage(marketKey, toUnit('100'));
 
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
