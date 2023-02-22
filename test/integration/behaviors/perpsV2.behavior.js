@@ -92,7 +92,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('position management', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x, debt, priceImpactDelta;
+			let market, assetKey, marketKey, price, posSize1x, debt, priceImpactDelta;
 			const margin = toUnit('100');
 			let skipTest;
 
@@ -106,7 +106,6 @@ function itCanTrade({ ctx }) {
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
-				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
 				priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
@@ -115,6 +114,10 @@ function itCanTrade({ ctx }) {
 				if (skipTest) {
 					return;
 				}
+				// Cleanup any outstanding margin (flaky)
+				await (await market.withdrawAllMargin()).wait();
+
+				const balance = await SynthsUSD.balanceOf(someUser.address);
 				// transfer
 				await market.transferMargin(margin);
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
