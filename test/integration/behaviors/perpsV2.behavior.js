@@ -214,7 +214,7 @@ function itCanTrade({ ctx }) {
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
 
 						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
-						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('2')));
+						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
 
 						await market.modifyPosition(size, priceImpactDelta);
 					});
