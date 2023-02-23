@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+import "./PerpsV2MarketStateLegacyR1.sol";
 import "./Owned.sol";
 import "./StateShared.sol";
 
@@ -15,7 +16,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
     // Legacy state link
-    IPerpsV2MarketBaseTypes public legacyState;
+    PerpsV2MarketStateLegacyR1 public legacyState;
     bool public legacyLinked;
     uint public legacyFundinSequenceOffset;
 
@@ -93,12 +94,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         marketKey = _marketKey;
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-        fundingSequence.push(0);
+        _fundingSequence.push(0);
 
         fundingRateLastRecomputed = 0;
 
         // Set legacyState
-        legacyState = IPerpsV2MarketBaseTypes(_legacyState);
+        legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
     }
 
     function linkLegacyState(address _legacyState) external onlyOwner {
@@ -120,23 +121,27 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _nextPositionId;
     }
 
-    function fundingSequence(uint index) external view returns (uint) {
+    function fundingSequence(uint index) external view returns (int128) {
         // TODO check legacy
+        if (index >= legacyFundinSequenceOffset) {
+            // offset + 1 because we pushed an empty element on constructor
+            return _fundingSequence[index - legacyFundinSequenceOffset + 1];
+        }
 
-        return _fundingSequence[index];
+        return legacyState.fundingSequence(index);
     }
 
     function fundingSequenceLength() external view returns (uint) {
         // TODO check legacy
 
-        return legacyFundinSequenceOffset + fundingSequence.length;
+        return legacyFundinSequenceOffset + _fundingSequence.length;
     }
 
     function isFlagged(address account) external view returns (bool) {
         return positionFlagger[account] != address(0);
     }
 
-    function positions(address account) external view returns (Position) {
+    function positions(address account) external view returns (Position memory) {
         // TODO check legacy
 
         return _positions[account];
@@ -153,7 +158,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _positionAddresses.getPage(index, pageSize);
     }
 
-    function delayedOrders(address account) external view returns (DelayedOrder) {
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
         // TODO check legacy
 
         return _delayedOrders[account];
@@ -227,10 +232,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         fundingLastRecomputed = lastRecomputed;
     }
 
-    function pushFundingSequence(int128 _fundingSequence) external onlyLegacyLinked onlyAssociatedContracts {
+    function pushFundingSequence(int128 fundingSequence) external onlyLegacyLinked onlyAssociatedContracts {
         // TODO check legacy
 
-        fundingSequence.push(_fundingSequence);
+        _fundingSequence.push(fundingSequence);
     }
 
     // TODO: Perform this update when maxFundingVelocity and skewScale are modified.
@@ -262,7 +267,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     ) external onlyLegacyLinked onlyAssociatedContracts {
         // TODO check legacy
 
-        positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
+        _positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
         _positionAddresses.add(account);
     }
 
@@ -293,7 +298,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     ) external onlyLegacyLinked onlyAssociatedContracts {
         // TODO check legacy
 
-        delayedOrders[account] = DelayedOrder(
+        _delayedOrders[account] = DelayedOrder(
             isOffchain,
             sizeDelta,
             priceImpactDelta,
@@ -315,7 +320,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     function deletePosition(address account) external onlyLegacyLinked onlyAssociatedContracts {
         // TODO check legacy
 
-        delete positions[account];
+        delete _positions[account];
         if (_positionAddresses.contains(account)) {
             _positionAddresses.remove(account);
         }
@@ -324,7 +329,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     function deleteDelayedOrder(address account) external onlyLegacyLinked onlyAssociatedContracts {
         // TODO check legacy
 
-        delete delayedOrders[account];
+        delete _delayedOrders[account];
         if (_delayedOrderAddresses.contains(account)) {
             _delayedOrderAddresses.remove(account);
         }
