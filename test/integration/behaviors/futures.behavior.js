@@ -12,7 +12,8 @@ const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanTrade({ ctx }) {
-	describe('opening positions', function() {
+	describe.skip('opening positions ', function() {
+		// Sckiped since futures market size is being reduced to deprecate futures in favor of PerpsV2
 		this.retries(0);
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
