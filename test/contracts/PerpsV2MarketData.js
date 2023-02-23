@@ -1,6 +1,6 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { toBytes32 } = require('../..');
+const { toBytes32, constants } = require('../..');
 const { toUnit } = require('../utils')();
 const {
 	setupContract,
@@ -100,6 +100,7 @@ contract('PerpsV2MarketData', accounts => {
 					[owner],
 					assetKey, // base asset
 					marketKey,
+					constants.ZERO_ADDRESS,
 				],
 			});
 
@@ -136,6 +137,10 @@ contract('PerpsV2MarketData', accounts => {
 				contract: 'PerpsV2MarketDelayedExecutionAdded' + symbol,
 				source: 'PerpsV2MarketDelayedExecution',
 				args: [market.address, marketState.address, owner, addressResolver.address],
+			});
+
+			await marketState.linkLegacyState({
+				from: owner,
 			});
 
 			await marketState.addAssociatedContracts(

@@ -124,9 +124,9 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function fundingSequence(uint index) external view returns (int128) {
         // TODO check legacy
-        if (index >= legacyFundinSequenceOffset) {
+        if (index > legacyFundinSequenceOffset) {
             // offset + 1 because we pushed an empty element on constructor
-            return _fundingSequence[index - legacyFundinSequenceOffset + 1];
+            return _fundingSequence[index - legacyFundinSequenceOffset];
         }
 
         return legacyState.fundingSequence(index);

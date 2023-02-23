@@ -1,6 +1,6 @@
 const { contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { toBytes32 } = require('../..');
+const { toBytes32, constants } = require('../..');
 const { setupContract } = require('./setup');
 // const { assert } = require('./common');
 
@@ -19,7 +19,7 @@ contract('PerpsV2MarketState - Linked', accounts => {
 		perpsV2MarketState = await setupContract({
 			accounts,
 			contract: 'PerpsV2MarketState',
-			args: [owner, [owner], baseAsset, marketKey],
+			args: [owner, [owner], baseAsset, marketKey, constants.ZERO_ADDRESS],
 			skipPostDeploy: true,
 		});
 
@@ -50,6 +50,10 @@ contract('PerpsV2MarketState - Linked', accounts => {
 				positionsCount,
 				delayedOrdersCount,
 			});
+			const fundingSequence = false;
+			const position = false;
+			const delayedOrder = false;
+			return { fundingSequence, position, delayedOrder };
 		};
 		const addActivity = async ({ fundingSequence, position, delayedOrder }) => {
 			console.log({ fundingSequence, position, delayedOrder });
