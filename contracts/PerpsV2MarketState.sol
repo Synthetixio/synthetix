@@ -102,7 +102,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
     }
 
-    function linkLegacyState(address _legacyState) external onlyOwner {
+    function linkLegacyState() external onlyOwner {
         // Confirm same asset/market key
         // TODO
         // copy atomic values
@@ -111,6 +111,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         // TODO
         // set legacyConfigured
         // TODO
+        legacyLinked = true;
     }
 
     function entryDebtCorrection() external view returns (int128) {
