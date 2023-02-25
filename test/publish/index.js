@@ -53,7 +53,7 @@ const {
 	wrap,
 } = snx;
 
-const concurrency = isCI ? 1 : 10;
+const concurrency = 10;
 const limitPromise = pLimit(concurrency);
 
 describe('publish scripts', () => {
