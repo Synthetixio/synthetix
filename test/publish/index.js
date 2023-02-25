@@ -8,16 +8,12 @@ const ethers = require('ethers');
 const { loadLocalWallets } = require('../test-utils/wallets');
 const { fastForward } = require('../test-utils/rpc');
 
-const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
-const deployShortingRewardsCmd = require('../../publish/src/commands/deploy-shorting-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
 const testUtils = require('../utils');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: deployCmd.deploy,
-	deployStakingRewards: deployStakingRewardsCmd.deployStakingRewards,
-	deployShortingRewards: deployShortingRewardsCmd.deployShortingRewards,
 	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
 	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
 	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
@@ -58,14 +54,7 @@ const limitPromise = pLimit(concurrency);
 describe('publish scripts', () => {
 	const network = 'local';
 
-	const {
-		getSource,
-		getTarget,
-		getSynths,
-		getPathToNetwork,
-		getStakingRewards,
-		getShortingRewards,
-	} = wrap({
+	const { getSource, getTarget, getSynths, getPathToNetwork } = wrap({
 		network,
 		fs,
 		path,
@@ -168,7 +157,6 @@ describe('publish scripts', () => {
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
-			let rewards;
 			let sources;
 			let targets;
 			let synths;
@@ -517,107 +505,6 @@ describe('publish scripts', () => {
 							assert.deepStrictEqual(keys.map(hexToString), ['sUSD', 'sETH']);
 						});
 					});
-				});
-			});
-			describe('deploy-staking-rewards', () => {
-				beforeEach(async () => {
-					const rewardsToDeploy = [
-						'sETHUniswapV1',
-						'sXAUUniswapV2',
-						'sUSDCurve',
-						'iETH',
-						'iETH2',
-						'iETH3',
-						'iBTC',
-						'SNXBalancer',
-					];
-
-					await commands.deployStakingRewards({
-						network,
-						yes: true,
-						privateKey: accounts.deployer.privateKey,
-						rewardsToDeploy,
-					});
-
-					rewards = getStakingRewards();
-					sources = getSource();
-					targets = getTarget();
-				});
-
-				it('script works as intended', async () => {
-					for (const { name, stakingToken, rewardsToken } of rewards) {
-						const stakingRewardsName = `StakingRewards${name}`;
-						const stakingRewardsContract = getContract({ target: stakingRewardsName });
-
-						// Test staking / rewards token address
-						const tokens = [
-							{ token: stakingToken, method: 'stakingToken' },
-							{ token: rewardsToken, method: 'rewardsToken' },
-						];
-
-						for (const { token, method } of tokens) {
-							const tokenAddress = await stakingRewardsContract[method]();
-
-							if (ethers.utils.isAddress(token)) {
-								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
-							} else {
-								assert.strictEqual(
-									tokenAddress.toLowerCase(),
-									targets[token].address.toLowerCase()
-								);
-							}
-						}
-
-						// Test rewards distribution address
-						const rewardsDistributionAddress = await stakingRewardsContract.rewardsDistribution();
-						assert.strictEqual(
-							rewardsDistributionAddress.toLowerCase(),
-							targets['RewardsDistribution'].address.toLowerCase()
-						);
-					}
-				});
-			});
-
-			describe('deploy-shorting-rewards', () => {
-				beforeEach(async () => {
-					const rewardsToDeploy = ['sBTC', 'sETH'];
-
-					await commands.deployShortingRewards({
-						network,
-						yes: true,
-						privateKey: accounts.deployer.privateKey,
-						rewardsToDeploy,
-					});
-
-					rewards = getShortingRewards();
-					sources = getSource();
-					targets = getTarget();
-				});
-
-				it('script works as intended', async () => {
-					for (const { name, rewardsToken } of rewards) {
-						const shortingRewardsName = `ShortingRewards${name}`;
-						const shortingRewardsContract = getContract({ target: shortingRewardsName });
-
-						const tokenAddress = await shortingRewardsContract.rewardsToken();
-
-						if (ethers.utils.isAddress(rewardsToken)) {
-							assert.strictEqual(rewardsToken.toLowerCase(), tokenAddress.toLowerCase());
-						} else {
-							assert.strictEqual(
-								tokenAddress.toLowerCase(),
-								targets[rewardsToken].address.toLowerCase()
-							);
-						}
-
-						// Test rewards distribution address should be the deployer, since we are
-						// funding by the sDAO for the trial.
-						const rewardsDistributionAddress = await shortingRewardsContract.rewardsDistribution();
-						assert.strictEqual(
-							rewardsDistributionAddress.toLowerCase(),
-							accounts.deployer.address.toLowerCase()
-						);
-					}
 				});
 			});
 
