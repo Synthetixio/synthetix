@@ -850,8 +850,9 @@
 			},
 			"FeePool": {
 				"address": "0xD3739A5F06747e148E716Dcb7147B9BA15b70fcc",
-				"status": "current",
-				"keccak256": "0x8efb90365897b11502997b1dea8760062b6e607e9c183847380d76e620e749a3"
+				"status": "replaced",
+				"keccak256": "0x8efb90365897b11502997b1dea8760062b6e607e9c183847380d76e620e749a3",
+				"replaced_in": "v2.83.1"
 			},
 			"DebtCache": {
 				"address": "0x17628A557d1Fc88D1c35989dcBAC3f3e275E2d2B",
@@ -1498,8 +1499,9 @@
 			},
 			"Issuer": {
 				"address": "0x59B01789bF268C7C77451D02758621990bB50BBF",
-				"status": "current",
-				"keccak256": "0xfe5fc654ccd66b4bf3baca842a69216b468e96447c2529ba5eabdfb6793b8955"
+				"status": "replaced",
+				"keccak256": "0xfe5fc654ccd66b4bf3baca842a69216b468e96447c2529ba5eabdfb6793b8955",
+				"replaced_in": "v2.83.1"
 			},
 			"SystemSettingsLib": {
 				"address": "0x6fEd9c8de9886557AA7F4bF7784Cb579d38F833c",
@@ -2305,6 +2307,26 @@
 				"address": "0x0BB25623946960D8FB1696a9D70466766F2C8aa7",
 				"status": "current",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
+			}
+		}
+	},
+	"v2.83.1": {
+		"tag": "v2.83.1",
+		"fulltag": "v2.83.1",
+		"release": "Schedar",
+		"network": "mainnet",
+		"date": "2023-02-15T10:29:02-05:00",
+		"commit": "f4ff16d588d4d416552d7e1d4e402dfddee89278",
+		"contracts": {
+			"FeePool": {
+				"address": "0xf9FE3607e6d19D8dC690DD976061a91D4A0db30B",
+				"status": "current",
+				"keccak256": "0x98eccd224f7660cfe5f5f6be8e53186b21166b5d2b3c40e7afa136afc0110d13"
+			},
+			"Issuer": {
+				"address": "0x52c4612DBb84282332300A5cdAbA7acD7661a94B",
+				"status": "current",
+				"keccak256": "0xddabc4d8c9a7676784dc0e0c7cf12a203c0a5e3814cc21a3854edce5e8e5a456"
 			}
 		}
 	}
