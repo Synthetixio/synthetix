@@ -4,6 +4,7 @@ const assert = require('assert');
 const pLimit = require('p-limit');
 
 const ethers = require('ethers');
+const isCI = require('is-ci');
 
 const { loadLocalWallets } = require('../test-utils/wallets');
 const { fastForward } = require('../test-utils/rpc');
@@ -48,7 +49,7 @@ const {
 	wrap,
 } = snx;
 
-const concurrency = 10;
+const concurrency = isCI ? 1 : 10;
 const limitPromise = pLimit(concurrency);
 
 describe('publish scripts', () => {
