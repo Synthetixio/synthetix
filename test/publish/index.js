@@ -4,7 +4,6 @@ const assert = require('assert');
 const pLimit = require('p-limit');
 
 const ethers = require('ethers');
-const isCI = require('is-ci');
 
 const { loadLocalWallets } = require('../test-utils/wallets');
 const { fastForward } = require('../test-utils/rpc');
