@@ -100,21 +100,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().debtBalanceOf(account, currencyKey);
     }
 
-    // SIP-252: migration of SNX token balance from old to new escrow rewards contract
-    function migrateEscrowContractBalance() external onlyOwner {
-        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
-        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
-        // using the cached value and read the most updated one directly from the resolver
-        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
-        require(to != from, "cannot migrate to same address");
-
-        uint currentBalance = tokenState.balanceOf(from);
-        // allow no-op for idempotent migration steps in case action was performed already
-        if (currentBalance > 0) {
-            _internalTransfer(from, to, currentBalance);
-        }
-    }
-
     function totalIssuedSynths(bytes32 currencyKey) external view returns (uint) {
         return issuer().totalIssuedSynths(currencyKey, false);
     }
@@ -327,6 +312,21 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // Perform the transfer: if there is a problem,
         // an exception will be thrown in this call.
         return _transferFromByProxy(messageSender, from, to, value);
+    }
+
+    // SIP-252: migration of SNX token balance from old to new escrow rewards contract
+    function migrateEscrowContractBalance() external onlyOwner {
+        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
+        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
+        // using the cached value and read the most updated one directly from the resolver
+        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
+        require(to != from, "cannot migrate to same address");
+
+        uint currentBalance = tokenState.balanceOf(from);
+        // allow no-op for idempotent migration steps in case action was performed already
+        if (currentBalance > 0) {
+            _internalTransfer(from, to, currentBalance);
+        }
     }
 
     function issueSynths(uint amount) external issuanceActive optionalProxy {
