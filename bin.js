@@ -15,6 +15,7 @@ const {
 	getSynths,
 	getFeeds,
 	getOffchainFeeds,
+	getPerpsV2ProxiedMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
@@ -27,6 +28,31 @@ const {
 
 const commander = require('commander');
 const program = new commander.Command();
+
+function decodeRelayed(decoded, network, enhanceDecode) {
+	const targets = decoded.method.params[0].value;
+	const payloads = decoded.method.params[1].value;
+
+	const decodedRelayed = [];
+	for (let i = 0; i < targets.length; i++) {
+		const target = targets[i];
+		try {
+			const payload = decode({
+				network,
+				data: payloads[i],
+				target,
+				useOvm: true,
+				decodeMigration: false,
+				enhanceDecode,
+			});
+			decodedRelayed.push({ index: i, target, payload });
+		} catch (e) {
+			// unable to decode.
+			decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
+		}
+	}
+	return decodedRelayed;
+}
 
 program
 	.command('ast <source>')
@@ -131,13 +157,21 @@ program
 			parts = splitByLen(parts[1], dataLenDecimal * 2);
 			const data = ('00' + dataLenDecimal.toString(16)).slice(0, 2) + parts[0];
 
-			decodedTransactions.push({
+			const decoded = decode({ network, data, target, useOvm, decodeMigration, enhanceDecode });
+			const decodedTransaction = {
 				index,
 				destAddress,
 				operationType,
 				value: valueDecimal,
-				decoded: decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
-			});
+				decoded,
+			};
+
+			if (decoded.method.name === 'initiateRelayBatch') {
+				const decodedRelayed = decodeRelayed(decoded, network, enhanceDecode);
+				decodedTransaction.relayedTransaction = decodedRelayed;
+			}
+
+			decodedTransactions.push(decodedTransaction);
 
 			index++;
 		}
@@ -171,57 +205,9 @@ program
 			console.log(util.inspect(decoded, false, null, true));
 			return;
 		}
-		const targets = decoded.method.params[0].value;
-		const payloads = decoded.method.params[1].value;
-
-		const decodedRelayed = [];
-		for (let i = 0; i < targets.length; i++) {
-			const target = targets[i];
-			try {
-				const payload = decode({
-					network,
-					data: payloads[i],
-					target,
-					useOvm: true,
-					decodeMigration: false,
-					enhanceDecode,
-				});
-				decodedRelayed.push({ index: i, target, payload });
-			} catch (e) {
-				// unable to decode.
-				decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
-			}
-		}
+		const decodedRelayed = decodeRelayed(decoded, network, enhanceDecode);
 
 		console.log(util.inspect(decodedRelayed, false, null, true));
-	});
-
-program
-	.command('networks')
-	.description('Get networks')
-	.action(async () => {
-		console.log(networks);
-	});
-
-program
-	.command('rewards')
-	.description('Get staking rewards for an environment')
-	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
-	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.action(async ({ network, useOvm }) => {
-		console.log(JSON.stringify(getStakingRewards({ network, useOvm }), null, 2));
-	});
-
-program
-	.command('source')
-	.description('Get source files for an environment')
-	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
-	.option('-c, --contract [value]', 'The name of the contract')
-	.option('-k, --key [value]', 'A specific key wanted')
-	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.action(async ({ network, useOvm, contract, key }) => {
-		const source = getSource({ network, useOvm, contract });
-		console.log(JSON.stringify(key in source ? source[key] : source, null, 2));
 	});
 
 program
@@ -235,6 +221,13 @@ program
 	});
 
 program
+	.command('networks')
+	.description('Get networks')
+	.action(async () => {
+		console.log(networks);
+	});
+
+program
 	.command('offchain-feeds')
 	.description('Get the offchain price feeds')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
@@ -242,6 +235,103 @@ program
 	.action(async ({ network, useOvm }) => {
 		const offchainFeeds = getOffchainFeeds({ network, useOvm });
 		console.log(util.inspect(offchainFeeds, false, null, true));
+	});
+
+program
+	.command('perpsv2-markets-abi')
+	.description('Get the PerpsV2 consolidated markets abis')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option(
+		'-d, --deployment-path <value>',
+		'(optional) The deployment file path .',
+		x => x.toLowerCase(),
+		''
+	)
+	.action(async ({ network, deploymentPath }) => {
+		const proxiedMarkets = getPerpsV2ProxiedMarkets({ network, deploymentPath, path });
+		console.log(JSON.stringify(proxiedMarkets, null, 2));
+	});
+
+program
+	.command('releases')
+	.description('Get the list of releases')
+	.option('--unreleased', 'Only retrieve the unreleased ones.')
+	.option('--with-sources', 'Only retrieve ones with files.')
+	.option('--name-only', 'Whether or not to only return the name of the next release')
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the release`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, nameOnly, layer }) => {
+		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
+
+		const results = releases.releases
+			.filter(({ ovm }) =>
+				layer === 'both' ? true : (ovm && layer === 'ovm') || (!ovm && layer === 'base')
+			)
+			.filter(release => release.released === !unreleased)
+			.filter(release => {
+				if (!withSources) return true;
+				return release.sips.some(s => !!getSip(s).sources);
+			});
+
+		if (results.length > 0) {
+			if (nameOnly) {
+				console.log(results[0].name);
+			} else {
+				console.log(JSON.stringify(results, null, 2));
+			}
+		}
+	});
+
+program
+	.command('rewards')
+	.description('Get staking rewards for an environment')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm }) => {
+		console.log(JSON.stringify(getStakingRewards({ network, useOvm }), null, 2));
+	});
+
+program
+	.command('sips')
+	.description('Get the list of released or unreleased SIPs.')
+	.option('--unreleased', 'Only retrieve the SIPs that are not released on the given layer.')
+	.option('--with-sources', 'Only retrieve ones with source files.')
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the SIPs`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, layer }) => {
+		const layers = ['both', ...(layer === 'both' ? ['base', 'ovm'] : [layer])];
+
+		const result = releases.sips
+			.filter(({ layer }) => layers.includes(layer))
+			.filter(({ released }) => layers.includes(released) === !unreleased)
+			.filter(({ sources }) => {
+				if (!withSources) return true;
+				if (!sources) return false;
+				if (Array.isArray(sources)) return sources.length > 0;
+				return layers.flatMap(layer => sources[layer]).length > 0;
+			});
+
+		if (result.length > 0) {
+			console.log(JSON.stringify(result, null, 2));
+		}
+	});
+
+program
+	.command('source')
+	.description('Get source files for an environment')
+	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
+	.option('-c, --contract [value]', 'The name of the contract')
+	.option('-k, --key [value]', 'A specific key wanted')
+	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+	.action(async ({ network, useOvm, contract, key }) => {
+		const source = getSource({ network, useOvm, contract });
+		console.log(JSON.stringify(key in source ? source[key] : source, null, 2));
 	});
 
 program
@@ -326,67 +416,6 @@ program
 	.action(async ({ network, useOvm, byContract }) => {
 		const versions = getVersions({ network, useOvm, byContract });
 		console.log(JSON.stringify(versions, null, 2));
-	});
-
-program
-	.command('releases')
-	.description('Get the list of releases')
-	.option('--unreleased', 'Only retrieve the unreleased ones.')
-	.option('--with-sources', 'Only retrieve ones with files.')
-	.option('--name-only', 'Whether or not to only return the name of the next release')
-	.addOption(
-		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the release`)
-			.choices(['base', 'ovm', 'both'])
-			.default('both')
-	)
-	.action(async ({ unreleased, withSources, nameOnly, layer }) => {
-		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
-
-		const results = releases.releases
-			.filter(({ ovm }) =>
-				layer === 'both' ? true : (ovm && layer === 'ovm') || (!ovm && layer === 'base')
-			)
-			.filter(release => release.released === !unreleased)
-			.filter(release => {
-				if (!withSources) return true;
-				return release.sips.some(s => !!getSip(s).sources);
-			});
-
-		if (results.length > 0) {
-			if (nameOnly) {
-				console.log(results[0].name);
-			} else {
-				console.log(JSON.stringify(results, null, 2));
-			}
-		}
-	});
-
-program
-	.command('sips')
-	.description('Get the list of released or unreleased SIPs.')
-	.option('--unreleased', 'Only retrieve the SIPs that are not released on the given layer.')
-	.option('--with-sources', 'Only retrieve ones with source files.')
-	.addOption(
-		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the SIPs`)
-			.choices(['base', 'ovm', 'both'])
-			.default('both')
-	)
-	.action(async ({ unreleased, withSources, layer }) => {
-		const layers = ['both', ...(layer === 'both' ? ['base', 'ovm'] : [layer])];
-
-		const result = releases.sips
-			.filter(({ layer }) => layers.includes(layer))
-			.filter(({ released }) => layers.includes(released) === !unreleased)
-			.filter(({ sources }) => {
-				if (!withSources) return true;
-				if (!sources) return false;
-				if (Array.isArray(sources)) return sources.length > 0;
-				return layers.flatMap(layer => sources[layer]).length > 0;
-			});
-
-		if (result.length > 0) {
-			console.log(JSON.stringify(result, null, 2));
-		}
 	});
 
 // perform as CLI tool if args given

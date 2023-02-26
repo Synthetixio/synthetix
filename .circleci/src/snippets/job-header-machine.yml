@@ -3,4 +3,4 @@ machine:
   image: ubuntu-2204:2022.04.1
   docker_layer_caching: true
 environment:
-  foundry_locked_commit: "3c49efe"
+  foundry_locked_commit: "232f66f9"

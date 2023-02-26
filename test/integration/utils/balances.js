@@ -29,7 +29,7 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
-	} else if (symbol === 'sLINK') {
+	} else if (symbol === 'sETHBTC') {
 		await _getSynth({ ctx, symbol, user, amount });
 	} else if (symbol === 'sETH') {
 		await _getSynth({ ctx, symbol, user, amount });
@@ -170,6 +170,11 @@ async function _getsUSD({ ctx, user, amount }) {
 		user: tmpWallet,
 		amount: ethers.utils.parseEther('1'),
 	});
+
+	const availableOwnerSNX = await Synthetix.transferableSynthetix(ctx.users.owner.address);
+	if (availableOwnerSNX.lt(requiredSNX.mul(2))) {
+		await _getSNXForOwner({ ctx, amount: requiredSNX.mul(2).sub(availableOwnerSNX) });
+	}
 
 	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
 	await tx.wait();

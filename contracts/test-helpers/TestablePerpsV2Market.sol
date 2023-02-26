@@ -113,7 +113,8 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
     function netFundingPerUnit(address account) external view returns (int) {
-        return _netFundingPerUnit(marketState.positions(account).lastFundingIndex);
+        (uint price, ) = _assetPrice();
+        return _netFundingPerUnit(marketState.positions(account).lastFundingIndex, price);
     }
 
     function marketSizes() external view returns (uint long, uint short) {

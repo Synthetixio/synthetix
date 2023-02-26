@@ -161,16 +161,25 @@
 	"TokenStatesLINK": {
 		"deploy": true
 	},
+	"TokenStatesETHBTC": {
+		"deploy": true
+	},
 	"ProxysETH": {
 		"deploy": true
 	},
 	"ProxysLINK": {
 		"deploy": true
 	},
+	"ProxysETHBTC": {
+		"deploy": true
+	},
 	"SynthsETH": {
 		"deploy": true
 	},
 	"SynthsLINK": {
+		"deploy": true
+	},
+	"SynthsETHBTC": {
 		"deploy": true
 	},
 	"MockToken": {

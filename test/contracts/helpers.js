@@ -1,7 +1,7 @@
 const { artifacts, web3 } = require('hardhat');
 
 const abiDecoder = require('abi-decoder');
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const { assert } = require('./common');
 
@@ -355,14 +355,14 @@ module.exports = {
 			if (mocks[label]) {
 				continue; // prevent dupes
 			}
-			mocks[label] = await smockit(artifacts.require(source).abi, { address: accounts[i] });
+			mocks[label] = await smock.fake(source, { address: accounts[i] });
 		}
 
 		const resolver = mocks['AddressResolver'];
 
 		const returnMockFromResolver = contract => mocks[web3.utils.hexToUtf8(contract)].address;
-		resolver.smocked.requireAndGetAddress.will.return.with(returnMockFromResolver);
-		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
+		resolver.requireAndGetAddress.returns(returnMockFromResolver);
+		resolver.getAddress.returns(returnMockFromResolver);
 
 		return { mocks, resolver };
 	},
@@ -381,7 +381,7 @@ module.exports = {
 			['bytes32', 'getBytes32Value', ZERO_BYTES32],
 		];
 		for (const [type, funcName, defaultValue] of flexibleStorageTypes) {
-			flexibleStorage.smocked[funcName].will.return.with((contract, record) => {
+			flexibleStorage[funcName].returns((contract, record) => {
 				const storedValue =
 					flexibleStorageMemory[contract] &&
 					flexibleStorageMemory[contract][record] &&

@@ -12,7 +12,8 @@ const divideDecimal = (a, b) => a.mul(unit).div(b);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 function itCanTrade({ ctx }) {
-	describe('opening positions', function() {
+	describe.skip('opening positions ', function() {
+		// Sckiped since futures market size is being reduced to deprecate futures in favor of PerpsV2
 		this.retries(0);
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
@@ -219,7 +220,7 @@ function itCanTrade({ ctx }) {
 						? await PerpsV2MarketSettings.maxLeverage(marketKey)
 						: await FuturesMarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
-					assert.bnLt(maxLeverage, toUnit(100));
+					assert.bnLte(maxLeverage, toUnit(100)); // sETHPERP is set to 100
 
 					const maxMarketValueUSD = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
