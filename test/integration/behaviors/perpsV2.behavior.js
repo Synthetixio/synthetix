@@ -95,7 +95,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('position management', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x, debt, priceImpactDelta;
+			let market, assetKey, marketKey, price, posSize1x, debt, priceImpactDelta;
 			const margin = toUnit('100');
 			let skipTest;
 
@@ -109,7 +109,6 @@ function itCanTrade({ ctx }) {
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
-				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
 				priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
@@ -118,6 +117,10 @@ function itCanTrade({ ctx }) {
 				if (skipTest) {
 					return;
 				}
+				// Cleanup any outstanding margin (flaky)
+				await (await market.withdrawAllMargin()).wait();
+
+				const balance = await SynthsUSD.balanceOf(someUser.address);
 				// transfer
 				await market.transferMargin(margin);
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
@@ -194,6 +197,9 @@ function itCanTrade({ ctx }) {
 						await market.withdrawAllMargin();
 						await market.transferMargin(margin);
 
+						// ensure maxLeverage is set to 100 (mainnet vs localhost config)
+						await PerpsV2MarketSettings.connect(owner).setMaxLeverage(marketKey, toUnit('100'));
+
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
 
@@ -217,7 +223,7 @@ function itCanTrade({ ctx }) {
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
 
 						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
-						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('2')));
+						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
 
 						await market.modifyPosition(size, priceImpactDelta);
 					});
