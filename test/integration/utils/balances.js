@@ -171,6 +171,11 @@ async function _getsUSD({ ctx, user, amount }) {
 		amount: ethers.utils.parseEther('1'),
 	});
 
+	const availableOwnerSNX = await Synthetix.transferableSynthetix(ctx.users.owner.address);
+	if (availableOwnerSNX.lt(requiredSNX.mul(2))) {
+		await _getSNXForOwner({ ctx, amount: requiredSNX.mul(2).sub(availableOwnerSNX) });
+	}
+
 	tx = await Synthetix.transfer(tmpWallet.address, requiredSNX.mul(2));
 	await tx.wait();
 

@@ -78,9 +78,8 @@ const deploy = async ({
 	useFork,
 	useOvm,
 	yes,
-	includeFutures,
-	includePerpsV2,
-	perpsV2Markets,
+	includeFutures = false,
+	includePerpsV2 = false,
 	stepName = '',
 } = {}) => {
 	ensureNetwork(network);

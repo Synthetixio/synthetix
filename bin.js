@@ -29,6 +29,31 @@ const {
 const commander = require('commander');
 const program = new commander.Command();
 
+function decodeRelayed(decoded, network, enhanceDecode) {
+	const targets = decoded.method.params[0].value;
+	const payloads = decoded.method.params[1].value;
+
+	const decodedRelayed = [];
+	for (let i = 0; i < targets.length; i++) {
+		const target = targets[i];
+		try {
+			const payload = decode({
+				network,
+				data: payloads[i],
+				target,
+				useOvm: true,
+				decodeMigration: false,
+				enhanceDecode,
+			});
+			decodedRelayed.push({ index: i, target, payload });
+		} catch (e) {
+			// unable to decode.
+			decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
+		}
+	}
+	return decodedRelayed;
+}
+
 program
 	.command('ast <source>')
 	.description('Get the AST for some source file')
@@ -132,13 +157,21 @@ program
 			parts = splitByLen(parts[1], dataLenDecimal * 2);
 			const data = ('00' + dataLenDecimal.toString(16)).slice(0, 2) + parts[0];
 
-			decodedTransactions.push({
+			const decoded = decode({ network, data, target, useOvm, decodeMigration, enhanceDecode });
+			const decodedTransaction = {
 				index,
 				destAddress,
 				operationType,
 				value: valueDecimal,
-				decoded: decode({ network, data, target, useOvm, decodeMigration, enhanceDecode }),
-			});
+				decoded,
+			};
+
+			if (decoded.method.name === 'initiateRelayBatch') {
+				const decodedRelayed = decodeRelayed(decoded, network, enhanceDecode);
+				decodedTransaction.relayedTransaction = decodedRelayed;
+			}
+
+			decodedTransactions.push(decodedTransaction);
 
 			index++;
 		}
@@ -172,27 +205,7 @@ program
 			console.log(util.inspect(decoded, false, null, true));
 			return;
 		}
-		const targets = decoded.method.params[0].value;
-		const payloads = decoded.method.params[1].value;
-
-		const decodedRelayed = [];
-		for (let i = 0; i < targets.length; i++) {
-			const target = targets[i];
-			try {
-				const payload = decode({
-					network,
-					data: payloads[i],
-					target,
-					useOvm: true,
-					decodeMigration: false,
-					enhanceDecode,
-				});
-				decodedRelayed.push({ index: i, target, payload });
-			} catch (e) {
-				// unable to decode.
-				decodedRelayed.push({ index: i, target, rawPayload: payloads[i] });
-			}
-		}
+		const decodedRelayed = decodeRelayed(decoded, network, enhanceDecode);
 
 		console.log(util.inspect(decodedRelayed, false, null, true));
 	});

@@ -195,7 +195,8 @@ interface IPerpsV2MarketConsolidated {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     );
 
     event MarginTransferred(address indexed account, int marginDelta);

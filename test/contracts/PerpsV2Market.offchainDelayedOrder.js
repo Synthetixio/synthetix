@@ -24,7 +24,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		sUSD,
 		systemSettings,
 		systemStatus,
-		feePool,
 		debtCache;
 
 	const owner = accounts[1];
@@ -113,7 +112,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
 			SynthsUSD: sUSD,
-			FeePool: feePool,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			DebtCache: debtCache,
@@ -212,7 +210,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, 0))[0];
@@ -225,13 +222,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, 0);
-			assert.bnEqual(order.commitDeposit, orderFee);
+			assert.bnEqual(order.commitDeposit, 0);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, 0);
 
 			// check margin
 			const position = await perpsV2Market.positions(trader);
-			const expectedMargin = margin.sub(orderFee.add(keeperFee));
+			const expectedMargin = margin.sub(keeperFee);
 			assert.bnEqual(position.margin, expectedMargin);
 
 			// The relevant events are properly emitted
@@ -243,13 +240,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: perpsV2Market.address,
-				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0],
+				args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, toBN(0)],
 				log: decodedLogs[1],
 			});
 			decodedEventEqual({
 				event: 'DelayedOrderSubmitted',
 				emittedFrom: perpsV2Market.address,
-				args: [trader, true, size, roundId.add(toBN(1)), txBlock.timestamp, 0, orderFee, keeperFee],
+				args: [trader, true, size, roundId.add(toBN(1)), txBlock.timestamp, 0, 0, keeperFee],
 				log: decodedLogs[2],
 			});
 		});
@@ -321,7 +318,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		it('submitting an order results in correct views and events', async () => {
 			// setup
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-			const orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 			const tx = await perpsV2Market.submitOffchainDelayedOrderWithTracking(
@@ -338,7 +334,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const order = await perpsV2MarketState.delayedOrders(trader);
 			assert.bnEqual(order.sizeDelta, size);
 			assert.bnEqual(order.targetRoundId, 0);
-			assert.bnEqual(order.commitDeposit, orderFee);
+			assert.bnEqual(order.commitDeposit, 0);
 			assert.bnEqual(order.keeperDeposit, keeperFee);
 			assert.bnEqual(order.executableAtTime, 0);
 			assert.bnEqual(order.trackingCode, trackingCode);
@@ -359,7 +355,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					roundId.add(toBN(1)),
 					txBlock.timestamp,
 					0,
-					orderFee,
+					0,
 					keeperFee,
 					trackingCode,
 				],
@@ -483,7 +479,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let roundId, orderFee, keeperFee;
+			let roundId, keeperFee;
 
 			// helper function to check cancellation tx effects
 			async function checkCancellation(from) {
@@ -508,21 +504,34 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						perpsV2MarketDelayedIntent,
 					],
 				});
+				const decodedLogNames = decodedLogs.map(({ name }) => name);
 
 				if (from === trader) {
+					assert.deepEqual(decodedLogNames, [
+						'FundingRecomputed',
+						'PositionModified',
+						'DelayedOrderRemoved',
+					]);
 					// trader gets refunded
-					assert.equal(decodedLogs.length, 4);
-					// keeper fee was refunded
-					// PositionModified
 					decodedEventEqual({
 						event: 'PositionModified',
 						emittedFrom: perpsV2Market.address,
-						args: [toBN('1'), trader, currentMargin.add(keeperFee), 0, 0, price, toBN(2), 0],
+						args: [
+							toBN('1'),
+							trader,
+							currentMargin.add(keeperFee),
+							0,
+							0,
+							price,
+							toBN(2),
+							0,
+							toBN(0),
+						],
 						log: decodedLogs[1],
 					});
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 3);
+					assert.deepEqual(decodedLogNames, ['Issued', 'DelayedOrderRemoved']);
 					decodedEventEqual({
 						event: 'Issued',
 						emittedFrom: sUSD.address,
@@ -531,18 +540,10 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					});
 				}
 
-				// commitFee (equal to orderFee) paid to fee pool
-				decodedEventEqual({
-					event: 'Issued',
-					emittedFrom: sUSD.address,
-					args: [await feePool.FEE_ADDRESS(), orderFee],
-					log: decodedLogs.slice(-2, -1)[0], // [-2]
-				});
-
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, true, roundId, size, roundId.add(toBN(1)), orderFee, keeperFee],
+					args: [trader, true, roundId, size, roundId.add(toBN(1)), 0, keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
@@ -556,7 +557,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 			beforeEach(async () => {
 				roundId = await exchangeRates.getCurrentRoundId(baseAsset);
-				orderFee = (await perpsV2Market.orderFee(size, orderType))[0];
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
 				await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
 			});
@@ -603,14 +603,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						'cannot cancel yet'
 					);
 
-					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
-					ffDelta = executionExpiredDelay - ffDelta;
+					// time has moved forward, almost to reach the time it will be too late for update the price
+					ffDelta = executionExpiredDelay - 10 - ffDelta;
 					await fastForward(ffDelta);
 					const updateFeedData = await getFeedUpdateData({
 						id: defaultFeedId,
 						price: feedBaseFromUNIT(offChainPrice),
 						conf: feedBaseFromUNIT(confidence),
 					});
+					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
+					ffDelta = executionExpiredDelay - ffDelta;
+					await fastForward(ffDelta);
 
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
@@ -726,13 +729,11 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		});
 
 		describe('when an order exists', () => {
-			let commitFee, keeperFee, updateFeedData;
+			let keeperFee, updateFeedData;
 
 			beforeEach(async () => {
 				// keeperFee is the minimum keeperFee for the system
 				keeperFee = await perpsV2MarketSettings.minKeeperFee();
-				// commitFee is the fee that would be charged for a trade when order is submitted
-				commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 			});
 
 			async function submitOffchainOrderAndDelay(delay, feedTimeOffset = 0) {
@@ -758,8 +759,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			describe('execution reverts', () => {
 				describe('if min age was not reached', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -786,8 +785,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if max age was exceeded for order', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -814,8 +811,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if max age was exceeded for price', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -849,8 +844,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('orders on time', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -901,8 +894,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('if off-chain price is zero', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -928,8 +919,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('off-chain is a lot higher than diverts', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -955,8 +944,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 				describe('on-chain is a lot higher than diverts', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -983,13 +970,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				describe('if off-chain virtual market is paused', () => {
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
 						const ocMarketKet = await perpsV2MarketSettings.offchainMarketKey(marketKey);
-						// commitFee is the fee that would be charged for a trade when order is submitted
-						commitFee = (await perpsV2Market.orderFee(size, orderType))[0];
-						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
 						await setOnchainPrice(baseAsset, price);
-
 						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
 
 						updateFeedData = await getFeedUpdateData({
@@ -1024,7 +1007,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				targetPrice,
 				feeRate,
 				tradeDetails,
-				updateFeedData
+				updateFeedData,
+				preSkew = toBN(0)
 			) {
 				const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 
@@ -1053,7 +1037,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					],
 				});
 
-				let expectedRefund = commitFee; // at least the commitFee is refunded
+				let expectedRefund = toUnit('0');
 				if (from === trader) {
 					// trader gets refunded keeperFee
 					expectedRefund = expectedRefund.add(keeperFee);
@@ -1078,7 +1062,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, currentOffchainPrice, toBN(2), 0],
+					args: [
+						toBN('1'),
+						trader,
+						expectedMargin,
+						0,
+						0,
+						currentOffchainPrice,
+						toBN(2),
+						0,
+						preSkew,
+					],
 					log: decodedLogs.slice(-4, -3)[0],
 				});
 
@@ -1094,14 +1088,24 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, size, size, targetPrice, toBN(2), expectedFee],
+					args: [
+						toBN('1'),
+						trader,
+						expectedMargin,
+						size,
+						size,
+						targetPrice,
+						toBN(2),
+						expectedFee,
+						preSkew.add(size),
+					],
 					log: decodedLogs.slice(-2, -1)[0],
 				});
 
 				decodedEventEqual({
 					event: 'DelayedOrderRemoved',
 					emittedFrom: perpsV2Market.address,
-					args: [trader, true, roundId, size, roundId.add(toBN(1)), commitFee, keeperFee],
+					args: [trader, true, roundId, size, roundId.add(toBN(1)), toUnit('0'), keeperFee],
 					log: decodedLogs.slice(-1)[0],
 				});
 
@@ -1211,7 +1215,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								tradeDetails,
-								updateFeedData
+								updateFeedData,
+								size.mul(toBN(-2))
 							);
 						});
 
@@ -1222,7 +1227,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 								fillPrice,
 								makerFeeOffchainDelayedOrder,
 								tradeDetails,
-								updateFeedData
+								updateFeedData,
+								size.mul(toBN(-2))
 							);
 						});
 					});
