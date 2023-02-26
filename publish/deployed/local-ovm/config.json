@@ -143,6 +143,15 @@
 	"SynthsLINK": {
 		"deploy": true
 	},
+	"TokenStatesETHBTC": {
+		"deploy": true
+	},
+	"ProxysETHBTC": {
+		"deploy": true
+	},
+	"SynthsETHBTC": {
+		"deploy": true
+	},
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},

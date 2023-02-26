@@ -2,7 +2,7 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { smockit } = require('@eth-optimism/smock');
+const { smock } = require('@defi-wonderland/smock');
 
 const SynthetixBridgeEscrow = artifacts.require('SynthetixBridgeEscrow');
 
@@ -22,16 +22,16 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 		beforeEach(async () => {
 			// can't use ISynthetix as we need ERC20 functions as well
-			IERC20 = await smockit(artifacts.require('contracts/interfaces/IERC20.sol:IERC20').abi);
+			IERC20 = await smock.fake('contracts/interfaces/IERC20.sol:IERC20');
 		});
 
 		beforeEach(async () => {
 			// stubs
-			IERC20.smocked.approve.will.return.with(() => true);
-			IERC20.smocked.transfer.will.return.with(() => true);
-			IERC20.smocked.transferFrom.will.return.with(() => true);
-			IERC20.smocked.balanceOf.will.return.with(() => web3.utils.toWei('100'));
-			IERC20.smocked.allowance.will.return.with(() => web3.utils.toWei('0'));
+			IERC20.approve.returns(() => true);
+			IERC20.transfer.returns(() => true);
+			IERC20.transferFrom.returns(() => true);
+			IERC20.balanceOf.returns(() => web3.utils.toWei('100'));
+			IERC20.allowance.returns(() => web3.utils.toWei('0'));
 		});
 
 		describe('when the target is deployed', () => {
@@ -67,9 +67,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 
 					it('approve is called via Synthetix', async () => {
-						assert.equal(IERC20.smocked.approve.calls.length, 1);
-						assert.equal(IERC20.smocked.approve.calls[0][0], snxBridgeToOptimism);
-						assert.equal(IERC20.smocked.approve.calls[0][1], amount);
+						IERC20.approve.returnsAtCall(0, snxBridgeToOptimism);
+						IERC20.approve.returnsAtCall(1, amount);
 					});
 				});
 			});

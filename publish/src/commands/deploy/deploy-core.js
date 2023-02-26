@@ -68,12 +68,6 @@ module.exports = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
-	// SIP-243: Deprecate sDEFI
-	await deployer.deployContract({
-		name: 'OneNetAggregatorsDEFI',
-		args: [addressOf(readProxyForResolver)],
-	});
-
 	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
 
 	await deployer.deployContract({

@@ -236,6 +236,8 @@ describe('publish scripts', () => {
 					concurrency,
 					network,
 					freshDeploy: true,
+					includeFutures: false,
+					includePerpsV2: false,
 					yes: true,
 					privateKey: accounts.deployer.privateKey,
 					ignoreCustomParameters: true,
@@ -410,6 +412,8 @@ describe('publish scripts', () => {
 								concurrency,
 								network,
 								yes: true,
+								includeFutures: false,
+								includePerpsV2: false,
 								privateKey: accounts.deployer.privateKey,
 							});
 						});
@@ -502,6 +506,8 @@ describe('publish scripts', () => {
 								addNewSynths: true,
 								network,
 								yes: true,
+								includeFutures: false,
+								includePerpsV2: false,
 								privateKey: accounts.deployer.privateKey,
 							});
 							targets = getTarget();
@@ -640,6 +646,8 @@ describe('publish scripts', () => {
 						concurrency,
 						network,
 						yes: true,
+						includeFutures: false,
+						includePerpsV2: false,
 						privateKey: accounts.deployer.privateKey,
 					});
 				};
@@ -989,6 +997,8 @@ describe('publish scripts', () => {
 								concurrency,
 								network,
 								yes: true,
+								includeFutures: false,
+								includePerpsV2: false,
 								privateKey: accounts.deployer.privateKey,
 							});
 							targets = getTarget();
@@ -1075,6 +1085,8 @@ describe('publish scripts', () => {
 								concurrency,
 								network,
 								yes: true,
+								includeFutures: false,
+								includePerpsV2: false,
 								privateKey: accounts.deployer.privateKey,
 							});
 							targets = getTarget();
@@ -1146,6 +1158,8 @@ describe('publish scripts', () => {
 								concurrency,
 								network,
 								yes: true,
+								includeFutures: false,
+								includePerpsV2: false,
 								privateKey: accounts.deployer.privateKey,
 							});
 						});

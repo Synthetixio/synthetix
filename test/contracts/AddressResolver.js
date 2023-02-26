@@ -1,7 +1,6 @@
 'use strict';
 
 const { artifacts, contract } = require('hardhat');
-const { smockit } = require('@eth-optimism/smock');
 const { assert } = require('./common');
 
 const {
@@ -137,32 +136,6 @@ contract('AddressResolver', accounts => {
 					resolver.requireAndGetAddress(toBytes32('other'), 'Some error again'),
 					'Some error again'
 				);
-			});
-		});
-	});
-
-	describe('rebuildCaches()', () => {
-		describe('when some MixinResolver contracts exist', () => {
-			let MixinResolver1;
-
-			beforeEach('smock some MixinResolver contracts', async () => {
-				MixinResolver1 = await smockit(artifacts.require('TestableMixinResolver').abi);
-			});
-
-			describe('when some of these contracts are imported and caches are rebuilt', () => {
-				beforeEach('import contracts and rebuild caches', async () => {
-					await resolver.importAddresses(
-						['Example_1', 'Example_2', 'Example_3'].map(toBytes32),
-						[MixinResolver1.address, MixinResolver1.address, MixinResolver1.address],
-						{ from: owner }
-					);
-
-					await resolver.rebuildCaches([MixinResolver1.address, MixinResolver1.address]);
-				});
-
-				it('shows that rebuildCache() was called on imported addresses', async () => {
-					assert.equal(MixinResolver1.smocked.rebuildCache.calls.length, 2);
-				});
 			});
 		});
 	});

@@ -12,6 +12,7 @@ module.exports = async ({
 	deploymentPath,
 	network,
 	useOvm,
+	futuresMarketManager,
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
@@ -26,15 +27,17 @@ module.exports = async ({
 		network,
 	});
 
-	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesMarketManager',
-		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
-		deps: ['ReadProxyAddressResolver'],
-	});
+	if (!futuresMarketManager) {
+		futuresMarketManager = await deployer.deployContract({
+			name: 'FuturesMarketManager',
+			source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+			args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
+			deps: ['ReadProxyAddressResolver'],
+		});
+	}
 
 	if (!useOvm) {
-		return { futuresMarketManager };
+		return;
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
@@ -108,6 +111,4 @@ module.exports = async ({
 			});
 		}
 	}
-
-	return { futuresMarketManager };
 };
