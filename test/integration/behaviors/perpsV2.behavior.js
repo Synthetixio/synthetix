@@ -37,12 +37,12 @@ function itCanTrade({ ctx }) {
 
 		const sUSDAmount = ethers.utils.parseEther('100000');
 
-		let someUser, otherUser;
+		let owner, someUser, otherUser;
 		let FuturesMarketManager,
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
-			PerpsV2MarketBTC,
+			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
 			PerpsV2DelayedOrderETHPERP,
 			PerpsV2OffchainDelayedOrderETHPERP,
@@ -68,7 +68,7 @@ function itCanTrade({ ctx }) {
 				SynthsUSD,
 			} = ctx.contracts);
 
-			// owner = ctx.users.owner;
+			owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
@@ -79,7 +79,7 @@ function itCanTrade({ ctx }) {
 				PerpsV2OffchainDelayedOrderETHPERP,
 			]);
 			if (unifiedAbis && PerpsV2ProxyETHPERP) {
-				PerpsV2MarketBTC = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
+				PerpsV2MarketETH = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
 			}
 		});
 
@@ -92,21 +92,20 @@ function itCanTrade({ ctx }) {
 		});
 
 		describe('position management', () => {
-			let market, assetKey, marketKey, price, balance, posSize1x, debt, priceImpactDelta;
+			let market, assetKey, marketKey, price, posSize1x, debt, priceImpactDelta;
 			const margin = toUnit('100');
 			let skipTest;
 
 			before('market and conditions', async () => {
-				if (!PerpsV2MarketBTC) {
+				if (!PerpsV2MarketETH) {
 					// Since we are forking mainnet-ovm, if there's no market defined (before adding PerpsV2 to production), it will fail to find it.
 					skipTest = true;
 					return;
 				}
-				market = PerpsV2MarketBTC.connect(someUser);
+				market = PerpsV2MarketETH.connect(someUser);
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
-				balance = await SynthsUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
 				priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 			});
@@ -115,6 +114,10 @@ function itCanTrade({ ctx }) {
 				if (skipTest) {
 					return;
 				}
+				// Cleanup any outstanding margin (flaky)
+				await (await market.withdrawAllMargin()).wait();
+
+				const balance = await SynthsUSD.balanceOf(someUser.address);
 				// transfer
 				await market.transferMargin(margin);
 				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
@@ -191,6 +194,9 @@ function itCanTrade({ ctx }) {
 						await market.withdrawAllMargin();
 						await market.transferMargin(margin);
 
+						// ensure maxLeverage is set to 100 (mainnet vs localhost config)
+						await PerpsV2MarketSettings.connect(owner).setMaxLeverage(marketKey, toUnit('100'));
+
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
 
@@ -212,7 +218,9 @@ function itCanTrade({ ctx }) {
 						//      = 1010
 						//
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
-						const size = multiplyDecimal(posSize1x, maxLeverage.sub(toUnit('0.5')));
+
+						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
+						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
 
 						await market.modifyPosition(size, priceImpactDelta);
 					});
@@ -251,7 +259,7 @@ function itCanTrade({ ctx }) {
 						assert.ok(await market.canLiquidate(someUser.address));
 
 						// liquidation tx
-						const otherCaller = PerpsV2MarketBTC.connect(otherUser);
+						const otherCaller = PerpsV2MarketETH.connect(otherUser);
 						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
 
 						// position: rekt
@@ -343,7 +351,7 @@ function itCanTrade({ ctx }) {
 						? await PerpsV2MarketSettings.maxLeverage(marketKey)
 						: await FuturesMarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
-					assert.bnLt(maxLeverage, toUnit(100));
+					assert.bnLte(maxLeverage, toUnit(100));
 
 					const maxMarketValue = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
@@ -363,6 +371,11 @@ function itCanTrade({ ctx }) {
 				const minKeeperFee = await PerpsV2MarketSettings.minKeeperFee();
 				assert.bnGte(minKeeperFee, toUnit(1));
 				assert.bnLt(minKeeperFee, toUnit(100));
+
+				// maxKeeperFee
+				const maxKeeperFee = await PerpsV2MarketSettings.maxKeeperFee();
+				assert.bnGte(maxKeeperFee, toUnit(100));
+				assert.bnLt(maxKeeperFee, toUnit(10000));
 
 				// minInitialMargin
 				const minInitialMargin = await PerpsV2MarketSettings.minInitialMargin();
