@@ -653,14 +653,6 @@
 			"released": "both"
 		},
 		{
-			"sip": 237,
-			"layer": "both",
-			"sources": {
-				"base": ["DebtMigratorOnEthereum", "Issuer"],
-				"ovm": ["DebtMigratorOnOptimism", "Issuer"]
-			}
-		},
-		{
 			"sip": 238,
 			"layer": "both",
 			"sources": ["Synthetix", "Synths.*", "Issuer"],
