@@ -142,5 +142,5 @@ interface ISynthetix {
 
     function revokeAllEscrow(address account) external;
 
-    function revokeEscrowForDebtMigration(address account) external returns (uint);
+    function migrateAccountBalances(address account) external returns (uint totalEscrowRevoked, uint totalLiquidBalance);
 }

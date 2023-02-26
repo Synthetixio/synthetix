@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDebtMigrator.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
@@ -17,6 +18,7 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_REWARD_ESCROW_V2 = "RewardEscrowV2";
 
     /* ========== CONSTRUCTOR ============ */
 
@@ -36,16 +38,31 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
         return requireAndGetAddress(CONTRACT_ISSUER);
     }
 
-    function _finalizeEscrow(bytes memory _escrowPayload) private {}
-
-    // TODO: rename to _finalizeDebt and _debtPayload
-    function _relayCall(bytes memory payload) private {
-        address target = _issuer(); // target is the Issuer contract on Optimism.
-        // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(payload);
-
-        require(success, string(abi.encode("xChain call failed:", result)));
+    function _rewardEscrowV2() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_REWARD_ESCROW_V2);
     }
+
+    /* ========== MUTATIVE ============ */
+
+    function _finalizeDebt(bytes memory _debtPayload) private {
+        address target = _issuer(); // target is the Issuer contract on Optimism.
+
+        // solhint-disable avoid-low-level-calls
+        (bool success, bytes memory result) = target.call(_debtPayload);
+
+        require(success, string(abi.encode("finalize debt call failed:", result)));
+    }
+
+    function _finalizeEscrow(bytes memory _escrowPayload) private {
+        address target = _rewardEscrowV2(); // target is the RewardEscrowV2 contract on Optimism.
+
+        // solhint-disable avoid-low-level-calls
+        (bool success, bytes memory result) = target.call(_escrowPayload);
+
+        require(success, string(abi.encode("finalize escrow call failed:", result)));
+    }
+
+    /* ========== MODIFIERS ============ */
 
     function _onlyAllowMessengerAndL1DebtMigrator() internal view {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
@@ -69,11 +86,13 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
     /* ========== EXTERNAL ========== */
 
-    function finalizeDebtMigration(address account, bytes calldata payload) external onlyMessengerAndL1DebtMigrator {
-        _relayCall(payload);
-
-        // _finalizeEscrow(escrowPayload)
-        // _finalizeDebt(debtPayload)
+    function finalizeDebtMigration(
+        address account,
+        bytes calldata debtPayload,
+        bytes calldata escrowPayload
+    ) external onlyMessengerAndL1DebtMigrator {
+        _finalizeDebt(debtPayload);
+        _finalizeEscrow(escrowPayload);
 
         emit MigrationFinalized(account);
     }

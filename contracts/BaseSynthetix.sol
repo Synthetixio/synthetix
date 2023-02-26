@@ -18,6 +18,7 @@ import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
@@ -38,6 +39,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
     bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
+    bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
 
@@ -93,6 +96,10 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function liquidator() internal view returns (ILiquidator) {
         return ILiquidator(requireAndGetAddress(CONTRACT_LIQUIDATOR));
+    }
+
+    function _synthetixBridgeToOptimism() internal view returns (ISynthetixBridgeToOptimism) {
+        return ISynthetixBridgeToOptimism(requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM));
     }
 
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {
@@ -313,21 +320,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    // SIP-252: migration of SNX token balance from old to new escrow rewards contract
-    function migrateEscrowContractBalance() external onlyOwner {
-        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
-        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
-        // using the cached value and read the most updated one directly from the resolver
-        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
-        require(to != from, "cannot migrate to same address");
-
-        uint currentBalance = tokenState.balanceOf(from);
-        // allow no-op for idempotent migration steps in case action was performed already
-        if (currentBalance > 0) {
-            _internalTransfer(from, to, currentBalance);
-        }
-    }
-
     function issueSynths(uint amount) external issuanceActive optionalProxy {
         return issuer().issueSynths(messageSender, amount);
     }
@@ -458,12 +450,33 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
     }
 
-    function revokeEscrowForDebtMigration(address account) external systemActive returns (uint totalEscrowRevoked) {
-        address debtMigratorAddress = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
-        require(msg.sender == debtMigratorAddress, "Only DebtMigratorOnEthereum can revoke escrow");
+    function migrateAccountBalances(address account)
+        external
+        systemActive
+        returns (uint totalEscrowRevoked, uint totalLiquidBalance)
+    {
+        address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
+        require(msg.sender == debtMigratorOnEthereum, "Only DebtMigratorOnEthereum can migrate balances");
 
+        // get their liquid SNX balance and transfer it to this contract
+        totalLiquidBalance = tokenState.balanceOf(account);
+        if (totalLiquidBalance > 0) {
+            _internalTransfer(account, address(this), totalLiquidBalance);
+        }
+
+        // get their escrowed SNX balance and revoke it all
         totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
-        rewardEscrowV2().revokeFrom(account, debtMigratorAddress, totalEscrowRevoked, 0);
+        if (totalEscrowRevoked > 0) {
+            rewardEscrowV2().revokeFrom(account, address(this), totalEscrowRevoked, 0);
+        }
+
+        // deposit all liquid and escrowed snx to the migrator contract on L2
+        uint totalAmountToDeposit = totalLiquidBalance.add(totalEscrowRevoked);
+        if (totalAmountToDeposit > 0) {
+            address debtMigratorOnOptimism = resolver.getAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM);
+            require(debtMigratorOnOptimism != address(0), "Debt Migrator On Optimism not set");
+            _synthetixBridgeToOptimism().depositTo(debtMigratorOnOptimism, totalAmountToDeposit);
+        }
     }
 
     function exchangeWithTrackingForInitiator(
