@@ -66,5 +66,37 @@
 	"DOGE": {
 		"asset": "DOGE",
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"OP": {
+		"asset": "OP",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"ATOM": {
+		"asset": "ATOM",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"FLOW": {
+		"asset": "FLOW",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"FTM": {
+		"asset": "FTM",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"NEAR": {
+		"asset": "NEAR",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"feed": "0x881B413aAf96FEAbb4C92b0C639aa5a7eD746AC8"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
 	}
 }

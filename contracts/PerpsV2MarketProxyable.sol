@@ -115,11 +115,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         return priceImpactLimit;
     }
 
-    function _recomputeFunding() internal returns (uint lastIndex) {
+    function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLengthBefore = marketState.fundingSequenceLength();
 
         int fundingRate = _currentFundingRate();
-        int funding = _nextFundingEntry();
+        int funding = _nextFundingEntry(price);
         marketState.pushFundingSequence(int128(funding));
         marketState.setFundingLastRecomputed(uint32(block.timestamp));
         marketState.setFundingRateLastRecomputed(int128(fundingRate));
@@ -186,11 +186,6 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     }
 
     function _trade(address sender, TradeParams memory params) internal {
-        // track the original price as its needed to calculate if priceImpactDelta is acceptable.
-        uint price = params.price;
-        // update the price of the intended trade to account to the affect to skew.
-        params.price = _fillPrice(params.sizeDelta, price);
-
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({
@@ -205,7 +200,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
-        _assertPriceImpact(price, params.price, params.priceImpactDelta, params.sizeDelta);
+        _assertPriceImpact(params.oraclePrice, params.fillPrice, params.priceImpactDelta, params.sizeDelta);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
@@ -243,7 +238,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             }
             position.id = id;
             position.size = newPosition.size;
-            position.lastPrice = uint128(params.price);
+            position.lastPrice = uint128(params.fillPrice);
             position.lastFundingIndex = uint64(fundingIndex);
         }
 
@@ -264,7 +259,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             newPosition.margin,
             newPosition.size,
             params.sizeDelta,
-            params.price,
+            params.fillPrice,
             fundingIndex,
             fee
         );

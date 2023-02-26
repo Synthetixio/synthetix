@@ -470,5 +470,29 @@
 		"category": "crypto",
 		"sign": "Ɖ",
 		"description": "Dogecoin"
+	},
+	"ATOM": {
+		"asset": "ATOM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Cosmos ATOM"
+	},
+	"FLOW": {
+		"asset": "FLOW",
+		"category": "crypto",
+		"sign": "",
+		"description": "Flow"
+	},
+	"FTM": {
+		"asset": "FTM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Fantom FTM"
+	},
+	"NEAR": {
+		"asset": "NEAR",
+		"category": "crypto",
+		"sign": "",
+		"description": "NEAR"
 	}
 }

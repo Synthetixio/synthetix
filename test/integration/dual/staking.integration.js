@@ -81,8 +81,8 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 							console.log(`claimFees() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 						});
 
-						it('shows a slight increase in the users sUSD balance', async () => {
-							assert.bnGt(await SynthsUSD.balanceOf(user.address), balancesUSD);
+						it('shows no change in the users sUSD balance', async () => {
+							assert.bnEqual(await SynthsUSD.balanceOf(user.address), balancesUSD);
 						});
 					});
 				});
