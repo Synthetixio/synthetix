@@ -17,6 +17,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     // Legacy state link
     PerpsV2MarketStateLegacyR1 public legacyState;
+    bool private _legacyContractExists;
     bool public legacyLinked;
     uint public legacyFundinSequenceOffset;
 
@@ -99,7 +100,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         fundingRateLastRecomputed = 0;
 
         // Set legacyState
-        legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
+        if (_legacyState != address(0)) {
+            legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
+            _legacyContractExists = true;
+        }
     }
 
     function linkLegacyState() external onlyOwner {
@@ -124,7 +128,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function fundingSequence(uint index) external view returns (int128) {
         // TODO check legacy
-        if (index > legacyFundinSequenceOffset) {
+        if (!_legacyContractExists || index > legacyFundinSequenceOffset) {
             // offset + 1 because we pushed an empty element on constructor
             return _fundingSequence[index - legacyFundinSequenceOffset];
         }

@@ -814,7 +814,9 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 					// time has moved forward (no change to round) but not enough.
 					const order = await perpsV2MarketState.delayedOrders(trader);
-					const executableAtTimeDelta = order.executableAtTime.sub(toBN(timestamp)).toNumber();
+					const executableAtTimeDelta = toBN(order.executableAtTime)
+						.sub(toBN(timestamp))
+						.toNumber();
 					await fastForward(ffDelta); // fast-forward by 5 seconds
 					await assert.revert(
 						perpsV2Market.cancelDelayedOrder(trader, { from: trader2 }),
