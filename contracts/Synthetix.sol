@@ -165,6 +165,18 @@ contract Synthetix is BaseSynthetix {
         return true;
     }
 
+    /* Once off function for SIP-60 to migrate SNX balances in the RewardEscrow contract
+     * To the new RewardEscrowV2 contract
+     */
+    function migrateEscrowBalanceToRewardEscrowV2() external onlyOwner {
+        // Record balanceOf(RewardEscrow) contract
+        uint rewardEscrowBalance = tokenState.balanceOf(address(rewardEscrow()));
+
+        // transfer all of RewardEscrow's balance to RewardEscrowV2
+        // _internalTransfer emits the transfer event
+        _internalTransfer(address(rewardEscrow()), address(rewardEscrowV2()), rewardEscrowBalance);
+    }
+
     // ========== EVENTS ==========
 
     event AtomicSynthExchange(

@@ -136,14 +136,23 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
         // First, remove all debt shares on L1
         ISynthetixDebtShare sds = _synthetixDebtShare();
-        uint _amountOfDebtShares = sds.balanceOf(_account);
-        require(_amountOfDebtShares > 0, "No debt to migrate");
-        _issuer().modifyDebtSharesForMigration(_account, _amountOfDebtShares);
+        uint totalDebtShares = sds.balanceOf(_account);
+        require(totalDebtShares > 0, "No debt to migrate");
+        _issuer().modifyDebtSharesForMigration(_account, totalDebtShares);
 
         // Next, deposit all of the liquid & revoked SNX to the migrator on L2
-        (uint totalEscrowMigrated, uint totalLiquidBalanceMigrated) =
+        (uint totalEscrowRevoked, uint totalLiquidBalance) =
             ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX)).migrateAccountBalances(_account);
-        require(totalEscrowMigrated > 0, "Cannot migrate zero escrow"); // otherwise it will revert on L2 when creating the escrow entry
+        require(totalEscrowRevoked > 0, "Cannot migrate zero escrow"); // otherwise it will revert on L2 when creating the escrow entry
+
+        // deposit all liquid and escrowed snx to the migrator contract on L2
+        uint totalAmountToDeposit = totalLiquidBalance.add(totalEscrowRevoked);
+        require(totalAmountToDeposit > 0, "Cannot migrate zero balances");
+        require(
+            resolver.getAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM) != address(0),
+            "Debt Migrator On Optimism not set"
+        );
+        _synthetixBridgeToOptimism().depositTo(_debtMigratorOnOptimism(), totalAmountToDeposit);
 
         // Require all zeroed balances
         require(_synthetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
@@ -154,14 +163,14 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
         // Create the data payloads to be relayed on L2
         IIssuer issuer;
         bytes memory _debtPayload =
-            abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, _amountOfDebtShares);
+            abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, totalDebtShares);
 
         IRewardEscrowV2 rewardEscrow;
         bytes memory _escrowPayload =
             abi.encodeWithSelector(
                 rewardEscrow.createEscrowEntry.selector,
                 _account,
-                totalEscrowMigrated,
+                totalEscrowRevoked,
                 escrowMigrationDuration
             );
 
@@ -176,7 +185,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
             );
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
-        emit MigrationInitiated(_account, totalEscrowMigrated, totalLiquidBalanceMigrated);
+        emit MigrationInitiated(_account, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
     }
 
     /* ========== SETTERS ========== */
@@ -191,8 +200,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
     event MigrationInitiated(
         address indexed account,
-        uint indexed totalEscrowMigrated,
-        uint indexed totalLiquidBalanceMigrated
+        uint totalDebtSharesMigrated,
+        uint totalEscrowMigrated,
+        uint totalLiquidBalanceMigrated
     );
-    event EscrowMigrationDurationUpdated(uint indexed escrowMigrationDuration);
+
+    event EscrowMigrationDurationUpdated(uint escrowMigrationDuration);
 }
