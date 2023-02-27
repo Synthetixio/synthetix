@@ -4788,7 +4788,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				//
 				// note: we include the `feeRatio` for the same reason as `minFee`
 				const bufferRatio = toUnit('0.03');
-				await perpsV2MarketSettings.setLiquidationBufferRatio(bufferRatio, { from: owner });
+				await perpsV2MarketSettings.setLiquidationBufferRatio(marketKey, bufferRatio, {
+					from: owner,
+				});
 				assert.bnEqual(
 					(await perpsV2Market.liquidationPrice(trader)).price,
 					await getExpectedLiquidationPrice({
@@ -4824,7 +4826,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const zero = toUnit('0');
 				await perpsV2MarketSettings.setMinKeeperFee(zero, { from: owner });
 				await perpsV2MarketSettings.setLiquidationFeeRatio(zero, { from: owner });
-				await perpsV2MarketSettings.setLiquidationBufferRatio(zero, { from: owner });
+				await perpsV2MarketSettings.setLiquidationBufferRatio(marketKey, zero, { from: owner });
 
 				assert.bnEqual(
 					(await perpsV2Market.liquidationPrice(trader)).price,
@@ -5655,7 +5657,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('send the remaining to the fee pool when max is exceeded - long', async () => {
 				await setPrice(baseAsset, toUnit('1000'));
 				// increase margin so that we can play with it
-				await perpsV2MarketSettings.setLiquidationBufferRatio(toUnit('0.1'), { from: owner });
+				await perpsV2MarketSettings.setLiquidationBufferRatio(marketKey, toUnit('0.1'), {
+					from: owner,
+				});
 
 				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader });
 				await perpsV2Market.modifyPosition(toUnit('200'), priceImpactDelta, { from: trader });
@@ -5721,7 +5725,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('send the remaining to the fee pool when max is exceeded - short', async () => {
 				await setPrice(baseAsset, toUnit('1000'));
 				// increase margin so that we can play with it
-				await perpsV2MarketSettings.setLiquidationBufferRatio(toUnit('0.1'), { from: owner });
+				await perpsV2MarketSettings.setLiquidationBufferRatio(marketKey, toUnit('0.1'), {
+					from: owner,
+				});
 
 				await perpsV2Market.transferMargin(toUnit('100000'), { from: trader });
 				await perpsV2Market.modifyPosition(toUnit('200'), priceImpactDelta, { from: trader });
@@ -5820,7 +5826,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				// change buffer BPs
 				// max(1, 2 * 1500 * 0.02) + 2 * 1500 * 0.03 = 150
-				await perpsV2MarketSettings.setLiquidationBufferRatio(toUnit(0.03), { from: owner });
+				await perpsV2MarketSettings.setLiquidationBufferRatio(marketKey, toUnit(0.03), {
+					from: owner,
+				});
 				assert.bnEqual(await perpsV2MarketHelper.liquidationMargin(trader), toUnit('150'));
 				assert.bnEqual(await perpsV2MarketHelper.liquidationMargin(trader2), toUnit('150'));
 			});
@@ -6310,7 +6318,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0, 0],
 						{
 							from: owner,
 						}
@@ -6384,7 +6392,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0, 0],
 					{
 						from: owner,
 					}
@@ -6396,7 +6404,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await assert.revert(
 					perpsV2MarketSettings.setParameters(
 						marketKey,
-						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0],
+						[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0, 0],
 						{
 							from: owner,
 						}
@@ -6553,7 +6561,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0, 0],
 					{
 						from: owner,
 					}
@@ -6633,7 +6641,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 				await perpsV2MarketSettings.setParameters(
 					marketKey,
-					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0],
+					[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, toBytes32(''), 0, 1, 0, 0, 0],
 					{
 						from: owner,
 					}

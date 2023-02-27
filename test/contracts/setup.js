@@ -1965,12 +1965,6 @@ const setupAllContracts = async ({
 				returnObj['PerpsV2MarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
-				returnObj['PerpsV2MarketSettings'].setLiquidationBufferRatio(
-					FUTURES_LIQUIDATION_BUFFER_RATIO,
-					{
-						from: owner,
-					}
-				),
 			];
 
 			// fetch settings per-market programmatically
@@ -2013,6 +2007,7 @@ const setupAllContracts = async ({
 							toUnit('0.06'), // offchain price divergence 6%
 
 							toWei('1'), // 1 liquidation premium multiplier
+							FUTURES_LIQUIDATION_BUFFER_RATIO,
 							toWei('0'),
 							toWei('0'),
 						],
