@@ -18,7 +18,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     // Legacy state link
     PerpsV2MarketStateLegacyR1 public legacyState;
     bool private _legacyContractExists;
-    bool public legacyLinked;
+    bool public initialized;
     uint public legacyFundinSequenceOffset;
 
     // The market identifier in the perpsV2 system (manager + settings). Multiple markets can co-exist
@@ -99,29 +99,41 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
             _legacyContractExists = true;
             // Confirm same asset/market key
-            // TODO
+            require(
+                baseAsset == legacyState.baseAsset() && marketKey == legacyState.marketKey(),
+                "Invalid legacy state baseAsset or marketKey"
+            );
         }
     }
 
-    function linkLegacyState() external onlyOwner {
-        // initialize the _fundingSequence array
-        // TODO
-        /*
-        // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-        // push the previous value of the old state (or zero if there's no previous state)
-        // recompute and get new sequence to put as zero index here
+    function linkOrInitializeState() external onlyOwner {
+        if (_legacyContractExists) {
+            // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
+            // push the previous value of the old state (or zero if there's no previous state)
+            // copy atomic values
+            marketSize = legacyState.marketSize();
+            marketSkew = legacyState.marketSkew();
+            _entryDebtCorrection = legacyState.entryDebtCorrection();
+            _nextPositionId = legacyState.nextPositionId();
+            fundingLastRecomputed = legacyState.fundingLastRecomputed();
+            fundingRateLastRecomputed = legacyState.fundingRateLastRecomputed();
+            uint legacyFundingSequenceLength = legacyState.fundingSequenceLength();
 
-        _fundingSequence.push(0);
-        fundingRateLastRecomputed = 0;
-        */
+            // link fundingSequence
+            // initialize the _fundingSequence array
+            // TODO
+            _fundingSequence.push(legacyState.fundingSequence(legacyFundingSequenceLength));
+            // get fundingSequence offset
+            // TODO
+            legacyFundinSequenceOffset = legacyFundingSequenceLength;
+        } else {
+            _fundingSequence.push(0);
+            fundingRateLastRecomputed = 0;
+        }
 
-        // copy atomic values
-        // TODO
-        // get fundingSequence offset
-        // TODO
         // set legacyConfigured
-        // TODO
-        legacyLinked = true;
+        initialized = true;
+        // emit event
     }
 
     function entryDebtCorrection() external view returns (int128) {
@@ -175,23 +187,13 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _delayedOrders[account];
     }
 
-    function getDelayedOrderAddressesPage(uint index, uint pageSize)
-        external
-        view
-        onlyAssociatedContracts
-        returns (address[] memory)
-    {
+    function getDelayedOrderAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
         // TODO check legacy
 
         return _delayedOrderAddresses.getPage(index, pageSize);
     }
 
-    function getFlaggedAddressesPage(uint index, uint pageSize)
-        external
-        view
-        onlyAssociatedContracts
-        returns (address[] memory)
-    {
+    function getFlaggedAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
         // TODO check legacy
 
         return _flaggedAddresses.getPage(index, pageSize);
@@ -213,37 +215,37 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _flaggedAddresses.elements.length;
     }
 
-    function setMarketKey(bytes32 _marketKey) external onlyLegacyLinked onlyAssociatedContracts {
+    function setMarketKey(bytes32 _marketKey) external onlyIfInitialized onlyAssociatedContracts {
         require(marketKey == bytes32(0) || _marketKey == marketKey, "Cannot change market key");
         marketKey = _marketKey;
     }
 
-    function setBaseAsset(bytes32 _baseAsset) external onlyLegacyLinked onlyAssociatedContracts {
+    function setBaseAsset(bytes32 _baseAsset) external onlyIfInitialized onlyAssociatedContracts {
         require(baseAsset == bytes32(0) || _baseAsset == baseAsset, "Cannot change base asset");
         baseAsset = _baseAsset;
     }
 
-    function setMarketSize(uint128 _marketSize) external onlyLegacyLinked onlyAssociatedContracts {
+    function setMarketSize(uint128 _marketSize) external onlyIfInitialized onlyAssociatedContracts {
         marketSize = _marketSize;
     }
 
-    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyLegacyLinked onlyAssociatedContracts {
+    function setEntryDebtCorrection(int128 entryDebtCorrection) external onlyIfInitialized onlyAssociatedContracts {
         _entryDebtCorrection = entryDebtCorrection;
     }
 
-    function setNextPositionId(uint64 nextPositionId) external onlyLegacyLinked onlyAssociatedContracts {
+    function setNextPositionId(uint64 nextPositionId) external onlyIfInitialized onlyAssociatedContracts {
         _nextPositionId = nextPositionId;
     }
 
-    function setMarketSkew(int128 _marketSkew) external onlyLegacyLinked onlyAssociatedContracts {
+    function setMarketSkew(int128 _marketSkew) external onlyIfInitialized onlyAssociatedContracts {
         marketSkew = _marketSkew;
     }
 
-    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyLegacyLinked onlyAssociatedContracts {
+    function setFundingLastRecomputed(uint32 lastRecomputed) external onlyIfInitialized onlyAssociatedContracts {
         fundingLastRecomputed = lastRecomputed;
     }
 
-    function pushFundingSequence(int128 fundingSequence) external onlyLegacyLinked onlyAssociatedContracts {
+    function pushFundingSequence(int128 fundingSequence) external onlyIfInitialized onlyAssociatedContracts {
         // TODO check legacy
 
         _fundingSequence.push(fundingSequence);
@@ -252,7 +254,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     // TODO: Perform this update when maxFundingVelocity and skewScale are modified.
     function setFundingRateLastRecomputed(int128 _fundingRateLastRecomputed)
         external
-        onlyLegacyLinked
+        onlyIfInitialized
         onlyAssociatedContracts
     {
         fundingRateLastRecomputed = _fundingRateLastRecomputed;
@@ -275,7 +277,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         uint128 margin,
         uint128 lastPrice,
         int128 size
-    ) external onlyLegacyLinked onlyAssociatedContracts {
+    ) external onlyIfInitialized onlyAssociatedContracts {
         // TODO check legacy
 
         _positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
@@ -306,7 +308,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         uint256 executableAtTime,
         uint256 intentionTime,
         bytes32 trackingCode
-    ) external onlyLegacyLinked onlyAssociatedContracts {
+    ) external onlyIfInitialized onlyAssociatedContracts {
         // TODO check legacy
 
         _delayedOrders[account] = DelayedOrder(
@@ -328,7 +330,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
      * @dev Only the associated contract may call this.
      * @param account The account whose position should be deleted.
      */
-    function deletePosition(address account) external onlyLegacyLinked onlyAssociatedContracts {
+    function deletePosition(address account) external onlyIfInitialized onlyAssociatedContracts {
         // TODO check legacy
 
         delete _positions[account];
@@ -337,7 +339,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         }
     }
 
-    function deleteDelayedOrder(address account) external onlyLegacyLinked onlyAssociatedContracts {
+    function deleteDelayedOrder(address account) external onlyIfInitialized onlyAssociatedContracts {
         // TODO check legacy
 
         delete _delayedOrders[account];
@@ -346,20 +348,20 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         }
     }
 
-    function flag(address account, address flagger) external onlyLegacyLinked onlyAssociatedContracts {
+    function flag(address account, address flagger) external onlyIfInitialized onlyAssociatedContracts {
         positionFlagger[account] = flagger;
         _flaggedAddresses.add(account);
     }
 
-    function unflag(address account) external onlyLegacyLinked onlyAssociatedContracts {
+    function unflag(address account) external onlyIfInitialized onlyAssociatedContracts {
         delete positionFlagger[account];
         if (_flaggedAddresses.contains(account)) {
             _flaggedAddresses.remove(account);
         }
     }
 
-    modifier onlyLegacyLinked() {
-        require(legacyLinked, "State not linked");
+    modifier onlyIfInitialized() {
+        require(initialized, "State not initialized");
         _;
     }
 }

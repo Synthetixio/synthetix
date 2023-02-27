@@ -905,10 +905,10 @@ const setupContract = async ({
 		},
 
 		async PerpsV2MarketStateETH() {
-			await Promise.all([instance.linkLegacyState({ from: owner })]);
+			await Promise.all([instance.linkOrInitializeState({ from: owner })]);
 		},
 		async PerpsV2MarketStateBTC() {
-			await Promise.all([instance.linkLegacyState({ from: owner })]);
+			await Promise.all([instance.linkOrInitializeState({ from: owner })]);
 		},
 		async PerpsV2MarketETH() {
 			const filteredFunctions = getFunctionSignatures(instance, [

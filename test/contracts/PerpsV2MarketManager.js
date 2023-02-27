@@ -999,7 +999,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					)
 				);
 
-				await marketState.linkLegacyState({
+				await marketState.linkOrInitializeState({
 					from: owner,
 				});
 

@@ -139,7 +139,7 @@ contract('PerpsV2MarketData', accounts => {
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
-			await marketState.linkLegacyState({
+			await marketState.linkOrInitializeState({
 				from: owner,
 			});
 

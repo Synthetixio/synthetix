@@ -30,7 +30,7 @@ contract('PerpsV2MarketState', accounts => {
 			skipPostDeploy: true,
 		});
 
-		await perpsV2MarketState.linkLegacyState({
+		await perpsV2MarketState.linkOrInitializeState({
 			from: owner,
 		});
 
@@ -64,7 +64,7 @@ contract('PerpsV2MarketState', accounts => {
 					'deletePosition',
 					'flag',
 					'unflag',
-					'linkLegacyState',
+					'linkOrInitializeState',
 				],
 			});
 		});
@@ -291,7 +291,7 @@ contract('PerpsV2MarketState', accounts => {
 					skipPostDeploy: true,
 				});
 
-				await anotherPerpsV2MarketState.linkLegacyState({
+				await anotherPerpsV2MarketState.linkOrInitializeState({
 					from: owner,
 				});
 
