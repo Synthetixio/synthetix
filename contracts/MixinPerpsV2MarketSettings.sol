@@ -176,8 +176,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_RATIO);
     }
 
-    function _liquidationBufferRatio() internal view returns (uint) {
-        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_RATIO);
+    function _liquidationBufferRatio(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, SETTING_LIQUIDATION_BUFFER_RATIO);
     }
 
     function _minInitialMargin() internal view returns (uint) {
