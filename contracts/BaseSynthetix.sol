@@ -467,7 +467,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
         require(msg.sender == debtMigratorOnEthereum, "Only DebtMigratorOnEthereum can migrate balances");
 
-        // get their liquid SNX balance and transfer it to this contract
+        // get their liquid SNX balance and transfer it to the migrator contract
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
             bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
