@@ -94,21 +94,27 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         baseAsset = _baseAsset;
         marketKey = _marketKey;
 
-        // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-        _fundingSequence.push(0);
-
-        fundingRateLastRecomputed = 0;
-
         // Set legacyState
         if (_legacyState != address(0)) {
             legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
             _legacyContractExists = true;
+            // Confirm same asset/market key
+            // TODO
         }
     }
 
     function linkLegacyState() external onlyOwner {
-        // Confirm same asset/market key
+        // initialize the _fundingSequence array
         // TODO
+        /*
+        // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
+        // push the previous value of the old state (or zero if there's no previous state)
+        // recompute and get new sequence to put as zero index here
+
+        _fundingSequence.push(0);
+        fundingRateLastRecomputed = 0;
+        */
+
         // copy atomic values
         // TODO
         // get fundingSequence offset
