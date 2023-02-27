@@ -4,6 +4,7 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
 const { finalizationOnL2 } = require('../utils/optimism');
 const { ensureBalance } = require('../utils/balances');
+const { approveIfNeeded } = require('../utils/approve');
 
 describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
@@ -30,6 +31,18 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	before('ensure the user has enough SNX', async () => {
 		user = ctx.l1.users.owner;
 		await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
+	});
+
+	before('approve reward escrow if needed', async () => {
+		({ Synthetix, RewardEscrowV2 } = ctx.l1.contracts);
+		user = ctx.l1.users.owner;
+
+		await approveIfNeeded({
+			token: Synthetix,
+			owner: user,
+			beneficiary: RewardEscrowV2,
+			amount: SNXAmount,
+		});
 	});
 
 	before('create and append escrow entries', async () => {
