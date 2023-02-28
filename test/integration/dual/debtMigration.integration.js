@@ -1,10 +1,10 @@
 const ethers = require('ethers');
+const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
+const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
-const { finalizationOnL2 } = require('../utils/optimism');
 const { ensureBalance } = require('../utils/balances');
-const { approveIfNeeded } = require('../utils/approve');
+const { finalizationOnL2 } = require('../utils/optimism');
 
 describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;

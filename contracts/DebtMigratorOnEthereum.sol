@@ -7,6 +7,7 @@ import "./SafeDecimalMath.sol";
 
 // Inheritance
 import "./Owned.sol";
+import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 
 // Internal references
