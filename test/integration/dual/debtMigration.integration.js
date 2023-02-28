@@ -28,14 +28,16 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const SNXAmount = ethers.utils.parseEther('1000');
 	const amountToIssue = ethers.utils.parseEther('100');
 
-	before('ensure the user has enough SNX', async () => {
+	before('target contracts and users', () => {
+		({ Synthetix, RewardEscrowV2, SynthetixDebtShare, DebtMigratorOnEthereum } = ctx.l1.contracts);
 		user = ctx.l1.users.someUser;
+	});
+
+	before('ensure the user has enough SNX', async () => {
 		await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 	});
 
 	before('approve reward escrow if needed', async () => {
-		({ Synthetix, RewardEscrowV2 } = ctx.l1.contracts);
-
 		await approveIfNeeded({
 			token: Synthetix,
 			owner: user,
@@ -64,10 +66,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	});
 
 	before('record initial state', async () => {
-		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
-		initialParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2 });
-
-		({ Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
+		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user: user });
+		initialParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user: user });
 		initialCollateralBalanceL1 = await Synthetix.collateral(user.address);
 		initialLiquidBalanceL1 = await Synthetix.balanceOf(user.address);
 		initialDebtShareBalanceL1 = await SynthetixDebtShare.balanceOf(user.address);
@@ -80,12 +80,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		let userDebtShareBalanceL2;
 		let rewardEscrowBalanceL2;
 
-		before('target contracts and users', () => {
-			({ Synthetix, RewardEscrowV2 } = ctx.l2.contracts);
-
-			user = ctx.l2.users.someUser;
-		});
-
 		before('record current values', async () => {
 			userLiquidBalanceL2 = await Synthetix.balanceOf(user.address);
 			userCollateralBalanceL2 = await Synthetix.collateral(user.address);
@@ -94,9 +88,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		before('migrateDebt()', async () => {
-			({ DebtMigratorOnEthereum } = ctx.l1.contracts);
-
-			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(ctx.l1.users.someUser);
+			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(user);
 			const tx = await DebtMigratorOnEthereum.migrateDebt(user.address);
 			migrateDebtReceipt = await tx.wait();
 			console.log(
@@ -105,7 +97,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		it('should update the L1 escrow state', async () => {
-			postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
+			postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user: user });
 
 			assert.bnEqual(
 				postParametersL1.escrowedBalance,
@@ -117,9 +109,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		it('should update the L1 Synthetix state', async () => {
-			({ Synthetix } = ctx.l1.contracts);
-			user = ctx.l1.users.someUser;
-
 			assert.bnEqual(await Synthetix.collateral(user.address), 0);
 			assert.bnEqual(await Synthetix.balanceOf(user.address), 0);
 			assert.bnEqual(await SynthetixDebtShare.balanceOf(user.address), 0);
@@ -137,8 +126,13 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 				});
 			});
 
+			before('target contracts and users', () => {
+				({ Synthetix, RewardEscrowV2, SynthetixDebtShare } = ctx.l2.contracts);
+				user = ctx.l2.users.someUser;
+			});
+
 			it('should update the L2 escrow state', async () => {
-				const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2 });
+				const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user: user });
 				assert.bnEqual(
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
@@ -158,10 +152,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			it('should update the L2 Synthetix state', async () => {
-				({ Synthetix, RewardEscrowV2, SynthetixDebtShare } = ctx.l2.contracts);
-
-				user = ctx.l2.users.someUser;
-
 				assert.bnEqual(
 					await Synthetix.balanceOf(user.address),
 					userLiquidBalanceL2.add(initialLiquidBalanceL1)
