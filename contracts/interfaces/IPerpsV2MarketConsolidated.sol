@@ -144,7 +144,7 @@ interface IPerpsV2MarketConsolidated {
         bytes32 trackingCode
     ) external;
 
-    function closePosition(uint priceImpactDelta) external;
+    function closePosition(uint desiredFillPrice) external;
 
     function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
 

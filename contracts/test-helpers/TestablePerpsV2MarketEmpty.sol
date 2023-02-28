@@ -156,27 +156,27 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
 
     function withdrawAllMargin() external {}
 
-    function modifyPosition(int sizeDelta, uint priceImpactDelta) external {
+    function modifyPosition(int sizeDelta, uint desiredFillPrice) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
     }
 
     function modifyPositionWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
         trackingCode;
     }
 
-    function closePosition(uint priceImpactDelta) external {
-        priceImpactDelta;
+    function closePosition(uint desiredFillPrice) external {
+        desiredFillPrice;
     }
 
-    function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
-        priceImpactDelta;
+    function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external {
+        desiredFillPrice;
         trackingCode;
     }
 
@@ -187,48 +187,48 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
     function forceLiquidatePosition(address account) external {}
 
     /* ========== Delayed Intent ========== */
-    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
+    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
 
     function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 
     function submitDelayedOrder(
         int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
+        uint desiredTimeDelta,
+        uint desiredFillPrice
     ) external {
         sizeDelta;
-        priceImpactDelta;
         desiredTimeDelta;
+        desiredFillPrice;
     }
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         sizeDelta;
-        priceImpactDelta;
         desiredTimeDelta;
+        desiredFillPrice;
         trackingCode;
     }
 
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {
+    function submitOffchainDelayedOrder(int sizeDelta, uint desiredFillPrice) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
     }
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
         trackingCode;
     }
 

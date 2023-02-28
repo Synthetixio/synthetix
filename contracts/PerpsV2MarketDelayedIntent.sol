@@ -214,7 +214,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
-                DelayedOrder({
+            DelayedOrder({
                 isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
                 desiredFillPrice: uint128(desiredFillPrice),

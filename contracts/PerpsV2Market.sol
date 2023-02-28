@@ -215,7 +215,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 fillPrice: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
-            desiredFillPrice: desiredFillPrice,
+                desiredFillPrice: desiredFillPrice,
                 trackingCode: trackingCode
             })
         );
