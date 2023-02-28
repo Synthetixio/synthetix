@@ -16,10 +16,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     using AddressSetLib for AddressSetLib.AddressSet;
 
     // Legacy state link
-    PerpsV2MarketStateLegacyR1 public legacyState;
-    bool private _legacyContractExists;
     bool public initialized;
     uint public legacyFundinSequenceOffset;
+    PerpsV2MarketStateLegacyR1 public legacyState;
+    bool private _legacyContractExists;
+    mapping(address => bool) internal _positionMigrated;
+    mapping(address => bool) internal _delayedOrderMigrated;
 
     // The market identifier in the perpsV2 system (manager + settings). Multiple markets can co-exist
     // for the same asset in order to allow migrations.
@@ -117,14 +119,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             _nextPositionId = legacyState.nextPositionId();
             fundingLastRecomputed = legacyState.fundingLastRecomputed();
             fundingRateLastRecomputed = legacyState.fundingRateLastRecomputed();
-            uint legacyFundingSequenceLength = legacyState.fundingSequenceLength();
+            uint legacyFundingSequenceLength = legacyState.fundingSequenceLength() - 1;
 
             // link fundingSequence
             // initialize the _fundingSequence array
-            // TODO
             _fundingSequence.push(legacyState.fundingSequence(legacyFundingSequenceLength));
             // get fundingSequence offset
-            // TODO
             legacyFundinSequenceOffset = legacyFundingSequenceLength;
         } else {
             _fundingSequence.push(0);
@@ -145,18 +145,14 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function fundingSequence(uint index) external view returns (int128) {
-        // TODO check legacy
-        if (!_legacyContractExists || index > legacyFundinSequenceOffset) {
-            // offset + 1 because we pushed an empty element on constructor
-            return _fundingSequence[index - legacyFundinSequenceOffset];
+        if (_legacyContractExists && index < legacyFundinSequenceOffset) {
+            return legacyState.fundingSequence(index);
         }
 
-        return legacyState.fundingSequence(index);
+        return _fundingSequence[index - legacyFundinSequenceOffset];
     }
 
     function fundingSequenceLength() external view returns (uint) {
-        // TODO check legacy
-
         return legacyFundinSequenceOffset + _fundingSequence.length;
     }
 
@@ -165,9 +161,46 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function positions(address account) external view returns (Position memory) {
-        // TODO check legacy
+        // If it doesn't exist here check legacy
+        if (_legacyContractExists && !_positionMigrated[account] && _positions[account].id == 0) {
+            (uint64 id, uint64 lastFundingIndex, uint128 margin, uint128 lastPrice, int128 size) =
+                legacyState.positions(account);
+
+            return Position(id, lastFundingIndex, margin, lastPrice, size);
+        }
 
         return _positions[account];
+    }
+
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
+        // If it doesn't exist here check legacy
+        if (_legacyContractExists && !_delayedOrderMigrated[account] && _delayedOrders[account].sizeDelta == 0) {
+            (
+                bool isOffchain,
+                int128 sizeDelta,
+                uint128 priceImpactDelta,
+                uint128 targetRoundId,
+                uint128 commitDeposit,
+                uint128 keeperDeposit,
+                uint256 executableAtTime,
+                uint256 intentionTime,
+                bytes32 trackingCode
+            ) = legacyState.delayedOrders(account);
+            return
+                DelayedOrder(
+                    isOffchain,
+                    sizeDelta,
+                    priceImpactDelta,
+                    targetRoundId,
+                    commitDeposit,
+                    keeperDeposit,
+                    executableAtTime,
+                    intentionTime,
+                    trackingCode
+                );
+        }
+
+        return _delayedOrders[account];
     }
 
     function getPositionAddressesPage(uint index, uint pageSize)
@@ -181,12 +214,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _positionAddresses.getPage(index, pageSize);
     }
 
-    function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        // TODO check legacy
-
-        return _delayedOrders[account];
-    }
-
     function getDelayedOrderAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
         // TODO check legacy
 
@@ -194,8 +221,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function getFlaggedAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
-        // TODO check legacy
-
+        // Flagged doesn't exist in legacy, don't need to check
         return _flaggedAddresses.getPage(index, pageSize);
     }
 
@@ -212,6 +238,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function getFlaggedAddressesLength() external view returns (uint) {
+        // Flagged doesn't exist in legacy, don't need to check
         return _flaggedAddresses.elements.length;
     }
 
@@ -246,8 +273,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function pushFundingSequence(int128 fundingSequence) external onlyIfInitialized onlyAssociatedContracts {
-        // TODO check legacy
-
         _fundingSequence.push(fundingSequence);
     }
 
@@ -278,7 +303,13 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         uint128 lastPrice,
         int128 size
     ) external onlyIfInitialized onlyAssociatedContracts {
-        // TODO check legacy
+        if (_legacyContractExists && !_positionMigrated[account]) {
+            // Delete (if needed) from legacy state
+            legacyState.deletePosition(account);
+
+            // flag as already migrated
+            _positionMigrated[account] = true;
+        }
 
         _positions[account] = Position(id, lastFundingIndex, margin, lastPrice, size);
         _positionAddresses.add(account);
@@ -309,7 +340,13 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         uint256 intentionTime,
         bytes32 trackingCode
     ) external onlyIfInitialized onlyAssociatedContracts {
-        // TODO check legacy
+        if (_legacyContractExists && !_delayedOrderMigrated[account]) {
+            // Delete (if needed) from legacy state
+            legacyState.deleteDelayedOrder(account);
+
+            // flag as already migrated
+            _delayedOrderMigrated[account] = true;
+        }
 
         _delayedOrders[account] = DelayedOrder(
             isOffchain,
@@ -331,20 +368,31 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
      * @param account The account whose position should be deleted.
      */
     function deletePosition(address account) external onlyIfInitialized onlyAssociatedContracts {
-        // TODO check legacy
-
         delete _positions[account];
         if (_positionAddresses.contains(account)) {
             _positionAddresses.remove(account);
         }
+
+        if (_legacyContractExists && !_positionMigrated[account]) {
+            legacyState.deletePosition(account);
+
+            // flag as already migrated
+            _positionMigrated[account] = true;
+        }
     }
 
     function deleteDelayedOrder(address account) external onlyIfInitialized onlyAssociatedContracts {
-        // TODO check legacy
-
         delete _delayedOrders[account];
         if (_delayedOrderAddresses.contains(account)) {
             _delayedOrderAddresses.remove(account);
+        }
+
+        // attempt to delete on legacy
+        if (_legacyContractExists && !_delayedOrderMigrated[account]) {
+            legacyState.deleteDelayedOrder(account);
+
+            // flag as already migrated
+            _delayedOrderMigrated[account] = true;
         }
     }
 
