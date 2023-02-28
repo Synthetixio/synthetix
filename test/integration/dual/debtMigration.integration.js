@@ -60,7 +60,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 
 		const tx = await Synthetix.issueSynths(amountToIssue);
 		const { gasUsed } = await tx.wait();
-		console.log(`issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+		console.log(`debtMigration: issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 	});
 
 	before('record initial state', async () => {

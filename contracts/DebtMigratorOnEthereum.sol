@@ -104,7 +104,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
+        bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
         newAddresses[2] = CONTRACT_ISSUER;
@@ -113,7 +113,8 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
         newAddresses[5] = CONTRACT_REWARD_ESCROW_V2;
         newAddresses[6] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
         newAddresses[7] = CONTRACT_SYNTHETIX_DEBT_SHARE;
-        newAddresses[8] = CONTRACT_SYSTEM_STATUS;
+        newAddresses[8] = CONTRACT_SYNTHETIX;
+        newAddresses[9] = CONTRACT_SYSTEM_STATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -152,6 +153,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
             resolver.getAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM) != address(0),
             "Debt Migrator On Optimism not set"
         );
+        _synthetixERC20().approve(address(_synthetixBridgeToOptimism()), totalAmountToDeposit);
         _synthetixBridgeToOptimism().depositTo(_debtMigratorOnOptimism(), totalAmountToDeposit);
 
         // Require all zeroed balances
