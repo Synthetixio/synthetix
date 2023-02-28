@@ -72,9 +72,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int sizeDelta;
         uint oraclePrice;
         uint fillPrice;
+        uint desiredFillPrice;
         uint takerFee;
         uint makerFee;
-        uint priceImpactDelta;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -649,40 +649,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         //            = (1200 + 1200.12) / 2
         //            = 1200.06
         return uint(priceBefore.add(priceAfter).divideDecimal(_UNIT * 2));
-    }
-
-    /*
-     * @dev Given the current oracle price (not fillPrice) and priceImpactDelta, return the max priceImpactDelta
-     * price which is a price that is inclusive of the priceImpactDelta tolerance.
-     *
-     * For instance, if price ETH is $1000 and priceImpactDelta is 1% then maxPriceImpact is $1010. The fillPrice
-     * on the trade must be below $1010 for the trade to succeed.
-     *
-     * For clarity when priceImpactDelta is:
-     *  0.1   then 10%
-     *  0.01  then 1%
-     *  0.001 then 0.1%
-     *
-     * When price is $1000, I long, and priceImpactDelta is:
-     *  0.1   then price * (1 + 0.1)   = 1100
-     *  0.01  then price * (1 + 0.01)  = 1010
-     *  0.001 then price * (1 + 0.001) = 1001
-     *
-     * When same but short then,
-     *  0.1   then price * (1 - 0.1)   = 900
-     *  0.01  then price * (1 - 0.01)  = 990
-     *  0.001 then price * (1 - 0.001) = 999
-     *
-     * This forms the limit at which the fillPrice can reach before we revert the trade.
-     */
-    function _priceImpactLimit(
-        uint price,
-        uint priceImpactDelta,
-        int sizeDelta
-    ) internal pure returns (uint) {
-        // A lower price would be less desirable for shorts and a higher price is less desirable for longs. As such
-        // we derive the maxPriceImpact based on whether the position is going long/short.
-        return price.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT).add(priceImpactDelta) : uint(_UNIT).sub(priceImpactDelta));
     }
 
     /*

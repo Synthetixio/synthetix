@@ -33,18 +33,18 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
     ///// Mutative methods
 
-    function submitCloseOffchainDelayedOrderWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
-        _submitCloseDelayedOrder(priceImpactDelta, 0, trackingCode, IPerpsV2MarketBaseTypes.OrderType.Offchain);
+    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external {
+        _submitCloseDelayedOrder(0, desiredFillPrice, trackingCode, IPerpsV2MarketBaseTypes.OrderType.Offchain);
     }
 
     function submitCloseDelayedOrderWithTracking(
         uint desiredTimeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         _submitCloseDelayedOrder(
-            priceImpactDelta,
             desiredTimeDelta,
+            desiredFillPrice,
             trackingCode,
             IPerpsV2MarketBaseTypes.OrderType.Delayed
         );
@@ -61,32 +61,32 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
      * @param desiredTimeDelta maximum time in seconds to wait before filling this order
+     * @param desiredFillPrice an exact upper/lower bound price used on execution
      */
     function submitDelayedOrder(
         int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
+        uint desiredTimeDelta,
+        uint desiredFillPrice
     ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, bytes32(0), false);
+        _submitDelayedOrder(_marketKey(), sizeDelta, desiredTimeDelta, desiredFillPrice, bytes32(0), false);
     }
 
     /// Same as submitDelayedOrder but emits an event with the tracking code to allow volume source
     /// fee sharing for integrations.
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, desiredTimeDelta, trackingCode, false);
+        _submitDelayedOrder(_marketKey(), sizeDelta, desiredTimeDelta, desiredFillPrice, trackingCode, false);
     }
 
     /**
@@ -100,32 +100,32 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
      * Reverts if the desiredTimeDelta is < minimum required delay.
      *
      * @param sizeDelta size in baseAsset (notional terms) of the order, similar to `modifyPosition` interface
-     * @param priceImpactDelta is a percentage tolerance on fillPrice to be check upon execution
+     * @param desiredFillPrice an exact upper/lower bound price used on execution
      */
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external onlyProxy notFlagged(messageSender) {
+    function submitOffchainDelayedOrder(int sizeDelta, uint desiredFillPrice) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
         // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, bytes32(0), true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, desiredFillPrice, 0, bytes32(0), true);
     }
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external onlyProxy notFlagged(messageSender) {
         // @dev market key is obtained here and not in internal function to prevent stack too deep there
         // bytes32 marketKey = _marketKey();
 
-        _submitDelayedOrder(_marketKey(), sizeDelta, priceImpactDelta, 0, trackingCode, true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, 0, desiredFillPrice, trackingCode, true);
     }
 
     ///// Internal
 
     function _submitCloseDelayedOrder(
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode,
         IPerpsV2MarketBaseTypes.OrderType orderType
     ) internal notFlagged(messageSender) {
@@ -142,8 +142,8 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         _submitDelayedOrder(
             _marketKey(),
             -position.size,
-            priceImpactDelta,
             desiredTimeDelta,
+            desiredFillPrice,
             trackingCode,
             orderType == IPerpsV2MarketBaseTypes.OrderType.Offchain
         );
@@ -152,8 +152,8 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
     function _submitDelayedOrder(
         bytes32 marketKey,
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode,
         bool isOffchain
     ) internal {
@@ -187,7 +187,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
                 fillPrice: fillPrice,
                 takerFee: isOffchain ? _takerFeeOffchainDelayedOrder(marketKey) : _takerFeeDelayedOrder(marketKey),
                 makerFee: isOffchain ? _makerFeeOffchainDelayedOrder(marketKey) : _makerFeeDelayedOrder(marketKey),
-                priceImpactDelta: priceImpactDelta,
+                desiredFillPrice: desiredFillPrice,
                 trackingCode: trackingCode
             });
 
@@ -214,10 +214,10 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
         uint targetRoundId = _exchangeRates().getCurrentRoundId(_baseAsset()) + 1; // next round
         DelayedOrder memory order =
-            DelayedOrder({
+                DelayedOrder({
                 isOffchain: isOffchain,
                 sizeDelta: int128(sizeDelta),
-                priceImpactDelta: uint128(priceImpactDelta),
+                desiredFillPrice: uint128(desiredFillPrice),
                 targetRoundId: isOffchain ? 0 : uint128(targetRoundId),
                 commitDeposit: 0, // note: legacy as no longer charge a commitFee on submit
                 keeperDeposit: uint128(keeperDeposit), // offchain orders do _not_ have an executableAtTime as it's based on price age.
@@ -231,7 +231,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
             messageSender,
             order.isOffchain,
             order.sizeDelta,
-            order.priceImpactDelta,
+            order.desiredFillPrice,
             order.targetRoundId,
             order.commitDeposit,
             order.keeperDeposit,
