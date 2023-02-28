@@ -703,7 +703,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge - 1);
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge - 10);
 					});
 
 					it('reverts for owner', async () => {
