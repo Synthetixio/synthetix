@@ -105,8 +105,10 @@ contract('DebtMigratorOnEthereum', accounts => {
 		});
 
 		it('zeroes the balances on L1', async () => {
-			assert.equal(await synthetix.collateral(owner), 0);
-			assert.equal(await synthetix.balanceOf(owner), 0);
+			assert.bnEqual(await synthetix.collateral(owner), 0);
+			assert.bnEqual(await synthetix.balanceOf(owner), 0);
+			assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
+			assert.bnEqual(await synthetixDebtShare.balanceOf(owner), 0);
 		});
 
 		it('emits a MigrationInitiated event', async () => {
