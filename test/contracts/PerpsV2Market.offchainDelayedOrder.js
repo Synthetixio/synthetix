@@ -184,7 +184,14 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	let margin, size, price, offChainPrice, confidence, latestPublishTime;
+	let margin,
+		size,
+		fillPrice,
+		desiredFillPrice,
+		price,
+		offChainPrice,
+		confidence,
+		latestPublishTime;
 
 	beforeEach(async () => {
 		// prepare basic order parameters
@@ -197,13 +204,20 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 		latestPublishTime = await currentTime();
 
 		await setOnchainPrice(baseAsset, price);
-
 		await setOffchainPrice(trader, {
 			id: defaultFeedId,
 			price: feedBaseFromUNIT(offChainPrice),
 			conf: feedBaseFromUNIT(confidence),
 			publishTime: latestPublishTime,
 		});
+
+		const fillPriceWithMeta = await perpsV2MarketHelper.fillPriceWithMeta(
+			size,
+			priceImpactDelta,
+			0
+		);
+		fillPrice = fillPriceWithMeta[0];
+		desiredFillPrice = fillPriceWithMeta[1];
 	});
 
 	describe('submitOffchainDelayedOrder()', () => {
@@ -212,9 +226,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			const roundId = await exchangeRates.getCurrentRoundId(baseAsset);
 			const keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
-			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, 0))[0];
-
-			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, {
+			const tx = await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, {
 				from: trader,
 			});
 			const txBlock = await ethers.provider.getBlock(tx.receipt.blockNumber);
@@ -369,7 +381,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			// setup
 			await perpsV2Market.submitOffchainDelayedOrderWithTracking(
 				size,
-				priceImpactDelta,
+				desiredFillPrice,
 				trackingCode,
 				{
 					from: trader,
@@ -388,7 +400,9 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: latestPublishTime,
 			});
 
-			const fillPrice = (await perpsV2MarketHelper.fillPriceWithBasePrice(size, offChainPrice))[0];
+			const fillPrice = (
+				await perpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, offChainPrice)
+			)[0];
 			const expectedFee = multiplyDecimal(
 				size,
 				multiplyDecimal(fillPrice, takerFeeOffchainDelayedOrder)
@@ -417,7 +431,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	describe('submitCloseOffchainDelayedOrderWithTracking()', () => {
 		const trackingCode = toBytes32('code');
 
-		const fastForwardAndExecute = async (account, price) => {
+		const fastForwardAndExecuteAtPrice = async (account, price) => {
 			await fastForward(offchainDelayedOrderMinAge + 1); // ff min + 1s buffer.
 
 			const updateFeedData = await getFeedUpdateData({
@@ -432,21 +446,28 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			return perpsV2Market.positions(account);
 		};
 
-		const submitAndFastForwardAndExecute = async (sizeDelta, price, account) => {
-			await perpsV2Market.submitOffchainDelayedOrder(sizeDelta, priceImpactDelta, {
-				from: account,
-			});
-			return fastForwardAndExecute(account, price);
-		};
-
 		it('can successfully close a position', async () => {
 			// Submit and successfully open a position.
-			const openedPosition = await submitAndFastForwardAndExecute(size, price, trader);
+			const desiredFillPrice1 = (
+				await perpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, price)
+			)[1];
+			await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice1, {
+				from: trader,
+			});
+			const openedPosition = await fastForwardAndExecuteAtPrice(trader, price);
+
 			assert.bnEqual(openedPosition.size, size);
 
 			// Close said position.
+			const desiredFillPrice2 = (
+				await perpsV2MarketHelper.fillPriceWithMeta(
+					multiplyDecimal(size, toUnit('-1')),
+					priceImpactDelta,
+					price
+				)
+			)[1];
 			await perpsV2Market.submitCloseOffchainDelayedOrderWithTracking(
-				priceImpactDelta,
+				desiredFillPrice2,
 				trackingCode,
 				{ from: trader }
 			);
@@ -459,7 +480,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				conf: feedBaseFromUNIT(confidence),
 				publishTime: await currentTime(),
 			});
-			const closedPosition = await fastForwardAndExecute(trader, targetPrice);
+			const closedPosition = await fastForwardAndExecuteAtPrice(trader, targetPrice);
 			assert.bnEqual(closedPosition.size, 0);
 		});
 	});
@@ -744,7 +765,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					publishTime: (await currentTime()) + feedTimeOffset,
 				});
 
-				await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader });
 
 				await fastForward(delay);
 
@@ -1112,7 +1133,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// transfer more margin
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader });
 				const newOrder = await perpsV2MarketState.delayedOrders(trader);
 				assert.bnEqual(newOrder.sizeDelta, size);
 			}
@@ -1121,7 +1142,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				let targetPrice, targetOffchainPrice, fillPrice, tradeDetails, updateFeedData;
 
 				beforeEach(async () => {
-					await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
+					await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader });
 
 					await fastForward(offchainDelayedOrderMinAge + 1);
 
@@ -1158,7 +1179,11 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							// also, we set it here because this is when both onchain and offchain prices are set. we do _not_
 							// set the commitFee here because commitFee was _before_ the submit and price update.
 							fillPrice = (
-								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithMeta(
+									size,
+									priceImpactDelta,
+									targetOffchainPrice
+								)
 							)[0];
 						});
 
@@ -1204,7 +1229,11 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							await setOnchainPrice(baseAsset, targetPrice);
 
 							fillPrice = (
-								await perpsV2MarketHelper.fillPriceWithBasePrice(size, targetOffchainPrice)
+								await perpsV2MarketHelper.fillPriceWithMeta(
+									size,
+									priceImpactDelta,
+									targetOffchainPrice
+								)
 							)[0];
 						});
 
@@ -1270,7 +1299,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				publishTime: await currentTime(),
 			});
 
-			await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
+			await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader });
 
 			await fastForward(offchainDelayedOrderMinAge + 1);
 
@@ -1370,7 +1399,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
 				// submit an order
-				await perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader });
+				await perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader });
 
 				// spike the price
 				await setOnchainPrice(baseAsset, spikedPrice);
@@ -1387,7 +1416,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				await perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader });
 
 				await assert.revert(
-					perpsV2Market.submitOffchainDelayedOrder(size, priceImpactDelta, { from: trader }),
+					perpsV2Market.submitOffchainDelayedOrder(size, desiredFillPrice, { from: trader }),
 					'Price too volatile'
 				);
 			});

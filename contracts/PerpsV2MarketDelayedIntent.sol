@@ -107,7 +107,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         // bytes32 marketKey = _marketKey();
 
         // enforcing desiredTimeDelta to 0 to use default (not needed for offchain delayed order)
-        _submitDelayedOrder(_marketKey(), sizeDelta, desiredFillPrice, 0, bytes32(0), true);
+        _submitDelayedOrder(_marketKey(), sizeDelta, 0, desiredFillPrice,  bytes32(0), true);
     }
 
     function submitOffchainDelayedOrderWithTracking(
