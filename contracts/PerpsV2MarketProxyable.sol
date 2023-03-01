@@ -101,7 +101,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int sizeDelta
     ) internal view returns (uint) {
         _revertIfError(
-            sizeDelta > 0 ? fillPrice < desiredFillPrice : fillPrice > desiredFillPrice,
+            sizeDelta > 0 ? fillPrice > desiredFillPrice : fillPrice < desiredFillPrice,
             Status.PriceImpactToleranceExceeded
         );
         return fillPrice;

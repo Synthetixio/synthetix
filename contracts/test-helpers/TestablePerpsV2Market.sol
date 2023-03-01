@@ -95,8 +95,8 @@ contract TestablePerpsV2Market is PerpsV2MarketProxyable {
         }
 
         uint fillPrice = _fillPrice(sizeDelta, price);
-        uint desiredFillPrice = fillPrice.multiplyDecimal(uint(_UNIT) + priceImpactDelta);
-
+        uint desiredFillPrice =
+            fillPrice.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT) + priceImpactDelta : uint(_UNIT) - priceImpactDelta);
         return (fillPrice, desiredFillPrice, invalid);
     }
 

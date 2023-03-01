@@ -242,23 +242,19 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         account;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function executeDelayedOrder(address account) external {
         account;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {
         account;
         priceUpdateData;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function cancelDelayedOrder(address account) external {
         account;
     }
 
-    // Legacy. Attention integrators: This function will be removed soon
     function cancelOffchainDelayedOrder(address account) external {
         account;
     }
