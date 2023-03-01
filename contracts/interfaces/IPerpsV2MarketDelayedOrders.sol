@@ -3,14 +3,14 @@ pragma solidity ^0.5.16;
 interface IPerpsV2MarketDelayedOrders {
     function submitDelayedOrder(
         int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
+        uint desiredTimeDelta,
+        uint desiredFillPrice
     ) external;
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 

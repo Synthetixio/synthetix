@@ -5,6 +5,8 @@ import "../PerpsV2MarketProxyable.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
 contract TestablePerpsV2Market is PerpsV2MarketProxyable {
+    int private constant _UNIT = int(10**uint(18));
+
     constructor(
         address payable _proxy,
         address _marketState,
@@ -32,7 +34,7 @@ contract TestablePerpsV2Market is PerpsV2MarketProxyable {
             bool invalid
         )
     {
-        (, bool invalid) = _assetPrice();
+        (, invalid) = _assetPrice();
         int sizeLimit = int(_maxMarketValue(_marketKey()));
 
         int size = int(marketState.marketSize());
@@ -66,14 +68,36 @@ contract TestablePerpsV2Market is PerpsV2MarketProxyable {
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
-    /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
-    function fillPriceWithBasePrice(int sizeDelta, uint basePrice) external view returns (uint, bool) {
-        uint price = basePrice;
+    /*
+     * @dev Give the fillPrice given `sizeDelta` and optional `basePrice` with metadata
+     *
+     * @param sizeDelta size of the position to derive fillPrice
+     * @param priceImpactDelta used to compute the desiredPrice given basically slippage/price impact delta
+     * @param assetPrice optional asset price if not provided get on-chain price
+     */
+    function fillPriceWithMeta(
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint assetPrice
+    )
+        external
+        view
+        returns (
+            uint,
+            uint,
+            bool
+        )
+    {
+        uint price = assetPrice;
         bool invalid;
-        if (basePrice == 0) {
+        if (assetPrice == 0) {
             (price, invalid) = _assetPrice();
         }
-        return (_fillPrice(sizeDelta, price), invalid);
+
+        uint fillPrice = _fillPrice(sizeDelta, price);
+        uint desiredFillPrice =
+            fillPrice.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT) + priceImpactDelta : uint(_UNIT) - priceImpactDelta);
+        return (fillPrice, desiredFillPrice, invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */

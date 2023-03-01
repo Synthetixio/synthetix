@@ -94,25 +94,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         return price;
     }
 
-    /*
-     * @dev Checks if the fillPrice does not exceed priceImpactDelta tolerance.
-     *
-     * This will vary depending on the side you're taking. The intuition is if you're short, a discount is negatively
-     * impactful to your order but a premium is not. As such, the priceImpactDelta is asserted differently depending
-     * on which side of the trade you take.
-     */
-    function _assertPriceImpact(
-        uint price,
+    /** TODO: Docs */
+    function _assertFillPrice(
         uint fillPrice,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         int sizeDelta
     ) internal view returns (uint) {
-        uint priceImpactLimit = _priceImpactLimit(price, priceImpactDelta, sizeDelta);
         _revertIfError(
-            sizeDelta > 0 ? fillPrice > priceImpactLimit : fillPrice < priceImpactLimit,
+            sizeDelta > 0 ? fillPrice > desiredFillPrice : fillPrice < desiredFillPrice,
             Status.PriceImpactToleranceExceeded
         );
-        return priceImpactLimit;
+        return fillPrice;
     }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
@@ -213,7 +205,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
-        _assertPriceImpact(params.oraclePrice, params.fillPrice, params.priceImpactDelta, params.sizeDelta);
+        _assertFillPrice(params.fillPrice, params.desiredFillPrice, params.sizeDelta);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));

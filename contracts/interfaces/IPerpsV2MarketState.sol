@@ -76,7 +76,7 @@ interface IPerpsV2MarketState {
         address account,
         bool isOffchain,
         int128 sizeDelta,
-        uint128 priceImpactDelta,
+        uint128 desiredFillPrice,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
