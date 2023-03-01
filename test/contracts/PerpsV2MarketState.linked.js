@@ -1,5 +1,5 @@
 const { contract, web3 } = require('hardhat');
-const { toUnit } = require('../utils')();
+const { toUnit, toBN } = require('../utils')();
 const { toBytes32, constants } = require('../..');
 const { setupContract } = require('./setup');
 const { assert } = require('./common');
@@ -63,7 +63,17 @@ const generateFakeActivity = ({
 			},
 		});
 	}
-	return { fundingSequenceItems, positions, delayedOrders };
+
+	const atomicValues = {
+		marketKey: marketKey,
+		baseAsset: baseAsset,
+		marketSize: getRandomUnitBN(10000, 20000),
+		marketSkew: getRandomUnitBN(-10000, 20000),
+		fundingLastRecomputed: 1677550000 + getRandomInt(100),
+		fundingRateLastRecomputed: getRandomUnitBN(-10000, 20000),
+	};
+
+	return { fundingSequenceItems, positions, delayedOrders, atomicValues };
 };
 
 const addActivity = async ({
@@ -72,7 +82,22 @@ const addActivity = async ({
 	fundingSequenceItems,
 	positions,
 	delayedOrders,
+	atomicValues,
 }) => {
+	//
+	await marketStateOrConsumer.setMarketSize(atomicValues.marketSize, {
+		from: user,
+	});
+	await marketStateOrConsumer.setMarketSkew(atomicValues.marketSkew, {
+		from: user,
+	});
+	await marketStateOrConsumer.setFundingLastRecomputed(atomicValues.fundingLastRecomputed, {
+		from: user,
+	});
+	await marketStateOrConsumer.setFundingRateLastRecomputed(atomicValues.fundingRateLastRecomputed, {
+		from: user,
+	});
+
 	for (const fundingSequenceItem of fundingSequenceItems) {
 		await marketStateOrConsumer.pushFundingSequence(fundingSequenceItem, {
 			from: user,
@@ -118,12 +143,29 @@ const retrieveAndVerifyData = async ({
 	fundingSequenceItems,
 	positions,
 	delayedOrders,
+	atomicValues,
 }) => {
+	// Atomic values
+	assert.equal(await marketStateOrConsumer.marketKey(), atomicValues.marketKey);
+	assert.equal(await marketStateOrConsumer.baseAsset(), atomicValues.baseAsset);
+	assert.bnEqual(await marketStateOrConsumer.marketSize(), atomicValues.marketSize);
+	assert.bnEqual(await marketStateOrConsumer.marketSkew(), atomicValues.marketSkew);
+	assert.bnEqual(
+		await marketStateOrConsumer.fundingLastRecomputed(),
+		atomicValues.fundingLastRecomputed
+	);
+	assert.bnEqual(
+		await marketStateOrConsumer.fundingRateLastRecomputed(),
+		atomicValues.fundingRateLastRecomputed
+	);
+
+	// Funding Sequence
 	for (let i = 0; i < fundingSequenceItems.length; i++) {
 		// funding sequence 0 is unused, we start at 1... duh
 		assert.bnEqual(await marketStateOrConsumer.fundingSequence(i + 1), fundingSequenceItems[i]);
 	}
 
+	// Positions
 	for (let i = 0; i < positions.length; i++) {
 		const position = await marketStateOrConsumer.positions(positions[i].address);
 		assert.bnEqual(position.id, positions[i].data.id);
@@ -133,6 +175,7 @@ const retrieveAndVerifyData = async ({
 		assert.bnEqual(position.size, positions[i].data.size);
 	}
 
+	// Delayed orders
 	for (let i = 0; i < delayedOrders.length; i++) {
 		const delayedOrder = await marketStateOrConsumer.delayedOrders(delayedOrders[i].address);
 		assert.equal(delayedOrder.isOffchain, delayedOrders[i].data.isOffchain);
@@ -147,6 +190,56 @@ const retrieveAndVerifyData = async ({
 	}
 };
 
+const getAndLinkContracts = async ({ legacyPerpsV2MarketState, accounts, owner }) => {
+	const legacyState = legacyPerpsV2MarketState
+		? legacyPerpsV2MarketState.address
+		: constants.ZERO_ADDRESS;
+	const legacyFundinSequenceOffset = legacyPerpsV2MarketState
+		? (await legacyPerpsV2MarketState.fundingSequenceLength()).sub(toBN(1))
+		: toBN(0);
+
+	const perpsV2MarketState = await setupContract({
+		accounts,
+		contract: 'PerpsV2MarketState',
+		args: [owner, [owner], baseAsset, marketKey, legacyState],
+		skipPostDeploy: true,
+	});
+
+	const mockPerpsV2StateConsumer = await setupContract({
+		accounts,
+		contract: 'MockPerpsV2StateConsumer',
+		args: [perpsV2MarketState.address],
+		skipPostDeploy: true,
+	});
+
+	// Authorize new market state to operate over legacy market state
+	if (legacyPerpsV2MarketState) {
+		await legacyPerpsV2MarketState.addAssociatedContracts([perpsV2MarketState.address], {
+			from: owner,
+		});
+	}
+
+	// Remove owner authorization to operate over new market state
+	await perpsV2MarketState.removeAssociatedContracts([owner], {
+		from: owner,
+	});
+
+	// Authorize mock consumer to operate over new market state
+	await perpsV2MarketState.addAssociatedContracts([mockPerpsV2StateConsumer.address], {
+		from: owner,
+	});
+
+	assert.equal(await perpsV2MarketState.initialized(), false);
+	await perpsV2MarketState.linkOrInitializeState({
+		from: owner,
+	});
+	assert.equal(await perpsV2MarketState.initialized(), true);
+	assert.equal(await perpsV2MarketState.legacyState(), legacyState);
+	assert.bnEqual(await perpsV2MarketState.legacyFundinSequenceOffset(), legacyFundinSequenceOffset);
+
+	return { perpsV2MarketState, mockPerpsV2StateConsumer };
+};
+
 const testBehaviour = ({
 	accounts,
 	owner,
@@ -158,52 +251,7 @@ const testBehaviour = ({
 	let generatedActivity;
 	let legacyPerpsV2MarketState;
 
-	const getAndLinkContracts = async legacyPerpsV2MarketState => {
-		const perpsV2MarketState = await setupContract({
-			accounts,
-			contract: 'PerpsV2MarketState',
-			args: [
-				owner,
-				[owner],
-				baseAsset,
-				marketKey,
-				legacyPerpsV2MarketState ? legacyPerpsV2MarketState.address : constants.ZERO_ADDRESS,
-			],
-			skipPostDeploy: true,
-		});
-
-		const mockPerpsV2StateConsumer = await setupContract({
-			accounts,
-			contract: 'MockPerpsV2StateConsumer',
-			args: [perpsV2MarketState.address],
-			skipPostDeploy: true,
-		});
-
-		// Authorize new market state to operate over legacy market state
-		if (legacyPerpsV2MarketState) {
-			await legacyPerpsV2MarketState.addAssociatedContracts([perpsV2MarketState.address], {
-				from: owner,
-			});
-		}
-
-		// Remove owner authorization to operate over new market state
-		await perpsV2MarketState.removeAssociatedContracts([owner], {
-			from: owner,
-		});
-
-		// Authorize mock consumer to operate over new market state
-		await perpsV2MarketState.addAssociatedContracts([mockPerpsV2StateConsumer.address], {
-			from: owner,
-		});
-
-		await perpsV2MarketState.linkOrInitializeState({
-			from: owner,
-		});
-
-		return { perpsV2MarketState, mockPerpsV2StateConsumer };
-	};
-
-	describe('test behaviour', () => {
+	describe('when used as state storage (read and write)', () => {
 		beforeEach('setup contracts', async () => {
 			legacyPerpsV2MarketState = await setupContract({
 				accounts,
@@ -226,10 +274,19 @@ const testBehaviour = ({
 			});
 		});
 
-		describe('when no activity was added ', () => {});
-		describe('when only current has activity', () => {
-			it('can read new data', async () => {
-				const { perpsV2MarketState, mockPerpsV2StateConsumer } = await getAndLinkContracts();
+		describe('test basic data', async () => {
+			describe('before initializing', () => {});
+			// initialized;
+			// legacyFundinSequenceOffset;
+			// legacyState;
+		});
+
+		describe('when there is no legacy market', () => {
+			it('can write and read data', async () => {
+				const { perpsV2MarketState, mockPerpsV2StateConsumer } = await getAndLinkContracts({
+					accounts,
+					owner,
+				});
 
 				await addActivity({
 					user,
@@ -237,6 +294,7 @@ const testBehaviour = ({
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 
 				await retrieveAndVerifyData({
@@ -244,31 +302,67 @@ const testBehaviour = ({
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 			});
 		});
+
+		describe('when only current has activity', () => {
+			it('can write and read new data', async () => {
+				const { perpsV2MarketState, mockPerpsV2StateConsumer } = await getAndLinkContracts({
+					accounts,
+					owner,
+					legacyPerpsV2MarketState,
+				});
+
+				await addActivity({
+					user,
+					marketStateOrConsumer: mockPerpsV2StateConsumer,
+					fundingSequenceItems: generatedActivity.fundingSequenceItems,
+					positions: generatedActivity.positions,
+					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
+				});
+
+				await retrieveAndVerifyData({
+					marketStateOrConsumer: perpsV2MarketState,
+					fundingSequenceItems: generatedActivity.fundingSequenceItems,
+					positions: generatedActivity.positions,
+					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
+				});
+			});
+		});
+
 		describe('when only legacy has activity', () => {
-			it('can read old data', async () => {
+			it('can write and read old data', async () => {
 				await addActivity({
 					user,
 					marketStateOrConsumer: legacyPerpsV2MarketState,
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 
-				const { perpsV2MarketState } = await getAndLinkContracts(legacyPerpsV2MarketState);
+				const { perpsV2MarketState } = await getAndLinkContracts({
+					accounts,
+					owner,
+					legacyPerpsV2MarketState,
+				});
 
 				await retrieveAndVerifyData({
 					marketStateOrConsumer: perpsV2MarketState,
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 			});
 		});
+
 		describe('when both, legacy and new state, have activity', () => {
-			it('can read old and new data', async () => {
+			it('can write and read old and new data', async () => {
 				const fundingSequenceItemsMiddleIdx = Math.floor(
 					generatedActivity.fundingSequenceItems.length / 2
 				);
@@ -284,11 +378,14 @@ const testBehaviour = ({
 					),
 					positions: generatedActivity.positions.slice(0, positionsMiddleIdx),
 					delayedOrders: generatedActivity.delayedOrders.slice(0, delayedOrdersMiddleIdx),
+					atomicValues: generatedActivity.atomicValues,
 				});
 
-				const { perpsV2MarketState, mockPerpsV2StateConsumer } = await getAndLinkContracts(
-					legacyPerpsV2MarketState
-				);
+				const { perpsV2MarketState, mockPerpsV2StateConsumer } = await getAndLinkContracts({
+					accounts,
+					owner,
+					legacyPerpsV2MarketState,
+				});
 
 				await addActivity({
 					user,
@@ -305,6 +402,7 @@ const testBehaviour = ({
 						delayedOrdersMiddleIdx,
 						generatedActivity.delayedOrders.lenght
 					),
+					atomicValues: generatedActivity.atomicValues,
 				});
 
 				await retrieveAndVerifyData({
@@ -312,6 +410,7 @@ const testBehaviour = ({
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 
 				// Replace all activity in new state
@@ -321,6 +420,7 @@ const testBehaviour = ({
 					fundingSequenceItems: [],
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
 				});
 
 				await retrieveAndVerifyData({
@@ -328,6 +428,31 @@ const testBehaviour = ({
 					fundingSequenceItems: generatedActivity.fundingSequenceItems,
 					positions: generatedActivity.positions,
 					delayedOrders: generatedActivity.delayedOrders,
+					atomicValues: generatedActivity.atomicValues,
+				});
+
+				// Update atomic data
+				const newGeneratedActivity = generateFakeActivity({
+					fundingSequenceItemsCount: 0,
+					positionsCount: 0,
+					delayedOrdersCount: 0,
+				});
+
+				await addActivity({
+					user,
+					marketStateOrConsumer: mockPerpsV2StateConsumer,
+					fundingSequenceItems: [],
+					positions: [],
+					delayedOrders: [],
+					atomicValues: newGeneratedActivity.atomicValues,
+				});
+
+				await retrieveAndVerifyData({
+					marketStateOrConsumer: perpsV2MarketState,
+					fundingSequenceItems: [],
+					positions: [],
+					delayedOrders: [],
+					atomicValues: newGeneratedActivity.atomicValues,
 				});
 			});
 		});
@@ -338,15 +463,8 @@ contract('PerpsV2MarketState - Linked', accounts => {
 	const owner = accounts[1];
 	const user = accounts[2];
 
-	describe('Linked State', () => {
-		describe('Basic operations', () => {
-			describe('Before linking a legacy state', () => {});
-			describe('When a legacy state is linked', () => {});
-		});
-
-		describe('When a legacy state does not exist', () => {});
-
-		describe('When a legacy state exist without history', () => {
+	describe('Linked State - Legacy', () => {
+		describe('with no history data', () => {
 			testBehaviour({
 				accounts,
 				owner,
@@ -357,7 +475,7 @@ contract('PerpsV2MarketState - Linked', accounts => {
 			});
 		});
 
-		describe('When a legacy state exist with a small history', () => {
+		describe('with a small quantity of history data', () => {
 			testBehaviour({
 				accounts,
 				owner,
@@ -368,14 +486,14 @@ contract('PerpsV2MarketState - Linked', accounts => {
 			});
 		});
 
-		describe('When a legacy state exist with a large history', () => {
+		describe('with a large quantity of history data', () => {
 			testBehaviour({
 				accounts,
 				owner,
 				user,
 				fundingSequenceItemsCount: 1000,
 				positionsCount: 500,
-				delayedOrdersCount: 50,
+				delayedOrdersCount: 200,
 			});
 		});
 	});

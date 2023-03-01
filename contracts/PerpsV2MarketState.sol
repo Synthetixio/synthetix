@@ -209,14 +209,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         onlyAssociatedContracts
         returns (address[] memory)
     {
-        // TODO check legacy
-
         return _positionAddresses.getPage(index, pageSize);
     }
 
     function getDelayedOrderAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
-        // TODO check legacy
-
         return _delayedOrderAddresses.getPage(index, pageSize);
     }
 
@@ -226,14 +222,10 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function getPositionAddressesLength() external view returns (uint) {
-        // TODO check legacy
-
         return _positionAddresses.elements.length;
     }
 
     function getDelayedOrderAddressesLength() external view returns (uint) {
-        // TODO check legacy
-
         return _delayedOrderAddresses.elements.length;
     }
 
