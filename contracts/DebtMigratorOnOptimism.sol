@@ -1,6 +1,8 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -11,6 +13,8 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract DebtMigratorOnOptimism is MixinResolver, Owned {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -19,10 +23,14 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARD_ESCROW_V2 = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
     /* ========== CONSTRUCTOR ============ */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
+        // Approve the creation of escrow entries.
+        _synthetixERC20().approve(address(_rewardEscrowV2()), uint256(-1));
+    }
 
     /* ========== INTERNALS ============ */
 
@@ -40,6 +48,10 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
     function _rewardEscrowV2() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_REWARD_ESCROW_V2);
+    }
+
+    function _synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     /* ========== MUTATIVE ============ */
