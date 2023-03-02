@@ -233,6 +233,7 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.05'),
 
 					toUnit('1'), // 1 liquidation premium multiplier
+					toUnit('0.0025'), // liquidation buffer ratio
 					toUnit('0'),
 					toUnit('0'),
 				],
@@ -291,11 +292,6 @@ contract('PerpsV2MarketData', accounts => {
 				globals.liquidationFeeRatio
 			);
 			assert.bnEqual(globals.liquidationFeeRatio, toUnit('0.0035'));
-			assert.bnEqual(
-				await perpsV2MarketSettings.liquidationBufferRatio(),
-				globals.liquidationBufferRatio
-			);
-			assert.bnEqual(globals.liquidationBufferRatio, toUnit('0.0025'));
 		});
 	});
 

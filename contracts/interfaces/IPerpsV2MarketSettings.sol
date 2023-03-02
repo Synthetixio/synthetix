@@ -22,6 +22,7 @@ interface IPerpsV2MarketSettings {
         bytes32 offchainMarketKey;
         uint offchainPriceDivergence;
         uint liquidationPremiumMultiplier;
+        uint liquidationBufferRatio;
         uint maxLiquidationDelta;
         uint maxPD;
     }
@@ -68,6 +69,8 @@ interface IPerpsV2MarketSettings {
 
     function maxLiquidationDelta(bytes32 _marketKey) external view returns (uint);
 
+    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint);
+
     function parameters(bytes32 _marketKey) external view returns (Parameters memory);
 
     function minKeeperFee() external view returns (uint);
@@ -75,8 +78,6 @@ interface IPerpsV2MarketSettings {
     function maxKeeperFee() external view returns (uint);
 
     function liquidationFeeRatio() external view returns (uint);
-
-    function liquidationBufferRatio() external view returns (uint);
 
     function minInitialMargin() external view returns (uint);
 

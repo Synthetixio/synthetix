@@ -497,41 +497,6 @@ contract('PerpsV2MarketSettings', accounts => {
 		});
 	});
 
-	describe('setLiquidationBufferRatio()', () => {
-		let liquidationBufferRatio;
-		beforeEach(async () => {
-			liquidationBufferRatio = await perpsV2MarketSettings.liquidationBufferRatio();
-		});
-		it('should be able to change liquidationBufferRatio', async () => {
-			const originalValue = await perpsV2MarketSettings.liquidationBufferRatio();
-			await perpsV2MarketSettings.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
-				from: owner,
-			});
-			const newValue = await perpsV2MarketSettings.liquidationBufferRatio.call();
-			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
-		});
-
-		it('only owner is permitted to change liquidationBufferRatio', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: perpsV2MarketSettings.setLiquidationBufferRatio,
-				args: [liquidationBufferRatio.toString()],
-				address: owner,
-				accounts,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		it('should emit event on successful liquidationBufferRatio change', async () => {
-			const newValue = toBN(100);
-			const txn = await perpsV2MarketSettings.setLiquidationBufferRatio(newValue, {
-				from: owner,
-			});
-			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
-				bps: newValue,
-			});
-		});
-	});
-
 	describe('setKeeperLiquidationFee()', () => {
 		let keeperLiquidationFee;
 		beforeEach(async () => {

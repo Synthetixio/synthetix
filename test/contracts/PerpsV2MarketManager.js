@@ -1055,6 +1055,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 						toUnit('0.05'),
 
 						toUnit('1'), // 1 liquidation premium multiplier
+						toUnit('0.0025'), // liquidation buffer ratio
 						toUnit('0'),
 						toUnit('0'),
 					],

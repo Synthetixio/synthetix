@@ -335,7 +335,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
                 fillPrice: fillPrice,
                 takerFee: takerFee, //_takerFeeDelayedOrder(_marketKey()),
                 makerFee: makerFee, //_makerFeeDelayedOrder(_marketKey()),
-                priceImpactDelta: order.priceImpactDelta,
+                desiredFillPrice: order.desiredFillPrice,
                 trackingCode: order.trackingCode
             })
         );
