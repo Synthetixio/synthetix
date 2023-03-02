@@ -178,7 +178,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             (
                 bool isOffchain,
                 int128 sizeDelta,
-                uint128 priceImpactDelta,
+                uint128 desiredFillPrice,
                 uint128 targetRoundId,
                 uint128 commitDeposit,
                 uint128 keeperDeposit,
@@ -190,7 +190,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
                 DelayedOrder(
                     isOffchain,
                     sizeDelta,
-                    priceImpactDelta,
+                    desiredFillPrice,
                     targetRoundId,
                     commitDeposit,
                     keeperDeposit,

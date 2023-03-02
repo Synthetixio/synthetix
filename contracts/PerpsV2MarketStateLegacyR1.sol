@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./interfaces/IPerpsV2MarketBaseTypes.sol";
+import "./interfaces/IPerpsV2MarketBaseTypesLegacyR1.sol";
 import "./Owned.sol";
 import "./StateShared.sol";
 
@@ -20,7 +20,7 @@ import "./AddressSetLib.sol";
  */
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketStateLegacyR1
-contract PerpsV2MarketStateLegacyR1 is Owned, StateShared, IPerpsV2MarketBaseTypes {
+contract PerpsV2MarketStateLegacyR1 is Owned, StateShared, IPerpsV2MarketBaseTypesLegacyR1 {
     using AddressSetLib for AddressSetLib.AddressSet;
 
     // The market identifier in the perpsV2 system (manager + settings). Multiple markets can co-exist

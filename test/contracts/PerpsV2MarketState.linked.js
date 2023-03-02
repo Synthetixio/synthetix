@@ -53,7 +53,7 @@ const generateFakeActivity = ({
 			data: {
 				isOffchain: getRandomInt(2) === 1,
 				sizeDelta: getRandomUnitBN(-10, 10),
-				priceImpactDelta: toUnit('.05'),
+				desiredFillPrice: getRandomUnitBN(1000, 2000),
 				targetRoundId: getRandomInt(100),
 				commitDeposit: getRandomUnitBN(0, 10),
 				keeperDeposit: getRandomUnitBN(0, 10),
@@ -123,7 +123,7 @@ const addActivity = async ({
 			delayedOrder.address,
 			delayedOrder.data.isOffchain,
 			delayedOrder.data.sizeDelta,
-			delayedOrder.data.priceImpactDelta,
+			delayedOrder.data.desiredFillPrice,
 			delayedOrder.data.targetRoundId,
 			delayedOrder.data.commitDeposit,
 			delayedOrder.data.keeperDeposit,
@@ -180,7 +180,7 @@ const retrieveAndVerifyData = async ({
 		const delayedOrder = await marketStateOrConsumer.delayedOrders(delayedOrders[i].address);
 		assert.equal(delayedOrder.isOffchain, delayedOrders[i].data.isOffchain);
 		assert.bnEqual(delayedOrder.sizeDelta, delayedOrders[i].data.sizeDelta);
-		assert.bnEqual(delayedOrder.priceImpactDelta, delayedOrders[i].data.priceImpactDelta);
+		assert.bnEqual(delayedOrder.desiredFillPrice, delayedOrders[i].data.desiredFillPrice);
 		assert.bnEqual(delayedOrder.targetRoundId, delayedOrders[i].data.targetRoundId);
 		assert.bnEqual(delayedOrder.commitDeposit, delayedOrders[i].data.commitDeposit);
 		assert.bnEqual(delayedOrder.keeperDeposit, delayedOrders[i].data.keeperDeposit);
