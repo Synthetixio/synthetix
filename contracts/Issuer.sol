@@ -644,9 +644,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (msg.sender == resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM)) {
             sds.burnShare(account, amount);
-        } else {
-            // The only other option is the DebtMigrator on Optimism.
-            // Note: this conditional check needs to be updated if there is any corresponding change to the onlyTrustedMigrators modifier.
+        } else if (msg.sender == resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM)) {
             sds.mintShare(account, amount);
         }
     }
