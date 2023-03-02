@@ -36,7 +36,7 @@ const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
-const { deployPerpsV2Generics, deployPerpsV2Markets } = require('./deploy-perpsv2');
+const { deployPerpsV2Generics, deployPerpsV2Markets, cleanupPerpsV2 } = require('./deploy-perpsv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -80,6 +80,8 @@ const deploy = async ({
 	yes,
 	includeFutures = false,
 	includePerpsV2 = false,
+	runPerpsV2Cleanup = false,
+	perpsV2Markets,
 	stepName = '',
 } = {}) => {
 	ensureNetwork(network);
@@ -315,6 +317,23 @@ const deploy = async ({
 		useOvm,
 	});
 
+	if (includeFutures) {
+		await deployFutures({
+			account,
+			addressOf,
+			getDeployParameter,
+			deployer,
+			runStep,
+			useOvm,
+			network,
+			deploymentPath,
+			loadAndCheckRequiredSources,
+			futuresMarketManager,
+		});
+	} else {
+		console.log(gray(`\n------ EXCLUDE LEGACY FUTURES MARKETS ------\n`));
+	}
+
 	if (includePerpsV2) {
 		await deployPerpsV2Markets({
 			account,
@@ -336,8 +355,8 @@ const deploy = async ({
 		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
 	}
 
-	if (includeFutures) {
-		await deployFutures({
+	if (runPerpsV2Cleanup) {
+		await cleanupPerpsV2({
 			account,
 			addressOf,
 			getDeployParameter,
@@ -348,9 +367,13 @@ const deploy = async ({
 			deploymentPath,
 			loadAndCheckRequiredSources,
 			futuresMarketManager,
+			generateSolidity,
+			yes,
+			specificMarkets: perpsV2Markets,
+			limitPromise,
 		});
 	} else {
-		console.log(gray(`\n------ EXCLUDE LEGACY FUTURES MARKETS ------\n`));
+		console.log(gray(`\n------ SKIP PERPS V2 POST-DEPLOY CLEANUP STEP ------\n`));
 	}
 
 	await deployDappUtils({
@@ -496,6 +519,7 @@ const deploy = async ({
 		});
 	}
 
+	// Perps V2 configuration included into deployPerpsV2Market
 	// if (includePerpsV2) {
 	// 	await configurePerpsV2({
 	// 		addressOf,
@@ -641,6 +665,7 @@ module.exports = {
 				'--include-perps-v2',
 				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
+			.option('--run-perps-v2-cleanup', 'Run PerpsV2 post-deployment cleanup')
 			.option(
 				'--perps-v2-markets <market...>',
 				'PerpsV2 Markets to deplot/upgrade. If not present will process all markets'

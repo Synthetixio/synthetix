@@ -267,7 +267,7 @@ const deployPerpsV2Markets = async ({
 	});
 };
 
-const cleanupPerpsV2Config = async ({ account, addressOf, deployer, useOvm }) => {
+const cleanupPerpsV2 = async ({ account, addressOf, deployer, useOvm }) => {
 	console.log({ account, addressOf, deployer, useOvm });
 
 	// EXCHANGE - REMOVE UNUSED ADDRESSES
@@ -448,5 +448,5 @@ const cleanupPerpsV2Config = async ({ account, addressOf, deployer, useOvm }) =>
 module.exports = {
 	deployPerpsV2Generics,
 	deployPerpsV2Markets,
-	cleanupPerpsV2Config,
+	cleanupPerpsV2,
 };
