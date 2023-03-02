@@ -8,13 +8,11 @@ contract('DebtMigratorOnOptimism', accounts => {
 	const user = accounts[2];
 	const mockedPayloadData = '0xdeadbeef';
 
-	let debtMigratorOnOptimism, synths;
+	let debtMigratorOnOptimism;
 
 	before(async () => {
-		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
 		({ DebtMigratorOnOptimism: debtMigratorOnOptimism } = await setupAllContracts({
 			accounts,
-			synths,
 			contracts: [
 				'AddressResolver',
 				'DebtMigratorOnOptimism',
@@ -46,6 +44,9 @@ contract('DebtMigratorOnOptimism', accounts => {
 			await assert.revert(
 				debtMigratorOnOptimism.finalizeDebtMigration(
 					user, // Any address
+					0,
+					0,
+					0,
 					mockedPayloadData, // Any data
 					mockedPayloadData, // Any data
 					{ from: owner }

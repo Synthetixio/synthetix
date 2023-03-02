@@ -27,12 +27,15 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
     /* ========== CONSTRUCTOR ============ */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
-        // Approve the creation of escrow entries.
-        _synthetixERC20().approve(address(_rewardEscrowV2()), uint256(-1));
-    }
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
-    /* ========== INTERNALS ============ */
+    /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](2);
+        addresses[0] = CONTRACT_EXT_MESSENGER;
+        addresses[1] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
+    }
 
     function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
@@ -61,7 +64,6 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(_debtPayload);
-
         require(success, string(abi.encode("finalize debt call failed:", result)));
     }
 
@@ -70,7 +72,6 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
 
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(_escrowPayload);
-
         require(success, string(abi.encode("finalize escrow call failed:", result)));
     }
 
@@ -88,28 +89,37 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
         _;
     }
 
-    /* ========== VIEWS ========== */
-
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](2);
-        addresses[0] = CONTRACT_EXT_MESSENGER;
-        addresses[1] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
-    }
-
     /* ========== EXTERNAL ========== */
 
     function finalizeDebtMigration(
         address account,
+        uint debtSharesMigrated,
+        uint escrowMigrated,
+        uint liquidSnxMigrated,
         bytes calldata debtPayload,
         bytes calldata escrowPayload
     ) external onlyMessengerAndL1DebtMigrator {
         _finalizeDebt(debtPayload);
-        _finalizeEscrow(escrowPayload);
 
-        emit MigrationFinalized(account);
+        if (escrowMigrated > 0) {
+            // Make sure to approve the creation of the escrow entry.
+            _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
+            _finalizeEscrow(escrowPayload);
+        }
+
+        if (liquidSnxMigrated > 0) {
+            _synthetixERC20().transfer(account, liquidSnxMigrated);
+        }
+
+        emit MigrationFinalized(account, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
     }
 
     /* ========== EVENTS ========== */
 
-    event MigrationFinalized(address indexed account);
+    event MigrationFinalized(
+        address indexed account,
+        uint totalDebtSharesMigrated,
+        uint totalEscrowMigrated,
+        uint totalLiquidBalanceMigrated
+    );
 }

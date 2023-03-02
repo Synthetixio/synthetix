@@ -83,12 +83,12 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
     }
 
-    function _synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEM_STATUS));
+    }
+
+    function _synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function _getCrossDomainGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
@@ -122,13 +122,13 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     // Ideally, the account should call vest on their escrow before invoking the debt migration to L2.
     function migrateDebt(address account) public {
+        _systemStatus().requireSystemActive();
+
         require(msg.sender == account, "Must be the account owner");
         _migrateDebt(account);
     }
 
     function _migrateDebt(address _account) internal {
-        _systemStatus().requireSystemActive();
-
         // Require the account to not be flagged or open for liquidation
         require(!_liquidator().isLiquidationOpen(_account, false), "Cannot migrate if open for liquidation");
 
@@ -141,18 +141,17 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         require(totalDebtShares > 0, "No debt to migrate");
         _issuer().modifyDebtSharesForMigration(_account, totalDebtShares);
 
-        // Next, deposit all of the liquid & revoked SNX to the migrator on L2
+        // Deposit all of the liquid & revoked escrowed SNX to the migrator on L2
         (uint totalEscrowRevoked, uint totalLiquidBalance) =
             ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX)).migrateAccountBalances(_account);
-        require(totalEscrowRevoked > 0, "Cannot migrate zero escrow"); // otherwise it will revert on L2 when creating the escrow entry
-
-        // deposit all liquid and escrowed snx to the migrator contract on L2
         uint totalAmountToDeposit = totalLiquidBalance.add(totalEscrowRevoked);
+
         require(totalAmountToDeposit > 0, "Cannot migrate zero balances");
         require(
             resolver.getAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM) != address(0),
             "Debt Migrator On Optimism not set"
         );
+
         _synthetixERC20().approve(address(_synthetixBridgeToOptimism()), totalAmountToDeposit);
         _synthetixBridgeToOptimism().depositTo(_debtMigratorOnOptimism(), totalAmountToDeposit);
 
@@ -182,6 +181,9 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
             abi.encodeWithSelector(
                 debtMigratorOnOptimism.finalizeDebtMigration.selector,
                 _account,
+                totalDebtShares,
+                totalEscrowRevoked,
+                totalLiquidBalance,
                 _debtPayload,
                 _escrowPayload
             );
