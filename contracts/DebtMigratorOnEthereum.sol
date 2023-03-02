@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "./SafeDecimalMath.sol";
 
@@ -23,7 +22,7 @@ import "./interfaces/ISystemStatus.sol";
 
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
+contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     using SafeERC20 for IERC20;
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -122,7 +121,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, ReentrancyGuard {
     /* ========== MUTATIVE ========== */
 
     // Ideally, the account should call vest on their escrow before invoking the debt migration to L2.
-    function migrateDebt(address account) public nonReentrant {
+    function migrateDebt(address account) public {
         require(msg.sender == account, "Must be the account owner");
         _migrateDebt(account);
     }
