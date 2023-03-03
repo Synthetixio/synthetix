@@ -39,7 +39,7 @@ async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
 }
 // utility function update rates for aggregators that are already set up
 /// @param exchangeRates instance of ExchangeRates contract
-/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param owner account of exchangeRates contract for adding an aggregator
 /// @param keys array of bytes32 currency keys
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
