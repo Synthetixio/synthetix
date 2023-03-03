@@ -1616,25 +1616,9 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				const price = toUnit('200');
 				await setPrice(baseAsset, price);
-
 				const size = toUnit('400');
-
-				// Price impact:
-				//
-				// 0.1% (5bps)
-				// priceImpactLimit = 200 * (1 + 0.0005)
-				//                  = 200.1
-				const reasonablePriceImpact = toUnit('0.0005'); // 0.1% (5bps)
-				const fillPriceMeta = await perpsV2MarketHelper.fillPriceWithMeta(
-					size,
-					reasonablePriceImpact,
-					0
-				);
-				const desiredFillPrice = fillPriceMeta[1];
-
-				// 8x long, fillPrice = 200.4
 				await assert.revert(
-					perpsV2Market.modifyPosition(size, desiredFillPrice, {
+					perpsV2Market.modifyPosition(size, price, {
 						from: trader,
 					}),
 					'Price impact exceeded'
@@ -1697,7 +1681,14 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				let skew = toBN(0);
 
 				// trader1 has a position (100bps price impact & 6x long).
-				await perpsV2Market.modifyPosition(toUnit('30'), toUnit('0.01'), {
+				const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('30'),
+					toUnit('0.01'),
+					0
+				);
+				const desiredFillPrice1 = fillPriceMeta1[1];
+
+				await perpsV2Market.modifyPosition(toUnit('30'), desiredFillPrice1, {
 					from: trader,
 				});
 				skew = skew.add(toUnit('30'));
@@ -1710,13 +1701,15 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				// 4x short, fillPrice = 200.04
 				const size = toUnit('-20');
-				const fillPrice = (
-					await perpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
-				)[0];
-
+				const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+					size,
+					reasonablePriceImpact,
+					0
+				);
+				const fillPrice2 = fillPriceMeta2[0];
+				const desiredFillPrice2 = fillPriceMeta2[1];
 				const fee = (await perpsV2Market.orderFee(size, orderType))[0];
-
-				const tx = await perpsV2Market.modifyPosition(size, reasonablePriceImpact, {
+				const tx = await perpsV2Market.modifyPosition(size, desiredFillPrice2, {
 					from: trader2,
 				});
 				skew = skew.add(size);
@@ -1724,7 +1717,7 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice, toBN(2), fee, skew],
+					args: [toBN('1'), trader2, margin.sub(fee), size, size, fillPrice2, toBN(2), fee, skew],
 					log: decodedLogs[2],
 				});
 			});
@@ -2198,9 +2191,15 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						});
 
 						// 100 / 10 * 7 = 70
-						await perpsV2Market.modifyPosition(
+						const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
 							orderSize.div(toBN(10)).mul(toBN(7)),
 							priceImpactDelta,
+							0
+						);
+						const desiredFillPrice1 = fillPriceMeta1[1];
+						await perpsV2Market.modifyPosition(
+							orderSize.div(toBN(10)).mul(toBN(7)),
+							desiredFillPrice1,
 							{
 								from: trader2,
 							}
@@ -2224,7 +2223,14 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							trader
 						);
 						assert.equal(postDetails.status, Status.Ok);
-						await perpsV2Market.modifyPosition(sizeDelta, priceImpactDelta, {
+
+						const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+							sizeDelta,
+							priceImpactDelta,
+							0
+						);
+						const desiredFillPrice2 = fillPriceMeta2[1];
+						await perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice2, {
 							from: trader,
 						});
 						const sizes = await perpsV2MarketHelper.maxOrderSizes();
@@ -2241,10 +2247,19 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const margin = toUnit('1000');
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				await setPrice(baseAsset, toUnit('200'));
-				await perpsV2Market.modifyPosition(toUnit('50'), priceImpactDelta, { from: trader });
+
+				let desiredFillPrice;
+
+				desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('50'), priceImpactDelta, 0)
+				)[1];
+				await perpsV2Market.modifyPosition(toUnit('50'), desiredFillPrice, { from: trader });
 
 				await setPrice(baseAsset, toUnit('199'));
-				await perpsV2Market.closePosition(priceImpactDelta, { from: trader });
+				desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-50'), priceImpactDelta, 0)
+				)[1];
+				await perpsV2Market.closePosition(desiredFillPrice, { from: trader });
 				const position = await perpsV2Market.positions(trader);
 				const remaining = (await perpsV2Market.remainingMargin(trader))[0];
 
@@ -2271,8 +2286,12 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 				await setPrice(baseAsset, toUnit('100'));
 
+				const desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-50'), priceImpactDelta, 0)
+				)[1];
+
 				await assert.revert(
-					perpsV2Market.closePosition(priceImpactDelta, { from: trader }),
+					perpsV2Market.closePosition(desiredFillPrice, { from: trader }),
 					'Position can be liquidated'
 				);
 			});
@@ -2286,12 +2305,15 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					sizeDelta: toUnit('50'),
 				});
 
-				await perpsV2Market.closePosition(priceImpactDelta, { from: trader });
+				const desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-50'), priceImpactDelta, 0)
+				)[1];
+				await perpsV2Market.closePosition(desiredFillPrice, { from: trader });
 				const { size } = await perpsV2Market.positions(trader);
 				assert.bnEqual(size, toUnit(0));
 
 				await assert.revert(
-					perpsV2Market.closePosition(priceImpactDelta, { from: trader }),
+					perpsV2Market.closePosition(desiredFillPrice, { from: trader }),
 					'No position open'
 				);
 			});
@@ -2306,7 +2328,10 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				await setPrice(baseAsset, toUnit('200'));
-				const tx = await perpsV2Market.closePosition(priceImpactDelta, { from: trader });
+				const desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-200'), priceImpactDelta, 0)
+				)[1];
+				const tx = await perpsV2Market.closePosition(desiredFillPrice, { from: trader });
 
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -2351,7 +2376,14 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				});
 
 				const trackingCode = toBytes32('code');
-				const tx = await perpsV2Market.closePositionWithTracking(priceImpactDelta, trackingCode, {
+				const desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(
+						multiplyDecimal(size, toUnit('-1')),
+						priceImpactDelta,
+						0
+					)
+				)[1];
+				const tx = await perpsV2Market.closePositionWithTracking(desiredFillPrice, trackingCode, {
 					from: trader,
 				});
 
@@ -2388,7 +2420,10 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(positionId, toBN('0'));
 
 				// Trader 1 gets position id 1.
-				let tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, {
+				const desiredFillPrice1 = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('10'), priceImpactDelta, 0)
+				)[1];
+				let tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice1, {
 					from: trader,
 				});
 				let decodedLogs = await getDecodedLogs({
@@ -2400,7 +2435,10 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
 				// trader2 gets the subsequent id
-				tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader2 });
+				const desiredFillPrice2 = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('10'), priceImpactDelta, 0)
+				)[1];
+				tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice2, { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsV2Market],
@@ -2421,7 +2459,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
 				// Trader gets position id 1.
-				let tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, {
+				const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice1 = fillPriceMeta1[1];
+				let tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice1, {
 					from: trader,
 				});
 				let decodedLogs = await getDecodedLogs({
@@ -2436,7 +2480,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(positionId, toBN('1'));
 
 				// Modification (but not closure) does not alter the id
-				tx = await perpsV2Market.modifyPosition(toUnit('-5'), priceImpactDelta, { from: trader });
+				const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('-5'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice2 = fillPriceMeta2[1];
+				tx = await perpsV2Market.modifyPosition(toUnit('-5'), desiredFillPrice2, { from: trader });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsV2Market],
@@ -2456,7 +2506,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
 
 				// Close by closePosition
-				let tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, {
+				const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice1 = fillPriceMeta1[1];
+				let tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice1, {
 					from: trader,
 				});
 				let decodedLogs = await getDecodedLogs({
@@ -2470,7 +2526,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				let positionId = (await perpsV2Market.positions(trader)).id;
 				assert.bnEqual(positionId, toBN('1'));
 
-				tx = await perpsV2Market.closePosition(priceImpactDelta, { from: trader });
+				const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('-10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice2 = fillPriceMeta2[1];
+				tx = await perpsV2Market.closePosition(desiredFillPrice2, { from: trader });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsV2Market],
@@ -2483,7 +2545,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(positionId, toBN('0'));
 
 				// Close by modifyPosition
-				tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader2 });
+				const fillPriceMeta3 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice3 = fillPriceMeta3[1];
+				tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice3, { from: trader2 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsV2Market],
@@ -2495,7 +2563,15 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				positionId = (await perpsV2Market.positions(trader2)).id;
 				assert.bnEqual(positionId, toBN('2'));
 
-				tx = await perpsV2Market.modifyPosition(toUnit('-10'), priceImpactDelta, { from: trader2 });
+				const fillPriceMeta4 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('-10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice4 = fillPriceMeta4[1];
+				tx = await perpsV2Market.modifyPosition(toUnit('-10'), desiredFillPrice4, {
+					from: trader2,
+				});
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [perpsV2Market],
@@ -2521,7 +2597,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.bnEqual(oldPositionId, toBN('1'));
 
 				await setPrice(baseAsset, toUnit('200'));
-				let tx = await perpsV2Market.closePosition(priceImpactDelta, { from: trader });
+				const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('-10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice1 = fillPriceMeta1[1];
+				let tx = await perpsV2Market.closePosition(desiredFillPrice1, { from: trader });
 
 				let decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -2533,7 +2615,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.equal(decodedLogs[2].events[0].name, 'id');
 				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
 
-				tx = await perpsV2Market.modifyPosition(toUnit('10'), priceImpactDelta, { from: trader });
+				const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+					toUnit('10'),
+					priceImpactDelta,
+					0
+				);
+				const desiredFillPrice2 = fillPriceMeta2[1];
+				tx = await perpsV2Market.modifyPosition(toUnit('10'), desiredFillPrice2, { from: trader });
 
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
@@ -2564,9 +2652,13 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			it('can get position details for new position', async () => {
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 				await setPrice(await perpsV2Market.baseAsset(), toUnit('240'));
-				const fillPrice = (
-					await perpsV2MarketHelper.fillPriceWithMeta(sizeDelta, priceImpactDelta, 0)
-				)[0];
+				const fillPriceMeta = await perpsV2MarketHelper.fillPriceWithMeta(
+					sizeDelta,
+					priceImpactDelta,
+					0
+				);
+				const fillPrice = fillPriceMeta[0];
+				const desiredFillPrice = fillPriceMeta[1];
 
 				const postTradeDetails = await perpsV2Market.postTradeDetails(
 					sizeDelta,
@@ -2576,7 +2668,7 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				);
 
 				// Now execute the trade.
-				await perpsV2Market.modifyPosition(sizeDelta, priceImpactDelta, { from: trader });
+				await perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice, { from: trader });
 
 				const details = await getPositionDetails({ account: trader });
 
@@ -2597,9 +2689,14 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					sizeDelta,
 				});
 
-				const fillPrice = (
-					await perpsV2MarketHelper.fillPriceWithMeta(sizeDelta, priceImpactDelta, 0)
-				)[0];
+				const fillPriceMeta = await perpsV2MarketHelper.fillPriceWithMeta(
+					sizeDelta,
+					priceImpactDelta,
+					0
+				);
+				const fillPrice = fillPriceMeta[0];
+				const desiredFillPrice = fillPriceMeta[1];
+
 				const postTradeDetails = await perpsV2Market.postTradeDetails(
 					sizeDelta,
 					toUnit('0'),
@@ -2608,7 +2705,7 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				);
 
 				// Now execute the trade.
-				await perpsV2Market.modifyPosition(sizeDelta, priceImpactDelta, { from: trader });
+				await perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice, { from: trader });
 
 				const details = await getPositionDetails({ account: trader });
 
@@ -3600,9 +3697,9 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				sizeDelta: toUnit('100'),
 			});
 			// pushes skew even further
-			await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('200'));
+			await fastForwardAndOpenPosition(5000, trader2, price, marginDelta, toUnit('200'));
 			// balances skew
-			await fastForwardAndOpenPosition(5000, trader3, fillPrice, marginDelta, toUnit('-300'));
+			await fastForwardAndOpenPosition(5000, trader3, price, marginDelta, toUnit('-300'));
 			// more time passes
 			await fastForward(5000);
 
@@ -3726,7 +3823,7 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 
 			// pushes skew further
-			await fastForwardAndOpenPosition(5000, trader2, fillPrice, marginDelta, toUnit('-200'));
+			await fastForwardAndOpenPosition(5000, trader2, price, marginDelta, toUnit('-200'));
 			const fundingRate1 = await perpsV2Market.currentFundingRate();
 
 			// time passes
@@ -5181,11 +5278,20 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const skewScale = toUnit('1000');
 				await perpsV2MarketSettings.setSkewScale(marketKey, skewScale, { from: owner });
 
+				let desiredFillPrice;
+
 				await setPrice(baseAsset, toUnit('250'));
+
 				await perpsV2Market.transferMargin(toUnit('1500'), { from: trader });
-				await perpsV2Market.modifyPosition(toUnit('30'), priceImpactDelta, { from: trader });
+				desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('30'), priceImpactDelta, 0)
+				)[1];
+				await perpsV2Market.modifyPosition(toUnit('30'), desiredFillPrice, { from: trader });
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader2 });
-				await perpsV2Market.modifyPosition(toUnit('-20'), priceImpactDelta, { from: trader2 });
+				desiredFillPrice = (
+					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-20'), priceImpactDelta, 0)
+				)[1];
+				await perpsV2Market.modifyPosition(toUnit('-20'), desiredFillPrice, { from: trader2 });
 
 				assert.isFalse((await perpsV2Market.liquidationPrice(trader))[1]);
 
@@ -5213,20 +5319,28 @@ contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				const margin1 = toUnit('1000');
 				const size1 = toUnit('20');
 				const fee1 = (await perpsV2Market.orderFee(size1, orderType))[0];
-				const fillPrice1 = (
-					await perpsV2MarketHelper.fillPriceWithMeta(size1, priceImpactDelta, 0)
-				)[0];
+				const fillPriceMeta1 = await perpsV2MarketHelper.fillPriceWithMeta(
+					size1,
+					priceImpactDelta,
+					0
+				);
+				const fillPrice1 = fillPriceMeta1[0];
+				const desiredFillPrice1 = fillPriceMeta1[1];
 				await perpsV2Market.transferMargin(margin1, { from: trader });
-				await perpsV2Market.modifyPosition(size1, priceImpactDelta, { from: trader });
+				await perpsV2Market.modifyPosition(size1, desiredFillPrice1, { from: trader });
 
 				const margin2 = toUnit('1000');
 				const size2 = toUnit('-20');
 				const fee2 = (await perpsV2Market.orderFee(size2, orderType))[0];
-				const fillPrice2 = (
-					await perpsV2MarketHelper.fillPriceWithMeta(size2, priceImpactDelta, 0)
-				)[0];
+				const fillPriceMeta2 = await perpsV2MarketHelper.fillPriceWithMeta(
+					size2,
+					priceImpactDelta,
+					0
+				);
+				const fillPrice2 = fillPriceMeta2[0];
+				const desiredFillPrice2 = fillPriceMeta2[1];
 				await perpsV2Market.transferMargin(margin2, { from: trader2 });
-				await perpsV2Market.modifyPosition(size2, priceImpactDelta, { from: trader2 });
+				await perpsV2Market.modifyPosition(size2, desiredFillPrice2, { from: trader2 });
 
 				assert.bnEqual(
 					(await perpsV2Market.liquidationPrice(trader)).price,
