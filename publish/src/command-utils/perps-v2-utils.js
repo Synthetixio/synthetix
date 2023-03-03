@@ -25,6 +25,29 @@ const excludedFunctions = [
 	'marketState',
 ];
 
+const implementationConfigurations = [
+	{
+		contract: 'PerpsV2Market',
+	},
+	{
+		contract: 'PerpsV2MarketLiquidate',
+	},
+	{
+		contract: 'PerpsV2MarketDelayedIntent',
+		nameKey: 'PerpsV2DelayedIntent',
+		useExchangeRate: true,
+	},
+	{
+		contract: 'PerpsV2MarketDelayedExecution',
+		nameKey: 'PerpsV2DelayedExecution',
+		useExchangeRate: true,
+	},
+	{
+		contract: 'PerpsV2MarketViews',
+		isView: true,
+	},
+];
+
 const getFunctionSignatures = (instance, excludedFunctions) => {
 	const contractInterface = instance.abi
 		? new ethers.utils.Interface(instance.abi)
@@ -57,12 +80,23 @@ const filteredLists = (originalList, newList) => {
 const isNewMarket = ({ existingMarkets, marketKey }) =>
 	existingMarkets.includes(toBytes32(marketKey));
 
-const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
+const getProxyNameAndCurrentAddress = ({ deployer, marketKey }) => {
 	const marketProxyName = 'PerpsV2Proxy' + marketKey.slice('1'); // remove s prefix
 
 	const previousContractAddress = deployer.getExistingAddress({
 		name: marketProxyName,
 	});
+
+	return { name: marketProxyName, address: previousContractAddress };
+};
+
+const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
+	const { name: marketProxyName, address: previousContractAddress } = getProxyNameAndCurrentAddress(
+		{
+			deployer,
+			marketKey,
+		}
+	);
 
 	const newContract = await deployer.deployContract({
 		name: marketProxyName,
@@ -77,14 +111,26 @@ const deployMarketProxy = async ({ deployer, owner, marketKey }) => {
 	return { target: newContract, contract: marketProxyName, updated: !isSameContract };
 };
 
-const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
-	const marketStateName = 'PerpsV2MarketState' + marketKey.slice('1'); // remove s prefix
-	const baseAssetB32 = toBytes32(baseAsset);
-	const marketKeyB32 = toBytes32(marketKey);
+const getStateNameAndCurrentAddress = ({ deployer, marketKey }) => {
+	const marketProxyName = 'PerpsV2MarketState' + marketKey.slice('1'); // remove s prefix
 
 	const previousContractAddress = deployer.getExistingAddress({
-		name: marketStateName,
+		name: marketProxyName,
 	});
+
+	return { name: marketProxyName, address: previousContractAddress };
+};
+
+const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
+	const { name: marketStateName, address: previousContractAddress } = getStateNameAndCurrentAddress(
+		{
+			deployer,
+			marketKey,
+		}
+	);
+
+	const baseAssetB32 = toBytes32(baseAsset);
+	const marketKeyB32 = toBytes32(marketKey);
 
 	const newContract = await deployer.deployContract({
 		name: marketStateName,
@@ -104,6 +150,21 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 	};
 };
 
+const getImplementationNamesAndAddresses = ({ deployer, marketKey }) => {
+	const implementations = [];
+
+	for (const implementation of implementationConfigurations) {
+		const name =
+			(implementation.nameKey ? implementation.nameKey : implementation.contract) +
+			marketKey.slice('1'); // remove s prefix
+
+		const address = deployer.getExistingAddress({ name });
+
+		implementations.push({ name, address, useExchangeRate: implementation.useExchangeRate });
+	}
+	return implementations;
+};
+
 const deployMarketImplementations = async ({
 	deployer,
 	owner,
@@ -112,29 +173,6 @@ const deployMarketImplementations = async ({
 	marketProxy,
 	marketState,
 }) => {
-	const implementationConfigurations = [
-		{
-			contract: 'PerpsV2Market',
-		},
-		{
-			contract: 'PerpsV2MarketLiquidate',
-		},
-		{
-			contract: 'PerpsV2MarketDelayedIntent',
-			nameKey: 'PerpsV2DelayedIntent',
-			useExchangeRate: true,
-		},
-		{
-			contract: 'PerpsV2MarketDelayedExecution',
-			nameKey: 'PerpsV2DelayedExecution',
-			useExchangeRate: true,
-		},
-		{
-			contract: 'PerpsV2MarketViews',
-			isView: true,
-		},
-	];
-
 	const marketStateAddress = marketState.target.address;
 	const marketProxyAddress = marketProxy.target.address;
 
@@ -176,14 +214,30 @@ const deployMarketImplementations = async ({
 	return { implementations };
 };
 
-const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implementations }) => {
+const linkToPerpsExchangeRate = async ({
+	runStep,
+	perpsV2ExchangeRate,
+	implementations,
+	removeExtraAssociatedContracts,
+}) => {
 	const currentAddresses = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
 
 	const requiredAddresses = implementations
 		.filter(imp => imp.useExchangeRate)
 		.map(item => item.target.address);
 
-	const { toAdd } = filteredLists(currentAddresses, requiredAddresses);
+	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
+
+	if (removeExtraAssociatedContracts) {
+		if (toRemove.length > 0) {
+			await runStep({
+				contract: 'PerpsV2ExchangeRate',
+				target: perpsV2ExchangeRate,
+				write: 'removeAssociatedContracts',
+				writeArg: [toRemove],
+			});
+		}
+	}
 
 	if (toAdd.length > 0) {
 		await runStep({
@@ -307,29 +361,50 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 	}
 };
 
-const linkToMarketManager = async ({ runStep, futuresMarketManager, proxies }) => {
+const linkToMarketManager = async ({
+	runStep,
+	futuresMarketManager,
+	proxies,
+	onlyRemoveUnusedProxies,
+}) => {
 	const managerKnownMarkets = Array.from(
 		await futuresMarketManager['allMarkets(bool)'](true)
 	).sort();
-	const { toKeep, toAdd } = filteredLists(managerKnownMarkets, proxies);
+	const { toKeep, toAdd, toRemove } = filteredLists(managerKnownMarkets, proxies);
 
-	if (toAdd.length > 0) {
-		await runStep({
-			contract: 'FuturesMarketManager',
-			target: futuresMarketManager,
-			write: 'addProxiedMarkets',
-			writeArg: [toAdd],
-			gasLimit: 150e3 * toAdd.length, // extra gas per market
-		});
+	if (!onlyRemoveUnusedProxies) {
+		if (toAdd.length > 0) {
+			await runStep({
+				contract: 'FuturesMarketManager',
+				target: futuresMarketManager,
+				write: 'addProxiedMarkets',
+				writeArg: [toAdd],
+				gasLimit: 150e3 * toAdd.length, // extra gas per market
+			});
+		}
+
+		if (toKeep.length > 0) {
+			await runStep({
+				contract: 'FuturesMarketManager',
+				target: futuresMarketManager,
+				write: 'updateMarketsImplementations',
+				writeArg: [toKeep],
+			});
+		}
 	}
 
-	if (toKeep.length > 0) {
-		await runStep({
-			contract: 'FuturesMarketManager',
-			target: futuresMarketManager,
-			write: 'updateMarketsImplementations',
-			writeArg: [toKeep],
-		});
+	if (onlyRemoveUnusedProxies) {
+		if (toRemove.length > 0) {
+			await runStep({
+				contract: `FuturesMarketManager`,
+				target: futuresMarketManager,
+				read: 'allMarkets(bool)',
+				readArg: [true],
+				expected: markets => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
+				write: 'removeMarkets',
+				writeArg: [toRemove],
+			});
+		}
 	}
 };
 
@@ -610,6 +685,8 @@ module.exports = {
 	excludedFunctions,
 	getFunctionSignatures,
 	isNewMarket,
+	getProxyNameAndCurrentAddress,
+	getImplementationNamesAndAddresses,
 	deployMarketProxy,
 	deployMarketState,
 	deployMarketImplementations,

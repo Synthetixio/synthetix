@@ -8,6 +8,8 @@ const ethers = require('ethers');
 
 const {
 	isNewMarket,
+	getProxyNameAndCurrentAddress,
+	getImplementationNamesAndAddresses,
 	deployMarketProxy,
 	deployMarketState,
 	deployMarketImplementations,
@@ -267,182 +269,63 @@ const deployPerpsV2Markets = async ({
 	});
 };
 
-const cleanupPerpsV2 = async ({ account, addressOf, deployer, useOvm }) => {
-	console.log({ account, addressOf, deployer, useOvm });
+const cleanupPerpsV2 = async ({
+	// account,
+	// addressOf,
+	runStep,
+	loadAndCheckRequiredSources,
+	futuresMarketManager,
+	deploymentPath,
+	network,
+	deployer,
+	useOvm,
+}) => {
+	console.log(gray(`\n------ CLEANUP PERPS V2 CONFIGURATION ------\n`));
 
-	// EXCHANGE - REMOVE UNUSED ADDRESSES
-	// const linkToPerpsExchangeRate = async ({ runStep, perpsV2ExchangeRate, implementations }) => {
-	// 	const currentAddresses = Array.from(await perpsV2ExchangeRate.associatedContracts()).sort();
+	if (!useOvm) {
+		return;
+	}
 
-	// 	const requiredAddresses = implementations
-	// 		.filter(imp => imp.useExchangeRate)
-	// 		.map(item => item.target.address);
+	const {
+		// ReadProxyAddressResolver,
+		// PerpsV2MarketSettings: perpsV2MarketSettings,
+		PerpsV2ExchangeRate: perpsV2ExchangeRate,
+		// SystemStatus,
+	} = deployer.deployedContracts;
 
-	// 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
+	// Get list of perps markets
+	const { perpsv2Markets } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
-	// 	if (toRemove.length > 0) {
-	// 		await runStep({
-	// 			contract: 'PerpsV2ExchangeRate',
-	// 			target: perpsV2ExchangeRate,
-	// 			write: 'removeAssociatedContracts',
-	// 			writeArg: [toRemove],
-	// 		});
-	// 	}
+	const allImplementations = [];
+	const allMarketProxies = [];
+	for (const marketConfig of perpsv2Markets) {
+		const marketKey = marketConfig.marketKey;
 
-	// 	if (toAdd.length > 0) {
-	// 		await runStep({
-	// 			contract: 'PerpsV2ExchangeRate',
-	// 			target: perpsV2ExchangeRate,
-	// 			write: 'addAssociatedContracts',
-	// 			writeArg: [toAdd],
-	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
-	// 		});
-	// 	}
-	// };
+		const proxy = getProxyNameAndCurrentAddress({ deployer, marketKey });
+		const implementations = getImplementationNamesAndAddresses({ deployer, marketKey });
 
-	// REMOVE UNUSED PROXIES
-	// const linkToMarketManager = async ({ runStep, futuresMarketManager, proxies }) => {
-	// 	const managerKnownMarkets = Array.from(
-	// 		await futuresMarketManager['allMarkets(bool)'](true)
-	// 	).sort();
-	// 	const { toKeep, toAdd } = filteredLists(managerKnownMarkets, proxies);
+		allMarketProxies.push(proxy.address);
+		allImplementations.push(implementations);
+	}
 
-	// 	if (toAdd.length > 0) {
-	// 		await runStep({
-	// 			contract: 'FuturesMarketManager',
-	// 			target: futuresMarketManager,
-	// 			write: 'addProxiedMarkets',
-	// 			writeArg: [toAdd],
-	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
-	// 		});
-	// 	}
+	// cleanup perps exchange rate associated contracts
+	await linkToPerpsExchangeRate({
+		runStep,
+		perpsV2ExchangeRate,
+		implementations: allImplementations,
+		removeExtraAssociatedContracts: true,
+	});
 
-	// 	if (toKeep.length > 0) {
-	// 		await runStep({
-	// 			contract: 'FuturesMarketManager',
-	// 			target: futuresMarketManager,
-	// 			write: 'updateMarketsImplementations',
-	// 			writeArg: [toKeep],
-	// 		});
-	// 	}
-	// };
-
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	///
-	/// / TODO CLEAN
-	// // Update markets implementations if its needed.
-	// if (futuresMarketManager && marketImplementationsUpdated.length > 0) {
-	// 	await runStep({
-	// 		contract: `FuturesMarketManager`,
-	// 		target: futuresMarketManager,
-	// 		write: 'updateMarketsImplementations',
-	// 		writeArg: [marketImplementationsUpdated],
-	// 	});
-	// }
-	// Replace the relevant markets in the manager (if any)
-	// let marketImplementationsUpdated = perpMarketsImplementationUpdated;
-	// if (futuresMarketManager && deployedPerpsV2Markets.length > 0) {
-	// 	const managerKnownMarkets = Array.from(
-	// 		await futuresMarketManager['allMarkets(bool)'](true)
-	// 	).sort();
-	// 	const { toRemove, toKeep, toAdd } = filteredLists(managerKnownMarkets, deployedPerpsV2Markets);
-	// 	if (toRemove.length > 0) {
-	// 		await runStep({
-	// 			contract: `FuturesMarketManager`,
-	// 			target: futuresMarketManager,
-	// 			read: 'allMarkets(bool)',
-	// 			readArg: [true],
-	// 			expected: (markets) => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
-	// 			write: 'removeMarkets',
-	// 			writeArg: [toRemove],
-	// 		});
-	// 	}
-	// 	if (toAdd.length > 0) {
-	// 		await runStep({
-	// 			contract: `FuturesMarketManager`,
-	// 			target: futuresMarketManager,
-	// 			read: 'allMarkets(bool)',
-	// 			readArg: [true],
-	// 			expected: (markets) =>
-	// 				JSON.stringify(markets.slice().sort()) ===
-	// 				JSON.stringify(deployedPerpsV2Markets.slice().sort()),
-	// 			write: 'addProxiedMarkets',
-	// 			writeArg: [toAdd],
-	// 			gasLimit: 150e3 * toAdd.length, // extra gas per market
-	// 		});
-	// 	}
-	// 	// implementation was updated, but not the market (proxy)
-	// 	marketImplementationsUpdated = perpMarketsImplementationUpdated.filter((element) =>
-	// 		toKeep.includes(element)
-	// 	);
-	// }
-
-	// SNIPPETS
-	// const isMarketPaused = async ({ marketKey, SystemStatus }) => {
-	// 	const marketKeyBytes = toBytes32(marketKey);
-	// 	return (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-	// };
-
-	// const ensureMarketPausedStatus = async ({ marketKey, SystemStatus, runStep, expectedPaused }) => {
-	// 	let marketWasPaused;
-
-	// 	const marketKeyBytes = toBytes32(marketKey);
-	// 	marketWasPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
-	// 	if (marketWasPaused === expectedPaused) {
-	// 		return marketWasPaused;
-	// 	}
-
-	// 	if (expectedPaused) {
-	// 		await runStep({
-	// 			contract: 'SystemStatus',
-	// 			target: SystemStatus,
-	// 			write: 'suspendFuturesMarket',
-	// 			writeArg: [marketKeyBytes, 80],
-	// 			comment: 'Ensure perpsV2 market is paused according to expected status',
-	// 		});
-	// 	} else {
-	// 		await runStep({
-	// 			contract: 'SystemStatus',
-	// 			target: SystemStatus,
-	// 			write: 'resumeFuturesMarket',
-	// 			writeArg: [marketKeyBytes],
-	// 			comment: 'Ensure perpsV2 market is not paused according to expected status',
-	// 		});
-	// 	}
-
-	// 	return marketWasPaused;
-	// };
-
-	// OTHER SNIPPETS
-	// await Promise.all(
-	// 	resolvedContracts.map(([name, contract]) => {
-	// 		return limitPromise(async () => {
-	// 			const currentAddress = await AddressResolver.getAddress(toBytes32(name));
-
-	// 			// only import ext: addresses if they have never been imported before
-	// 			if (currentAddress !== contract.address) {
-	// 				console.log(green(`${name} needs to be imported to the AddressResolver`));
-
-	// 				addressArgs[0].push(toBytes32(name));
-	// 				addressArgs[1].push(contract.address);
-
-	// 				// const { source, address } = contract;
-	// 				// newContractsBeingAdded[contract.address] = { name, source, address, contract };
-	// 			}
-	// 		});
-	// 	})
-	// );
+	// cleanup unused proxies
+	await linkToMarketManager({
+		runStep,
+		futuresMarketManager,
+		proxies: allMarketProxies,
+		onlyRemoveUnusedProxies: true,
+	});
 };
 
 module.exports = {
