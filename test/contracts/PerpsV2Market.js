@@ -39,7 +39,7 @@ const Status = {
 	PriceTooVolatile: 12,
 };
 
-contract.only('PerpsV2Market PerpsV2MarketAtomic', accounts => {
+contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	let perpsV2MarketSettings,
 		futuresMarketManager,
 		perpsV2MarketProxy,
