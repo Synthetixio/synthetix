@@ -29,9 +29,6 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
 
-    // The amount of time to lock the migrated escrow for.
-    uint public escrowMigrationDuration = 26 weeks;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -49,7 +46,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
-    /* ========== INTERNALS ============ */
+    /* ========== VIEWS ============ */
 
     function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
@@ -100,7 +97,13 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
                 : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
     }
 
-    /* ========== VIEWS ========== */
+    function _getMaxEscrowDuration(address account) private view returns (uint duration) {
+        uint numOfEntries = _rewardEscrowV2().numVestingEntries(account);
+        uint latestEntryId = _rewardEscrowV2().accountVestingEntryIDs(account, numOfEntries.sub(1));
+        (uint endTime, ) = _rewardEscrowV2().getVestingEntry(account, latestEntryId);
+        duration = now < endTime ? (endTime - now) : 2 weeks;
+        return duration;
+    }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
@@ -121,9 +124,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     /* ========== MUTATIVE ========== */
 
     // Ideally, the account should call vest on their escrow before invoking the debt migration to L2.
-    function migrateDebt(address account) public {
-        _systemStatus().requireSystemActive();
-
+    function migrateDebt(address account) public systemActive {
         require(msg.sender == account, "Must be the account owner");
         _migrateDebt(account);
     }
@@ -172,7 +173,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
                 rewardEscrow.createEscrowEntry.selector,
                 _account,
                 totalEscrowRevoked,
-                escrowMigrationDuration
+                _getMaxEscrowDuration(_account)
             );
 
         // Send a message with the debt & escrow payloads to L2 to finalize the migration
@@ -192,12 +193,15 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         emit MigrationInitiated(_account, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
     }
 
-    /* ========== SETTERS ========== */
+    /* ========= MODIFIERS ========= */
 
-    function setEscrowMigrationDuration(uint _escrowMigrationDuration) public onlyOwner {
-        require(_escrowMigrationDuration > 0, "Must be greater than 0");
-        escrowMigrationDuration = _escrowMigrationDuration;
-        emit EscrowMigrationDurationUpdated(escrowMigrationDuration);
+    modifier systemActive() {
+        _systemActive();
+        _;
+    }
+
+    function _systemActive() private view {
+        _systemStatus().requireSystemActive();
     }
 
     /* ========== EVENTS ========== */

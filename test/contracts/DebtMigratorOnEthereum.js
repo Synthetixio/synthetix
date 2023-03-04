@@ -1,5 +1,5 @@
 const { contract } = require('hardhat');
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toUnit } = require('../utils')();
@@ -7,11 +7,15 @@ const { toBytes32 } = require('../..');
 
 contract('DebtMigratorOnEthereum', accounts => {
 	const owner = accounts[1];
-	// const user = accounts[2];
-	const oneWeek = 60 * 60 * 24 * 7;
-	const twentySixWeeks = oneWeek * 26;
+	const user = accounts[2];
 
-	let debtMigratorOnEthereum, resolver, rewardEscrowV2, synths, synthetix, synthetixDebtShare;
+	let debtMigratorOnEthereum,
+		resolver,
+		rewardEscrowV2,
+		synths,
+		synthetix,
+		synthetixDebtShare,
+		systemStatus;
 
 	before(async () => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
@@ -21,6 +25,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 			RewardEscrowV2: rewardEscrowV2,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
+			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -44,7 +49,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: debtMigratorOnEthereum.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['migrateDebt', 'setEscrowMigrationDuration'],
+			expected: ['migrateDebt'],
 		});
 	});
 
@@ -53,24 +58,9 @@ contract('DebtMigratorOnEthereum', accounts => {
 			const ownerAddress = await debtMigratorOnEthereum.owner();
 			assert.equal(ownerAddress, owner);
 		});
-		it('escrow migration duration should be the default value', async () => {
-			const escrowMigrationDuration = await debtMigratorOnEthereum.escrowMigrationDuration();
-			assert.bnEqual(escrowMigrationDuration, twentySixWeeks);
-		});
-	});
-
-	describe('Function permissions', () => {
-		const newDuration = toUnit('100');
-
-		it('only owner can call setEscrowMigrationDuration', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: debtMigratorOnEthereum.setEscrowMigrationDuration,
-				accounts,
-				args: [newDuration],
-				address: owner,
-				skipPassCheck: true,
-				reason: 'Only the contract owner may perform this action',
-			});
+		it('should set resolver on constructor', async () => {
+			const resolverAddress = await debtMigratorOnEthereum.resolver();
+			assert.equal(resolverAddress, resolver.address);
 		});
 	});
 
@@ -100,24 +90,41 @@ contract('DebtMigratorOnEthereum', accounts => {
 			debtShareBalance = await synthetixDebtShare.balanceOf(owner);
 		});
 
-		before('initiate the migration', async () => {
-			migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
+		describe('revert cases', () => {
+			it('cannot migrate on behalf of another account', async () => {
+				await assert.revert(
+					debtMigratorOnEthereum.migrateDebt(owner, { from: user }),
+					'Must be the account owner'
+				);
+			});
+
+			it('cannot migrate if the system is suspended', async () => {
+				await systemStatus.suspendSystem(1, { from: owner });
+				await assert.revert(debtMigratorOnEthereum.migrateDebt(owner, { from: user }));
+			});
 		});
 
-		it('zeroes the balances on L1', async () => {
-			assert.bnEqual(await synthetix.collateral(owner), 0);
-			assert.bnEqual(await synthetix.balanceOf(owner), 0);
-			assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
-			assert.bnEqual(await synthetixDebtShare.balanceOf(owner), 0);
-		});
+		describe('migrateDebt()', () => {
+			before('resume and initiate the migration', async () => {
+				await systemStatus.resumeSystem({ from: owner });
+				migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
+			});
 
-		it('emits a MigrationInitiated event', async () => {
-			const migrateEvent = migrateTx.logs[0];
-			assert.eventEqual(migrateEvent, 'MigrationInitiated', {
-				account: owner,
-				totalDebtSharesMigrated: debtShareBalance,
-				totalEscrowMigrated: escrowedSNXBalance,
-				totalLiquidBalanceMigrated: liquidSNXBalance,
+			it('zeroes the balances on L1', async () => {
+				assert.bnEqual(await synthetix.collateral(owner), 0);
+				assert.bnEqual(await synthetix.balanceOf(owner), 0);
+				assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
+				assert.bnEqual(await synthetixDebtShare.balanceOf(owner), 0);
+			});
+
+			it('emits a MigrationInitiated event', async () => {
+				const migrateEvent = migrateTx.logs[0];
+				assert.eventEqual(migrateEvent, 'MigrationInitiated', {
+					account: owner,
+					totalDebtSharesMigrated: debtShareBalance,
+					totalEscrowMigrated: escrowedSNXBalance,
+					totalLiquidBalanceMigrated: liquidSNXBalance,
+				});
 			});
 		});
 	});
