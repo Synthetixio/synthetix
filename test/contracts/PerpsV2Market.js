@@ -814,7 +814,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: t2Margin,
 						sizeDelta: t2size,
 					});
@@ -824,7 +824,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: t1Margin,
 						sizeDelta: t1size,
 					});
@@ -911,7 +911,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size,
 					});
@@ -934,7 +934,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size,
 					});
@@ -978,7 +978,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin1,
 						sizeDelta: size1,
 					});
@@ -1030,7 +1030,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size,
 					});
@@ -1060,7 +1060,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin1,
 						sizeDelta: size1,
 					});
@@ -1076,7 +1076,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size2,
 					});
@@ -1154,7 +1154,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta,
 					});
@@ -1174,7 +1174,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin1,
 						sizeDelta: size1,
 					});
@@ -1183,7 +1183,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size2,
 					});
@@ -1204,7 +1204,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size1,
 					});
@@ -1227,7 +1227,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin1,
 						sizeDelta: size1,
 					});
@@ -1236,7 +1236,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size2,
 					});
@@ -1258,7 +1258,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader2,
-						price: price,
+						price,
 						marginDelta: margin1,
 						sizeDelta: size1,
 					});
@@ -1267,7 +1267,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: margin,
 						sizeDelta: size2,
 					});
@@ -1970,7 +1970,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
-				price: price,
+				price,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('50'),
 			});
@@ -3214,7 +3214,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await transferMarginAndModifyPosition({
 					market: perpsV2Market,
 					account: trader,
-					price: price,
+					price,
 					marginDelta: marginDelta1,
 					sizeDelta: size1,
 				});
@@ -3516,7 +3516,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
-				price: price,
+				price,
 				marginDelta: toUnit('100000'),
 				sizeDelta: toUnit('100'),
 			});
@@ -3528,7 +3528,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader2,
-				price: price,
+				price,
 				marginDelta: toUnit('100000'),
 				sizeDelta: toUnit('100'),
 			});
@@ -3540,7 +3540,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader2,
-				price: price,
+				price,
 				marginDelta: toUnit('100000'),
 				sizeDelta: toUnit('-200'),
 			});
@@ -3581,7 +3581,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
-				price: price,
+				price,
 				marginDelta: toUnit('100000'),
 				sizeDelta: toUnit('-50'),
 			});
@@ -3713,14 +3713,14 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
-				price: price,
+				price,
 				marginDelta: toUnit('10000'),
 				sizeDelta: toUnit('10'), // long
 			});
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader2,
-				price: price,
+				price,
 				marginDelta: toUnit('10000'),
 				sizeDelta: toUnit('-5'), // short
 			});
@@ -4197,7 +4197,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await transferMarginAndModifyPosition({
 						market: perpsV2Market,
 						account: trader,
-						price: price,
+						price,
 						marginDelta: toUnit('1000'),
 						sizeDelta: traderPos,
 					});
@@ -4301,7 +4301,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await transferMarginAndModifyPosition({
 				market: perpsV2Market,
 				account: trader,
-				price: price,
+				price,
 				marginDelta: toUnit('1000'),
 				sizeDelta: toUnit('12'),
 			});
@@ -4386,7 +4386,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await transferMarginAndModifyPosition({
 					market: perpsV2Market,
 					account: trader,
-					price: price,
+					price,
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('90'),
 				});
@@ -4394,7 +4394,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				await transferMarginAndModifyPosition({
 					market: perpsV2Market,
 					account: trader2,
-					price: price,
+					price,
 					marginDelta: toUnit('1000'),
 					sizeDelta: toUnit('-30'),
 				});
