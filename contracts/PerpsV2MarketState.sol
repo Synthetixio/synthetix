@@ -110,8 +110,6 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
 
     function linkOrInitializeState() external onlyOwner {
         if (_legacyContractExists) {
-            // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
-            // push the previous value of the old state (or zero if there's no previous state)
             // copy atomic values
             marketSize = legacyState.marketSize();
             marketSkew = legacyState.marketSkew();
@@ -127,6 +125,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             // get fundingSequence offset
             legacyFundinSequenceOffset = legacyFundingSequenceLength;
         } else {
+            // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
             _fundingSequence.push(0);
             fundingRateLastRecomputed = 0;
         }
@@ -134,6 +133,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         // set legacyConfigured
         initialized = true;
         // emit event
+        emit MarketStateInitialized(marketKey, _legacyContractExists, address(legacyState), legacyFundinSequenceOffset);
     }
 
     function entryDebtCorrection() external view returns (int128) {
@@ -404,4 +404,13 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         require(initialized, "State not initialized");
         _;
     }
+
+    /* ========== EVENTS ========== */
+
+    event MarketStateInitialized(
+        bytes32 indexed marketKey,
+        bool legacyContractExists,
+        address legacyState,
+        uint legacyFundinSequenceOffset
+    );
 }

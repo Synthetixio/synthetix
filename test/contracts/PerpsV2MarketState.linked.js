@@ -1,8 +1,9 @@
 const { contract, web3 } = require('hardhat');
-const { toUnit, toBN } = require('../utils')();
+const { toUnit } = require('../utils')();
 const { toBytes32, constants } = require('../..');
 const { setupContract } = require('./setup');
 const { assert } = require('./common');
+const { getDecodedLogs, decodedEventEqual } = require('./helpers');
 
 // const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 const marketKey = toBytes32('sETH-perps');
@@ -194,9 +195,6 @@ const getAndLinkContracts = async ({ legacyPerpsV2MarketState, accounts, owner }
 	const legacyState = legacyPerpsV2MarketState
 		? legacyPerpsV2MarketState.address
 		: constants.ZERO_ADDRESS;
-	const legacyFundinSequenceOffset = legacyPerpsV2MarketState
-		? (await legacyPerpsV2MarketState.fundingSequenceLength()).sub(toBN(1))
-		: toBN(0);
 
 	const perpsV2MarketState = await setupContract({
 		accounts,
@@ -229,13 +227,9 @@ const getAndLinkContracts = async ({ legacyPerpsV2MarketState, accounts, owner }
 		from: owner,
 	});
 
-	assert.equal(await perpsV2MarketState.initialized(), false);
 	await perpsV2MarketState.linkOrInitializeState({
 		from: owner,
 	});
-	assert.equal(await perpsV2MarketState.initialized(), true);
-	assert.equal(await perpsV2MarketState.legacyState(), legacyState);
-	assert.bnEqual(await perpsV2MarketState.legacyFundinSequenceOffset(), legacyFundinSequenceOffset);
 
 	return { perpsV2MarketState, mockPerpsV2StateConsumer };
 };
@@ -272,13 +266,6 @@ const testBehaviour = ({
 				positionsCount,
 				delayedOrdersCount,
 			});
-		});
-
-		describe('test basic data', async () => {
-			describe('before initializing', () => {});
-			// initialized;
-			// legacyFundinSequenceOffset;
-			// legacyState;
 		});
 
 		describe('when there is no legacy market', () => {
@@ -462,6 +449,81 @@ const testBehaviour = ({
 contract('PerpsV2MarketState - Linked', accounts => {
 	const owner = accounts[1];
 	const user = accounts[2];
+
+	describe('test basic data', async () => {
+		let generatedLegacyActivity, legacyPerpsV2MarketState, perpsV2MarketState;
+		beforeEach('generate fake activity', async () => {
+			generatedLegacyActivity = generateFakeActivity({
+				fundingSequenceItemsCount: 5,
+				positionsCount: 5,
+				delayedOrdersCount: 5,
+			});
+		});
+
+		beforeEach('setup contracts', async () => {
+			legacyPerpsV2MarketState = await setupContract({
+				accounts,
+				contract: 'PerpsV2MarketStateLegacyR1',
+				args: [owner, [owner], baseAsset, marketKey],
+				skipPostDeploy: true,
+			});
+
+			// Authorize user to operate over legacy market state
+			await legacyPerpsV2MarketState.addAssociatedContracts([user], {
+				from: owner,
+			});
+
+			perpsV2MarketState = await setupContract({
+				accounts,
+				contract: 'PerpsV2MarketState',
+				args: [owner, [owner], baseAsset, marketKey, legacyPerpsV2MarketState.address],
+				skipPostDeploy: true,
+			});
+
+			await addActivity({
+				user,
+				marketStateOrConsumer: legacyPerpsV2MarketState,
+				fundingSequenceItems: generatedLegacyActivity.fundingSequenceItems,
+				positions: generatedLegacyActivity.positions,
+				delayedOrders: generatedLegacyActivity.delayedOrders,
+				atomicValues: generatedLegacyActivity.atomicValues,
+			});
+		});
+
+		describe('when initializing', () => {
+			it('gets initialized', async () => {
+				assert.equal(await perpsV2MarketState.initialized(), false);
+
+				const tx = await perpsV2MarketState.linkOrInitializeState({
+					from: owner,
+				});
+				assert.equal(await perpsV2MarketState.initialized(), true);
+				assert.equal(await perpsV2MarketState.legacyState(), legacyPerpsV2MarketState.address);
+				assert.bnEqual(
+					await perpsV2MarketState.legacyFundinSequenceOffset(),
+					generatedLegacyActivity.fundingSequenceItems.length
+				);
+
+				const decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [perpsV2MarketState],
+				});
+				assert.equal(decodedLogs.length, 1);
+
+				decodedEventEqual({
+					event: 'MarketStateInitialized',
+					emittedFrom: perpsV2MarketState.address,
+					args: [
+						marketKey,
+						true,
+						legacyPerpsV2MarketState.address,
+						generatedLegacyActivity.fundingSequenceItems.length,
+					],
+					log: decodedLogs[0],
+				});
+			});
+		});
+	});
 
 	describe('Linked State - Legacy', () => {
 		describe('with no history data', () => {
