@@ -1,18 +1,19 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDebtMigrator.sol";
-import "./interfaces/IRewardEscrowV2.sol";
+
+// Libraries
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 
 // Internal references
+import "./interfaces/IRewardEscrowV2.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnOptimism is MixinResolver, Owned {
+contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
     using SafeERC20 for IERC20;
 
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
