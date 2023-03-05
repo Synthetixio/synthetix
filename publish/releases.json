@@ -1613,19 +1613,19 @@
 			"released": true
 		},
 		{
-			"name": "XXX",
+			"name": "Almach",
 			"version": {
 				"major": 2,
-				"minor": 84
+				"minor": 85
 			},
 			"sips": [2004, 2005]
 		},
 		{
-			"name": "XXX (Optimism)",
+			"name": "Almach (Optimism)",
 			"ovm": true,
 			"version": {
 				"major": 2,
-				"minor": 84
+				"minor": 85
 			},
 			"sips": [2004, 2005]
 		}
