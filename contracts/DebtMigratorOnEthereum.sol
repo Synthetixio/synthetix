@@ -5,13 +5,13 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/IDebtMigrator.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
+import "./interfaces/IDebtMigrator.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
@@ -22,7 +22,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISystemStatus.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, IDebtMigrator {
+contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     using SafeERC20 for IERC20;
     using SafeMath for uint;
     using SafeDecimalMath for uint;
