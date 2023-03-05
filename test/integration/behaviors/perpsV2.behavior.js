@@ -274,7 +274,7 @@ function itCanTrade({ ctx }) {
 						);
 
 						// cannot close
-						await assert.revert(market.closePosition(priceImpactDelta), 'can be liquidated');
+						await assert.revert(market.closePosition(desiredFillPrice), 'can be liquidated');
 					});
 
 					it('position can be liquidated by another user', async () => {
