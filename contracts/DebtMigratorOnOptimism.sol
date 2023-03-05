@@ -1,18 +1,19 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDebtMigrator.sol";
-import "./interfaces/IRewardEscrowV2.sol";
+
+// Libraries
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 
 // Internal references
+import "./interfaces/IRewardEscrowV2.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnOptimism is MixinResolver, Owned {
+contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
     using SafeERC20 for IERC20;
 
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
@@ -32,9 +33,12 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned {
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](2);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_REWARD_ESCROW_V2;
+        addresses[4] = CONTRACT_SYNTHETIX;
     }
 
     function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {

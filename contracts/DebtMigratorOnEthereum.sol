@@ -1,13 +1,14 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-import "./SafeDecimalMath.sol";
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+
+// Libraries
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IDebtMigrator.sol";
@@ -19,7 +20,6 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/ISystemStatus.sol";
-
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
