@@ -16,7 +16,9 @@ import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessen
 contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "DebtMigratorOnOptimism";
+    }
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -33,9 +35,12 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](2);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_REWARD_ESCROW_V2;
+        addresses[4] = CONTRACT_SYNTHETIX;
     }
 
     function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {

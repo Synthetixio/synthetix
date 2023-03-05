@@ -27,7 +27,9 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned, IDebtMigrator {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "DebtMigratorOnEthereum";
+    }
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
