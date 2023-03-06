@@ -33,6 +33,7 @@ module.exports = {
 		'MixinFuturesMarketSettings.sol',
 		'MixinFuturesNextPriceOrders.sol',
 		'MixinFuturesViews.sol',
+		'NativeEtherWrapper.sol',
 		'OwnerRelayOnEthereum.sol',
 		'OwnerRelayOnOptimism.sol',
 		'RewardEscrowV2Frozen',
