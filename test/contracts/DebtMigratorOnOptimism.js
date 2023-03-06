@@ -47,7 +47,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 					0,
 					0,
 					0,
-					0,
 					mockedPayloadData, // Any data
 					mockedPayloadData, // Any data
 					{ from: owner }
