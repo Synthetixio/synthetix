@@ -27,8 +27,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     // have to define this function like this here because contract name is required for FlexibleStorage
     function CONTRACT_NAME() public pure returns (bytes32);
 
-    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -38,11 +36,16 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
 
+    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
+
+    bytes32 internal constant sUSD = "sUSD";
+    bytes32 internal constant SDS = "SDS";
+
     /* ========== CONSTRUCTOR ========= */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
-    /* ========== INTERNALS ========== */
+    /* ========== VIEWS ========== */
 
     function _flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
@@ -72,8 +75,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
-    /* ========== VIEWS ========== */
-
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](6);
@@ -86,39 +87,21 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    // ==== INTERNAL FUNCTIONS ====
+    /* ======== INTERNALS ======== */
 
     function _incrementDebtTransferCounter(
         bytes32 group,
-        bytes32 currencyKey,
-        uint amount
+        uint debtInUSD,
+        uint debtShares
     ) internal {
-        bytes32 key = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, currencyKey));
+        // increment debt value in USD
+        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, sUSD));
+        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
+        flexibleStorage().setUIntValue(CONTRACT_NAME(), debtAmountKey, currentDebtInUSD.add(debtInUSD));
 
-        uint currentSynths = flexibleStorage().getUIntValue(CONTRACT_NAME(), key);
-
-        flexibleStorage().setUIntValue(CONTRACT_NAME(), key, currentSynths.add(amount));
-    }
-
-    function _sumTransferAmounts(bytes32 group) internal view returns (uint sum) {
-        // get list of synths from issuer
-        bytes32[] memory currencyKeys = _issuer().availableCurrencyKeys();
-
-        // get all synth rates
-        (uint[] memory rates, bool isInvalid) = _exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-
-        require(!isInvalid, "Rates are invalid");
-
-        // get all values
-        bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            transferAmountKeys[i] = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, currencyKeys[i]));
-        }
-
-        uint[] memory transferAmounts = flexibleStorage().getUIntValues(CONTRACT_NAME(), transferAmountKeys);
-
-        for (uint i = 0; i < currencyKeys.length; i++) {
-            sum = sum.add(transferAmounts[i].multiplyDecimalRound(rates[i]));
-        }
+        // increment number of debt shares
+        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, SDS));
+        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
+        flexibleStorage().setUIntValue(CONTRACT_NAME(), debtSharesKey, currentDebtShares.add(debtShares));
     }
 }

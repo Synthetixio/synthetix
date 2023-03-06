@@ -163,16 +163,12 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 	describe('when migrating debt', () => {
 		let migrateTx;
-		let debtTransferSent;
+		let debtTransferSentBefore, debtSharesSentBefore;
 		let liquidSNXBalance, escrowedSNXBalance, debtBalanceOf, debtShareBalance;
 		const amountToIssue = toUnit('100');
-		const entryAmount = toUnit('1');
+		const entryAmount = toUnit('50');
 
-		before('issue some debt', async () => {
-			await synthetix.issueSynths(amountToIssue, { from: owner });
-		});
-
-		before('create an escrow entries', async () => {
+		before('create some escrow entries', async () => {
 			// allow owner to write to create entries
 			await resolver.importAddresses(['FeePool', 'Depot'].map(toBytes32), [owner, owner], {
 				from: owner,
@@ -182,12 +178,17 @@ contract('DebtMigratorOnEthereum', accounts => {
 			await rewardEscrowV2.appendVestingEntry(owner, entryAmount, 1, { from: owner });
 		});
 
+		before('issue some debt', async () => {
+			await synthetix.issueSynths(amountToIssue, { from: owner });
+		});
+
 		before('record balances', async () => {
 			liquidSNXBalance = await synthetix.balanceOf(owner);
 			escrowedSNXBalance = await rewardEscrowV2.balanceOf(owner);
 			debtShareBalance = await synthetixDebtShare.balanceOf(owner);
 			debtBalanceOf = await synthetix.debtBalanceOf(owner, sUSD);
-			debtTransferSent = await debtMigratorOnEthereum.debtTransferSent();
+			debtTransferSentBefore = await debtMigratorOnEthereum.debtTransferSent();
+			debtSharesSentBefore = await debtMigratorOnEthereum.debtSharesSent();
 		});
 
 		describe('revert cases', () => {
@@ -212,7 +213,10 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 			it('increments the debt counters', async () => {
 				const debtTransferSentAfter = await debtMigratorOnEthereum.debtTransferSent();
-				assert.bnEqual(debtTransferSentAfter, debtTransferSent.add(debtBalanceOf));
+				assert.bnEqual(debtTransferSentAfter, debtTransferSentBefore.add(debtBalanceOf));
+
+				const debtSharesSentAfter = await debtMigratorOnEthereum.debtSharesSent();
+				assert.bnEqual(debtSharesSentAfter, debtSharesSentBefore.add(debtShareBalance));
 			});
 
 			it('zeroes the balances on L1', async () => {

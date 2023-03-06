@@ -12,8 +12,6 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 
 contract DebtMigratorOnEthereum is BaseDebtMigrator {
-    bool public initiationActive;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
@@ -22,12 +20,14 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
 
+    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
+    bytes32 private constant DEBT_TRANSFER_SENT = "Sent";
+
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "DebtMigratorOnEthereum";
     }
 
-    bytes32 internal constant sUSD = "sUSD";
-    bytes32 private constant DEBT_TRANSFER_SENT = "Sent";
+    bool public initiationActive;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -88,7 +88,15 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     function debtTransferSent() external view returns (uint) {
-        return _sumTransferAmounts(DEBT_TRANSFER_SENT);
+        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, sUSD));
+        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
+        return currentDebtInUSD;
+    }
+
+    function debtSharesSent() external view returns (uint) {
+        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, SDS));
+        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
+        return currentDebtShares;
     }
 
     /* ========== MUTATIVE ========== */
@@ -103,18 +111,18 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         // Require the account to not be flagged or open for liquidation
         require(!_liquidator().isLiquidationOpen(_account, false), "Cannot migrate if open for liquidation");
 
-        // Increment the in-flight debt counter by their debt balance
-        uint debtAmountInUSD = _issuer().debtBalanceOf(_account, sUSD);
-        _incrementDebtTransferCounter(DEBT_TRANSFER_SENT, sUSD, debtAmountInUSD);
-
         // Important: this has to happen before any updates to user's debt shares
         _liquidatorRewards().getReward(_account);
 
         // First, remove all debt shares on L1
+        uint debtAmountInUSD = _issuer().debtBalanceOf(_account, sUSD);
         ISynthetixDebtShare sds = _synthetixDebtShare();
         uint totalDebtShares = sds.balanceOf(_account);
         require(totalDebtShares > 0, "No debt to migrate");
         _issuer().modifyDebtSharesForMigration(_account, totalDebtShares);
+
+        // Increment the in-flight debt counter by their debt balance and shares
+        _incrementDebtTransferCounter(DEBT_TRANSFER_SENT, debtAmountInUSD, totalDebtShares);
 
         // Deposit all of the liquid & revoked escrowed SNX to the migrator on L2
         (uint totalEscrowRevoked, uint totalLiquidBalance) =

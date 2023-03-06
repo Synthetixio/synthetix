@@ -7,14 +7,14 @@ import "./interfaces/IDebtMigrator.sol";
 
 contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
+
+    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
+    bytes32 private constant DEBT_TRANSFER_RECV = "Recv";
 
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "DebtMigratorOnOptimism";
     }
-
-    bytes32 private constant DEBT_TRANSFER_RECV = "Recv";
 
     /* ========== CONSTRUCTOR ============ */
 
@@ -30,7 +30,15 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     }
 
     function debtTransferReceived() external view returns (uint) {
-        return _sumTransferAmounts(DEBT_TRANSFER_RECV);
+        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, sUSD));
+        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
+        return currentDebtInUSD;
+    }
+
+    function debtSharesReceived() external view returns (uint) {
+        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, SDS));
+        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
+        return currentDebtShares;
     }
 
     function _debtMigratorOnEthereum() private view returns (address) {
@@ -90,7 +98,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         bytes calldata debtPayload,
         bytes calldata escrowPayload
     ) external onlyCounterpart {
-        _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, "sUSD", debtAmountMigrated);
+        _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtAmountMigrated, debtSharesMigrated);
         _finalizeDebt(debtPayload);
 
         if (escrowMigrated > 0) {
