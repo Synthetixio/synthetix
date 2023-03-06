@@ -1,21 +1,34 @@
 const { contract } = require('hardhat');
-const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
+const {
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+	updateAggregatorRates,
+	setupPriceAggregators,
+} = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 contract('DebtMigratorOnEthereum', accounts => {
+	const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 	const owner = accounts[1];
 	const user = accounts[2];
 
-	let debtMigratorOnEthereum, resolver, rewardEscrowV2, synths, synthetix, synthetixDebtShare;
+	let debtMigratorOnEthereum,
+		exchangeRates,
+		resolver,
+		rewardEscrowV2,
+		synths,
+		synthetix,
+		synthetixDebtShare;
 
 	before(async () => {
-		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
+		synths = ['sUSD', 'sETH'];
 		({
 			AddressResolver: resolver,
 			DebtMigratorOnEthereum: debtMigratorOnEthereum,
+			ExchangeRates: exchangeRates,
 			RewardEscrowV2: rewardEscrowV2,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
@@ -25,6 +38,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 			contracts: [
 				'AddressResolver',
 				'DebtMigratorOnEthereum',
+				'ExchangeRates',
 				'Issuer',
 				'Liquidator',
 				'LiquidatorRewards',
@@ -35,6 +49,12 @@ contract('DebtMigratorOnEthereum', accounts => {
 				'SystemSettings',
 			],
 		}));
+
+		await setupPriceAggregators(exchangeRates, owner, [sETH]);
+	});
+
+	before(async () => {
+		await updateAggregatorRates(exchangeRates, null, [sETH], ['6'].map(toUnit));
 	});
 
 	it('ensure only expected functions are mutative', async () => {
@@ -143,6 +163,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 	describe('when migrating debt', () => {
 		let migrateTx;
+		let debtTransferSent;
 		let liquidSNXBalance, escrowedSNXBalance, debtBalanceOf, debtShareBalance;
 		const amountToIssue = toUnit('100');
 		const entryAmount = toUnit('1');
@@ -165,7 +186,8 @@ contract('DebtMigratorOnEthereum', accounts => {
 			liquidSNXBalance = await synthetix.balanceOf(owner);
 			escrowedSNXBalance = await rewardEscrowV2.balanceOf(owner);
 			debtShareBalance = await synthetixDebtShare.balanceOf(owner);
-			debtBalanceOf = await synthetix.debtBalanceOf(owner, toBytes32('sUSD'));
+			debtBalanceOf = await synthetix.debtBalanceOf(owner, sUSD);
+			debtTransferSent = await debtMigratorOnEthereum.debtTransferSent();
 		});
 
 		describe('revert cases', () => {
@@ -188,10 +210,15 @@ contract('DebtMigratorOnEthereum', accounts => {
 				migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
 			});
 
+			it('increments the debt counters', async () => {
+				const debtTransferSentAfter = await debtMigratorOnEthereum.debtTransferSent();
+				assert.bnEqual(debtTransferSentAfter, debtTransferSent.add(debtBalanceOf));
+			});
+
 			it('zeroes the balances on L1', async () => {
 				assert.bnEqual(await synthetix.collateral(owner), 0);
 				assert.bnEqual(await synthetix.balanceOf(owner), 0);
-				assert.bnEqual(await synthetix.debtBalanceOf(owner, toBytes32('sUSD')), 0);
+				assert.bnEqual(await synthetix.debtBalanceOf(owner, sUSD), 0);
 				assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
 				assert.bnEqual(await synthetixDebtShare.balanceOf(owner), 0);
 			});
