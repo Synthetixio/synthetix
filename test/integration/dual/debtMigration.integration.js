@@ -45,24 +45,20 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		// Configure L1.
 		({ AddressResolver } = ctx.l1.contracts);
 		AddressResolver = AddressResolver.connect(owner);
-		await (
-			await AddressResolver.importAddresses(
-				[toBytes32('ovm:DebtMigratorOnOptimism')],
-				[DebtMigratorOnOptimism.address]
-			)
-		).wait();
-		await (await DebtMigratorOnEthereum.connect(owner).rebuildCache()).wait();
+		await AddressResolver.importAddresses(
+			[toBytes32('ovm:DebtMigratorOnOptimism')],
+			[DebtMigratorOnOptimism.address]
+		);
+		await DebtMigratorOnEthereum.connect(owner).rebuildCache();
 
 		// Configure L2.
 		({ AddressResolver } = ctx.l2.contracts);
 		AddressResolver = AddressResolver.connect(ctx.l2.users.owner);
-		await (
-			await AddressResolver.importAddresses(
-				[toBytes32('base:DebtMigratorOnEthereum')],
-				[DebtMigratorOnEthereum.address]
-			)
-		).wait();
-		await (await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache()).wait();
+		await AddressResolver.importAddresses(
+			[toBytes32('base:DebtMigratorOnEthereum')],
+			[DebtMigratorOnEthereum.address]
+		);
+		await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
 	});
 
 	before('ensure the user has enough SNX', async () => {
