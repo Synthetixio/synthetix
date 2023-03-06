@@ -16,7 +16,6 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IExchangeRates.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract BaseDebtMigrator is Owned, MixinSystemSettings {
@@ -30,7 +29,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_EXCHANGERATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -59,10 +57,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXCHANGERATES));
-    }
-
     function _rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
@@ -77,13 +71,12 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
         newAddresses[3] = CONTRACT_ISSUER;
         newAddresses[4] = CONTRACT_FLEXIBLESTORAGE;
-        newAddresses[5] = CONTRACT_EXCHANGERATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
