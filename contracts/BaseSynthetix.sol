@@ -464,13 +464,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         returns (uint totalEscrowRevoked, uint totalLiquidBalance)
     {
         address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
-        require(msg.sender == debtMigratorOnEthereum, "Only DebtMigratorOnEthereum can migrate balances");
+        require(msg.sender == debtMigratorOnEthereum, "Only L1 DebtMigrator");
 
         // get their liquid SNX balance and transfer it to the migrator contract
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
             bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
-            require(succeeded, "failed to transfer liquid snx balance");
+            require(succeeded, "snx transfer failed");
         }
 
         // get their escrowed SNX balance and revoke it all
@@ -597,7 +597,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             // legacy contracts
             caller == resolver.getAddress("RewardEscrow") ||
             caller == resolver.getAddress("SynthetixEscrow") ||
-            caller == resolver.getAddress("TradingRewards") ||
             caller == resolver.getAddress("Depot");
     }
 

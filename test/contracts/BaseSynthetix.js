@@ -626,7 +626,7 @@ contract('BaseSynthetix', async accounts => {
 					fnc: baseSynthetixImpl.migrateAccountBalances,
 					accounts,
 					args: [account3],
-					reason: 'Only DebtMigratorOnEthereum can migrate balances',
+					reason: 'Only L1 DebtMigrator',
 				});
 			});
 			it('zeroes balances on this layer', async () => {
