@@ -10,7 +10,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	let user;
+	let owner, user;
 	let DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare;
 
 	let initialParametersL1,
@@ -31,6 +31,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	before('target contracts and users', () => {
 		({ Synthetix, RewardEscrowV2, SynthetixDebtShare, DebtMigratorOnEthereum } = ctx.l1.contracts);
 		user = ctx.l1.users.someUser;
+		owner = ctx.l1.users.owner;
 	});
 
 	before('ensure the user has enough SNX', async () => {
@@ -88,7 +89,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		before('when initiation is active', async () => {
-			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(user);
+			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(owner);
 			await DebtMigratorOnEthereum.resumeInitiation();
 		});
 
