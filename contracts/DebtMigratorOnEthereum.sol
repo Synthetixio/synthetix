@@ -2,62 +2,41 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Owned.sol";
-import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
-
-// Libraries
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-import "./SafeDecimalMath.sol";
+import "./BaseDebtMigrator.sol";
 
 // Internal references
 import "./interfaces/IDebtMigrator.sol";
-import "./interfaces/IIssuer.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
-import "./interfaces/ISynthetix.sol";
-import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
-    using SafeERC20 for IERC20;
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
-
-    bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
-
+contract DebtMigratorOnEthereum is BaseDebtMigrator {
     bool public initiationActive;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
-    bytes32 private constant CONTRACT_REWARD_ESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "DebtMigratorOnEthereum";
+    }
+
+    bytes32 internal constant sUSD = "sUSD";
+    bytes32 private constant DEBT_TRANSFER_SENT = "Sent";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public BaseDebtMigrator(_owner, _resolver) {}
 
     /* ========== VIEWS ============ */
 
-    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
-        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
-    }
-
     function _debtMigratorOnOptimism() private view returns (address) {
         return requireAndGetAddress(CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM);
-    }
-
-    function _issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function _liquidator() internal view returns (ILiquidator) {
@@ -68,10 +47,6 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATOR_REWARDS));
     }
 
-    function _rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARD_ESCROW_V2));
-    }
-
     function _synthetixBridgeToOptimism() internal view returns (ISynthetixBridgeToOptimism) {
         return ISynthetixBridgeToOptimism(requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM));
     }
@@ -80,11 +55,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
     }
 
-    function _synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function initiatingActive() internal view {
+    function _initiatingActive() internal view {
         require(initiationActive, "Initiation deactivated");
     }
 
@@ -106,18 +77,18 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
-        newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
-        newAddresses[2] = CONTRACT_ISSUER;
-        newAddresses[3] = CONTRACT_LIQUIDATOR;
-        newAddresses[4] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[5] = CONTRACT_REWARD_ESCROW_V2;
-        newAddresses[6] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
-        newAddresses[7] = CONTRACT_SYNTHETIX_DEBT_SHARE;
-        newAddresses[8] = CONTRACT_SYNTHETIX;
+        bytes32[] memory existingAddresses = BaseDebtMigrator.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
+        newAddresses[1] = CONTRACT_LIQUIDATOR;
+        newAddresses[2] = CONTRACT_LIQUIDATOR_REWARDS;
+        newAddresses[3] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
+        newAddresses[4] = CONTRACT_SYNTHETIX_DEBT_SHARE;
         addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    function debtTransferSent() external view returns (uint) {
+        return _sumTransferAmounts(DEBT_TRANSFER_SENT);
     }
 
     /* ========== MUTATIVE ========== */
@@ -131,6 +102,10 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     function _migrateDebt(address _account) internal {
         // Require the account to not be flagged or open for liquidation
         require(!_liquidator().isLiquidationOpen(_account, false), "Cannot migrate if open for liquidation");
+
+        // Increment the in-flight debt counter by their debt balance
+        uint debtAmountInUSD = _issuer().debtBalanceOf(_account, sUSD);
+        _incrementDebtTransferCounter(DEBT_TRANSFER_SENT, sUSD, debtAmountInUSD);
 
         // Important: this has to happen before any updates to user's debt shares
         _liquidatorRewards().getReward(_account);
@@ -181,6 +156,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
             abi.encodeWithSelector(
                 debtMigratorOnOptimism.finalizeDebtMigration.selector,
                 _account,
+                debtAmountInUSD,
                 totalDebtShares,
                 totalEscrowRevoked,
                 totalLiquidBalance,
@@ -189,7 +165,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
             );
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
-        emit MigrationInitiated(_account, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
+        emit MigrationInitiated(_account, debtAmountInUSD, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
     }
 
     /* ========= RESTRICTED ========= */
@@ -209,7 +185,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     /* ========= MODIFIERS ========= */
 
     modifier requireInitiationActive() {
-        initiatingActive();
+        _initiatingActive();
         _;
     }
 
@@ -221,6 +197,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     event MigrationInitiated(
         address indexed account,
+        uint totalDebtAmountMigrated,
         uint totalDebtSharesMigrated,
         uint totalEscrowMigrated,
         uint totalLiquidBalanceMigrated

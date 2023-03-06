@@ -2,69 +2,56 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Owned.sol";
-import "./MixinResolver.sol";
+import "./BaseDebtMigrator.sol";
 import "./interfaces/IDebtMigrator.sol";
 
-// Libraries
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
-
-// Internal references
-import "./interfaces/IRewardEscrowV2.sol";
-import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-
-contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
-    using SafeERC20 for IERC20;
-
-    bytes32 public constant CONTRACT_NAME = "DebtMigratorOnOptimism";
-
+contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 private constant CONTRACT_REWARD_ESCROW_V2 = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+
+    function CONTRACT_NAME() public pure returns (bytes32) {
+        return "DebtMigratorOnOptimism";
+    }
+
+    bytes32 private constant DEBT_TRANSFER_RECV = "Recv";
 
     /* ========== CONSTRUCTOR ============ */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public BaseDebtMigrator(_owner, _resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
-        addresses[0] = CONTRACT_EXT_MESSENGER;
-        addresses[1] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
-        addresses[2] = CONTRACT_ISSUER;
-        addresses[3] = CONTRACT_REWARD_ESCROW_V2;
-        addresses[4] = CONTRACT_SYNTHETIX;
+        bytes32[] memory existingAddresses = BaseDebtMigrator.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
-        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
+    function debtTransferReceived() external view returns (uint) {
+        return _sumTransferAmounts(DEBT_TRANSFER_RECV);
     }
 
     function _debtMigratorOnEthereum() private view returns (address) {
         return requireAndGetAddress(CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM);
     }
 
-    function _issuer() private view returns (address) {
-        return requireAndGetAddress(CONTRACT_ISSUER);
+    function _counterpart() internal view returns (address) {
+        return _debtMigratorOnEthereum();
     }
 
-    function _rewardEscrowV2() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_REWARD_ESCROW_V2);
-    }
-
-    function _synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    function onlyAllowFromCounterpart() internal view {
+        // ensure function only callable from the L2 bridge via messenger (aka relayer)
+        iAbs_BaseCrossDomainMessenger _messenger = _messenger();
+        require(msg.sender == address(_messenger), "Only the relayer can call this");
+        require(_messenger.xDomainMessageSender() == _counterpart(), "Only a counterpart migrator can invoke");
     }
 
     /* ========== MUTATIVE ============ */
 
     function _finalizeDebt(bytes memory _debtPayload) private {
-        address target = _issuer(); // target is the Issuer contract on Optimism.
+        address target = address(_issuer()); // target is the Issuer contract on Optimism.
 
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(_debtPayload);
@@ -72,7 +59,7 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
     }
 
     function _finalizeEscrow(bytes memory _escrowPayload) private {
-        address target = _rewardEscrowV2(); // target is the RewardEscrowV2 contract on Optimism.
+        address target = address(_rewardEscrowV2()); // target is the RewardEscrowV2 contract on Optimism.
 
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(_escrowPayload);
@@ -81,15 +68,14 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
 
     /* ========== MODIFIERS ============ */
 
-    function _onlyAllowMessengerAndL1DebtMigrator() internal view {
+    function _onlyAllowFromCounterpart() internal view {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
-
         require(msg.sender == address(messenger), "Sender is not the messenger");
         require(messenger.xDomainMessageSender() == _debtMigratorOnEthereum(), "L1 sender is not the debt migrator");
     }
 
-    modifier onlyMessengerAndL1DebtMigrator() {
-        _onlyAllowMessengerAndL1DebtMigrator();
+    modifier onlyCounterpart() {
+        _onlyAllowFromCounterpart();
         _;
     }
 
@@ -97,12 +83,14 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
 
     function finalizeDebtMigration(
         address account,
+        uint debtAmountMigrated,
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,
         bytes calldata debtPayload,
         bytes calldata escrowPayload
-    ) external onlyMessengerAndL1DebtMigrator {
+    ) external onlyCounterpart {
+        _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, "sUSD", debtAmountMigrated);
         _finalizeDebt(debtPayload);
 
         if (escrowMigrated > 0) {
@@ -115,13 +103,14 @@ contract DebtMigratorOnOptimism is MixinResolver, Owned, IDebtMigrator {
             _synthetixERC20().transfer(account, liquidSnxMigrated);
         }
 
-        emit MigrationFinalized(account, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
+        emit MigrationFinalized(account, debtAmountMigrated, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
     }
 
     /* ========== EVENTS ========== */
 
     event MigrationFinalized(
         address indexed account,
+        uint totalDebtAmountMigrated,
         uint totalDebtSharesMigrated,
         uint totalEscrowMigrated,
         uint totalLiquidBalanceMigrated

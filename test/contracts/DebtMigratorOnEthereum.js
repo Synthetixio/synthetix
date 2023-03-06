@@ -143,7 +143,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 	describe('when migrating debt', () => {
 		let migrateTx;
-		let liquidSNXBalance, escrowedSNXBalance, debtShareBalance;
+		let liquidSNXBalance, escrowedSNXBalance, debtBalanceOf, debtShareBalance;
 		const amountToIssue = toUnit('100');
 		const entryAmount = toUnit('1');
 
@@ -165,6 +165,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 			liquidSNXBalance = await synthetix.balanceOf(owner);
 			escrowedSNXBalance = await rewardEscrowV2.balanceOf(owner);
 			debtShareBalance = await synthetixDebtShare.balanceOf(owner);
+			debtBalanceOf = await synthetix.debtBalanceOf(owner, toBytes32('sUSD'));
 		});
 
 		describe('revert cases', () => {
@@ -190,6 +191,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 			it('zeroes the balances on L1', async () => {
 				assert.bnEqual(await synthetix.collateral(owner), 0);
 				assert.bnEqual(await synthetix.balanceOf(owner), 0);
+				assert.bnEqual(await synthetix.debtBalanceOf(owner, toBytes32('sUSD')), 0);
 				assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
 				assert.bnEqual(await synthetixDebtShare.balanceOf(owner), 0);
 			});
@@ -198,6 +200,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 				const migrateEvent = migrateTx.logs[0];
 				assert.eventEqual(migrateEvent, 'MigrationInitiated', {
 					account: owner,
+					totalDebtAmountMigrated: debtBalanceOf,
 					totalDebtSharesMigrated: debtShareBalance,
 					totalEscrowMigrated: escrowedSNXBalance,
 					totalLiquidBalanceMigrated: liquidSNXBalance,
