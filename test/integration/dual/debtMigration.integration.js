@@ -89,11 +89,11 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		before('when initiation is active', async () => {
-			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(owner);
-			await DebtMigratorOnEthereum.resumeInitiation();
+			await DebtMigratorOnEthereum.connect(owner).resumeInitiation();
 		});
 
 		before('migrateDebt()', async () => {
+			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(user);
 			const tx = await DebtMigratorOnEthereum.migrateDebt(user.address);
 			migrateDebtReceipt = await tx.wait();
 			console.log(
