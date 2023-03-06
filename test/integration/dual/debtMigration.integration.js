@@ -87,8 +87,12 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
 		});
 
-		before('migrateDebt()', async () => {
+		before('when initiation is active', async () => {
 			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(user);
+			await DebtMigratorOnEthereum.resumeInitiation();
+		});
+
+		before('migrateDebt()', async () => {
 			const tx = await DebtMigratorOnEthereum.migrateDebt(user.address);
 			migrateDebtReceipt = await tx.wait();
 			console.log(

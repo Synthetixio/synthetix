@@ -1121,7 +1121,6 @@ const setupAllContracts = async ({
 				'SynthetixDebtShare',
 				'SynthetixBridgeToOptimism',
 				'SystemSettings',
-				'SystemStatus',
 			],
 			mocks: ['ext:Messenger', 'ovm:DebtMigratorOnOptimism'],
 		},

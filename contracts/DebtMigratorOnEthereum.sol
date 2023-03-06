@@ -19,7 +19,6 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetixDebtShare.sol";
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/ISystemStatus.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
@@ -28,6 +27,8 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     using SafeDecimalMath for uint;
 
     bytes32 public constant CONTRACT_NAME = "DebtMigratorOnEthereum";
+
+    bool public initiationActive;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -40,7 +41,6 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_SYSTEM_STATUS = "SystemStatus";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -80,12 +80,12 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         return ISynthetixDebtShare(requireAndGetAddress(CONTRACT_SYNTHETIX_DEBT_SHARE));
     }
 
-    function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEM_STATUS));
-    }
-
     function _synthetixERC20() internal view returns (IERC20) {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
+    function initiatingActive() internal view {
+        require(initiationActive, "Initiation deactivated");
     }
 
     function _getCrossDomainGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
@@ -107,7 +107,7 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](10);
+        bytes32[] memory newAddresses = new bytes32[](9);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
         newAddresses[2] = CONTRACT_ISSUER;
@@ -117,14 +117,13 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         newAddresses[6] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
         newAddresses[7] = CONTRACT_SYNTHETIX_DEBT_SHARE;
         newAddresses[8] = CONTRACT_SYNTHETIX;
-        newAddresses[9] = CONTRACT_SYSTEM_STATUS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== MUTATIVE ========== */
 
     // Ideally, the account should call vest on their escrow before invoking the debt migration to L2.
-    function migrateDebt(address account) public systemActive {
+    function migrateDebt(address account) public requireInitiationActive {
         require(msg.sender == account, "Must be the account owner");
         _migrateDebt(account);
     }
@@ -193,18 +192,32 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         emit MigrationInitiated(_account, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
     }
 
+    /* ========= RESTRICTED ========= */
+
+    function suspendInitiation() external onlyOwner {
+        require(initiationActive, "Initiation suspended");
+        initiationActive = false;
+        emit InitiationSuspended();
+    }
+
+    function resumeInitiation() external onlyOwner {
+        require(!initiationActive, "Initiation not suspended");
+        initiationActive = true;
+        emit InitiationResumed();
+    }
+
     /* ========= MODIFIERS ========= */
 
-    modifier systemActive() {
-        _systemActive();
+    modifier requireInitiationActive() {
+        initiatingActive();
         _;
     }
 
-    function _systemActive() private view {
-        _systemStatus().requireSystemActive();
-    }
-
     /* ========== EVENTS ========== */
+
+    event InitiationSuspended();
+
+    event InitiationResumed();
 
     event MigrationInitiated(
         address indexed account,
@@ -212,6 +225,4 @@ contract DebtMigratorOnEthereum is MixinSystemSettings, Owned {
         uint totalEscrowMigrated,
         uint totalLiquidBalanceMigrated
     );
-
-    event EscrowMigrationDurationUpdated(uint escrowMigrationDuration);
 }

@@ -1,5 +1,5 @@
 const { contract } = require('hardhat');
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toUnit } = require('../utils')();
@@ -9,13 +9,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 	const owner = accounts[1];
 	const user = accounts[2];
 
-	let debtMigratorOnEthereum,
-		resolver,
-		rewardEscrowV2,
-		synths,
-		synthetix,
-		synthetixDebtShare,
-		systemStatus;
+	let debtMigratorOnEthereum, resolver, rewardEscrowV2, synths, synthetix, synthetixDebtShare;
 
 	before(async () => {
 		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
@@ -25,7 +19,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 			RewardEscrowV2: rewardEscrowV2,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
-			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -40,7 +33,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 				'SynthetixBridgeToOptimism',
 				'SynthetixDebtShare',
 				'SystemSettings',
-				'SystemStatus',
 			],
 		}));
 	});
@@ -49,7 +41,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: debtMigratorOnEthereum.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['migrateDebt'],
+			expected: ['migrateDebt', 'resumeInitiation', 'suspendInitiation'],
 		});
 	});
 
@@ -58,9 +50,94 @@ contract('DebtMigratorOnEthereum', accounts => {
 			const ownerAddress = await debtMigratorOnEthereum.owner();
 			assert.equal(ownerAddress, owner);
 		});
+
 		it('should set resolver on constructor', async () => {
 			const resolverAddress = await debtMigratorOnEthereum.resolver();
 			assert.equal(resolverAddress, resolver.address);
+		});
+
+		it('initiation is not active by default', async () => {
+			assert.equal(await debtMigratorOnEthereum.initiationActive(), false);
+		});
+	});
+
+	describe('suspendInitiation', () => {
+		beforeEach(async () => {
+			// first resume initiations
+			await debtMigratorOnEthereum.resumeInitiation({ from: owner });
+		});
+		describe('failure modes', () => {
+			it('reverts when not invoked by the owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: debtMigratorOnEthereum.suspendInitiation,
+					args: [],
+					accounts,
+					reason: 'Only the contract owner may perform this action',
+					address: owner,
+				});
+			});
+
+			it('reverts when initiation is already suspended', async () => {
+				await debtMigratorOnEthereum.suspendInitiation({ from: owner });
+
+				await assert.revert(
+					debtMigratorOnEthereum.suspendInitiation({ from: owner }),
+					'Initiation suspended'
+				);
+			});
+		});
+
+		describe('when invoked by the owner', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await debtMigratorOnEthereum.suspendInitiation({ from: owner });
+			});
+
+			it('and initiationActive is false', async () => {
+				assert.equal(await debtMigratorOnEthereum.initiationActive(), false);
+			});
+
+			it('emits an InitiationSuspended event', async () => {
+				assert.eventEqual(txn, 'InitiationSuspended', []);
+			});
+		});
+	});
+
+	describe('resumeInitiation', () => {
+		describe('failure modes', () => {
+			it('reverts when not invoked by the owner', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: debtMigratorOnEthereum.resumeInitiation,
+					args: [],
+					accounts,
+					reason: 'Only the contract owner may perform this action',
+					address: owner,
+				});
+			});
+
+			it('reverts when initiation is not suspended', async () => {
+				await assert.revert(
+					debtMigratorOnEthereum.resumeInitiation({ from: owner }),
+					'Initiation not suspended'
+				);
+			});
+		});
+
+		describe('when invoked by the owner', () => {
+			let txn;
+			beforeEach(async () => {
+				await debtMigratorOnEthereum.suspendInitiation({ from: owner });
+
+				txn = await debtMigratorOnEthereum.resumeInitiation({ from: owner });
+			});
+
+			it('initiations are active again', async () => {
+				assert.equal(await debtMigratorOnEthereum.initiationActive(), true);
+			});
+
+			it('emits an InitiationResumed event', async () => {
+				assert.eventEqual(txn, 'InitiationResumed', []);
+			});
 		});
 	});
 
@@ -98,15 +175,15 @@ contract('DebtMigratorOnEthereum', accounts => {
 				);
 			});
 
-			it('cannot migrate if the system is suspended', async () => {
-				await systemStatus.suspendSystem(1, { from: owner });
+			it('cannot migrate if initiation is not active', async () => {
+				await debtMigratorOnEthereum.suspendInitiation({ from: owner });
 				await assert.revert(debtMigratorOnEthereum.migrateDebt(owner, { from: user }));
 			});
 		});
 
-		describe('migrateDebt()', () => {
-			before('resume and initiate the migration', async () => {
-				await systemStatus.resumeSystem({ from: owner });
+		describe('succeeds if initiation is active', () => {
+			before('resume and invoke the migration', async () => {
+				await debtMigratorOnEthereum.resumeInitiation({ from: owner });
 				migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
 			});
 
