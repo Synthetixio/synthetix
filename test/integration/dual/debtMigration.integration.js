@@ -25,12 +25,13 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		initialLiquidBalanceL1,
 		initialDebtShareBalanceL1;
 
+	let userLiquidBalanceL2, userCollateralBalanceL2, userDebtShareBalanceL2, rewardEscrowBalanceL2;
+
 	let postParametersL1 = {};
 	let escrowEntriesData = {};
 	const escrowNum = 26;
 	const escrowBatches = 2;
 	const numExtraEntries = 0;
-	const totalEntriesCreated = escrowNum * escrowBatches + numExtraEntries;
 	const SNXAmount = ethers.utils.parseEther('1000');
 	const amountToIssue = ethers.utils.parseEther('100');
 
@@ -93,7 +94,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		console.log(`debtMigration: issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 	});
 
-	before('record initial state', async () => {
+	before('record balances on L1', async () => {
 		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user: user });
 		initialParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user: user });
 		initialCollateralBalanceL1 = await Synthetix.collateral(user.address);
@@ -101,19 +102,17 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		initialDebtShareBalanceL1 = await SynthetixDebtShare.balanceOf(user.address);
 	});
 
+	before('record balances on L2', async () => {
+		({ RewardEscrowV2, Synthetix, SynthetixDebtShare } = ctx.l2.contracts);
+
+		userLiquidBalanceL2 = await Synthetix.balanceOf(user.address);
+		userCollateralBalanceL2 = await Synthetix.collateral(user.address);
+		userDebtShareBalanceL2 = await SynthetixDebtShare.balanceOf(user.address);
+		rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
+	});
+
 	describe('when a user migrates their debt', () => {
 		let migrateDebtReceipt;
-		let userLiquidBalanceL2;
-		let userCollateralBalanceL2;
-		let userDebtShareBalanceL2;
-		let rewardEscrowBalanceL2;
-
-		before('record current values', async () => {
-			userLiquidBalanceL2 = await Synthetix.balanceOf(user.address);
-			userCollateralBalanceL2 = await Synthetix.collateral(user.address);
-			userDebtShareBalanceL2 = await SynthetixDebtShare.balanceOf(user.address);
-			rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
-		});
 
 		before('when initiation is active', async () => {
 			await DebtMigratorOnEthereum.connect(owner).resumeInitiation();
@@ -137,10 +136,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 				initialParametersL1.escrowedBalance.sub(initialParametersL1.userEscrowedBalance)
 			);
 			assert.bnEqual(
-				postParametersL1.userNumVestingEntries,
-				initialParametersL1.userNumVestingEntries.sub(totalEntriesCreated)
-			);
-			assert.bnEqual(
 				postParametersL1.userEscrowedBalance,
 				initialParametersL1.userEscrowedBalance.sub(initialParametersL1.userEscrowedBalance)
 			);
@@ -153,6 +148,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		it('should update the L1 Synthetix state', async () => {
+			({ Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
+
 			assert.bnEqual(await Synthetix.collateral(user.address), 0);
 			assert.bnEqual(await Synthetix.balanceOf(user.address), 0);
 			assert.bnEqual(await SynthetixDebtShare.balanceOf(user.address), 0);
@@ -181,10 +178,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
 				);
-				assert.bnEqual(
-					postParametersL2.userNumVestingEntries,
-					initialParametersL2.userNumVestingEntries.add(totalEntriesCreated)
-				);
+				assert.bnEqual(postParametersL2.userNumVestingEntries, 1); // creates one entry on L2 with total escrow amount
 				assert.bnEqual(
 					postParametersL2.userEscrowedBalance,
 					initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)
