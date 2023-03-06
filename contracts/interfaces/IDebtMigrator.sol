@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 interface IDebtMigrator {
     function finalizeDebtMigration(
         address account,
-        uint debtAmountMigrated,
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,

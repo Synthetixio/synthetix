@@ -89,17 +89,7 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
 
     /* ======== INTERNALS ======== */
 
-    function _incrementDebtTransferCounter(
-        bytes32 group,
-        uint debtInUSD,
-        uint debtShares
-    ) internal {
-        // increment debt value in USD
-        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, sUSD));
-        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
-        flexibleStorage().setUIntValue(CONTRACT_NAME(), debtAmountKey, currentDebtInUSD.add(debtInUSD));
-
-        // increment number of debt shares
+    function _incrementDebtTransferCounter(bytes32 group, uint debtShares) internal {
         bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, SDS));
         uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
         flexibleStorage().setUIntValue(CONTRACT_NAME(), debtSharesKey, currentDebtShares.add(debtShares));

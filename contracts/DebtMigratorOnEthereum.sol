@@ -88,12 +88,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     function debtTransferSent() external view returns (uint) {
-        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, sUSD));
-        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
-        return currentDebtInUSD;
-    }
-
-    function debtSharesSent() external view returns (uint) {
         bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, SDS));
         uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
         return currentDebtShares;
@@ -115,14 +109,13 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         _liquidatorRewards().getReward(_account);
 
         // First, remove all debt shares on L1
-        uint debtAmountInUSD = _issuer().debtBalanceOf(_account, sUSD);
         ISynthetixDebtShare sds = _synthetixDebtShare();
         uint totalDebtShares = sds.balanceOf(_account);
         require(totalDebtShares > 0, "No debt to migrate");
-        _issuer().modifyDebtSharesForMigration(_account, totalDebtShares);
 
-        // Increment the in-flight debt counter by their debt balance and shares
-        _incrementDebtTransferCounter(DEBT_TRANSFER_SENT, debtAmountInUSD, totalDebtShares);
+        // Increment the in-flight debt counter by their SDS balance
+        _incrementDebtTransferCounter(DEBT_TRANSFER_SENT, totalDebtShares);
+        _issuer().modifyDebtSharesForMigration(_account, totalDebtShares);
 
         // Deposit all of the liquid & revoked escrowed SNX to the migrator on L2
         (uint totalEscrowRevoked, uint totalLiquidBalance) =
@@ -164,7 +157,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
             abi.encodeWithSelector(
                 debtMigratorOnOptimism.finalizeDebtMigration.selector,
                 _account,
-                debtAmountInUSD,
                 totalDebtShares,
                 totalEscrowRevoked,
                 totalLiquidBalance,
@@ -173,7 +165,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
             );
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
-        emit MigrationInitiated(_account, debtAmountInUSD, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
+        emit MigrationInitiated(_account, totalDebtShares, totalEscrowRevoked, totalLiquidBalance);
     }
 
     /* ========= RESTRICTED ========= */
@@ -205,7 +197,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
 
     event MigrationInitiated(
         address indexed account,
-        uint totalDebtAmountMigrated,
         uint totalDebtSharesMigrated,
         uint totalEscrowMigrated,
         uint totalLiquidBalanceMigrated

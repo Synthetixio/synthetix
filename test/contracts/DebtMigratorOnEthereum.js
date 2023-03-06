@@ -163,8 +163,8 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 	describe('when migrating debt', () => {
 		let migrateTx;
-		let debtTransferSentBefore, debtSharesSentBefore;
-		let liquidSNXBalance, escrowedSNXBalance, debtBalanceOf, debtShareBalance;
+		let debtTransferSentBefore;
+		let liquidSNXBalance, escrowedSNXBalance, debtShareBalance;
 		const amountToIssue = toUnit('100');
 		const entryAmount = toUnit('50');
 
@@ -186,9 +186,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 			liquidSNXBalance = await synthetix.balanceOf(owner);
 			escrowedSNXBalance = await rewardEscrowV2.balanceOf(owner);
 			debtShareBalance = await synthetixDebtShare.balanceOf(owner);
-			debtBalanceOf = await synthetix.debtBalanceOf(owner, sUSD);
 			debtTransferSentBefore = await debtMigratorOnEthereum.debtTransferSent();
-			debtSharesSentBefore = await debtMigratorOnEthereum.debtSharesSent();
 		});
 
 		describe('revert cases', () => {
@@ -211,12 +209,9 @@ contract('DebtMigratorOnEthereum', accounts => {
 				migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
 			});
 
-			it('increments the debt counters', async () => {
+			it('increments the debt counter', async () => {
 				const debtTransferSentAfter = await debtMigratorOnEthereum.debtTransferSent();
-				assert.bnEqual(debtTransferSentAfter, debtTransferSentBefore.add(debtBalanceOf));
-
-				const debtSharesSentAfter = await debtMigratorOnEthereum.debtSharesSent();
-				assert.bnEqual(debtSharesSentAfter, debtSharesSentBefore.add(debtShareBalance));
+				assert.bnEqual(debtTransferSentAfter, debtTransferSentBefore.add(debtShareBalance));
 			});
 
 			it('zeroes the balances on L1', async () => {
@@ -231,7 +226,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 				const migrateEvent = migrateTx.logs[0];
 				assert.eventEqual(migrateEvent, 'MigrationInitiated', {
 					account: owner,
-					totalDebtAmountMigrated: debtBalanceOf,
 					totalDebtSharesMigrated: debtShareBalance,
 					totalEscrowMigrated: escrowedSNXBalance,
 					totalLiquidBalanceMigrated: liquidSNXBalance,

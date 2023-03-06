@@ -30,12 +30,6 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     }
 
     function debtTransferReceived() external view returns (uint) {
-        bytes32 debtAmountKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, sUSD));
-        uint currentDebtInUSD = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtAmountKey);
-        return currentDebtInUSD;
-    }
-
-    function debtSharesReceived() external view returns (uint) {
         bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, SDS));
         uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
         return currentDebtShares;
@@ -91,14 +85,13 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
 
     function finalizeDebtMigration(
         address account,
-        uint debtAmountMigrated,
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,
         bytes calldata debtPayload,
         bytes calldata escrowPayload
     ) external onlyCounterpart {
-        _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtAmountMigrated, debtSharesMigrated);
+        _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtSharesMigrated);
         _finalizeDebt(debtPayload);
 
         if (escrowMigrated > 0) {
@@ -111,14 +104,13 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
             _synthetixERC20().transfer(account, liquidSnxMigrated);
         }
 
-        emit MigrationFinalized(account, debtAmountMigrated, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
+        emit MigrationFinalized(account, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
     }
 
     /* ========== EVENTS ========== */
 
     event MigrationFinalized(
         address indexed account,
-        uint totalDebtAmountMigrated,
         uint totalDebtSharesMigrated,
         uint totalEscrowMigrated,
         uint totalLiquidBalanceMigrated
