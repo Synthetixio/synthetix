@@ -1,34 +1,22 @@
 const { contract } = require('hardhat');
-const {
-	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
-	updateAggregatorRates,
-	setupPriceAggregators,
-} = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 contract('DebtMigratorOnEthereum', accounts => {
-	const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
+	const [sUSD] = ['sUSD'].map(toBytes32);
 	const owner = accounts[1];
 	const user = accounts[2];
 
-	let debtMigratorOnEthereum,
-		exchangeRates,
-		resolver,
-		rewardEscrowV2,
-		synths,
-		synthetix,
-		synthetixDebtShare;
+	let debtMigratorOnEthereum, resolver, rewardEscrowV2, synths, synthetix, synthetixDebtShare;
 
 	before(async () => {
 		synths = ['sUSD', 'sETH'];
 		({
 			AddressResolver: resolver,
 			DebtMigratorOnEthereum: debtMigratorOnEthereum,
-			ExchangeRates: exchangeRates,
 			RewardEscrowV2: rewardEscrowV2,
 			Synthetix: synthetix,
 			SynthetixDebtShare: synthetixDebtShare,
@@ -38,7 +26,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 			contracts: [
 				'AddressResolver',
 				'DebtMigratorOnEthereum',
-				'ExchangeRates',
 				'Issuer',
 				'Liquidator',
 				'LiquidatorRewards',
@@ -49,12 +36,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 				'SystemSettings',
 			],
 		}));
-
-		await setupPriceAggregators(exchangeRates, owner, [sETH]);
-	});
-
-	before(async () => {
-		await updateAggregatorRates(exchangeRates, null, [sETH], ['6'].map(toUnit));
 	});
 
 	it('ensure only expected functions are mutative', async () => {
@@ -209,7 +190,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 				migrateTx = await debtMigratorOnEthereum.migrateDebt(owner, { from: owner });
 			});
 
-			it('increments the debt counter', async () => {
+			it('increments the debt sent counter', async () => {
 				const debtTransferSentAfter = await debtMigratorOnEthereum.debtTransferSent();
 				assert.bnEqual(debtTransferSentAfter, debtTransferSentBefore.add(debtShareBalance));
 			});

@@ -1,27 +1,58 @@
-const { contract } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
+const { toBytes32 } = require('../..');
+const { toUnit } = require('../utils')();
+const { smock } = require('@defi-wonderland/smock');
 
 contract('DebtMigratorOnOptimism', accounts => {
 	const owner = accounts[1];
 	const user = accounts[2];
+	const mockMessenger = accounts[3];
+	const mockL1Migrator = accounts[4];
 	const mockedPayloadData = '0xdeadbeef';
+	const oneWeek = 604800;
 
-	let debtMigratorOnOptimism;
+	let debtMigratorOnOptimism, flexibleStorage, messenger, resolver, synthetix;
+
+	const getDataOfEncodedFncCall = ({ c, fnc, args = [] }) =>
+		web3.eth.abi.encodeFunctionCall(
+			artifacts.require(c).abi.find(({ name }) => name === fnc),
+			args
+		);
 
 	before(async () => {
-		({ DebtMigratorOnOptimism: debtMigratorOnOptimism } = await setupAllContracts({
+		({
+			AddressResolver: resolver,
+			DebtMigratorOnOptimism: debtMigratorOnOptimism,
+			FlexibleStorage: flexibleStorage,
+			Synthetix: synthetix,
+		} = await setupAllContracts({
 			accounts,
 			contracts: [
 				'AddressResolver',
 				'DebtMigratorOnOptimism',
+				'FlexibleStorage',
 				'Issuer',
 				'RewardEscrowV2',
 				'Synthetix',
 				'SystemSettings',
 			],
 		}));
+
+		messenger = await smock.fake('iAbs_BaseCrossDomainMessenger', {
+			address: mockMessenger,
+		});
+
+		await resolver.importAddresses(
+			['ext:Messenger', 'base:DebtMigratorOnEthereum', 'FlexibleStorage'].map(toBytes32),
+			[mockMessenger, mockL1Migrator, flexibleStorage.address],
+			{
+				from: owner,
+			}
+		);
+		await debtMigratorOnOptimism.rebuildCache({ from: owner });
 	});
 
 	it('ensure only expected functions are mutative', async () => {
@@ -37,22 +68,110 @@ contract('DebtMigratorOnOptimism', accounts => {
 			const ownerAddress = await debtMigratorOnOptimism.owner();
 			assert.equal(ownerAddress, owner);
 		});
+
+		it('should set resolver on constructor', async () => {
+			const resolverAddress = await debtMigratorOnOptimism.resolver();
+			assert.equal(resolverAddress, resolver.address);
+		});
 	});
 
-	describe('when attempting to finalize a migration from an account that is not the Optimism Messenger', () => {
-		it('reverts with the expected error', async () => {
-			await assert.revert(
-				debtMigratorOnOptimism.finalizeDebtMigration(
-					user, // Any address
-					0,
-					0,
-					0,
-					mockedPayloadData, // Any data
-					mockedPayloadData, // Any data
-					{ from: owner }
-				),
-				'Sender is not the messenger'
+	describe('failure modes', () => {
+		beforeEach(async () => {
+			messenger.xDomainMessageSender.returns(() => owner);
+		});
+
+		describe('should only allow the relayer (aka messenger) to call finalizeDebtMigration', () => {
+			it('reverts with the expected error', async () => {
+				await assert.revert(
+					debtMigratorOnOptimism.finalizeDebtMigration(
+						user, // Any address
+						0,
+						0,
+						0,
+						mockedPayloadData, // Any data
+						mockedPayloadData, // Any data
+						{ from: owner }
+					),
+					'Sender is not the messenger'
+				);
+			});
+		});
+
+		describe('should only allow the L1 migrator to invoke finalizeDebtMigration() via the messenger', () => {
+			it('reverts with the expected error', async () => {
+				await assert.revert(
+					debtMigratorOnOptimism.finalizeDebtMigration(
+						user, // Any address
+						1,
+						1,
+						1,
+						mockedPayloadData, // Any data
+						mockedPayloadData, // Any data
+						{ from: mockMessenger }
+					),
+					'L1 sender is not the debt migrator'
+				);
+			});
+		});
+	});
+
+	describe('when invoked by the L1 Migrator', () => {
+		let migrationFinalizedTx;
+		let expectedDebtData, expectedEscrowData;
+		const liquidSNXAmount = toUnit('500');
+		const debtShareAmount = toUnit('100');
+		const escrowAmount = toUnit('50');
+		before(async () => {
+			// Make sure the migrator has enough SNX
+			await resolver.importAddresses(['Depot'].map(toBytes32), [owner], {
+				from: owner,
+			});
+			await synthetix.transfer(debtMigratorOnOptimism.address, escrowAmount.add(liquidSNXAmount), {
+				from: owner,
+			});
+		});
+
+		beforeEach(async () => {
+			messenger.xDomainMessageSender.returns(() => mockL1Migrator);
+
+			expectedDebtData = getDataOfEncodedFncCall({
+				c: 'Issuer',
+				fnc: 'modifyDebtSharesForMigration',
+				args: [user, debtShareAmount],
+			});
+
+			expectedEscrowData = getDataOfEncodedFncCall({
+				c: 'RewardEscrowV2',
+				fnc: 'createEscrowEntry',
+				args: [user, escrowAmount, oneWeek],
+			});
+		});
+
+		it('succeeds', async () => {
+			migrationFinalizedTx = await debtMigratorOnOptimism.finalizeDebtMigration(
+				user,
+				debtShareAmount,
+				escrowAmount,
+				liquidSNXAmount,
+				expectedDebtData,
+				expectedEscrowData,
+				{ from: mockMessenger }
 			);
+		});
+
+		it('increments the debt received counter', async () => {
+			const debtTransferSentAfter = await debtMigratorOnOptimism.debtTransferReceived();
+			assert.bnEqual(debtTransferSentAfter, debtShareAmount);
+		});
+
+		it('emits a MigrationFinalized event', async () => {
+			const migrateEvent = migrationFinalizedTx.logs[0];
+			assert.eventEqual(migrateEvent, 'MigrationFinalized', {
+				account: user,
+				totalDebtSharesMigrated: debtShareAmount,
+				totalEscrowMigrated: escrowAmount,
+				totalLiquidBalanceMigrated: liquidSNXAmount,
+			});
 		});
 	});
 });

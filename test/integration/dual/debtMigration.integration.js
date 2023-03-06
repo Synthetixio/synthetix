@@ -39,6 +39,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		} = ctx.l1.contracts);
 		user = ctx.l1.users.someUser;
 		owner = ctx.l1.users.owner;
+		mockMigrator = ctx.l1.users.user6;
 	});
 
 	before('setup mock debt migrator on L2', async () => {
