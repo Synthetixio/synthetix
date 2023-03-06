@@ -656,8 +656,8 @@
 			"sip": 237,
 			"layer": "both",
 			"sources": {
-				"base": ["DebtMigratorOnEthereum", "Issuer", "Synthetix"],
-				"ovm": ["DebtMigratorOnOptimism", "Issuer", "Synthetix"]
+				"base": ["Issuer", "Synthetix"],
+				"ovm": ["Issuer", "Synthetix"]
 			}
 		},
 		{
