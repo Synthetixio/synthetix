@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const { toBytes32 } = require('../../../index');
 const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
 const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
@@ -10,8 +11,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	let owner, user;
-	let DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare;
+	let owner, user, mockMigrator;
+	let AddressResolver, DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare;
 
 	let initialParametersL1,
 		initialParametersL2,
@@ -29,9 +30,26 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const amountToIssue = ethers.utils.parseEther('100');
 
 	before('target contracts and users', () => {
-		({ Synthetix, RewardEscrowV2, SynthetixDebtShare, DebtMigratorOnEthereum } = ctx.l1.contracts);
+		({
+			AddressResolver,
+			DebtMigratorOnEthereum,
+			RewardEscrowV2,
+			Synthetix,
+			SynthetixDebtShare,
+		} = ctx.l1.contracts);
 		user = ctx.l1.users.someUser;
 		owner = ctx.l1.users.owner;
+	});
+
+	before('setup mock debt migrator on L2', async () => {
+		AddressResolver = AddressResolver.connect(owner);
+		await (
+			await AddressResolver.importAddresses(
+				[toBytes32('ovm:DebtMigratorOnOptimism')],
+				[mockMigrator.address]
+			)
+		).wait();
+		await (await DebtMigratorOnEthereum.connect(owner).rebuildCache()).wait();
 	});
 
 	before('ensure the user has enough SNX', async () => {
