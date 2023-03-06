@@ -14,7 +14,13 @@ contract('DebtMigratorOnOptimism', accounts => {
 	const mockedPayloadData = '0xdeadbeef';
 	const oneWeek = 604800;
 
-	let debtMigratorOnOptimism, flexibleStorage, messenger, resolver, synthetix;
+	let debtMigratorOnOptimism,
+		flexibleStorage,
+		messenger,
+		resolver,
+		synthetix,
+		synthetixDebtShare,
+		rewardEscrowV2;
 
 	const getDataOfEncodedFncCall = ({ c, fnc, args = [] }) =>
 		web3.eth.abi.encodeFunctionCall(
@@ -28,6 +34,8 @@ contract('DebtMigratorOnOptimism', accounts => {
 			DebtMigratorOnOptimism: debtMigratorOnOptimism,
 			FlexibleStorage: flexibleStorage,
 			Synthetix: synthetix,
+			SynthetixDebtShare: synthetixDebtShare,
+			RewardEscrowV2: rewardEscrowV2,
 		} = await setupAllContracts({
 			accounts,
 			contracts: [
@@ -118,6 +126,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 	describe('when invoked by the L1 Migrator', () => {
 		let migrationFinalizedTx;
 		let expectedDebtData, expectedEscrowData;
+		let liquidSNXBalanceBefore, escrowedSNXBalanceBefore, debtShareBalanceBefore;
 		const liquidSNXAmount = toUnit('500');
 		const debtShareAmount = toUnit('100');
 		const escrowAmount = toUnit('50');
@@ -147,6 +156,12 @@ contract('DebtMigratorOnOptimism', accounts => {
 			});
 		});
 
+		before('record balances', async () => {
+			liquidSNXBalanceBefore = await synthetix.balanceOf(user);
+			escrowedSNXBalanceBefore = await rewardEscrowV2.balanceOf(user);
+			debtShareBalanceBefore = await synthetixDebtShare.balanceOf(user);
+		});
+
 		it('succeeds', async () => {
 			migrationFinalizedTx = await debtMigratorOnOptimism.finalizeDebtMigration(
 				user,
@@ -172,6 +187,24 @@ contract('DebtMigratorOnOptimism', accounts => {
 				totalEscrowMigrated: escrowAmount,
 				totalLiquidBalanceMigrated: liquidSNXAmount,
 			});
+		});
+
+		it('updates the L2 state', async () => {
+			// updates balances
+			const liquidSNXBalanceAfter = await synthetix.balanceOf(user);
+			const escrowedSNXBalanceAfter = await rewardEscrowV2.balanceOf(user);
+			const debtShareBalanceAfter = await synthetixDebtShare.balanceOf(user);
+			assert.bnEqual(liquidSNXBalanceAfter, liquidSNXBalanceBefore.add(liquidSNXAmount));
+			assert.bnEqual(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount));
+			assert.bnEqual(debtShareBalanceAfter, debtShareBalanceBefore.add(debtShareAmount));
+
+			// creates a single escrow entry with the total escrow amount
+			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 1);
+			assert.bnEqual(
+				(await rewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount,
+				escrowAmount
+			);
+			assert.bnEqual(await rewardEscrowV2.totalEscrowedAccountBalance(user), escrowAmount);
 		});
 	});
 });
