@@ -11,8 +11,13 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	let owner, user, mockMigrator;
-	let AddressResolver, DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare;
+	let owner, user;
+	let AddressResolver,
+		DebtMigratorOnEthereum,
+		DebtMigratorOnOptimism,
+		RewardEscrowV2,
+		Synthetix,
+		SynthetixDebtShare;
 
 	let initialParametersL1,
 		initialParametersL2,
@@ -30,27 +35,34 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const amountToIssue = ethers.utils.parseEther('100');
 
 	before('target contracts and users', () => {
-		({
-			AddressResolver,
-			DebtMigratorOnEthereum,
-			RewardEscrowV2,
-			Synthetix,
-			SynthetixDebtShare,
-		} = ctx.l1.contracts);
+		({ DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
+		({ DebtMigratorOnOptimism } = ctx.l2.contracts);
 		user = ctx.l1.users.someUser;
 		owner = ctx.l1.users.owner;
-		mockMigrator = ctx.l1.users.user6;
 	});
 
-	before('setup mock debt migrator on L2', async () => {
+	before('ensure the migrators are connected', async () => {
+		// Configure L1.
+		({ AddressResolver } = ctx.l1.contracts);
 		AddressResolver = AddressResolver.connect(owner);
 		await (
 			await AddressResolver.importAddresses(
 				[toBytes32('ovm:DebtMigratorOnOptimism')],
-				[mockMigrator.address]
+				[DebtMigratorOnOptimism.address]
 			)
 		).wait();
 		await (await DebtMigratorOnEthereum.connect(owner).rebuildCache()).wait();
+
+		// Configure L2.
+		({ AddressResolver } = ctx.l2.contracts);
+		AddressResolver = AddressResolver.connect(ctx.l2.users.owner);
+		await (
+			await AddressResolver.importAddresses(
+				[toBytes32('base:DebtMigratorOnEthereum')],
+				[DebtMigratorOnEthereum.address]
+			)
+		).wait();
+		await (await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache()).wait();
 	});
 
 	before('ensure the user has enough SNX', async () => {
@@ -93,7 +105,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		initialDebtShareBalanceL1 = await SynthetixDebtShare.balanceOf(user.address);
 	});
 
-	describe('when the user migrates their debt', () => {
+	describe('when a user migrates their debt', () => {
 		let migrateDebtReceipt;
 		let userLiquidBalanceL2;
 		let userCollateralBalanceL2;
@@ -111,7 +123,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			await DebtMigratorOnEthereum.connect(owner).resumeInitiation();
 		});
 
-		before('migrateDebt()', async () => {
+		before('invoke migrateDebt()', async () => {
 			DebtMigratorOnEthereum = DebtMigratorOnEthereum.connect(user);
 			const tx = await DebtMigratorOnEthereum.migrateDebt(user.address);
 			migrateDebtReceipt = await tx.wait();
@@ -123,13 +135,25 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		it('should update the L1 escrow state', async () => {
 			postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user: user });
 
+			// zeroes out the user's escrow states on L1
 			assert.bnEqual(
 				postParametersL1.escrowedBalance,
-				postParametersL1.escrowedBalance.sub(initialParametersL1.escrowedBalance)
+				initialParametersL1.escrowedBalance.sub(initialParametersL1.userEscrowedBalance)
 			);
-			assert.bnEqual(postParametersL1.userNumVestingEntries, 0);
-			assert.bnEqual(postParametersL1.userEscrowedBalance, 0);
-			assert.bnEqual(postParametersL1.userVestedAccountBalance, 0);
+			assert.bnEqual(
+				postParametersL1.userNumVestingEntries,
+				initialParametersL1.userNumVestingEntries.sub(totalEntriesCreated)
+			);
+			assert.bnEqual(
+				postParametersL1.userEscrowedBalance,
+				initialParametersL1.userEscrowedBalance.sub(initialParametersL1.userEscrowedBalance)
+			);
+			assert.bnEqual(
+				postParametersL1.userVestedAccountBalance,
+				initialParametersL1.userVestedAccountBalance.sub(
+					initialParametersL1.userVestedAccountBalance
+				)
+			);
 		});
 
 		it('should update the L1 Synthetix state', async () => {
@@ -151,7 +175,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			before('target contracts and users', () => {
-				({ Synthetix, RewardEscrowV2, SynthetixDebtShare } = ctx.l2.contracts);
+				({ RewardEscrowV2, Synthetix, SynthetixDebtShare } = ctx.l2.contracts);
 				user = ctx.l2.users.someUser;
 			});
 
