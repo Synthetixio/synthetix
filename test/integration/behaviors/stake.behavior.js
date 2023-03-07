@@ -25,21 +25,17 @@ function itCanStake({ ctx }) {
 			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 			const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
 
-			await (await aggregator.setDecimals(27)).wait();
+			await aggregator.setDecimals(27);
 			const { timestamp } = await ctx.provider.getBlock();
 			// debt share ratio of 0.5
-			await (
-				await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp)
-			).wait();
+			await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp);
 
 			AddressResolver = AddressResolver.connect(owner);
-			await (
-				await AddressResolver.importAddresses(
-					[toBytes32('ext:AggregatorDebtRatio')],
-					[aggregator.address]
-				)
-			).wait();
-			await (await Issuer.connect(owner).rebuildCache()).wait();
+			await AddressResolver.importAddresses(
+				[toBytes32('ext:AggregatorDebtRatio')],
+				[aggregator.address]
+			);
+			await Issuer.connect(owner).rebuildCache();
 		});
 
 		before('ensure the user has enough SNX', async () => {
