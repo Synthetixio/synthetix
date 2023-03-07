@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
-const { assert } = require('../../contracts/common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
 const { createMockAggregatorFactory } = require('../../utils/index')();
@@ -10,9 +10,12 @@ function itCanStake({ ctx }) {
 		const SNXAmount = ethers.utils.parseEther('1000');
 		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
+		let tx;
 		let user, owner;
 		let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer;
 		let balancesUSD, debtsUSD;
+
+		addSnapshotBeforeRestoreAfter();
 
 		before('target contracts and users', () => {
 			({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer } = ctx.contracts);
@@ -25,17 +28,23 @@ function itCanStake({ ctx }) {
 			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 			const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
 
-			await aggregator.setDecimals(27);
+			tx = await aggregator.setDecimals(27);
+			await tx.wait();
+
 			const { timestamp } = await ctx.provider.getBlock();
 			// debt share ratio of 0.5
-			await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp);
+			tx = await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp);
+			await tx.wait();
 
 			AddressResolver = AddressResolver.connect(owner);
-			await AddressResolver.importAddresses(
+			tx = await AddressResolver.importAddresses(
 				[toBytes32('ext:AggregatorDebtRatio')],
 				[aggregator.address]
 			);
-			await Issuer.connect(owner).rebuildCache();
+			await tx.wait();
+
+			tx = await Issuer.connect(owner).rebuildCache();
+			await tx.wait();
 		});
 
 		before('ensure the user has enough SNX', async () => {

@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
 const { approveIfNeeded } = require('../utils/approve');
-const { assert } = require('../../contracts/common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL2 } = require('../utils/optimism');
@@ -11,6 +11,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
+	let tx;
 	let owner, user;
 	let AddressResolver,
 		DebtMigratorOnEthereum,
@@ -35,6 +36,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const SNXAmount = ethers.utils.parseEther('1000');
 	const amountToIssue = ethers.utils.parseEther('100');
 
+	addSnapshotBeforeRestoreAfter();
+
 	before('target contracts and users', () => {
 		({ DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
 		({ DebtMigratorOnOptimism } = ctx.l2.contracts);
@@ -42,24 +45,32 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		owner = ctx.l1.users.owner;
 	});
 
-	before('ensure the migrators are connected', async () => {
+	before('ensure the migrator is connected on L1', async () => {
 		// Configure L1.
 		({ AddressResolver } = ctx.l1.contracts);
 		AddressResolver = AddressResolver.connect(owner);
-		await AddressResolver.importAddresses(
+		tx = await AddressResolver.importAddresses(
 			[toBytes32('ovm:DebtMigratorOnOptimism')],
 			[DebtMigratorOnOptimism.address]
 		);
-		await DebtMigratorOnEthereum.connect(owner).rebuildCache();
+		await tx.wait();
 
+		tx = await DebtMigratorOnEthereum.connect(owner).rebuildCache();
+		await tx.wait();
+	});
+
+	before('ensure the migrator is connected on L2', async () => {
 		// Configure L2.
 		({ AddressResolver } = ctx.l2.contracts);
 		AddressResolver = AddressResolver.connect(ctx.l2.users.owner);
-		await AddressResolver.importAddresses(
+		tx = await AddressResolver.importAddresses(
 			[toBytes32('base:DebtMigratorOnEthereum')],
 			[DebtMigratorOnEthereum.address]
 		);
-		await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
+		await tx.wait();
+
+		tx = await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
+		await tx.wait();
 	});
 
 	before('ensure the user has enough SNX', async () => {
