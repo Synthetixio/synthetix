@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
-const { assert } = require('../../contracts/common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipMinimumStakeTime } = require('../utils/skip');
 const { createMockAggregatorFactory } = require('../../utils/index')();
@@ -14,6 +14,8 @@ function itCanStake({ ctx }) {
 		let user, owner;
 		let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer;
 		let balancesUSD, debtsUSD;
+
+		addSnapshotBeforeRestoreAfter();
 
 		before('target contracts and users', () => {
 			({ AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer } = ctx.contracts);
