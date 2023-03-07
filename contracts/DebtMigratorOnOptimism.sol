@@ -43,13 +43,6 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         return _debtMigratorOnEthereum();
     }
 
-    function onlyAllowFromCounterpart() internal view {
-        // ensure function only callable from the L2 bridge via messenger (aka relayer)
-        iAbs_BaseCrossDomainMessenger _messenger = _messenger();
-        require(msg.sender == address(_messenger), "Only the relayer can call this");
-        require(_messenger.xDomainMessageSender() == _counterpart(), "Only a counterpart migrator can invoke");
-    }
-
     /* ========== MUTATIVE ============ */
 
     function _finalizeDebt(bytes memory _debtPayload) private {
@@ -73,7 +66,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     function _onlyAllowFromCounterpart() internal view {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
         require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == _debtMigratorOnEthereum(), "L1 sender is not the debt migrator");
+        require(messenger.xDomainMessageSender() == _counterpart(), "L1 sender is not the debt migrator");
     }
 
     modifier onlyCounterpart() {

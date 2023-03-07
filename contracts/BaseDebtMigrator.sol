@@ -29,7 +29,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
@@ -45,10 +44,6 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
 
     /* ========== VIEWS ========== */
 
-    function _flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
-    }
-
     function _issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
@@ -61,22 +56,17 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
-    function _synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
     function _synthetixERC20() internal view returns (IERC20) {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_REWARDESCROW;
-        newAddresses[3] = CONTRACT_ISSUER;
-        newAddresses[4] = CONTRACT_FLEXIBLESTORAGE;
+        newAddresses[1] = CONTRACT_REWARDESCROW;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_SYNTHETIX;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
