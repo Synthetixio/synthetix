@@ -41,7 +41,7 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) =
 	});
 
 	if (!useOvm) {
-		return;
+		return { futuresMarketManager };
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
