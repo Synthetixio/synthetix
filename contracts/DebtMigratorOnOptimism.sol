@@ -9,9 +9,6 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM = "base:DebtMigratorOnEthereum";
 
-    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
-    bytes32 private constant DEBT_TRANSFER_RECV = "Recv";
-
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "DebtMigratorOnOptimism";
     }
@@ -27,12 +24,6 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_BASE_DEBT_MIGRATOR_ON_ETHEREUM;
         addresses = combineArrays(existingAddresses, newAddresses);
-    }
-
-    function debtTransferReceived() external view returns (uint) {
-        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, SDS));
-        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
-        return currentDebtShares;
     }
 
     function _debtMigratorOnEthereum() private view returns (address) {
