@@ -1,6 +1,6 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { toBytes32 } = require('../..');
+const { toBytes32, constants } = require('../..');
 const { toUnit } = require('../utils')();
 const {
 	setupContract,
@@ -16,6 +16,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
 		perpsV2Market,
+		perpsV2MarketHelper,
 		sethMarket,
 		futuresMarketManager,
 		perpsV2MarketSettings,
@@ -26,6 +27,7 @@ contract('PerpsV2MarketData', accounts => {
 		systemSettings,
 		marketKey,
 		baseAsset;
+
 	const keySuffix = '-perp';
 	const newMarketKey = toBytes32('sETH' + keySuffix);
 	const newAssetKey = toBytes32('sETH');
@@ -51,6 +53,7 @@ contract('PerpsV2MarketData', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
+			TestablePerpsV2MarketBTC: perpsV2MarketHelper,
 			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			PerpsV2MarketData: perpsV2MarketData,
@@ -100,6 +103,7 @@ contract('PerpsV2MarketData', accounts => {
 					[owner],
 					assetKey, // base asset
 					marketKey,
+					constants.ZERO_ADDRESS,
 				],
 			});
 
@@ -136,6 +140,10 @@ contract('PerpsV2MarketData', accounts => {
 				contract: 'PerpsV2MarketDelayedExecutionAdded' + symbol,
 				source: 'PerpsV2MarketDelayedExecution',
 				args: [market.address, marketState.address, owner, addressResolver.address],
+			});
+
+			await marketState.linkOrInitializeState({
+				from: owner,
 			});
 
 			await marketState.addAssociatedContracts(
@@ -228,6 +236,7 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.05'),
 
 					toUnit('1'), // 1 liquidation premium multiplier
+					toUnit('0.0025'), // liquidation buffer ratio
 					toUnit('0'),
 					toUnit('0'),
 				],
@@ -250,20 +259,42 @@ contract('PerpsV2MarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
+		let desiredFillPrice;
+
+		// 1
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('5'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('1000'), { from: trader1 });
-		await perpsV2Market.modifyPosition(toUnit('5'), priceImpactDelta, { from: trader1 });
+		await perpsV2Market.modifyPosition(toUnit('5'), desiredFillPrice, { from: trader1 });
 
+		// 2
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-10'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('750'), { from: trader2 });
-		await perpsV2Market.modifyPosition(toUnit('-10'), priceImpactDelta, { from: trader2 });
+		await perpsV2Market.modifyPosition(toUnit('-10'), desiredFillPrice, { from: trader2 });
 
+		// 3
 		await setPrice(baseAsset, toUnit('100'));
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('1.25'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('4000'), { from: trader3 });
-		await perpsV2Market.modifyPosition(toUnit('1.25'), priceImpactDelta, { from: trader3 });
+		await perpsV2Market.modifyPosition(toUnit('1.25'), desiredFillPrice, { from: trader3 });
 
 		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
+		// 4
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(
+				toUnit('4'),
+				priceImpactDelta,
+				(await sethMarket.assetPrice())[0]
+			)
+		)[1];
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), priceImpactDelta, { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), desiredFillPrice, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 
@@ -286,11 +317,6 @@ contract('PerpsV2MarketData', accounts => {
 				globals.liquidationFeeRatio
 			);
 			assert.bnEqual(globals.liquidationFeeRatio, toUnit('0.0035'));
-			assert.bnEqual(
-				await perpsV2MarketSettings.liquidationBufferRatio(),
-				globals.liquidationBufferRatio
-			);
-			assert.bnEqual(globals.liquidationBufferRatio, toUnit('0.0025'));
 		});
 	});
 

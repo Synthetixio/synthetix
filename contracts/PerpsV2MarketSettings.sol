@@ -208,6 +208,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _offchainMarketKey(_marketKey),
                 _offchainPriceDivergence(_marketKey),
                 _liquidationPremiumMultiplier(_marketKey),
+                _liquidationBufferRatio(_marketKey),
                 _maxLiquidationDelta(_marketKey),
                 _maxPD(_marketKey)
             );
@@ -239,8 +240,8 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /*
      * Liquidation price buffer in basis points to prevent negative margin on liquidation.
      */
-    function liquidationBufferRatio() external view returns (uint) {
-        return _liquidationBufferRatio();
+    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint) {
+        return _liquidationBufferRatio(_marketKey);
     }
 
     /*
@@ -383,6 +384,10 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_MAX_LIQUIDAION_DELTA, _maxLiquidationDelta);
     }
 
+    function setLiquidationBufferRatio(bytes32 _marketKey, uint _ratio) public onlyOwner {
+        _setParameter(_marketKey, SETTING_LIQUIDATION_BUFFER_RATIO, _ratio);
+    }
+
     function setMaxPD(bytes32 _marketKey, uint _maxPD) public onlyOwner {
         _setParameter(_marketKey, PARAMETER_MAX_LIQUIDATION_PD, _maxPD);
     }
@@ -408,6 +413,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setOffchainMarketKey(_marketKey, _parameters.offchainMarketKey);
         setOffchainPriceDivergence(_marketKey, _parameters.offchainPriceDivergence);
         setLiquidationPremiumMultiplier(_marketKey, _parameters.liquidationPremiumMultiplier);
+        setLiquidationBufferRatio(_marketKey, _parameters.liquidationBufferRatio);
         setMaxLiquidationDelta(_marketKey, _parameters.maxLiquidationDelta);
         setMaxPD(_marketKey, _parameters.maxPD);
     }
@@ -431,11 +437,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     function setLiquidationFeeRatio(uint _ratio) external onlyOwner {
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_RATIO, _ratio);
         emit LiquidationFeeRatioUpdated(_ratio);
-    }
-
-    function setLiquidationBufferRatio(uint _ratio) external onlyOwner {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_RATIO, _ratio);
-        emit LiquidationBufferRatioUpdated(_ratio);
     }
 
     function setMinInitialMargin(uint _minMargin) external onlyOwner {

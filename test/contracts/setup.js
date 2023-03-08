@@ -412,12 +412,14 @@ const setupContract = async ({
 			[deployerAccount],
 			toBytes32('sBTC'), // base asset
 			toBytes32('sBTC' + perpSuffix), // market key
+			ethers.constants.AddressZero,
 		],
 		PerpsV2MarketStateETH: [
 			owner,
 			[deployerAccount],
 			toBytes32('sETH'), // base asset
 			toBytes32('sETH' + perpSuffix), // market key
+			ethers.constants.AddressZero,
 		],
 		ProxyPerpsV2MarketBTC: [owner],
 		ProxyPerpsV2MarketETH: [owner],
@@ -901,6 +903,13 @@ const setupContract = async ({
 				),
 			]);
 		},
+
+		async PerpsV2MarketStateETH() {
+			await Promise.all([instance.linkOrInitializeState({ from: owner })]);
+		},
+		async PerpsV2MarketStateBTC() {
+			await Promise.all([instance.linkOrInitializeState({ from: owner })]);
+		},
 		async PerpsV2MarketETH() {
 			const filteredFunctions = getFunctionSignatures(instance, [
 				...excludedTestableFunctions,
@@ -935,7 +944,7 @@ const setupContract = async ({
 						'function liquidationMargin(address) view returns (uint)',
 						'function currentLeverage(address) view returns (int, bool)',
 						// 'function maxFundingVelocity() view returns (uint)',
-						'function fillPriceWithBasePrice(int, uint) view returns (uint, bool)',
+						'function fillPriceWithMeta(int, uint, uint) view returns (uint, uint, bool)',
 						'function netFundingPerUnit(address account) external view returns (int)',
 					],
 				},
@@ -1965,12 +1974,6 @@ const setupAllContracts = async ({
 				returnObj['PerpsV2MarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
 					from: owner,
 				}),
-				returnObj['PerpsV2MarketSettings'].setLiquidationBufferRatio(
-					FUTURES_LIQUIDATION_BUFFER_RATIO,
-					{
-						from: owner,
-					}
-				),
 			];
 
 			// fetch settings per-market programmatically
@@ -2013,6 +2016,7 @@ const setupAllContracts = async ({
 							toUnit('0.06'), // offchain price divergence 6%
 
 							toWei('1'), // 1 liquidation premium multiplier
+							FUTURES_LIQUIDATION_BUFFER_RATIO,
 							toWei('0'),
 							toWei('0'),
 						],

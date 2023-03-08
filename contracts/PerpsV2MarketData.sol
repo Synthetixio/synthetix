@@ -16,7 +16,6 @@ contract PerpsV2MarketData {
     struct FuturesGlobals {
         uint minInitialMargin;
         uint liquidationFeeRatio;
-        uint liquidationBufferRatio;
         uint minKeeperFee;
         uint maxKeeperFee;
     }
@@ -131,7 +130,6 @@ contract PerpsV2MarketData {
             FuturesGlobals({
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
-                liquidationBufferRatio: settings.liquidationBufferRatio(),
                 minKeeperFee: settings.minKeeperFee(),
                 maxKeeperFee: settings.maxKeeperFee()
             });
