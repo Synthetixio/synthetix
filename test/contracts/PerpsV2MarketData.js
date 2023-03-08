@@ -16,6 +16,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
 		perpsV2Market,
+		perpsV2MarketHelper,
 		sethMarket,
 		futuresMarketManager,
 		perpsV2MarketSettings,
@@ -26,6 +27,7 @@ contract('PerpsV2MarketData', accounts => {
 		systemSettings,
 		marketKey,
 		baseAsset;
+
 	const keySuffix = '-perp';
 	const newMarketKey = toBytes32('sETH' + keySuffix);
 	const newAssetKey = toBytes32('sETH');
@@ -51,6 +53,7 @@ contract('PerpsV2MarketData', accounts => {
 		({
 			AddressResolver: addressResolver,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
+			TestablePerpsV2MarketBTC: perpsV2MarketHelper,
 			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			PerpsV2MarketData: perpsV2MarketData,
@@ -251,20 +254,42 @@ contract('PerpsV2MarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
+		let desiredFillPrice;
+
+		// 1
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('5'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('1000'), { from: trader1 });
-		await perpsV2Market.modifyPosition(toUnit('5'), priceImpactDelta, { from: trader1 });
+		await perpsV2Market.modifyPosition(toUnit('5'), desiredFillPrice, { from: trader1 });
 
+		// 2
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-10'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('750'), { from: trader2 });
-		await perpsV2Market.modifyPosition(toUnit('-10'), priceImpactDelta, { from: trader2 });
+		await perpsV2Market.modifyPosition(toUnit('-10'), desiredFillPrice, { from: trader2 });
 
+		// 3
 		await setPrice(baseAsset, toUnit('100'));
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('1.25'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('4000'), { from: trader3 });
-		await perpsV2Market.modifyPosition(toUnit('1.25'), priceImpactDelta, { from: trader3 });
+		await perpsV2Market.modifyPosition(toUnit('1.25'), desiredFillPrice, { from: trader3 });
 
 		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
+		// 4
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(
+				toUnit('4'),
+				priceImpactDelta,
+				(await sethMarket.assetPrice())[0]
+			)
+		)[1];
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), priceImpactDelta, { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), desiredFillPrice, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 
