@@ -9,7 +9,7 @@ const {
 	excludedTestableFunctions,
 	getFunctionSignatures,
 } = require('./setup');
-const { toUnit } = require('../utils')();
+const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBytes32, constants } = require('../..');
 const {
 	onlyGivenAddressCanInvoke,
@@ -34,6 +34,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		feePool,
 		synthetix,
 		addressResolver;
+
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const otherAddress = accounts[3];
@@ -1070,14 +1071,17 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			await sUSD.issue(trader, traderInitialBalance);
 
 			// Update the rates to ensure they aren't stale
-			await setPrice(await markets[0].baseAsset(), toUnit(100));
+			const price = toUnit('100');
+			await setPrice(await markets[0].baseAsset(), price);
 
 			// The traders take positions on market
+			const desiredFillPrice = multiplyDecimal(price, toUnit('1') + priceImpactDelta);
+
 			await markets[0].transferMargin(toUnit('1000'), { from: trader });
-			await markets[0].modifyPosition(toUnit('5'), priceImpactDelta, { from: trader });
+			await markets[0].modifyPosition(toUnit('5'), desiredFillPrice, { from: trader });
 
 			await markets[1].transferMargin(toUnit('3000'), { from: trader });
-			await markets[1].modifyPosition(toUnit('4'), priceImpactDelta, { from: trader });
+			await markets[1].modifyPosition(toUnit('4'), desiredFillPrice, { from: trader });
 			await setPrice(await markets[1].baseAsset(), toUnit('999'));
 		});
 

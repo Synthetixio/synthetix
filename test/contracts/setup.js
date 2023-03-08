@@ -944,7 +944,7 @@ const setupContract = async ({
 						'function liquidationMargin(address) view returns (uint)',
 						'function currentLeverage(address) view returns (int, bool)',
 						// 'function maxFundingVelocity() view returns (uint)',
-						'function fillPriceWithBasePrice(int, uint) view returns (uint, bool)',
+						'function fillPriceWithMeta(int, uint, uint) view returns (uint, uint, bool)',
 						'function netFundingPerUnit(address account) external view returns (int)',
 					],
 				},

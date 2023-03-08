@@ -42,6 +42,7 @@ function itCanTrade({ ctx }) {
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
+			PerpsV2MarketHelper,
 			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
 			PerpsV2MarketLiquidateETHPERP,
@@ -59,6 +60,7 @@ function itCanTrade({ ctx }) {
 				FuturesMarketSettings,
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
+				TestablePerpsV2MarketETH: PerpsV2MarketHelper,
 				PerpsV2MarketETHPERP: PerpsV2MarketImplETHPERP,
 				PerpsV2MarketLiquidateETHPERP,
 				PerpsV2MarketDelayedIntentETHPERP,
@@ -162,7 +164,10 @@ function itCanTrade({ ctx }) {
 					}
 					// open position
 					const initialMargin = (await market.positions(someUser.address)).margin;
-					await market.modifyPosition(posSize1x, priceImpactDelta);
+					const desiredFillPrice1 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(posSize1x, priceImpactDelta, 0)
+					)[1];
+					await market.modifyPosition(posSize1x, desiredFillPrice1);
 
 					const position = await market.positions(someUser.address);
 					assert.bnGt(initialMargin, position.margin); // fee was taken
@@ -170,7 +175,14 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					await (await market.closePosition(priceImpactDelta)).wait();
+					const desiredFillPrice2 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(
+							multiplyDecimal(posSize1x, toUnit('-1')),
+							priceImpactDelta,
+							0
+						)
+					)[1];
+					await (await market.closePosition(desiredFillPrice2)).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
@@ -180,12 +192,18 @@ function itCanTrade({ ctx }) {
 					}
 					const size = multiplyDecimal(posSize1x, toUnit('-5'));
 
-					await market.modifyPosition(size, priceImpactDelta);
+					const desiredFillPrice1 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+					)[1];
+					await market.modifyPosition(size, desiredFillPrice1);
 					const position = await market.positions(someUser.address);
 					assert.bnEqual(position.size, size); // right position size
 
 					// close
-					await market.closePosition(priceImpactDelta);
+					const desiredFillPrice2 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+					)[1];
+					await market.closePosition(desiredFillPrice2);
 				});
 
 				describe('existing position', () => {
@@ -225,7 +243,10 @@ function itCanTrade({ ctx }) {
 						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
 						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
 
-						await market.modifyPosition(size, priceImpactDelta);
+						const desiredFillPrice = (
+							await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+						)[1];
+						await market.modifyPosition(size, desiredFillPrice);
 					});
 
 					before('if new aggregator is set and price drops 20%', async () => {
@@ -244,13 +265,16 @@ function itCanTrade({ ctx }) {
 						await assert.revert(market.transferMargin(toBN(-1)), 'Insufficient margin');
 
 						// cannot modify
+						const desiredFillPrice = (
+							await PerpsV2MarketHelper.fillPriceWithMeta(toBN(-1), priceImpactDelta, 0)
+						)[1];
 						await assert.revert(
-							market.modifyPosition(toBN(-1), priceImpactDelta),
+							market.modifyPosition(toBN(-1), desiredFillPrice),
 							'can be liquidated'
 						);
 
 						// cannot close
-						await assert.revert(market.closePosition(priceImpactDelta), 'can be liquidated');
+						await assert.revert(market.closePosition(desiredFillPrice), 'can be liquidated');
 					});
 
 					it('position can be liquidated by another user', async () => {
