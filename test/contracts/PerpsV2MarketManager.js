@@ -954,6 +954,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 						[owner],
 						assetKey, // base asset
 						marketKey,
+						ZERO_ADDRESS,
 					],
 				});
 
@@ -998,6 +999,10 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 						})
 					)
 				);
+
+				await marketState.linkOrInitializeState({
+					from: owner,
+				});
 
 				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
 				await Promise.all(

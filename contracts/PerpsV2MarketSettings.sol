@@ -16,6 +16,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
+    bytes32 public constant CONTRACT_NAME = "PerpsV2MarketSettings";
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 

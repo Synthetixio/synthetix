@@ -9,6 +9,10 @@ contract MockPerpsV2StateConsumer {
         marketState = IPerpsV2MarketState(_marketState);
     }
 
+    function nextPositionId() external view returns (uint64) {
+        return marketState.nextPositionId();
+    }
+
     function setMarketKey(bytes32 _marketKey) external {
         marketState.setMarketKey(_marketKey);
     }
