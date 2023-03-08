@@ -344,7 +344,7 @@ const setupInstance = async ({
 
 	const migratorName = useOvm ? 'DebtMigratorOnOptimism' : 'DebtMigratorOnEthereum';
 	const DebtMigrator = getContract({
-		contract: relayName,
+		contract: migratorName,
 		getTarget,
 		getSource,
 		deploymentPath,

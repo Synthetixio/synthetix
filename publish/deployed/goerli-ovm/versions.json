@@ -567,8 +567,9 @@
 			},
 			"Synthetix": {
 				"address": "0x8cF677281A8Ad57e0db4A8e6B57aE17211f97689",
-				"status": "current",
-				"keccak256": "0x9f4bfdb0f2116bf1dbd405ed4274b169a2b05143012307b0689e4b7d0fea5165"
+				"status": "replaced",
+				"keccak256": "0x9f4bfdb0f2116bf1dbd405ed4274b169a2b05143012307b0689e4b7d0fea5165",
+				"replaced_in": "v2.84.0-alpha"
 			}
 		}
 	},
@@ -1521,8 +1522,34 @@
 			},
 			"Issuer": {
 				"address": "0x7D1a0954CB643A506465b338A2DD414A10ABaBF3",
+				"status": "replaced",
+				"keccak256": "0xddabc4d8c9a7676784dc0e0c7cf12a203c0a5e3814cc21a3854edce5e8e5a456",
+				"replaced_in": "v2.84.0-alpha"
+			}
+		}
+	},
+	"v2.84.0-alpha": {
+		"tag": "v2.84.0-alpha",
+		"fulltag": "v2.84.0-alpha",
+		"release": "Naos",
+		"network": "goerli",
+		"date": "2023-03-07T22:29:15-05:00",
+		"commit": "9b9606976efe2d8148f99d7892700698cf669f46",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xB8779a07186ae7555f96eb276925c5B5b7bE4096",
 				"status": "current",
-				"keccak256": "0xddabc4d8c9a7676784dc0e0c7cf12a203c0a5e3814cc21a3854edce5e8e5a456"
+				"keccak256": "0x355fee15752dad139f5ea58172cc390aed525aad39dcf87921cdaa1c9b5ea91f"
+			},
+			"Issuer": {
+				"address": "0x42E3288434a04283C55C50D8f61056a955F3bbFA",
+				"status": "current",
+				"keccak256": "0x6bad7c208a6d9e921fbe254a7af649062cdd75b9e4adf4518af082123fa0eb0b"
+			},
+			"DebtMigratorOnOptimism": {
+				"address": "0x1a13e712Adc6Bf818DD128C2219CDE22920950fc",
+				"status": "current",
+				"keccak256": "0xa9b667c02efe9551d5b8ae9ed448a2aaf8c51c10df63877f0779f3db6c3dd2f7"
 			}
 		}
 	}
