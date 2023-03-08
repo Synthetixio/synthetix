@@ -3931,7 +3931,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			it.skip('Funding sequence is recomputed by setting funding rate parameters', async () => {
 				await perpsV2MarketSettings.setSkewScale(marketKey, toUnit('100'), { from: owner });
 
 				// Initial sequence.

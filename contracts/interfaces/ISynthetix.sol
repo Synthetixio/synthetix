@@ -141,4 +141,6 @@ interface ISynthetix {
     function burnSecondary(address account, uint amount) external;
 
     function revokeAllEscrow(address account) external;
+
+    function migrateAccountBalances(address account) external returns (uint totalEscrowRevoked, uint totalLiquidBalance);
 }

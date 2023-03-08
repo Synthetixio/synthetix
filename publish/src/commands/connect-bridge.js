@@ -45,6 +45,7 @@ const connectBridge = async ({
 		Synthetix,
 		BridgeEscrow: SynthetixBridgeEscrow,
 		OwnerRelay: OwnerRelayOnEthereum,
+		DebtMigrator: DebtMigratorOnEthereum,
 	} = await setupInstance({
 		network: l1Network,
 		providerUrl: l1ProviderUrl,
@@ -65,6 +66,7 @@ const connectBridge = async ({
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
 		OwnerRelay: OwnerRelayOnOptimism,
+		DebtMigrator: DebtMigratorOnOptimism,
 	} = await setupInstance({
 		network: l2Network,
 		providerUrl: l2ProviderUrl,
@@ -83,10 +85,20 @@ const connectBridge = async ({
 	await connectLayer({
 		wallet: walletL1,
 		gasLimit: l1GasLimit,
-		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'ovm:OwnerRelayOnOptimism'],
-		addresses: [l1Messenger, SynthetixBridgeToBase.address, OwnerRelayOnOptimism.address],
+		names: [
+			'ext:Messenger',
+			'ovm:SynthetixBridgeToBase',
+			'ovm:OwnerRelayOnOptimism',
+			'ovm:DebtMigratorOnOptimism',
+		],
+		addresses: [
+			l1Messenger,
+			SynthetixBridgeToBase.address,
+			OwnerRelayOnOptimism.address,
+			DebtMigratorOnOptimism.address,
+		],
 		AddressResolver: AddressResolverL1,
-		cachables: [SynthetixBridgeToOptimism, OwnerRelayOnEthereum],
+		cachables: [SynthetixBridgeToOptimism, OwnerRelayOnEthereum, DebtMigratorOnEthereum],
 		dryRun,
 	});
 
@@ -98,10 +110,20 @@ const connectBridge = async ({
 	await connectLayer({
 		wallet: walletL2,
 		gasLimit: undefined,
-		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'base:OwnerRelayOnEthereum'],
-		addresses: [l2Messenger, SynthetixBridgeToOptimism.address, OwnerRelayOnEthereum.address],
+		names: [
+			'ext:Messenger',
+			'base:SynthetixBridgeToOptimism',
+			'base:OwnerRelayOnEthereum',
+			'base:DebtMigratorOnEthereum',
+		],
+		addresses: [
+			l2Messenger,
+			SynthetixBridgeToOptimism.address,
+			OwnerRelayOnEthereum.address,
+			DebtMigratorOnEthereum.address,
+		],
 		AddressResolver: AddressResolverL2,
-		cachables: [SynthetixBridgeToBase, OwnerRelayOnOptimism],
+		cachables: [SynthetixBridgeToBase, OwnerRelayOnOptimism, DebtMigratorOnOptimism],
 		dryRun,
 	});
 
@@ -320,6 +342,16 @@ const setupInstance = async ({
 	});
 	console.log(gray(`  > ${relayName}:`, OwnerRelay.address));
 
+	const migratorName = useOvm ? 'DebtMigratorOnOptimism' : 'DebtMigratorOnEthereum';
+	const DebtMigrator = getContract({
+		contract: migratorName,
+		getTarget,
+		getSource,
+		deploymentPath,
+		wallet,
+	});
+	console.log(gray(`  > ${migratorName}:`, DebtMigrator.address));
+
 	let Synthetix;
 	let BridgeEscrow;
 
@@ -345,6 +377,7 @@ const setupInstance = async ({
 	return {
 		AddressResolver,
 		BridgeEscrow,
+		DebtMigrator,
 		OwnerRelay,
 		Synthetix,
 		SynthetixBridge,

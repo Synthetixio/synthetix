@@ -313,6 +313,18 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
+		name: 'DebtMigratorOnEthereum',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
+		name: 'DebtMigratorOnOptimism',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	await deployer.deployContract({
 		name: 'SynthRedeemer',
 		deps: ['AddressResolver'],
 		args: [addressOf(readProxyForResolver)],

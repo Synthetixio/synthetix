@@ -78,8 +78,8 @@ const deploy = async ({
 	useFork,
 	useOvm,
 	yes,
-	includeFutures,
-	includePerpsV2,
+	includeFutures = false,
+	includePerpsV2 = false,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });

@@ -53,9 +53,9 @@ async function appendEscrows({
 	};
 }
 
-async function retrieveEscrowParameters({ ctx }) {
+async function retrieveEscrowParameters({ ctx, user }) {
 	const RewardEscrowV2 = ctx.contracts.RewardEscrowV2;
-	const user = ctx.users.owner;
+	user = user || ctx.users.owner;
 
 	let numberOfEntries;
 	if (!ctx.l1) {

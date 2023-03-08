@@ -653,6 +653,14 @@
 			"released": "both"
 		},
 		{
+			"sip": 237,
+			"layer": "both",
+			"sources": {
+				"base": ["Issuer", "Synthetix"],
+				"ovm": ["Issuer", "Synthetix"]
+			}
+		},
+		{
 			"sip": 238,
 			"layer": "both",
 			"sources": ["Synthetix", "Synths.*", "Issuer"],
@@ -1586,6 +1594,23 @@
 			},
 			"sips": [255],
 			"released": true
+		},
+		{
+			"name": "Naos",
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": [237]
+		},
+		{
+			"name": "Naos (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": [237]
 		}
 	]
 }
