@@ -197,6 +197,17 @@ const deployPerpsV2Markets = async ({
 					generateSolidity,
 			  });
 
+		// Initialize State
+		const stateInitialized = await deployedMarketState.target.initialized();
+		if (!stateInitialized) {
+			await runStep({
+				contract: 'PerpsV2MarketState',
+				target: deployedMarketState.target,
+				write: 'linkOrInitializeState',
+				writeArg: [],
+			});
+		}
+
 		// Link/configure contracts relationships
 		await linkToState({
 			runStep,

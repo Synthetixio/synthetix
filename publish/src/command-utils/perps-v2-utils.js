@@ -135,7 +135,13 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 	const newContract = await deployer.deployContract({
 		name: marketStateName,
 		source: 'PerpsV2MarketState',
-		args: [owner, [owner], baseAssetB32, marketKeyB32],
+		args: [
+			owner,
+			[owner],
+			baseAssetB32,
+			marketKeyB32,
+			previousContractAddress || ethers.constants.AddressZero,
+		],
 		force: true,
 		skipResolver: true,
 	});
