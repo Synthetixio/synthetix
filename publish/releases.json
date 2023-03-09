@@ -850,8 +850,7 @@
 		{
 			"sip": 2004,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		},
 		{
 			"sip": 2005,
@@ -869,8 +868,7 @@
 					"PerpsV2DelayedExecution.+",
 					"PerpsV2MarketLiquidate.+"
 				]
-			},
-			"released": "both"
+			}
 		}
 	],
 	"releases": [
