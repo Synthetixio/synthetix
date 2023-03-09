@@ -37,6 +37,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
+    bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
 
     // ========== CONSTRUCTOR ==========
 
@@ -454,7 +455,29 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function revokeAllEscrow(address account) external systemActive {
         address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
         require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
-        rewardEscrowV2().revokeFrom(account, msg.sender, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+        rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+    }
+
+    function migrateAccountBalances(address account)
+        external
+        systemActive
+        returns (uint totalEscrowRevoked, uint totalLiquidBalance)
+    {
+        address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
+        require(msg.sender == debtMigratorOnEthereum, "Only L1 DebtMigrator");
+
+        // get their liquid SNX balance and transfer it to the migrator contract
+        totalLiquidBalance = tokenState.balanceOf(account);
+        if (totalLiquidBalance > 0) {
+            bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
+            require(succeeded, "snx transfer failed");
+        }
+
+        // get their escrowed SNX balance and revoke it all
+        totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
+        if (totalEscrowRevoked > 0) {
+            rewardEscrowV2().revokeFrom(account, debtMigratorOnEthereum, totalEscrowRevoked, 0);
+        }
     }
 
     function exchangeWithTrackingForInitiator(
@@ -567,13 +590,13 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // These entries are not required or cached in order to allow them to not exist (==address(0))
         // e.g. due to not being available on L2 or at some future point in time.
         return
-            // ordered to reduce gas for more frequent calls, bridge first, vesting after, legacy last
+            // ordered to reduce gas for more frequent calls, bridge first, vesting and migrating after, legacy last
             caller == resolver.getAddress("SynthetixBridgeToOptimism") ||
             caller == resolver.getAddress("RewardEscrowV2") ||
+            caller == resolver.getAddress("DebtMigratorOnOptimism") ||
             // legacy contracts
             caller == resolver.getAddress("RewardEscrow") ||
             caller == resolver.getAddress("SynthetixEscrow") ||
-            caller == resolver.getAddress("TradingRewards") ||
             caller == resolver.getAddress("Depot");
     }
 

@@ -224,15 +224,6 @@ contract Migration_${releaseName}${stepName} is BaseMigration {
 	}
 
 	function migrate() external onlyOwner {
-		${Object.entries(newContractsBeingAdded)
-			.filter(([, { name, library }]) => !library && !/^Proxy/.test(name) && !/^ext:/.test(name)) // ignore the check for libraries, proxies, and externals
-			.map(
-				([address, { name, source }]) =>
-					`require(ISynthetixNamedContract(${newContractVariableFunctor(
-						name
-					)}).CONTRACT_NAME() == "${source}", "Invalid contract supplied for ${name}");`
-			)
-			.join('\n\t\t')}
 
 		// ACCEPT OWNERSHIP for all contracts that require ownership to make changes
 		acceptAll();

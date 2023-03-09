@@ -127,6 +127,7 @@ contract('BaseSynthetix', async accounts => {
 				'liquidateDelinquentAccount',
 				'liquidateDelinquentAccountEscrowIndex',
 				'migrateEscrowContractBalance',
+				'migrateAccountBalances',
 			],
 		});
 	});
@@ -608,6 +609,37 @@ contract('BaseSynthetix', async accounts => {
 				// check balances
 				assert.bnEqual(await baseSynthetixImpl.balanceOf(account1), toUnit('0'));
 				assert.bnEqual(await baseSynthetixImpl.balanceOf(account2), toUnit('10'));
+			});
+		});
+
+		// SIP-237
+		describe('migrateAccountBalances', () => {
+			beforeEach(async () => {
+				// give the account some balance to test with
+				await baseSynthetixProxy.transfer(account3, toUnit('200'), { from: owner });
+				await rewardEscrowV2.createEscrowEntry(account3, toUnit('100'), 1, { from: owner });
+
+				assert.bnEqual(await baseSynthetixImpl.collateral(account3), toUnit('300'));
+			});
+			it('restricted to debt migrator on ethereum', async () => {
+				await onlyGivenAddressCanInvoke({
+					fnc: baseSynthetixImpl.migrateAccountBalances,
+					accounts,
+					args: [account3],
+					reason: 'Only L1 DebtMigrator',
+				});
+			});
+			it('zeroes balances on this layer', async () => {
+				await addressResolver.importAddresses(
+					['DebtMigratorOnEthereum', 'ovm:DebtMigratorOnOptimism'].map(toBytes32),
+					[account1, account2],
+					{ from: owner }
+				);
+
+				await baseSynthetixImpl.migrateAccountBalances(account3, { from: account1 });
+
+				// collateral balance should be zero after migration
+				assert.bnEqual(await baseSynthetixImpl.collateral(account3), toUnit('0'));
 			});
 		});
 

@@ -205,5 +205,8 @@
 	},
 	"ExchangeSettlementLib": {
 		"deploy": false
+	},
+	"DebtMigratorOnEthereum": {
+		"deploy": false
 	}
 }
