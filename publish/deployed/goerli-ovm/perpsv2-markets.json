@@ -24,6 +24,7 @@
 		"offchainMarketKey": "ocETHPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -52,6 +53,7 @@
 		"offchainMarketKey": "ocBTCPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": false,
 		"offchainPaused": true
 	},
@@ -81,6 +83,7 @@
 		"offchainMarketKey": "ocLINKPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -109,6 +112,7 @@
 		"offchainMarketKey": "ocSOLPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -137,6 +141,7 @@
 		"offchainMarketKey": "ocAVAXPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -165,6 +170,7 @@
 		"offchainMarketKey": "ocAAVEPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -193,6 +199,7 @@
 		"offchainMarketKey": "ocUNIPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -221,6 +228,7 @@
 		"offchainMarketKey": "ocMATICPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -249,6 +257,7 @@
 		"offchainMarketKey": "ocAPEPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -277,6 +286,7 @@
 		"offchainMarketKey": "ocDYDXPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -305,6 +315,7 @@
 		"offchainMarketKey": "ocBNBPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -333,6 +344,7 @@
 		"offchainMarketKey": "ocOPPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -361,6 +373,7 @@
 		"offchainMarketKey": "ocDOGEPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -389,6 +402,7 @@
 		"offchainMarketKey": "ocXAUPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -417,6 +431,7 @@
 		"offchainMarketKey": "ocXAGPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -445,6 +460,7 @@
 		"offchainMarketKey": "ocEURPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -473,6 +489,7 @@
 		"offchainMarketKey": "ocATOMPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -501,6 +518,7 @@
 		"offchainMarketKey": "ocAXSPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -529,6 +547,7 @@
 		"offchainMarketKey": "ocFLOWPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -557,6 +576,7 @@
 		"offchainMarketKey": "ocFTMPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -585,6 +605,7 @@
 		"offchainMarketKey": "ocNEARPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -613,6 +634,7 @@
 		"offchainMarketKey": "ocAUDPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -641,6 +663,7 @@
 		"offchainMarketKey": "ocGBPPERP",
 		"maxLiquidationDelta": "0.05",
 		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.01",
 		"paused": true,
 		"offchainPaused": true
 	}

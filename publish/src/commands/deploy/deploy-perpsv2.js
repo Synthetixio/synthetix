@@ -131,10 +131,6 @@ const deployPerpsV2Markets = async ({
 		existingMarkets.push(await market.marketKey());
 	}
 
-	// const deployedPerpsV2Markets = [];
-	// const perpMarketsImplementationUpdated = [];
-	// const exchangeRateAssociateContractAddresses = [];
-
 	// Grant futures pause/resume ACL to owner
 	await runStep({
 		contract: 'SystemStatus',
@@ -201,7 +197,7 @@ const deployPerpsV2Markets = async ({
 		const stateInitialized = await deployedMarketState.target.initialized();
 		if (!stateInitialized) {
 			await runStep({
-				contract: 'PerpsV2MarketState',
+				contract: deployedMarketState.contract,
 				target: deployedMarketState.target,
 				write: 'linkOrInitializeState',
 				writeArg: [],

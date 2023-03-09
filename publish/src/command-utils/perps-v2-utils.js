@@ -535,6 +535,7 @@ const configureMarket = async ({
 			.parseUnits(marketConfig.liquidationPremiumMultiplier)
 			.toString(),
 		maxLiquidationDelta: ethers.utils.parseUnits(marketConfig.maxLiquidationDelta).toString(),
+		liquidationBufferRatio: ethers.utils.parseUnits(marketConfig.liquidationBufferRatio).toString(),
 		maxPD: ethers.utils.parseUnits(marketConfig.maxPD).toString(),
 	};
 
