@@ -672,8 +672,24 @@
 			},
 			"DebtMigratorOnEthereum": {
 				"address": "0xDd09918E90eb48F48ca434a6e8EB34141f23be79",
+				"status": "replaced",
+				"keccak256": "0x85321d79a72bc2f377dbd8e26679af856b6650d31a3c8b7700846f94adb033eb",
+				"replaced_in": "v2.84.2-alpha"
+			}
+		}
+	},
+	"v2.84.2-alpha": {
+		"tag": "v2.84.2-alpha",
+		"fulltag": "v2.84.2-alpha",
+		"release": "Naos",
+		"network": "goerli",
+		"date": "2023-03-09T11:54:40-05:00",
+		"commit": "78833a544f7410f0435ee85c7ddf51a28b2a90f7",
+		"contracts": {
+			"DebtMigratorOnEthereum": {
+				"address": "0xC816673F1E9B42Af30632Ffbd9F483f29B61b767",
 				"status": "current",
-				"keccak256": "0x85321d79a72bc2f377dbd8e26679af856b6650d31a3c8b7700846f94adb033eb"
+				"keccak256": "0xe1a1557914eda0aaa8b2c292cc6cca57cb635a9c7174571c28db61f7c9f1cf57"
 			}
 		}
 	}
