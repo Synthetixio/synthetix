@@ -250,5 +250,8 @@
 	},
 	"DirectIntegrationManager": {
 		"deploy": true
+	},
+	"DebtMigratorOnOptimism": {
+		"deploy": true
 	}
 }

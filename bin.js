@@ -270,7 +270,7 @@ program
 			.filter(({ ovm }) =>
 				layer === 'both' ? true : (ovm && layer === 'ovm') || (!ovm && layer === 'base')
 			)
-			.filter(release => release.released === !unreleased)
+			.filter(release => release.released !== unreleased)
 			.filter(release => {
 				if (!withSources) return true;
 				return release.sips.some(s => !!getSip(s).sources);
