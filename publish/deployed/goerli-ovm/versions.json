@@ -1538,18 +1538,46 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0xB8779a07186ae7555f96eb276925c5B5b7bE4096",
+				"status": "replaced",
+				"keccak256": "0x355fee15752dad139f5ea58172cc390aed525aad39dcf87921cdaa1c9b5ea91f",
+				"replaced_in": "v2.84.1-alpha"
+			},
+			"Issuer": {
+				"address": "0x42E3288434a04283C55C50D8f61056a955F3bbFA",
+				"status": "replaced",
+				"keccak256": "0x6bad7c208a6d9e921fbe254a7af649062cdd75b9e4adf4518af082123fa0eb0b",
+				"replaced_in": "v2.84.1-alpha"
+			},
+			"DebtMigratorOnOptimism": {
+				"address": "0x1a13e712Adc6Bf818DD128C2219CDE22920950fc",
+				"status": "replaced",
+				"keccak256": "0xa9b667c02efe9551d5b8ae9ed448a2aaf8c51c10df63877f0779f3db6c3dd2f7",
+				"replaced_in": "v2.84.1-alpha"
+			}
+		}
+	},
+	"v2.84.1-alpha": {
+		"tag": "v2.84.1-alpha",
+		"fulltag": "v2.84.1-alpha",
+		"release": "Naos",
+		"network": "goerli",
+		"date": "2023-03-08T23:33:37-05:00",
+		"commit": "05d6dab3b74bfb76e3341ffad20ea5f41f0ea914",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xCAe990698AAA1929Ed3dCE882239AB5C2Be5C580",
 				"status": "current",
 				"keccak256": "0x355fee15752dad139f5ea58172cc390aed525aad39dcf87921cdaa1c9b5ea91f"
 			},
 			"Issuer": {
-				"address": "0x42E3288434a04283C55C50D8f61056a955F3bbFA",
+				"address": "0xd88Ae718b51713a55BfebF8BB097935eD6fC7f38",
 				"status": "current",
 				"keccak256": "0x6bad7c208a6d9e921fbe254a7af649062cdd75b9e4adf4518af082123fa0eb0b"
 			},
 			"DebtMigratorOnOptimism": {
-				"address": "0x1a13e712Adc6Bf818DD128C2219CDE22920950fc",
+				"address": "0xF6D9Eb4B947481e209359f27b105219e28aAD12e",
 				"status": "current",
-				"keccak256": "0xa9b667c02efe9551d5b8ae9ed448a2aaf8c51c10df63877f0779f3db6c3dd2f7"
+				"keccak256": "0x87a52e05f7ce3ec6c3c45479af2c8406657c5ca3536ccc2c4d283cc9a16e7858"
 			}
 		}
 	}
