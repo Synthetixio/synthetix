@@ -66,14 +66,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
                 : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
     }
 
-    function _getMaxEscrowDuration(address account) private view returns (uint duration) {
-        uint numOfEntries = _rewardEscrowV2().numVestingEntries(account);
-        uint latestEntryId = _rewardEscrowV2().accountVestingEntryIDs(account, numOfEntries.sub(1));
-        (uint endTime, ) = _rewardEscrowV2().getVestingEntry(account, latestEntryId);
-        duration = now + minimumEscrowDuration < endTime ? (endTime - now) : minimumEscrowDuration;
-        return duration;
-    }
-
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseDebtMigrator.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
@@ -140,7 +132,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
                 rewardEscrow.createEscrowEntry.selector,
                 _account,
                 totalEscrowRevoked,
-                _getMaxEscrowDuration(_account)
+                minimumEscrowDuration
             );
 
         // Send a message with the debt & escrow payloads to L2 to finalize the migration
