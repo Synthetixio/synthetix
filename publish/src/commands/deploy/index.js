@@ -36,7 +36,12 @@ const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
-const { deployPerpsV2Generics, deployPerpsV2Markets, cleanupPerpsV2 } = require('./deploy-perpsv2');
+const {
+	deployPerpsV2Generics,
+	deployPerpsV2Markets,
+	cleanupPerpsV2,
+	configurePerpsV2GenericParams,
+} = require('./deploy-perpsv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -519,22 +524,10 @@ const deploy = async ({
 		});
 	}
 
-	// Perps V2 configuration included into deployPerpsV2Market
-	// if (includePerpsV2) {
-	// 	await configurePerpsV2({
-	// 		addressOf,
-	// 		deployer,
-	// 		loadAndCheckRequiredSources,
-	// 		runStep,
-	// 		getDeployParameter,
-	// 		useOvm,
-	// 		freshDeploy,
-	// 		deploymentPath,
-	// 		network,
-	// 		generateSolidity,
-	// 		yes,
-	// 	});
-	// }
+	// Generic Perps V2 configuration
+	if (includePerpsV2) {
+		await configurePerpsV2GenericParams({ deployer, getDeployParameter, runStep, useOvm });
+	}
 
 	// await takeDebtSnapshotWhenRequired({
 	// 	debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
