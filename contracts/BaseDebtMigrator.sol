@@ -34,6 +34,8 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
 
     bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
+    bytes32 internal constant DEBT_TRANSFER_SENT = "Sent";
+    bytes32 internal constant DEBT_TRANSFER_RECV = "Recv";
 
     bytes32 internal constant sUSD = "sUSD";
     bytes32 internal constant SDS = "SDS";
@@ -71,6 +73,18 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
     }
 
     /* ======== INTERNALS ======== */
+
+    function debtTransferSent() external view returns (uint) {
+        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, SDS));
+        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
+        return currentDebtShares;
+    }
+
+    function debtTransferReceived() external view returns (uint) {
+        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_RECV, SDS));
+        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
+        return currentDebtShares;
+    }
 
     function _incrementDebtTransferCounter(bytes32 group, uint debtShares) internal {
         bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, group, SDS));

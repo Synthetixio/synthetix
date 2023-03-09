@@ -20,14 +20,12 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIX_DEBT_SHARE = "SynthetixDebtShare";
 
-    bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
-    bytes32 private constant DEBT_TRANSFER_SENT = "Sent";
-
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "DebtMigratorOnEthereum";
     }
 
     bool public initiationActive;
+    uint public minimumEscrowDuration = 26 weeks;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -72,7 +70,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         uint numOfEntries = _rewardEscrowV2().numVestingEntries(account);
         uint latestEntryId = _rewardEscrowV2().accountVestingEntryIDs(account, numOfEntries.sub(1));
         (uint endTime, ) = _rewardEscrowV2().getVestingEntry(account, latestEntryId);
-        duration = now < endTime ? (endTime - now) : 2 weeks;
+        duration = now + minimumEscrowDuration < endTime ? (endTime - now) : minimumEscrowDuration;
         return duration;
     }
 
@@ -85,12 +83,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         newAddresses[3] = CONTRACT_SYNTHETIX_BRIDGE_TO_OPTIMISM;
         newAddresses[4] = CONTRACT_SYNTHETIX_DEBT_SHARE;
         addresses = combineArrays(existingAddresses, newAddresses);
-    }
-
-    function debtTransferSent() external view returns (uint) {
-        bytes32 debtSharesKey = keccak256(abi.encodePacked(DEBT_TRANSFER_NAMESPACE, DEBT_TRANSFER_SENT, SDS));
-        uint currentDebtShares = flexibleStorage().getUIntValue(CONTRACT_NAME(), debtSharesKey);
-        return currentDebtShares;
     }
 
     /* ========== MUTATIVE ========== */
@@ -170,6 +162,12 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
 
     /* ========= RESTRICTED ========= */
 
+    function setMinimumEscrowDuration(uint _duration) public onlyOwner {
+        require(_duration > 0, "Must be greater than zero");
+        minimumEscrowDuration = _duration;
+        emit MinimumEscrowDurationUpdated(minimumEscrowDuration);
+    }
+
     function suspendInitiation() external onlyOwner {
         require(initiationActive, "Initiation suspended");
         initiationActive = false;
@@ -190,6 +188,8 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     /* ========== EVENTS ========== */
+
+    event MinimumEscrowDurationUpdated(uint duration);
 
     event InitiationSuspended();
 

@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
 const { approveIfNeeded } = require('../utils/approve');
-const { assert, addSnapshotBeforeRestoreAfter } = require('../../contracts/common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL2 } = require('../utils/optimism');
@@ -36,7 +36,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	const SNXAmount = ethers.utils.parseEther('1000');
 	const amountToIssue = ethers.utils.parseEther('100');
 
-	addSnapshotBeforeRestoreAfter();
+	addSnapshotBeforeRestoreAfterEach();
 
 	before('target contracts and users', () => {
 		({ DebtMigratorOnEthereum, RewardEscrowV2, Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
