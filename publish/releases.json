@@ -860,6 +860,7 @@
 				"ovm": [
 					"FuturesMarketManager",
 					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
 					"PerpsV2ExchangeRate",
 					"PerpsV2Market[A-Z]+",
 					"PerpsV2MarketState.+",
