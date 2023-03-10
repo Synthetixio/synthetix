@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 import "./IPerpsV2MarketBaseTypes.sol";
-pragma experimental ABIEncoderV2;
 
 // Helper Interface - used in tests and to provide a consolidated PerpsV2 interface for users/integrators.
 
@@ -75,6 +75,8 @@ interface IPerpsV2MarketConsolidated {
 
     function assetPrice() external view returns (uint price, bool invalid);
 
+    function fillPrice(int sizeDelta) external view returns (uint price, bool invalid);
+
     function marketSizes() external view returns (uint long, uint short);
 
     function marketDebt() external view returns (uint debt, bool isInvalid);
@@ -103,7 +105,7 @@ interface IPerpsV2MarketConsolidated {
 
     function liquidationFee(address account) external view returns (uint);
 
-    function isFlagged(address) external view returns (bool);
+    function isFlagged(address account) external view returns (bool);
 
     function canLiquidate(address account) external view returns (bool);
 
@@ -148,7 +150,13 @@ interface IPerpsV2MarketConsolidated {
 
     function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
 
+    /* ========== Liquidate    ========== */
+
+    function flagPosition(address account) external;
+
     function liquidatePosition(address account) external;
+
+    function forceLiquidatePosition(address account) external;
 
     /* ========== Delayed Intent ========== */
     function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
@@ -206,7 +214,7 @@ interface IPerpsV2MarketConsolidated {
 
     event MarginTransferred(address indexed account, int marginDelta);
 
-    event PositionFlagged(uint id, address account, address liquidator, uint timestamp);
+    event PositionFlagged(uint id, address account, address flagger, uint timestamp);
 
     event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
 
