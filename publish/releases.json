@@ -846,6 +846,29 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2004,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2005,
+			"layer": "both",
+			"sources": {
+				"base": ["FuturesMarketManager"],
+				"ovm": [
+					"FuturesMarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2ExchangeRate",
+					"PerpsV2Market[A-Z]+",
+					"PerpsV2MarketState.+",
+					"PerpsV2MarketViews.+",
+					"PerpsV2DelayedIntent.+",
+					"PerpsV2DelayedExecution.+",
+					"PerpsV2MarketLiquidate.+"
+				]
+			}
 		}
 	],
 	"releases": [
@@ -1611,6 +1634,23 @@
 				"minor": 84
 			},
 			"sips": [237]
+		},
+		{
+			"name": "Almach",
+			"version": {
+				"major": 2,
+				"minor": 85
+			},
+			"sips": [2004, 2005]
+		},
+		{
+			"name": "Almach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 85
+			},
+			"sips": [2004, 2005]
 		}
 	]
 }

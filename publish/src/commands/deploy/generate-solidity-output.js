@@ -30,6 +30,7 @@ module.exports = async ({
 	runSteps,
 	sourceOf,
 	useOvm,
+	stepName = '',
 }) => {
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
@@ -151,6 +152,11 @@ module.exports = async ({
 	}
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
+	const dedupedSourcesAddedToSolidity = [
+		...new Set(
+			contractsAddedToSolidity.map(contract => sourceOf(deployer.deployedContracts[contract]))
+		),
+	];
 
 	const { releaseName } = getNextRelease({ useOvm });
 
@@ -162,9 +168,8 @@ module.exports = async ({
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
-${contractsAddedToSolidity
-	.map(contract => {
-		const contractSource = sourceOf(deployer.deployedContracts[contract]);
+${dedupedSourcesAddedToSolidity
+	.map(contractSource => {
 		// support legacy contracts in "legacy" subfolder
 		return `import "../${
 			/^Legacy/.test(contractSource) ? `legacy/${contractSource}` : contractSource
@@ -178,7 +183,7 @@ interface ISynthetixNamedContract {
 }
 
 // solhint-disable contract-name-camelcase
-contract Migration_${releaseName} is BaseMigration {
+contract Migration_${releaseName}${stepName} is BaseMigration {
 	${generateExplorerComment({ address: ownerAddress })};
 	address public constant OWNER = ${ownerAddress};
 
@@ -263,7 +268,7 @@ contract Migration_${releaseName} is BaseMigration {
 		'..',
 		CONTRACTS_FOLDER,
 		MIGRATIONS_FOLDER,
-		`Migration_${releaseName}.sol`
+		`Migration_${releaseName}${stepName}.sol`
 	);
 	fs.writeFileSync(migrationContractPath, solidity);
 

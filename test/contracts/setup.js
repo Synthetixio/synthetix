@@ -45,6 +45,7 @@ const {
 		FUTURES_LIQUIDATION_FEE_RATIO,
 		FUTURES_LIQUIDATION_BUFFER_RATIO,
 		FUTURES_MIN_INITIAL_MARGIN,
+		PERPSV2_KEEPER_LIQUIDATION_FEE,
 	},
 } = require('../../');
 
@@ -1994,6 +1995,9 @@ const setupAllContracts = async ({
 					}
 				),
 				returnObj['PerpsV2MarketSettings'].setLiquidationFeeRatio(FUTURES_LIQUIDATION_FEE_RATIO, {
+					from: owner,
+				}),
+				returnObj['PerpsV2MarketSettings'].setKeeperLiquidationFee(PERPSV2_KEEPER_LIQUIDATION_FEE, {
 					from: owner,
 				}),
 			];

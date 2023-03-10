@@ -109,6 +109,8 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
     }
 
     function linkOrInitializeState() external onlyOwner {
+        require(!initialized, "State already initialized");
+
         if (_legacyContractExists) {
             // copy atomic values
             marketSize = legacyState.marketSize();
