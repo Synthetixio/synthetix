@@ -36,6 +36,8 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER = "liquidationPremiumMultiplier";
     bytes32 internal constant PARAMETER_MAX_LIQUIDAION_DELTA = "maxLiquidationDelta";
     bytes32 internal constant PARAMETER_MAX_LIQUIDATION_PD = "maxPD";
+    // liquidation buffer to prevent negative margin upon liquidation
+    bytes32 internal constant PARAMETER_LIQUIDATION_BUFFER_RATIO = "liquidationBufferRatio";
 
     // Global settings
     // minimum liquidation fee payable to liquidator
@@ -44,8 +46,6 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
     bytes32 internal constant SETTING_MAX_KEEPER_FEE = "perpsV2MaxKeeperFee";
     // liquidation fee basis points payed to liquidator
     bytes32 internal constant SETTING_LIQUIDATION_FEE_RATIO = "perpsV2LiquidationFeeRatio";
-    // liquidation buffer to prevent negative margin upon liquidation
-    bytes32 internal constant SETTING_LIQUIDATION_BUFFER_RATIO = "perpsV2LiquidationBufferRatio";
     // minimum initial margin
     bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "perpsV2MinInitialMargin";
     // fixed liquidation fee to be paid to liquidator keeper (not flagger)
@@ -164,6 +164,10 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
         return _parameter(_marketKey, PARAMETER_MAX_LIQUIDATION_PD);
     }
 
+    function _liquidationBufferRatio(bytes32 _marketKey) internal view returns (uint) {
+        return _parameter(_marketKey, PARAMETER_LIQUIDATION_BUFFER_RATIO);
+    }
+
     function _minKeeperFee() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE);
     }
@@ -174,10 +178,6 @@ contract MixinPerpsV2MarketSettings is MixinResolver {
 
     function _liquidationFeeRatio() internal view returns (uint) {
         return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE_RATIO);
-    }
-
-    function _liquidationBufferRatio(bytes32 _marketKey) internal view returns (uint) {
-        return _parameter(_marketKey, SETTING_LIQUIDATION_BUFFER_RATIO);
     }
 
     function _minInitialMargin() internal view returns (uint) {

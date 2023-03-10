@@ -173,10 +173,10 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * The maximum premium/discount to allow an instantaneous liquidation.
+     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
      */
-    function maxPD(bytes32 _marketKey) public view returns (uint) {
-        return _maxPD(_marketKey);
+    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint) {
+        return _liquidationBufferRatio(_marketKey);
     }
 
     /*
@@ -184,6 +184,13 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function maxLiquidationDelta(bytes32 _marketKey) public view returns (uint) {
         return _maxLiquidationDelta(_marketKey);
+    }
+
+    /*
+     * The maximum premium/discount to allow an instantaneous liquidation.
+     */
+    function maxPD(bytes32 _marketKey) public view returns (uint) {
+        return _maxPD(_marketKey);
     }
 
     function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
@@ -235,13 +242,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function liquidationFeeRatio() external view returns (uint) {
         return _liquidationFeeRatio();
-    }
-
-    /*
-     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
-     */
-    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint) {
-        return _liquidationBufferRatio(_marketKey);
     }
 
     /*
@@ -380,12 +380,12 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER, _liquidationPremiumMultiplier);
     }
 
-    function setMaxLiquidationDelta(bytes32 _marketKey, uint _maxLiquidationDelta) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_MAX_LIQUIDAION_DELTA, _maxLiquidationDelta);
+    function setLiquidationBufferRatio(bytes32 _marketKey, uint _ratio) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_LIQUIDATION_BUFFER_RATIO, _ratio);
     }
 
-    function setLiquidationBufferRatio(bytes32 _marketKey, uint _ratio) public onlyOwner {
-        _setParameter(_marketKey, SETTING_LIQUIDATION_BUFFER_RATIO, _ratio);
+    function setMaxLiquidationDelta(bytes32 _marketKey, uint _maxLiquidationDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_LIQUIDAION_DELTA, _maxLiquidationDelta);
     }
 
     function setMaxPD(bytes32 _marketKey, uint _maxPD) public onlyOwner {
