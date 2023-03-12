@@ -3,7 +3,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
-const { toUnit } = require('../utils')();
+const { divideDecimal, toUnit } = require('../utils')();
 const { smock } = require('@defi-wonderland/smock');
 
 contract('DebtMigratorOnOptimism', accounts => {
@@ -12,7 +12,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 	const mockMessenger = accounts[3];
 	const mockL1Migrator = accounts[4];
 	const mockedPayloadData = '0xdeadbeef';
-	const oneWeek = 604800;
 
 	let debtMigratorOnOptimism,
 		flexibleStorage,
@@ -97,7 +96,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 						0,
 						0,
 						mockedPayloadData, // Any data
-						mockedPayloadData, // Any data
 						{ from: owner }
 					),
 					'Sender is not the messenger'
@@ -114,7 +112,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 						1,
 						1,
 						mockedPayloadData, // Any data
-						mockedPayloadData, // Any data
 						{ from: mockMessenger }
 					),
 					'L1 sender is not the debt migrator'
@@ -125,7 +122,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 
 	describe('when invoked by the L1 Migrator', () => {
 		let migrationFinalizedTx;
-		let expectedDebtData, expectedEscrowData;
+		let expectedDebtData;
 		let liquidSNXBalanceBefore, escrowedSNXBalanceBefore, debtShareBalanceBefore;
 		const liquidSNXAmount = toUnit('500');
 		const debtShareAmount = toUnit('100');
@@ -148,12 +145,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 				fnc: 'modifyDebtSharesForMigration',
 				args: [user, debtShareAmount],
 			});
-
-			expectedEscrowData = getDataOfEncodedFncCall({
-				c: 'RewardEscrowV2',
-				fnc: 'createEscrowEntry',
-				args: [user, escrowAmount, oneWeek],
-			});
 		});
 
 		before('record balances', async () => {
@@ -169,7 +160,6 @@ contract('DebtMigratorOnOptimism', accounts => {
 				escrowAmount,
 				liquidSNXAmount,
 				expectedDebtData,
-				expectedEscrowData,
 				{ from: mockMessenger }
 			);
 		});
@@ -190,21 +180,31 @@ contract('DebtMigratorOnOptimism', accounts => {
 		});
 
 		it('updates the L2 state', async () => {
+			const variance = toUnit('100'); // account for variance in the decimal precision
+
 			// updates balances
 			const liquidSNXBalanceAfter = await synthetix.balanceOf(user);
 			const escrowedSNXBalanceAfter = await rewardEscrowV2.balanceOf(user);
 			const debtShareBalanceAfter = await synthetixDebtShare.balanceOf(user);
 			assert.bnEqual(liquidSNXBalanceAfter, liquidSNXBalanceBefore.add(liquidSNXAmount));
-			assert.bnEqual(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount));
 			assert.bnEqual(debtShareBalanceAfter, debtShareBalanceBefore.add(debtShareAmount));
+			assert.bnClose(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount), variance);
 
-			// creates a single escrow entry with the total escrow amount
-			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 1);
+			// creates twelve escrow entries whose sum equals the total migrated escrow amount
+			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 12);
 			assert.bnEqual(
-				(await rewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount,
-				escrowAmount
+				(await rewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount, // first entry
+				divideDecimal(escrowAmount, toUnit(12))
 			);
-			assert.bnEqual(await rewardEscrowV2.totalEscrowedAccountBalance(user), escrowAmount);
+			assert.bnEqual(
+				(await rewardEscrowV2.getVestingSchedules(user, 11, 1))[0].escrowAmount, // last (twelfth) entry
+				divideDecimal(escrowAmount, toUnit(12))
+			);
+			assert.bnClose(
+				await rewardEscrowV2.totalEscrowedAccountBalance(user),
+				escrowAmount,
+				variance
+			);
 		});
 	});
 });

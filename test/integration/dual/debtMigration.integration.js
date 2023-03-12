@@ -54,9 +54,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			[DebtMigratorOnOptimism.address]
 		);
 		await tx.wait();
-
-		tx = await DebtMigratorOnEthereum.connect(owner).rebuildCache();
-		await tx.wait();
 	});
 
 	before('ensure the migrator is connected on L2', async () => {
@@ -67,6 +64,11 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			[toBytes32('base:DebtMigratorOnEthereum')],
 			[DebtMigratorOnEthereum.address]
 		);
+		await tx.wait();
+	});
+
+	before('rebuild migrator caches', async () => {
+		tx = await DebtMigratorOnEthereum.connect(owner).rebuildCache();
 		await tx.wait();
 
 		tx = await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
@@ -189,7 +191,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
 				);
-				assert.bnEqual(postParametersL2.userNumVestingEntries, 1); // creates one entry on L2 with total escrow amount
+				assert.bnEqual(postParametersL2.userNumVestingEntries, 12); // creates twelve entries on L2 totaling the full escrow amount
 				assert.bnEqual(
 					postParametersL2.userEscrowedBalance,
 					initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)

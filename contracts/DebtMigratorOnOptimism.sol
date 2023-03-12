@@ -44,12 +44,21 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         require(success, string(abi.encode("finalize debt call failed:", result)));
     }
 
-    function _finalizeEscrow(bytes memory _escrowPayload) private {
-        address target = address(_rewardEscrowV2()); // target is the RewardEscrowV2 contract on Optimism.
+    function _finalizeEscrow(address account, uint escrowMigrated) private {
+        uint numEntries = 12;
+        uint duration = 4 weeks;
 
-        // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(_escrowPayload);
-        require(success, string(abi.encode("finalize escrow call failed:", result)));
+        // Divide the full amount of migrated escrow by twelve months.
+        uint amountPerEntry = escrowMigrated.divideDecimal(numEntries * SafeDecimalMath.unit());
+
+        // Make sure to approve the creation of the escrow entries.
+        _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
+
+        // Create twelve distinct entries that vest each month for a year.
+        for (uint i = 0; i < numEntries; i++) {
+            _rewardEscrowV2().createEscrowEntry(account, amountPerEntry, duration);
+            duration += 4 weeks;
+        }
     }
 
     /* ========== MODIFIERS ============ */
@@ -72,16 +81,13 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,
-        bytes calldata debtPayload,
-        bytes calldata escrowPayload
+        bytes calldata debtPayload
     ) external onlyCounterpart {
         _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtSharesMigrated);
         _finalizeDebt(debtPayload);
 
         if (escrowMigrated > 0) {
-            // Make sure to approve the creation of the escrow entry.
-            _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
-            _finalizeEscrow(escrowPayload);
+            _finalizeEscrow(account, escrowMigrated);
         }
 
         if (liquidSnxMigrated > 0) {
