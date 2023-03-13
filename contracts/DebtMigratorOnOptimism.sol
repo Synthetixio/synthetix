@@ -49,7 +49,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         uint duration = 8 weeks;
 
         // Split up the full amount of migrated escrow into ten chunks.
-        uint256 amountPerEntry = escrowMigrated.multiplyDecimal(1e17);
+        uint amountPerEntry = escrowMigrated.multiplyDecimalRound(1e17);
 
         // Make sure to approve the creation of the escrow entries.
         _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);

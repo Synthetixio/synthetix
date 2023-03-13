@@ -215,11 +215,11 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 0, 1))[0].escrowAmount, // first entry
-					divideDecimal(initialParametersL2.userEscrowedBalance, toUnit(10))
+					divideDecimal(escrowEntriesData.totalEscrowed, toUnit(10))
 				);
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // last (tenth) entry
-					divideDecimal(initialParametersL2.userEscrowedBalance, toUnit(10))
+					divideDecimal(escrowEntriesData.totalEscrowed, toUnit(10))
 				);
 				assert.bnEqual(
 					postParametersL2.escrowedBalance,

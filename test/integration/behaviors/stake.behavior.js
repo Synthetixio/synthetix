@@ -25,6 +25,10 @@ function itCanStake({ ctx }) {
 			owner = ctx.users.owner;
 		});
 
+		before('ensure the user has enough SNX', async () => {
+			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
+		});
+
 		before('setup mock debt ratio aggregator', async () => {
 			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
 			aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
@@ -50,10 +54,6 @@ function itCanStake({ ctx }) {
 		before('rebuild caches', async () => {
 			tx = await Issuer.connect(owner).rebuildCache();
 			await tx.wait();
-		});
-
-		before('ensure the user has enough SNX', async () => {
-			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
 		});
 
 		describe('when the user issues sUSD', () => {
