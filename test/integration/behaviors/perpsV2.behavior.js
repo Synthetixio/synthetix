@@ -72,6 +72,8 @@ function itCanTrade({ ctx }) {
 				SynthsUSD,
 			} = ctx.contracts);
 
+			// TODO: Remove the log once not needed
+			console.log('LOG_PPPPPPP_ PerpsV2MarketHelper', PerpsV2MarketHelper);
 			owner = ctx.users.owner;
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
