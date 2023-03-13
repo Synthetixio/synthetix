@@ -126,7 +126,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 		let liquidSNXBalanceBefore, escrowedSNXBalanceBefore, debtShareBalanceBefore;
 		const liquidSNXAmount = toUnit('500');
 		const debtShareAmount = toUnit('100');
-		const escrowAmount = toUnit('50');
+		const escrowAmount = toUnit('66.6666666667');
 		before(async () => {
 			// Make sure the migrator has enough SNX
 			await resolver.importAddresses(['Depot'].map(toBytes32), [owner], {
@@ -190,15 +190,15 @@ contract('DebtMigratorOnOptimism', accounts => {
 			assert.bnEqual(debtShareBalanceAfter, debtShareBalanceBefore.add(debtShareAmount));
 			assert.bnClose(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount), variance);
 
-			// creates twelve escrow entries whose sum equals the total migrated escrow amount
-			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 12);
+			// it creates ten escrow entries whose sum equals the total migrated escrow amount
+			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 10);
 			assert.bnEqual(
 				(await rewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount, // first entry
-				divideDecimal(escrowAmount, toUnit(12))
+				divideDecimal(escrowAmount, toUnit(10))
 			);
 			assert.bnEqual(
-				(await rewardEscrowV2.getVestingSchedules(user, 11, 1))[0].escrowAmount, // last (twelfth) entry
-				divideDecimal(escrowAmount, toUnit(12))
+				(await rewardEscrowV2.getVestingSchedules(user, 9, 1))[0].escrowAmount, // last (tenth) entry
+				divideDecimal(escrowAmount, toUnit(10))
 			);
 			assert.bnClose(
 				await rewardEscrowV2.totalEscrowedAccountBalance(user),

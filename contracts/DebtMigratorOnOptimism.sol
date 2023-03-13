@@ -45,16 +45,16 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
     }
 
     function _finalizeEscrow(address account, uint escrowMigrated) private {
-        uint numEntries = 12;
-        uint duration = 4 weeks;
+        uint numEntries = 10;
+        uint duration = 8 weeks;
 
-        // Divide the full amount of migrated escrow by twelve months.
-        uint amountPerEntry = escrowMigrated.divideDecimal(numEntries * SafeDecimalMath.unit());
+        // Divide the full amount of migrated escrow by a factor of ten.
+        uint amountPerEntry = escrowMigrated.divideDecimalRound(numEntries * SafeDecimalMath.unit());
 
         // Make sure to approve the creation of the escrow entries.
         _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
 
-        // Create twelve distinct entries that vest each month for a year.
+        // Create ten distinct entries that vest each month for a year. First entry vests in 8 weeks.
         for (uint i = 0; i < numEntries; i++) {
             _rewardEscrowV2().createEscrowEntry(account, amountPerEntry, duration);
             duration += 4 weeks;
