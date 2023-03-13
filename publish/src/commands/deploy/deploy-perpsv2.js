@@ -24,8 +24,16 @@ const {
 	resumeMarket,
 } = require('../../command-utils/perps-v2-utils');
 
-const deployPerpsV2Generics = async ({ account, addressOf, deployer, runStep, useOvm }) => {
+const deployPerpsV2Generics = async ({
+	account,
+	addressOf,
+	deployer,
+	runStep,
+	useOvm,
+	limitPromise,
+}) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const contractsRequiringAddressResolver = [];
 
 	// ----------------
 	// PerpsV2 market setup
@@ -50,6 +58,10 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, runStep, us
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
 		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
 		deps: ['ReadProxyAddressResolver'],
+	});
+	contractsRequiringAddressResolver.push({
+		name: 'FuturesMarketManager',
+		target: futuresMarketManager,
 	});
 
 	if (!useOvm) {
@@ -84,16 +96,35 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, runStep, us
 		args: [addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
+	// not adding to contractsRequiringAddressResolver since it doesn't need it
 
-	await deployer.deployContract({
+	const perpsV2MarketSettings = await deployer.deployContract({
 		name: 'PerpsV2MarketSettings',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
+	contractsRequiringAddressResolver.push({
+		name: 'PerpsV2MarketSettings',
+		target: perpsV2MarketSettings,
+	});
 
-	await deployer.deployContract({
+	const perpsV2ExchangeRate = await deployer.deployContract({
 		name: 'PerpsV2ExchangeRate',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
+	contractsRequiringAddressResolver.push({
+		name: 'PerpsV2ExchangeRate',
+		target: perpsV2ExchangeRate,
+	});
+
+	// rebuild caches for recently used contrats
+	await importAddresses({
+		runStep,
+		deployer,
+		addressOf,
+		limitPromise,
+	});
+
+	await rebuildCaches({ runStep, deployer, implementations: contractsRequiringAddressResolver });
 
 	return { futuresMarketManager };
 };

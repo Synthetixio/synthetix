@@ -320,6 +320,7 @@ const deploy = async ({
 		deployer,
 		runStep,
 		useOvm,
+		limitPromise,
 	});
 
 	if (includeFutures) {
