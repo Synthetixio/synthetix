@@ -42,9 +42,12 @@ const deployPerpsV2Generics = async ({
 	console.log(gray(`\n------ DEPLOY PERPS V2 GENERICS  ------\n`));
 
 	// Get previous added markets
-	const prevFuturesMarketManager = deployer.getExistingContract({
-		contract: 'FuturesMarketManager',
-	});
+	let prevFuturesMarketManager;
+	try {
+		prevFuturesMarketManager = deployer.getExistingContract({
+			contract: 'FuturesMarketManager',
+		});
+	} catch (e) {}
 	const prevFuturesMarketManagerConfig = {};
 	if (useOvm && prevFuturesMarketManager) {
 		const proxiedMarkets = await prevFuturesMarketManager['allMarkets(bool)'](true);
