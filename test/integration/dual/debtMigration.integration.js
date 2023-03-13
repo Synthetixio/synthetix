@@ -191,7 +191,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
 				);
-				assert.bnEqual(postParametersL2.userNumVestingEntries, 12); // creates twelve entries on L2 totaling the full escrow amount
+				assert.bnEqual(postParametersL2.userNumVestingEntries, 10); // creates ten entries on L2 totaling the full escrow amount
 				assert.bnEqual(
 					postParametersL2.userEscrowedBalance,
 					initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)
