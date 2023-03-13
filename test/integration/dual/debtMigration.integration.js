@@ -187,11 +187,19 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 
 			it('should update the L2 escrow state', async () => {
 				const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user: user });
+				console.log(
+					'postParametersL2.userNumVestingEntries',
+					postParametersL2.userNumVestingEntries
+				);
+				console.log('initialParametersL2.escrowedBalance', initialParametersL2.escrowedBalance);
+				console.log('postParametersL2.escrowedBalance', postParametersL2.escrowedBalance);
+				console.log('escrowEntriesData.totalEscrowed', escrowEntriesData.totalEscrowed);
+
+				assert.bnEqual(postParametersL2.userNumVestingEntries, 10); // creates ten entries on L2 totaling the full escrow amount
 				assert.bnEqual(
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
 				);
-				assert.bnEqual(postParametersL2.userNumVestingEntries, 10); // creates ten entries on L2 totaling the full escrow amount
 				assert.bnEqual(
 					postParametersL2.userEscrowedBalance,
 					initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)
@@ -203,6 +211,13 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			it('should update the L2 Synthetix state', async () => {
+				console.log(
+					'Synthetix.balanceOf(RewardEscrowV2.address)',
+					await Synthetix.balanceOf(RewardEscrowV2.address)
+				);
+				console.log('rewardEscrowBalanceL2', rewardEscrowBalanceL2);
+				console.log('escrowEntriesData.totalEscrowed', escrowEntriesData.totalEscrowed);
+
 				assert.bnEqual(
 					await Synthetix.balanceOf(user.address),
 					userLiquidBalanceL2.add(initialLiquidBalanceL1)
