@@ -180,15 +180,13 @@ contract('DebtMigratorOnOptimism', accounts => {
 		});
 
 		it('updates the L2 state', async () => {
-			const variance = toUnit('100'); // account for variance in the decimal precision
-
 			// updates balances
 			const liquidSNXBalanceAfter = await synthetix.balanceOf(user);
 			const escrowedSNXBalanceAfter = await rewardEscrowV2.balanceOf(user);
 			const debtShareBalanceAfter = await synthetixDebtShare.balanceOf(user);
 			assert.bnEqual(liquidSNXBalanceAfter, liquidSNXBalanceBefore.add(liquidSNXAmount));
 			assert.bnEqual(debtShareBalanceAfter, debtShareBalanceBefore.add(debtShareAmount));
-			assert.bnClose(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount), variance);
+			assert.bnEqual(escrowedSNXBalanceAfter, escrowedSNXBalanceBefore.add(escrowAmount));
 
 			// it creates ten escrow entries whose sum equals the total migrated escrow amount
 			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 10);
@@ -200,11 +198,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 				(await rewardEscrowV2.getVestingSchedules(user, 9, 1))[0].escrowAmount, // last (tenth) entry
 				divideDecimal(escrowAmount, toUnit(10))
 			);
-			assert.bnClose(
-				await rewardEscrowV2.totalEscrowedAccountBalance(user),
-				escrowAmount,
-				variance
-			);
+			assert.bnEqual(await rewardEscrowV2.totalEscrowedAccountBalance(user), escrowAmount);
 		});
 	});
 });
