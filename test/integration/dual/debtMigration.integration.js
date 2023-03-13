@@ -49,36 +49,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		owner = ctx.l1.users.owner;
 	});
 
-	before('ensure the migrator is connected on L1', async () => {
-		// Configure L1.
-		({ AddressResolver } = ctx.l1.contracts);
-		AddressResolver = AddressResolver.connect(owner);
-		tx = await AddressResolver.importAddresses(
-			[toBytes32('ovm:DebtMigratorOnOptimism')],
-			[DebtMigratorOnOptimism.address]
-		);
-		await tx.wait();
-	});
-
-	before('ensure the migrator is connected on L2', async () => {
-		// Configure L2.
-		({ AddressResolver } = ctx.l2.contracts);
-		AddressResolver = AddressResolver.connect(ctx.l2.users.owner);
-		tx = await AddressResolver.importAddresses(
-			[toBytes32('base:DebtMigratorOnEthereum')],
-			[DebtMigratorOnEthereum.address]
-		);
-		await tx.wait();
-	});
-
-	before('rebuild migrator caches', async () => {
-		tx = await DebtMigratorOnEthereum.connect(owner).rebuildCache();
-		await tx.wait();
-
-		tx = await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
-		await tx.wait();
-	});
-
 	before('ensure the user has enough SNX', async () => {
 		await ensureBalance({ ctx: ctx.l1, symbol: 'SNX', user, balance: SNXAmount });
 	});
@@ -126,6 +96,38 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		userCollateralBalanceL2 = await Synthetix.collateral(user.address);
 		userDebtShareBalanceL2 = await SynthetixDebtShare.balanceOf(user.address);
 		rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
+	});
+
+	before('ensure the migrator is connected on L1', async () => {
+		// Configure L1.
+		({ AddressResolver } = ctx.l1.contracts);
+		AddressResolver = AddressResolver.connect(owner);
+		tx = await AddressResolver.importAddresses(
+			[toBytes32('ovm:DebtMigratorOnOptimism')],
+			[DebtMigratorOnOptimism.address]
+		);
+		await tx.wait();
+	});
+
+	before('ensure the migrator is connected on L2', async () => {
+		// Configure L2.
+		({ AddressResolver } = ctx.l2.contracts);
+		AddressResolver = AddressResolver.connect(ctx.l2.users.owner);
+		tx = await AddressResolver.importAddresses(
+			[toBytes32('base:DebtMigratorOnEthereum')],
+			[DebtMigratorOnEthereum.address]
+		);
+		await tx.wait();
+	});
+
+	before('rebuild L1 migrator cache', async () => {
+		tx = await DebtMigratorOnEthereum.connect(owner).rebuildCache();
+		await tx.wait();
+	});
+
+	before('rebuild L2 migrator cache', async () => {
+		tx = await DebtMigratorOnOptimism.connect(ctx.l2.users.owner).rebuildCache();
+		await tx.wait();
 	});
 
 	describe('when a user migrates their debt', () => {
@@ -212,11 +214,11 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 				assert.bnEqual(postParametersL2.userNumVestingEntries, 10); // creates ten entries on L2 totaling the full escrow amount
 
 				assert.bnEqual(
-					(await RewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount, // first entry
+					(await RewardEscrowV2.getVestingSchedules(user.address, 0, 1))[0].escrowAmount, // first entry
 					divideDecimal(initialParametersL2.userEscrowedBalance, toUnit(10))
 				);
 				assert.bnEqual(
-					(await RewardEscrowV2.getVestingSchedules(user, 9, 1))[0].escrowAmount, // last (tenth) entry
+					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // last (tenth) entry
 					divideDecimal(initialParametersL2.userEscrowedBalance, toUnit(10))
 				);
 				assert.bnEqual(
@@ -234,10 +236,6 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			it('should update the L2 Synthetix state', async () => {
-				console.log(
-					'Synthetix.balanceOf(RewardEscrowV2.address)',
-					await Synthetix.balanceOf(RewardEscrowV2.address).toString()
-				);
 				console.log('rewardEscrowBalanceL2', rewardEscrowBalanceL2.toString());
 				console.log('escrowEntriesData.totalEscrowed', escrowEntriesData.totalEscrowed.toString());
 
