@@ -3,7 +3,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
-const { divideDecimal, toUnit } = require('../utils')();
+const { multiplyDecimalRound, toUnit } = require('../utils')();
 const { smock } = require('@defi-wonderland/smock');
 
 contract('DebtMigratorOnOptimism', accounts => {
@@ -192,11 +192,11 @@ contract('DebtMigratorOnOptimism', accounts => {
 			assert.bnEqual(await rewardEscrowV2.numVestingEntries(user), 10);
 			assert.bnEqual(
 				(await rewardEscrowV2.getVestingSchedules(user, 0, 1))[0].escrowAmount, // first entry
-				divideDecimal(escrowAmount, toUnit(10))
+				multiplyDecimalRound(escrowAmount, toUnit('0.1'))
 			);
 			assert.bnEqual(
 				(await rewardEscrowV2.getVestingSchedules(user, 9, 1))[0].escrowAmount, // last (tenth) entry
-				divideDecimal(escrowAmount, toUnit(10))
+				multiplyDecimalRound(escrowAmount, toUnit('0.1'))
 			);
 			assert.bnEqual(await rewardEscrowV2.totalEscrowedAccountBalance(user), escrowAmount);
 		});

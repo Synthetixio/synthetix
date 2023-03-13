@@ -9,7 +9,7 @@ const { finalizationOnL2 } = require('../utils/optimism');
 
 const toUnit = v => ethers.utils.parseUnits(v.toString());
 const unit = toUnit(1);
-const divideDecimal = (a, b) => a.mul(unit).div(b);
+const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 describe('migrateDebt() integration tests (L1, L2)', () => {
 	const ctx = this;
@@ -28,7 +28,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		initialParametersL2,
 		initialCollateralBalanceL1,
 		initialLiquidBalanceL1,
-		initialDebtShareBalanceL1;
+		initialDebtShareBalanceL1,
+		initialRewardEscrowBalanceL1;
 
 	let userLiquidBalanceL2, userCollateralBalanceL2, userDebtShareBalanceL2, rewardEscrowBalanceL2;
 
@@ -87,6 +88,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		initialCollateralBalanceL1 = await Synthetix.collateral(user.address);
 		initialLiquidBalanceL1 = await Synthetix.balanceOf(user.address);
 		initialDebtShareBalanceL1 = await SynthetixDebtShare.balanceOf(user.address);
+		initialRewardEscrowBalanceL1 = await RewardEscrowV2.balanceOf(user.address);
 	});
 
 	before('record balances on L2', async () => {
@@ -167,11 +169,12 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 
 		it('should update the L1 Synthetix state', async () => {
-			({ Synthetix, SynthetixDebtShare } = ctx.l1.contracts);
+			({ Synthetix, SynthetixDebtShare, RewardEscrowV2 } = ctx.l1.contracts);
 
 			assert.bnEqual(await Synthetix.collateral(user.address), 0);
 			assert.bnEqual(await Synthetix.balanceOf(user.address), 0);
 			assert.bnEqual(await SynthetixDebtShare.balanceOf(user.address), 0);
+			assert.bnEqual(await RewardEscrowV2.balanceOf(user.address), 0);
 		});
 
 		// --------------------------
@@ -215,12 +218,13 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 0, 1))[0].escrowAmount, // first entry
-					divideDecimal(escrowEntriesData.totalEscrowed, toUnit(10))
+					multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.1'))
 				);
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // last (tenth) entry
-					divideDecimal(escrowEntriesData.totalEscrowed, toUnit(10))
+					multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.1'))
 				);
+				assert.bnEqual(await RewardEscrowV2.balanceOf(user.address), initialRewardEscrowBalanceL1);
 				assert.bnEqual(
 					postParametersL2.escrowedBalance,
 					initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
@@ -236,7 +240,10 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			it('should update the L2 Synthetix state', async () => {
-				console.log('rewardEscrowBalanceL2', rewardEscrowBalanceL2.toString());
+				console.log(
+					'rewardEscrowBalanceOf user on L2',
+					(await RewardEscrowV2.balanceOf(user.address)).toString()
+				);
 				console.log('escrowEntriesData.totalEscrowed', escrowEntriesData.totalEscrowed.toString());
 
 				assert.bnEqual(
