@@ -318,6 +318,7 @@ const deploy = async ({
 		account,
 		addressOf,
 		deployer,
+		runStep,
 		useOvm,
 	});
 

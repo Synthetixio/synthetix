@@ -24,7 +24,7 @@ const {
 	resumeMarket,
 } = require('../../command-utils/perps-v2-utils');
 
-const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) => {
+const deployPerpsV2Generics = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// ----------------
@@ -32,6 +32,18 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) =
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY PERPS V2 GENERICS  ------\n`));
+
+	// Get previous added markets
+	const prevFuturesMarketManager = deployer.getExistingContract({
+		contract: 'FuturesMarketManager',
+	});
+	const prevFuturesMarketManagerConfig = {};
+	if (useOvm && prevFuturesMarketManager) {
+		const proxiedMarkets = await prevFuturesMarketManager['allMarkets(bool)'](true);
+		const nonProxiedMarkets = await prevFuturesMarketManager['allMarkets(bool)'](false);
+		prevFuturesMarketManagerConfig.proxiedMarkets = proxiedMarkets;
+		prevFuturesMarketManagerConfig.nonProxiedMarkets = nonProxiedMarkets;
+	}
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
@@ -42,6 +54,27 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) =
 
 	if (!useOvm) {
 		return { futuresMarketManager };
+	}
+
+	if (
+		prevFuturesMarketManager &&
+		futuresMarketManager.address !== prevFuturesMarketManager.address
+	) {
+		// FuturesMarketManager changed. Import current markets before going on to maintain previous configuration
+
+		await runStep({
+			contract: 'FuturesMarketManager',
+			target: futuresMarketManager,
+			write: 'addMarkets',
+			writeArg: [prevFuturesMarketManagerConfig.nonProxiedMarkets],
+		});
+
+		await runStep({
+			contract: 'FuturesMarketManager',
+			target: futuresMarketManager,
+			write: 'addProxiedMarkets',
+			writeArg: [prevFuturesMarketManagerConfig.proxiedMarkets],
+		});
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
