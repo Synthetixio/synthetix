@@ -195,8 +195,9 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 			});
 
 			it('should update the L2 escrow state', async () => {
+				const numEntries = 10;
 				const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user: user });
-				assert.bnEqual(postParametersL2.userNumVestingEntries, 10); // creates ten entries on L2 totaling the full escrow amount
+				assert.bnEqual(postParametersL2.userNumVestingEntries, numEntries); // creates ten entries on L2 totaling the full escrow amount
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 0, 1))[0].escrowAmount, // first entry
 					multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.1'))
@@ -205,11 +206,14 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 					(await RewardEscrowV2.getVestingSchedules(user.address, 8, 1))[0].escrowAmount, // ninth entry
 					multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.1'))
 				);
+				let sumOfEntries; // get the sum of the first nine entries
+				for (let i = 0; i < numEntries - 1; i++) {
+					sumOfEntries = (await RewardEscrowV2.getVestingSchedules(user.address, i, 1))[0]
+						.escrowAmount;
+				}
 				assert.bnEqual(
-					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // tenth (last) entry
-					escrowEntriesData.totalEscrowed.sub(
-						multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.9'))
-					)
+					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // tenth (last) entry should have the remaining amount
+					escrowEntriesData.totalEscrowed.sub(sumOfEntries)
 				);
 				assert.bnEqual(await RewardEscrowV2.balanceOf(user.address), initialRewardEscrowBalanceL1);
 				assert.bnEqual(
