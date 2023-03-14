@@ -133,7 +133,7 @@ function itCanTrade({ ctx }) {
 			}
 		});
 
-		before('ensure users have sUSD', async () => {
+		before('ensure users have sUSD ', async () => {
 			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: sUSDAmount });
 		});
 
