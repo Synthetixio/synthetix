@@ -58,6 +58,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         uint amountEscrowed = 0;
         for (uint i = 0; i < numEntries; i++) {
             if (i == numEntries - 1) {
+                // Use the remaining amount of escrow for the last entry to avoid rounding issues.
                 uint remaining = escrowMigrated.sub(amountEscrowed);
                 _rewardEscrowV2().createEscrowEntry(account, remaining, duration);
             } else {
