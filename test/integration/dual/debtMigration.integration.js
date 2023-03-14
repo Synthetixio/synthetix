@@ -208,8 +208,9 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 				);
 				let sumOfEntries = 0; // get the sum of the first nine entries
 				for (let i = 0; i < numEntries - 1; i++) {
-					sumOfEntries += (await RewardEscrowV2.getVestingSchedules(user.address, i, 1))[0]
-						.escrowAmount;
+					sumOfEntries = sumOfEntries.add(
+						await RewardEscrowV2.getVestingSchedules(user.address, i, 1)
+					)[0].escrowAmount;
 				}
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // tenth (last) entry should have the remaining amount
