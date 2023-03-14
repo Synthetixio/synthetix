@@ -269,6 +269,16 @@ const deployPerpsV2Markets = async ({
 				write: 'linkOrInitializeState',
 				writeArg: [],
 			});
+
+			// if updated, enable in legacy state
+			if (deployedMarketState.updated) {
+				await runStep({
+					contract: deployedMarketState.contract,
+					target: deployedMarketState.previousContractTarget,
+					write: 'addAssociatedContracts',
+					writeArg: [[deployedMarketState.target.address]],
+				});
+			}
 		}
 
 		// Link/configure contracts relationships

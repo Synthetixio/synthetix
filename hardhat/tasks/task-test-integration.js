@@ -123,7 +123,6 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					useOvm,
 					useSips: taskArguments.useSips,
 				});
-				console.log('ignoreSafetyChecks', taskArguments.ignoreSafetyChecks);
 				await deployInstance({
 					addNewSynths: true,
 					buildPath,
