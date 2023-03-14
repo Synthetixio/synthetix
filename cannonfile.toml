@@ -39,7 +39,7 @@ options.rate = "<%= settings.rate_eth %>"
 options.timestamp = "1558469483"
 options.salt = "eth"
 
-[import.aggregator_btc]
+[provision.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
 options.timestamp = "1558469483"
@@ -214,7 +214,7 @@ args = [
     "<%= imports.aggregator_btc.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "import.aggregator_btc"]
+depends = ["invoke.accept_ownership", "provision.aggregator_btc"]
 
 [invoke.increase_snapshot_stale_time]
 target = ["SystemSettings"]
