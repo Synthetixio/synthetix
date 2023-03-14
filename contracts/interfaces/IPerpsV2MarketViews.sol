@@ -24,6 +24,8 @@ interface IPerpsV2MarketViews {
 
     function assetPrice() external view returns (uint price, bool invalid);
 
+    function fillPrice(int sizeDelta) external view returns (uint price, bool invalid);
+
     function marketSizes() external view returns (uint long, uint short);
 
     function marketDebt() external view returns (uint debt, bool isInvalid);

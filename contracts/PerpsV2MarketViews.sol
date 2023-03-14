@@ -50,7 +50,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     function fillPrice(int sizeDelta) external view returns (uint price, bool invalid) {
-        (uint price, bool invalid) = _assetPrice();
+        (price, invalid) = _assetPrice();
         return (_fillPrice(sizeDelta, price), invalid);
     }
 
