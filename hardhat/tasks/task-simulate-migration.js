@@ -154,7 +154,7 @@ task(
 
 			taskArguments.maxMemory = true;
 
-			hre.config.paths.tests = './test/integration/l1/';
+			hre.config.paths.tests = `${hre.config.paths.root}/test/integration/l1`;
 			hre.config.fork = true;
 			hre.config.simulation = true;
 			await hre.run('test', taskArguments);

@@ -26,7 +26,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	)
 	.addOptionalParam('grep', 'test pattern to match (mocha)', '')
 	.setAction(async (taskArguments, hre) => {
-		hre.config.paths.tests = './test/integration/l1/';
+		hre.config.paths.tests = `${hre.config.paths.root}/test/integration/l1`;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
@@ -88,7 +88,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 	)
 	.addOptionalParam('grep', 'test pattern to match (mocha)', '')
 	.setAction(async (taskArguments, hre) => {
-		hre.config.paths.tests = './test/integration/l2/';
+		hre.config.paths.tests = `${hre.config.paths.root}/test/integration/l2`;
 		hre.config.debugOptimism = taskArguments.debugOptimism;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
@@ -143,7 +143,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 	.addFlag('compile', 'Compile the l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy the l1 instance before running the tests')
 	.setAction(async (taskArguments, hre) => {
-		hre.config.paths.tests = './test/integration/dual/';
+		hre.config.paths.tests = `${hre.config.paths.root}/test/integration/dual`;
 		hre.config.debugOptimism = taskArguments.debugOptimism;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
