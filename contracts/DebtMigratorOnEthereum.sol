@@ -25,7 +25,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     bool public initiationActive;
-    uint public minimumEscrowDuration = 26 weeks;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -126,15 +125,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         bytes memory _debtPayload =
             abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, totalDebtShares);
 
-        IRewardEscrowV2 rewardEscrow;
-        bytes memory _escrowPayload =
-            abi.encodeWithSelector(
-                rewardEscrow.createEscrowEntry.selector,
-                _account,
-                totalEscrowRevoked,
-                minimumEscrowDuration
-            );
-
         // Send a message with the debt & escrow payloads to L2 to finalize the migration
         IDebtMigrator debtMigratorOnOptimism;
         bytes memory messageData =
@@ -144,8 +134,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
                 totalDebtShares,
                 totalEscrowRevoked,
                 totalLiquidBalance,
-                _debtPayload,
-                _escrowPayload
+                _debtPayload
             );
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
@@ -153,12 +142,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     /* ========= RESTRICTED ========= */
-
-    function setMinimumEscrowDuration(uint _duration) public onlyOwner {
-        require(_duration > 0, "Must be greater than zero");
-        minimumEscrowDuration = _duration;
-        emit MinimumEscrowDurationUpdated(minimumEscrowDuration);
-    }
 
     function suspendInitiation() external onlyOwner {
         require(initiationActive, "Initiation suspended");
@@ -180,8 +163,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     /* ========== EVENTS ========== */
-
-    event MinimumEscrowDurationUpdated(uint duration);
 
     event InitiationSuspended();
 

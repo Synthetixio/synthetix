@@ -7,7 +7,6 @@ interface IDebtMigrator {
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,
-        bytes calldata debtPayload,
-        bytes calldata escrowPayload
+        bytes calldata debtPayload
     ) external;
 }
