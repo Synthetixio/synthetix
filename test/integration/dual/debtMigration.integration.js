@@ -7,7 +7,6 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL2 } = require('../utils/optimism');
 
-const toBN = v => ethers.BigNumber.from(v.toString());
 const toUnit = v => ethers.utils.parseUnits(v.toString());
 const unit = toUnit(1);
 const multiplyDecimal = (a, b) => a.mul(b).div(unit);
@@ -207,11 +206,12 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 					(await RewardEscrowV2.getVestingSchedules(user.address, 8, 1))[0].escrowAmount, // ninth entry
 					multiplyDecimal(escrowEntriesData.totalEscrowed, toUnit('0.1'))
 				);
-				let sumOfEntries = toBN(0); // get the sum of the first nine entries
+				// get the sum of the first nine entries
+				let sumOfEntries = ethers.constants.Zero;
 				for (let i = 0; i < numEntries - 1; i++) {
-					sumOfEntries = sumOfEntries.add(
-						await RewardEscrowV2.getVestingSchedules(user.address, i, 1)
-					)[0].escrowAmount;
+					const escrowAmount = (await RewardEscrowV2.getVestingSchedules(user.address, i, 1))[0]
+						.escrowAmount;
+					sumOfEntries = sumOfEntries.add(escrowAmount);
 				}
 				assert.bnEqual(
 					(await RewardEscrowV2.getVestingSchedules(user.address, 9, 1))[0].escrowAmount, // tenth (last) entry should have the remaining amount
