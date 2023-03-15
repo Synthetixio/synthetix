@@ -25,7 +25,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     bool public initiationActive;
-    uint public minimumEscrowDuration = 26 weeks;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -64,14 +63,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
             crossDomainGasLimit != 0
                 ? crossDomainGasLimit
                 : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
-    }
-
-    function _getMaxEscrowDuration(address account) private view returns (uint duration) {
-        uint numOfEntries = _rewardEscrowV2().numVestingEntries(account);
-        uint latestEntryId = _rewardEscrowV2().accountVestingEntryIDs(account, numOfEntries.sub(1));
-        (uint endTime, ) = _rewardEscrowV2().getVestingEntry(account, latestEntryId);
-        duration = now + minimumEscrowDuration < endTime ? (endTime - now) : minimumEscrowDuration;
-        return duration;
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -134,15 +125,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         bytes memory _debtPayload =
             abi.encodeWithSelector(issuer.modifyDebtSharesForMigration.selector, _account, totalDebtShares);
 
-        IRewardEscrowV2 rewardEscrow;
-        bytes memory _escrowPayload =
-            abi.encodeWithSelector(
-                rewardEscrow.createEscrowEntry.selector,
-                _account,
-                totalEscrowRevoked,
-                _getMaxEscrowDuration(_account)
-            );
-
         // Send a message with the debt & escrow payloads to L2 to finalize the migration
         IDebtMigrator debtMigratorOnOptimism;
         bytes memory messageData =
@@ -152,8 +134,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
                 totalDebtShares,
                 totalEscrowRevoked,
                 totalLiquidBalance,
-                _debtPayload,
-                _escrowPayload
+                _debtPayload
             );
         _messenger().sendMessage(_debtMigratorOnOptimism(), messageData, _getCrossDomainGasLimit(0)); // passing zero will use the system setting default
 
@@ -161,12 +142,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     /* ========= RESTRICTED ========= */
-
-    function setMinimumEscrowDuration(uint _duration) public onlyOwner {
-        require(_duration > 0, "Must be greater than zero");
-        minimumEscrowDuration = _duration;
-        emit MinimumEscrowDurationUpdated(minimumEscrowDuration);
-    }
 
     function suspendInitiation() external onlyOwner {
         require(initiationActive, "Initiation suspended");
@@ -188,8 +163,6 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     }
 
     /* ========== EVENTS ========== */
-
-    event MinimumEscrowDurationUpdated(uint duration);
 
     event InitiationSuspended();
 

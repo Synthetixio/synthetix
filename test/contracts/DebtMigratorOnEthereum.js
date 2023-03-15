@@ -6,8 +6,6 @@ const { toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
 contract('DebtMigratorOnEthereum', accounts => {
-	const oneWeek = 60 * 60 * 24 * 7;
-	const MINIMUM_ESCROW_DURATION = oneWeek * 26;
 	const [sUSD] = ['sUSD'].map(toBytes32);
 	const owner = accounts[1];
 	const user = accounts[2];
@@ -44,12 +42,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: debtMigratorOnEthereum.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'migrateDebt',
-				'setMinimumEscrowDuration',
-				'resumeInitiation',
-				'suspendInitiation',
-			],
+			expected: ['migrateDebt', 'resumeInitiation', 'suspendInitiation'],
 		});
 	});
 
@@ -66,36 +59,6 @@ contract('DebtMigratorOnEthereum', accounts => {
 
 		it('initiation is not active by default', async () => {
 			assert.equal(await debtMigratorOnEthereum.initiationActive(), false);
-		});
-
-		it('minimum escrow duration is set to its default', async () => {
-			const minimumEscrowDuration = await debtMigratorOnEthereum.minimumEscrowDuration();
-			assert.bnEqual(minimumEscrowDuration, MINIMUM_ESCROW_DURATION);
-		});
-	});
-
-	describe('setMinimumEscrowDuration', async () => {
-		describe('revert condtions', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					debtMigratorOnEthereum.setMinimumEscrowDuration(toUnit(1), { from: user }),
-					'Only the contract owner may perform this action'
-				);
-			});
-			it('should fail if the minimum is 0', async () => {
-				await assert.revert(
-					debtMigratorOnEthereum.setMinimumEscrowDuration(toUnit(0), { from: owner }),
-					'Must be greater than zero'
-				);
-			});
-		});
-		describe('when it succeeds', async () => {
-			beforeEach(async () => {
-				await debtMigratorOnEthereum.setMinimumEscrowDuration(toUnit(2), { from: owner });
-			});
-			it('should update the minimum escrow duration', async () => {
-				assert.bnEqual(await debtMigratorOnEthereum.minimumEscrowDuration(), toUnit(2));
-			});
 		});
 	});
 
