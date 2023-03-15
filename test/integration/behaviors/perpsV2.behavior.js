@@ -246,7 +246,11 @@ function itCanTrade({ ctx }) {
 
 					// close
 					const desiredFillPrice2 = (
-						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+						await PerpsV2MarketHelper.fillPriceWithMeta(
+							multiplyDecimal(size, toUnit('-1')),
+							priceImpactDelta,
+							0
+						)
 					)[1];
 					await market.closePosition(desiredFillPrice2);
 				});
