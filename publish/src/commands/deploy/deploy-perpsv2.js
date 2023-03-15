@@ -24,8 +24,16 @@ const {
 	resumeMarket,
 } = require('../../command-utils/perps-v2-utils');
 
-const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) => {
+const deployPerpsV2Generics = async ({
+	account,
+	addressOf,
+	deployer,
+	runStep,
+	useOvm,
+	limitPromise,
+}) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+	const contractsRequiringAddressResolver = [];
 
 	// ----------------
 	// PerpsV2 market setup
@@ -33,15 +41,55 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) =
 
 	console.log(gray(`\n------ DEPLOY PERPS V2 GENERICS  ------\n`));
 
+	// Get previous added markets
+	let prevFuturesMarketManager;
+	try {
+		prevFuturesMarketManager = deployer.getExistingContract({
+			contract: 'FuturesMarketManager',
+		});
+	} catch (e) {}
+	const prevFuturesMarketManagerConfig = {};
+	if (useOvm && prevFuturesMarketManager) {
+		const proxiedMarkets = await prevFuturesMarketManager['allMarkets(bool)'](true);
+		const nonProxiedMarkets = await prevFuturesMarketManager['allMarkets(bool)'](false);
+		prevFuturesMarketManagerConfig.proxiedMarkets = proxiedMarkets;
+		prevFuturesMarketManagerConfig.nonProxiedMarkets = nonProxiedMarkets;
+	}
+
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
 		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
 		deps: ['ReadProxyAddressResolver'],
 	});
+	contractsRequiringAddressResolver.push({
+		name: 'FuturesMarketManager',
+		target: futuresMarketManager,
+	});
 
 	if (!useOvm) {
 		return { futuresMarketManager };
+	}
+
+	if (
+		prevFuturesMarketManager &&
+		futuresMarketManager.address !== prevFuturesMarketManager.address
+	) {
+		// FuturesMarketManager changed. Import current markets before going on to maintain previous configuration
+
+		await runStep({
+			contract: 'FuturesMarketManager',
+			target: futuresMarketManager,
+			write: 'addMarkets',
+			writeArg: [prevFuturesMarketManagerConfig.nonProxiedMarkets],
+		});
+
+		await runStep({
+			contract: 'FuturesMarketManager',
+			target: futuresMarketManager,
+			write: 'addProxiedMarkets',
+			writeArg: [prevFuturesMarketManagerConfig.proxiedMarkets],
+		});
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
@@ -51,16 +99,35 @@ const deployPerpsV2Generics = async ({ account, addressOf, deployer, useOvm }) =
 		args: [addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
+	// not adding to contractsRequiringAddressResolver since it doesn't need it
 
-	await deployer.deployContract({
+	const perpsV2MarketSettings = await deployer.deployContract({
 		name: 'PerpsV2MarketSettings',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
+	contractsRequiringAddressResolver.push({
+		name: 'PerpsV2MarketSettings',
+		target: perpsV2MarketSettings,
+	});
 
-	await deployer.deployContract({
+	const perpsV2ExchangeRate = await deployer.deployContract({
 		name: 'PerpsV2ExchangeRate',
 		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
+	contractsRequiringAddressResolver.push({
+		name: 'PerpsV2ExchangeRate',
+		target: perpsV2ExchangeRate,
+	});
+
+	// rebuild caches for recently used contrats
+	await importAddresses({
+		runStep,
+		deployer,
+		addressOf,
+		limitPromise,
+	});
+
+	await rebuildCaches({ runStep, deployer, implementations: contractsRequiringAddressResolver });
 
 	return { futuresMarketManager };
 };
@@ -202,6 +269,16 @@ const deployPerpsV2Markets = async ({
 				write: 'linkOrInitializeState',
 				writeArg: [],
 			});
+
+			// if updated, enable in legacy state
+			if (deployedMarketState.updated && deployedMarketState.previousContractTarget) {
+				await runStep({
+					contract: deployedMarketState.contract,
+					target: deployedMarketState.previousContractTarget,
+					write: 'addAssociatedContracts',
+					writeArg: [[deployedMarketState.target.address]],
+				});
+			}
 		}
 
 		// Link/configure contracts relationships

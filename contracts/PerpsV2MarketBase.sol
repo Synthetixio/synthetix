@@ -63,6 +63,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
     bytes32 internal constant CONTRACT_PERPSV2EXCHANGERATE = "PerpsV2ExchangeRate";
+    bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
@@ -109,20 +110,16 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
         newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
         newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
-        // newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[6] = CONTRACT_FLEXIBLESTORAGE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
-
-    // function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-    //     return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
-    // }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));

@@ -1,6 +1,11 @@
 const ethers = require('ethers');
+const path = require('path');
+const fs = require('fs');
 const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
+const {
+	constants: { COMPILED_FOLDER, BUILD_FOLDER },
+} = require('../../../');
 
 const { addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
@@ -14,6 +19,28 @@ const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 const proxiedContract = (proxy, abi, user) => {
 	return new ethers.Contract(proxy.address, abi, user);
+};
+
+const deployHelper = async ({ AddressResolver, owner, args }) => {
+	const buildPath = path.join(__dirname, '..', '..', '..', BUILD_FOLDER, COMPILED_FOLDER);
+
+	const builtArtifact = JSON.parse(
+		fs.readFileSync(path.resolve(buildPath, 'TestablePerpsV2Market.json'), 'utf8')
+	);
+
+	const factory = new ethers.ContractFactory(builtArtifact.abi, builtArtifact.evm.bytecode, owner);
+
+	const deployedContract = await factory.deploy(
+		args.proxy,
+		args.marketState,
+		args.owner,
+		args.resolver
+	);
+	await deployedContract.deployTransaction.wait();
+
+	await AddressResolver.connect(owner).rebuildCaches([deployedContract.address]);
+
+	return deployedContract;
 };
 
 const unifyAbis = implementations => {
@@ -46,15 +73,17 @@ function itCanTrade({ ctx }) {
 			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
 			PerpsV2MarketLiquidateETHPERP,
-			PerpsV2MarketDelayedIntentETHPERP,
-			PerpsV2MarketDelayedExecutionETHPERP,
+			PerpsV2DelayedIntentETHPERP,
+			PerpsV2DelayedExecutionETHPERP,
 			PerpsV2MarketViewsETHPERP,
+			PerpsV2MarketStateETHPERP,
 			PerpsV2ProxyETHPERP,
 			FuturesMarketBTC,
 			ExchangeRates,
+			AddressResolver,
 			SynthsUSD;
 
-		before('target contracts and users', () => {
+		before('target contracts and users', async () => {
 			({
 				FuturesMarketManager,
 				FuturesMarketSettings,
@@ -63,12 +92,14 @@ function itCanTrade({ ctx }) {
 				TestablePerpsV2MarketETH: PerpsV2MarketHelper,
 				PerpsV2MarketETHPERP: PerpsV2MarketImplETHPERP,
 				PerpsV2MarketLiquidateETHPERP,
-				PerpsV2MarketDelayedIntentETHPERP,
-				PerpsV2MarketDelayedExecutionETHPERP,
+				PerpsV2DelayedIntentETHPERP,
+				PerpsV2DelayedExecutionETHPERP,
 				PerpsV2MarketViewsETHPERP,
+				PerpsV2MarketStateETHPERP,
 				PerpsV2ProxyETHPERP,
 				FuturesMarketBTC,
 				ExchangeRates,
+				AddressResolver,
 				SynthsUSD,
 			} = ctx.contracts);
 
@@ -76,19 +107,33 @@ function itCanTrade({ ctx }) {
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
+			if (!PerpsV2MarketHelper) {
+				// Deploy it
+				PerpsV2MarketHelper = await deployHelper({
+					AddressResolver,
+					owner,
+					args: {
+						proxy: PerpsV2ProxyETHPERP.address,
+						marketState: PerpsV2MarketStateETHPERP.address,
+						owner: owner.address,
+						resolver: AddressResolver.address,
+					},
+				});
+			}
+
 			const unifiedAbis = unifyAbis([
 				PerpsV2MarketImplETHPERP,
 				PerpsV2MarketViewsETHPERP,
 				PerpsV2MarketLiquidateETHPERP,
-				PerpsV2MarketDelayedIntentETHPERP,
-				PerpsV2MarketDelayedExecutionETHPERP,
+				PerpsV2DelayedIntentETHPERP,
+				PerpsV2DelayedExecutionETHPERP,
 			]);
 			if (unifiedAbis && PerpsV2ProxyETHPERP) {
 				PerpsV2MarketETH = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
 			}
 		});
 
-		before('ensure users have sUSD', async () => {
+		before('ensure users have sUSD ', async () => {
 			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: sUSDAmount });
 		});
 
@@ -190,7 +235,7 @@ function itCanTrade({ ctx }) {
 					if (skipTest) {
 						return;
 					}
-					const size = multiplyDecimal(posSize1x, toUnit('-5'));
+					const size = multiplyDecimal(posSize1x, toUnit('-2'));
 
 					const desiredFillPrice1 = (
 						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
@@ -201,7 +246,11 @@ function itCanTrade({ ctx }) {
 
 					// close
 					const desiredFillPrice2 = (
-						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+						await PerpsV2MarketHelper.fillPriceWithMeta(
+							multiplyDecimal(size, toUnit('-1')),
+							priceImpactDelta,
+							0
+						)
 					)[1];
 					await market.closePosition(desiredFillPrice2);
 				});

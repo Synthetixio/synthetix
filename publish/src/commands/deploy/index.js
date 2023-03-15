@@ -318,7 +318,9 @@ const deploy = async ({
 		account,
 		addressOf,
 		deployer,
+		runStep,
 		useOvm,
+		limitPromise,
 	});
 
 	if (includeFutures) {

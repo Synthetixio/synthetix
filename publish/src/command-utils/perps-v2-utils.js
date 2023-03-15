@@ -118,16 +118,25 @@ const getStateNameAndCurrentAddress = ({ deployer, marketKey }) => {
 		name: marketProxyName,
 	});
 
-	return { name: marketProxyName, address: previousContractAddress };
+	let target;
+	if (previousContractAddress) {
+		target = deployer.getExistingContract({
+			contract: marketProxyName,
+		});
+	}
+
+	return { name: marketProxyName, address: previousContractAddress, target };
 };
 
 const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
-	const { name: marketStateName, address: previousContractAddress } = getStateNameAndCurrentAddress(
-		{
-			deployer,
-			marketKey,
-		}
-	);
+	const {
+		name: marketStateName,
+		address: previousContractAddress,
+		target: previousContractTarget,
+	} = getStateNameAndCurrentAddress({
+		deployer,
+		marketKey,
+	});
 
 	const baseAssetB32 = toBytes32(baseAsset);
 	const marketKeyB32 = toBytes32(marketKey);
@@ -153,6 +162,7 @@ const deployMarketState = async ({ deployer, owner, marketKey, baseAsset }) => {
 		contract: marketStateName,
 		updated: !isSameContract,
 		previousContractAddress,
+		previousContractTarget,
 	};
 };
 
