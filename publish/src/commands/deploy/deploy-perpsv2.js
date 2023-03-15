@@ -271,7 +271,7 @@ const deployPerpsV2Markets = async ({
 			});
 
 			// if updated, enable in legacy state
-			if (deployedMarketState.updated) {
+			if (deployedMarketState.updated && deployedMarketState.previousContractTarget) {
 				await runStep({
 					contract: deployedMarketState.contract,
 					target: deployedMarketState.previousContractTarget,
