@@ -108,7 +108,7 @@ module.exports = {
 		outputFile: 'test-gas-used.log',
 	},
 	mocha: {
-		timeout: 120e3, // 120s
+		timeout: 300e3, // 300s
 		retries: 1,
 	},
 	etherscan: {

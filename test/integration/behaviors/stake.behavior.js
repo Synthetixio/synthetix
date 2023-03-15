@@ -12,6 +12,7 @@ function itCanStake({ ctx }) {
 
 		let tx;
 		let user, owner;
+		let aggregator;
 		let AddressResolver, Synthetix, SynthetixDebtShare, SynthsUSD, Issuer;
 		let balancesUSD, debtsUSD;
 
@@ -24,9 +25,13 @@ function itCanStake({ ctx }) {
 			owner = ctx.users.owner;
 		});
 
+		before('ensure the user has enough SNX', async () => {
+			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
+		});
+
 		before('setup mock debt ratio aggregator', async () => {
 			const MockAggregatorFactory = await createMockAggregatorFactory(owner);
-			const aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
+			aggregator = (await MockAggregatorFactory.deploy()).connect(owner);
 
 			tx = await aggregator.setDecimals(27);
 			await tx.wait();
@@ -35,20 +40,20 @@ function itCanStake({ ctx }) {
 			// debt share ratio of 0.5
 			tx = await aggregator.setLatestAnswer(ethers.utils.parseUnits('0.5', 27), timestamp);
 			await tx.wait();
+		});
 
+		before('import the aggregator to the resolver', async () => {
 			AddressResolver = AddressResolver.connect(owner);
 			tx = await AddressResolver.importAddresses(
 				[toBytes32('ext:AggregatorDebtRatio')],
 				[aggregator.address]
 			);
 			await tx.wait();
-
-			tx = await Issuer.connect(owner).rebuildCache();
-			await tx.wait();
 		});
 
-		before('ensure the user has enough SNX', async () => {
-			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
+		before('rebuild caches', async () => {
+			tx = await Issuer.connect(owner).rebuildCache();
+			await tx.wait();
 		});
 
 		describe('when the user issues sUSD', () => {
