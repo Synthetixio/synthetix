@@ -1576,8 +1576,24 @@
 			},
 			"DebtMigratorOnOptimism": {
 				"address": "0xF6D9Eb4B947481e209359f27b105219e28aAD12e",
+				"status": "replaced",
+				"keccak256": "0x87a52e05f7ce3ec6c3c45479af2c8406657c5ca3536ccc2c4d283cc9a16e7858",
+				"replaced_in": "v2.84.3-alpha"
+			}
+		}
+	},
+	"v2.84.3-alpha": {
+		"tag": "v2.84.3-alpha",
+		"fulltag": "v2.84.3-alpha",
+		"release": "Naos",
+		"network": "goerli",
+		"date": "2023-03-16T17:50:22-04:00",
+		"commit": "748ef5b95ed1e09b1494acfed3c0a2084d99630f",
+		"contracts": {
+			"DebtMigratorOnOptimism": {
+				"address": "0x3A2F7083C1617e4371bA723Bc27dED8A1Bd6AD90",
 				"status": "current",
-				"keccak256": "0x87a52e05f7ce3ec6c3c45479af2c8406657c5ca3536ccc2c4d283cc9a16e7858"
+				"keccak256": "0x5f814a124b8925fa1229d193988b0f860d780086f6ae3f15cc32a63dbaaab8cd"
 			}
 		}
 	}
