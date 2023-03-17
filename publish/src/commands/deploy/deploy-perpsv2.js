@@ -43,6 +43,10 @@ const deployPerpsV2Generics = async ({
 
 	// Get previous added markets
 	let prevFuturesMarketManager;
+	const deployedFuturesMarketManagerAddress = deployer.getExistingAddress({
+		name: 'FuturesMarketManager',
+	});
+
 	try {
 		prevFuturesMarketManager = deployer.getExistingContract({
 			contract: 'FuturesMarketManager',
@@ -73,7 +77,7 @@ const deployPerpsV2Generics = async ({
 
 	if (
 		prevFuturesMarketManager &&
-		futuresMarketManager.address !== prevFuturesMarketManager.address
+		futuresMarketManager.address !== deployedFuturesMarketManagerAddress
 	) {
 		// FuturesMarketManager changed. Import current markets before going on to maintain previous configuration
 

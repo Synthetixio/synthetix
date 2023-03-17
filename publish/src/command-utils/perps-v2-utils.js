@@ -314,6 +314,8 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 		await runStep({
 			contract: implementation.contract,
 			target: implementation.target,
+			read: 'proxy',
+			expected: input => input === perpsV2MarketProxy.target.address,
 			write: 'setProxy',
 			writeArg: [perpsV2MarketProxy.target.address],
 		});
