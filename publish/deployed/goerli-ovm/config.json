@@ -658,5 +658,212 @@
 	},
 	"DebtMigratorOnOptimism": {
 		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBTCPERP": {
+		"deploy": false
 	}
 }
