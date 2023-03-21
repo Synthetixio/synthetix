@@ -526,15 +526,20 @@ const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, pat
 	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, PerpsV2Proxied) => {
 		const proxyPrefix = 'PerpsV2Proxy';
 		const marketPrefix = 'PerpsV2Market';
-		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData'];
+		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData', 'PerpsV2ExchangeRate'];
+		const excludedLegacyContracts = ['PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
 		const prefixes = [
 			'PerpsV2MarketViews',
-			'PerpsV2MarketDelayedIntent',
-			'PerpsV2MarketDelayedExecution',
+			'PerpsV2DelayedIntent',
+			'PerpsV2DelayedExecution',
 			'PerpsV2MarketLiquidate',
 		];
 
-		if (excludedContracts.includes(target) || target.startsWith('PerpsV2MarketState')) {
+		if (
+			excludedContracts.includes(target) ||
+			target.startsWith('PerpsV2MarketState') ||
+			excludedLegacyContracts.some(prefix => target.startsWith(prefix))
+		) {
 			// Markets helper or Market state. Do nothing
 			return;
 		}
