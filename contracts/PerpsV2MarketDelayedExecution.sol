@@ -33,10 +33,6 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         address _resolver
     ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
-    function delayedOrders(address account) external view returns (DelayedOrder memory) {
-        return marketState.delayedOrders(account);
-    }
-
     function _perpsV2ExchangeRate() internal view returns (IPerpsV2ExchangeRate) {
         return IPerpsV2ExchangeRate(requireAndGetAddress(CONTRACT_PERPSV2EXCHANGERATE));
     }

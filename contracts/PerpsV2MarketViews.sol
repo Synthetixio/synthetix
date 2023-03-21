@@ -83,6 +83,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
+     * Delayed Orders details
+     */
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
+        return marketState.delayedOrders(account);
+    }
+
+    /*
      * Sizes of the long and short sides of the market (in sUSD)
      */
     function marketSizes() external view returns (uint long, uint short) {

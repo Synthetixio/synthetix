@@ -22,6 +22,8 @@ interface IPerpsV2MarketViews {
 
     function positions(address account) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
+    function delayedOrders(address account) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
+
     function assetPrice() external view returns (uint price, bool invalid);
 
     function fillPrice(int sizeDelta) external view returns (uint price, bool invalid);
