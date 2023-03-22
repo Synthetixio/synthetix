@@ -245,7 +245,7 @@
 			"source": "MintableSynthetix",
 			"link": "https://explorer.optimism.io/address/0xfF5c26abD36078C768C40847672202eC343AC5ad",
 			"timestamp": "2023-03-22T14:51:13.929Z",
-			"txn": "",
+			"txn": "https://explorer.optimism.io/tx/0xdb52b60f5b1f8782c01e6736415df4b0b975993b962f3d20671d04054ce024ac",
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
@@ -309,8 +309,8 @@
 			"address": "0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453",
 			"source": "Issuer",
 			"link": "https://explorer.optimism.io/address/0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453",
-			"timestamp": "2023-03-22T14:51:19.991Z",
-			"txn": "",
+			"timestamp": "2023-03-22T14:51:04.000Z",
+			"txn": "https://explorer.optimism.io/tx/0x7cc6768ab2a26c10b1425b587d47a570d8dc7e680f6c8c434afff9af67a9e4fe",
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
@@ -3406,7 +3406,7 @@
 			"source": "DebtMigratorOnOptimism",
 			"link": "https://explorer.optimism.io/address/0xA6bc30d854c2647574921c4AF442008DB7d32ad5",
 			"timestamp": "2023-03-22T15:00:15.381Z",
-			"txn": "",
+			"txn": "https://explorer.optimism.io/tx/0xe4cfe3ad66ba30f949a2ad09486b5c707b8fea11f7c9e955de8d948a2e404c96",
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
