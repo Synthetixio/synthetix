@@ -4661,8 +4661,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x883A0E7b329Df75476d9378462522CF2f78Fab3d",
-				"status": "current",
-				"keccak256": "0xc85266777bdc8ba5399b1dc679a738f23c44dc60a40be34ba5a4f16450c52394"
+				"status": "replaced",
+				"keccak256": "0xc85266777bdc8ba5399b1dc679a738f23c44dc60a40be34ba5a4f16450c52394",
+				"replaced_in": "v2.84.4"
 			},
 			"Liquidator": {
 				"address": "0x8e9757479D5ad4E7f9d951B60d39F5220b893d6c",
@@ -4701,8 +4702,34 @@
 			},
 			"Issuer": {
 				"address": "0x2eb6860FAdC59910bF187965da8714d91F20f4dB",
+				"status": "replaced",
+				"keccak256": "0xddabc4d8c9a7676784dc0e0c7cf12a203c0a5e3814cc21a3854edce5e8e5a456",
+				"replaced_in": "v2.84.4"
+			}
+		}
+	},
+	"v2.84.4": {
+		"tag": "v2.84.4",
+		"fulltag": "v2.84.4",
+		"release": "Naos",
+		"network": "mainnet",
+		"date": "2023-03-23T10:13:14-04:00",
+		"commit": "53bba0c1dc5c43e7743c2743bac1bd2f35e6056c",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xd0dA9cBeA9C3852C5d63A95F9ABCC4f6eA0F9032",
 				"status": "current",
-				"keccak256": "0xddabc4d8c9a7676784dc0e0c7cf12a203c0a5e3814cc21a3854edce5e8e5a456"
+				"keccak256": "0xfb54a46c4b98896c043ae676b3925f939533f43203c14f2662f7b0e042b0ac55"
+			},
+			"Issuer": {
+				"address": "0xca68a3D663483515a9D434E854AB59A41b3A523c",
+				"status": "current",
+				"keccak256": "0x6bad7c208a6d9e921fbe254a7af649062cdd75b9e4adf4518af082123fa0eb0b"
+			},
+			"DebtMigratorOnEthereum": {
+				"address": "0x94f864e55c77E07C2C7BF7bFBc334b7a8123442A",
+				"status": "current",
+				"keccak256": "0x1342b154b1e8b7133e92ed3300d3a689eda400bac661c1baf9c67341cf6a0012"
 			}
 		}
 	}
