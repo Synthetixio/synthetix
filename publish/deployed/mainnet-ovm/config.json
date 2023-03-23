@@ -266,6 +266,9 @@
 	"ExchangeSettlementLib": {
 		"deploy": false
 	},
+	"DebtMigratorOnOptimism": {
+		"deploy": false
+	},
 	"PerpsV2MarketSettings": {
 		"deploy": false
 	},

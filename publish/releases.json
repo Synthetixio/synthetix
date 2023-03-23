@@ -656,9 +656,10 @@
 			"sip": 237,
 			"layer": "both",
 			"sources": {
-				"base": ["Issuer", "Synthetix"],
-				"ovm": ["Issuer", "Synthetix"]
-			}
+				"base": ["Issuer", "Synthetix", "DebtMigratorOnEthereum"],
+				"ovm": ["Issuer", "Synthetix", "DebtMigratorOnOptimism"]
+			},
+			"released": "both"
 		},
 		{
 			"sip": 238,
@@ -1601,7 +1602,8 @@
 				"major": 2,
 				"minor": 84
 			},
-			"sips": [237]
+			"sips": [237],
+			"released": true
 		},
 		{
 			"name": "Naos (Optimism)",
@@ -1610,7 +1612,8 @@
 				"major": 2,
 				"minor": 84
 			},
-			"sips": [237]
+			"sips": [237],
+			"released": true
 		}
 	]
 }
