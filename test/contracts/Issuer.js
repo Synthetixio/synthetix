@@ -189,6 +189,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'liquidateAccount',
+				'modifyDebtSharesForMigration',
 				'removeSynth',
 				'removeSynths',
 				'setCurrentPeriodId',
@@ -224,6 +225,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
 				reason: 'only trusted minters',
+			});
+		});
+
+		it('modifyDebtSharesForMigration() cannont be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.modifyDebtSharesForMigration,
+				args: [account1, toUnit(100)],
+				accounts,
+				reason: 'only trusted migrators',
 			});
 		});
 
@@ -3031,6 +3041,117 @@ contract('Issuer (via Synthetix)', async accounts => {
 					it('reduces currentDebt', async () => {
 						const currentDebt = await debtCache.currentDebt();
 						assert.bnEqual(currentDebt['0'], beforeCurrentDebt.sub(amountToBurn));
+					});
+				});
+			});
+
+			describe('modifyDebtSharesForMigration', () => {
+				const debtMigratorOnEthereumMock = account1;
+				const debtMigratorOnOptimismMock = account2;
+				const fakeMigrator = account3;
+
+				beforeEach(async () => {
+					// Import mocked debt migrator addresses to the resolver
+					await addressResolver.importAddresses(
+						[toBytes32('DebtMigratorOnEthereum'), toBytes32('DebtMigratorOnOptimism')],
+						[debtMigratorOnEthereumMock, debtMigratorOnOptimismMock],
+						{
+							from: owner,
+						}
+					);
+
+					await issuer.rebuildCache();
+				});
+
+				describe('basic protection', () => {
+					it('should not allow an invalid migrator address', async () => {
+						await assert.revert(
+							issuer.modifyDebtSharesForMigration(owner, toUnit(1), { from: fakeMigrator }),
+							'only trusted migrators'
+						);
+					});
+
+					it('should not allow both debt migrators to be set on the same layer', async () => {
+						await assert.revert(
+							issuer.modifyDebtSharesForMigration(account1, toUnit(100), {
+								from: debtMigratorOnEthereumMock,
+							}),
+							'one migrator must be 0x0'
+						);
+					});
+				});
+
+				describe('modifying debt share balance for migration', () => {
+					describe('on L1', () => {
+						let beforeDebtShareBalance;
+						const amountToBurn = toUnit(10);
+
+						beforeEach(async () => {
+							// Make sure one of the debt migrators is 0x
+							// (in this case it's the Optimism migrator)
+							await addressResolver.importAddresses(
+								[toBytes32('DebtMigratorOnOptimism')],
+								[ZERO_ADDRESS],
+								{
+									from: owner,
+								}
+							);
+							await issuer.rebuildCache();
+
+							// Give some SNX to the mock migrator
+							await synthetix.transfer(debtMigratorOnEthereumMock, toUnit('1000'), { from: owner });
+
+							// issue max sUSD
+							const maxSynths = await synthetix.maxIssuableSynths(debtMigratorOnEthereumMock);
+							await synthetix.issueSynths(maxSynths, { from: debtMigratorOnEthereumMock });
+
+							// get before value
+							beforeDebtShareBalance = await debtShares.balanceOf(debtMigratorOnEthereumMock);
+
+							// call modify debt shares
+							await issuer.modifyDebtSharesForMigration(debtMigratorOnEthereumMock, amountToBurn, {
+								from: debtMigratorOnEthereumMock,
+							});
+						});
+
+						it('burns the expected amount of debt shares', async () => {
+							assert.bnEqual(
+								await debtShares.balanceOf(debtMigratorOnEthereumMock),
+								beforeDebtShareBalance.sub(amountToBurn)
+							);
+						});
+					});
+					describe('on L2', () => {
+						let beforeDebtShareBalance;
+						const amountToMint = toUnit(10);
+
+						beforeEach(async () => {
+							// Make sure one of the debt migrators is 0x
+							// (in this case it's the Ethereum migrator)
+							await addressResolver.importAddresses(
+								[toBytes32('DebtMigratorOnEthereum')],
+								[ZERO_ADDRESS],
+								{
+									from: owner,
+								}
+							);
+							await issuer.rebuildCache();
+
+							// get before value
+							beforeDebtShareBalance = await debtShares.balanceOf(debtMigratorOnOptimismMock);
+
+							// call modify debt shares
+							await issuer.modifyDebtSharesForMigration(debtMigratorOnOptimismMock, amountToMint, {
+								from: debtMigratorOnOptimismMock,
+							});
+						});
+
+						it('mints the expected amount of debt shares', async () => {
+							assert.bnEqual(
+								await debtShares.balanceOf(debtMigratorOnOptimismMock),
+								beforeDebtShareBalance.add(amountToMint)
+							);
+						});
 					});
 				});
 			});

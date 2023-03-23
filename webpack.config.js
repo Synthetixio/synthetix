@@ -8,4 +8,7 @@ module.exports = {
 		library: 'synthetix',
 		libraryTarget: 'umd',
 	},
+	resolve: {
+		fallback: { assert: false, stream: false },
+	},
 };

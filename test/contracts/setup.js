@@ -352,6 +352,8 @@ const setupContract = async ({
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidator: [owner, tryGetAddressOf('AddressResolver')],
 		LiquidatorRewards: [owner, tryGetAddressOf('AddressResolver')],
+		DebtMigratorOnEthereum: [owner, tryGetAddressOf('AddressResolver')],
+		DebtMigratorOnOptimism: [owner, tryGetAddressOf('AddressResolver')],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -1106,6 +1108,26 @@ const setupAllContracts = async ({
 		{
 			contract: 'LiquidatorRewards',
 			deps: ['AddressResolver', 'Liquidator', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+		},
+		{
+			contract: 'DebtMigratorOnEthereum',
+			deps: [
+				'AddressResolver',
+				'Liquidator',
+				'LiquidatorRewards',
+				'Issuer',
+				'RewardEscrowV2',
+				'Synthetix',
+				'SynthetixDebtShare',
+				'SynthetixBridgeToOptimism',
+				'SystemSettings',
+			],
+			mocks: ['ext:Messenger', 'ovm:DebtMigratorOnOptimism'],
+		},
+		{
+			contract: 'DebtMigratorOnOptimism',
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+			mocks: ['ext:Messenger', 'base:DebtMigratorOnEthereum'],
 		},
 		{
 			contract: 'RewardsDistribution',

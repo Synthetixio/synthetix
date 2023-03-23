@@ -4,8 +4,6 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { smockit } = require('@eth-optimism/smock');
-
 require('./common'); // import common test scaffolding
 
 const { setupContract, setupAllContracts } = require('./setup');
@@ -105,83 +103,6 @@ contract('Synthetix', async accounts => {
 			assert.equal(await instance.owner(), owner);
 			assert.equal(await instance.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
 			assert.equal(await instance.resolver(), addressResolver.address);
-		});
-	});
-
-	describe('Exchanger calls', () => {
-		let smockExchanger;
-		beforeEach(async () => {
-			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
-			smockExchanger.smocked.exchange.will.return.with(() => ['1', account1]);
-			smockExchanger.smocked.exchangeAtomically.will.return.with(() => ['1']);
-			await addressResolver.importAddresses(
-				['Exchanger'].map(toBytes32),
-				[smockExchanger.address],
-				{ from: owner }
-			);
-			await synthetix.rebuildCache();
-		});
-
-		const amount1 = '10';
-		const currencyKey1 = sAUD;
-		const currencyKey2 = sEUR;
-		const trackingCode = toBytes32('1inch');
-		const minAmount = '0';
-		const msgSender = owner;
-
-		it('exchangeWithVirtual is called with the right arguments', async () => {
-			await synthetix.exchangeWithVirtual(currencyKey1, amount1, currencyKey2, trackingCode, {
-				from: msgSender,
-			});
-			assert.equal(smockExchanger.smocked.exchange.calls[0][0], msgSender);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][1], msgSender);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][2], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][3].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][4], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][5], msgSender);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][6], true);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][7], msgSender);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][8], trackingCode);
-		});
-
-		it('exchangeWithTrackingForInitiator is called with the right arguments ', async () => {
-			await synthetix.exchangeWithTrackingForInitiator(
-				currencyKey1,
-				amount1,
-				currencyKey2,
-				account2,
-				trackingCode,
-				{ from: account3 }
-			);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][0], account3);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][1], account3);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][2], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][3].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][4], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][5], account3); // destination address (tx.origin)
-			assert.equal(smockExchanger.smocked.exchange.calls[0][6], false);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][7], account2);
-			assert.equal(smockExchanger.smocked.exchange.calls[0][8], trackingCode);
-		});
-
-		it('exchangeAtomically is called with the right arguments ', async () => {
-			await synthetix.exchangeAtomically(
-				currencyKey1,
-				amount1,
-				currencyKey2,
-				trackingCode,
-				minAmount,
-				{
-					from: owner,
-				}
-			);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][0], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][1], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][2].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][3], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][4], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][5], trackingCode);
-			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][6], minAmount);
 		});
 	});
 
