@@ -128,7 +128,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint desiredFillPrice,
         bytes32 trackingCode,
         IPerpsV2MarketBaseTypes.OrderType orderType
-    ) internal notFlagged(messageSender) {
+    ) internal onlyProxy notFlagged(messageSender) {
         Position memory position = marketState.positions(messageSender);
 
         // a position must be present before closing.
