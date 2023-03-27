@@ -494,5 +494,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "NEAR"
+	},
+	"ARB": {
+		"asset": "ARB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Arbitrum"
 	}
 }
