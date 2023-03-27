@@ -2356,5 +2356,45 @@
 				"keccak256": "0x5f814a124b8925fa1229d193988b0f860d780086f6ae3f15cc32a63dbaaab8cd"
 			}
 		}
+	},
+	"v2.85.0": {
+		"tag": "v2.85.0",
+		"fulltag": "v2.85.0",
+		"release": "Almach",
+		"network": "mainnet",
+		"date": "2023-03-27T23:51:04+01:00",
+		"commit": "568dfe3367aed21c36b2db2b0c7385eb03b304f4",
+		"contracts": {
+			"PerpsV2ProxyARBPERP": {
+				"address": "0x509072A5aE4a87AC89Fc8D64D94aDCb44Bd4b88e",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateARBPERP": {
+				"address": "0xa31717145C27bb37868829E92A3601014768d145",
+				"status": "current",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+			},
+			"PerpsV2MarketARBPERP": {
+				"address": "0xF676e375eD19bd05C85F7EF8958C69684fD1b3c6",
+				"status": "current",
+				"keccak256": "0xacad701da53122ef351cb0f78d70dfb7b6cdf69c637fd2025b61f9085361465c"
+			},
+			"PerpsV2MarketViewsARBPERP": {
+				"address": "0x4DC1636f5B4C1143cB03772A93923718E4320543",
+				"status": "current",
+				"keccak256": "0x506c9e2bbb26041908d2f8df8210f53643ac64a6f5265ff7aa6ce040828948e0"
+			},
+			"PerpsV2DelayedOrderARBPERP": {
+				"address": "0x0f5af2A8a4Df79e354455788fdA73bed85AB435C",
+				"status": "current",
+				"keccak256": "0xe4c064524a1967ffa3c3c6a51b4eb0e400fad6c498a8330cb87441e8da84e30b"
+			},
+			"PerpsV2OffchainDelayedOrderARBPERP": {
+				"address": "0x5d89892BCa7aa5619fd6168D38F73bb84D777e9C",
+				"status": "current",
+				"keccak256": "0xd24df0a5e922069fa7b9e64f2a127e9741951bf7f312a66c9b31b110ec3103f4"
+			}
+		}
 	}
 }
