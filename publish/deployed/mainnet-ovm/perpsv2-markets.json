@@ -621,6 +621,6 @@
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocARBPERP",
 		"paused": true,
-		"offchainPaused": false
+		"offchainPaused": true
 	}
 ]
