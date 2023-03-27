@@ -620,7 +620,7 @@
 		"offchainPriceDivergence": "0.03",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocARBPERP",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
