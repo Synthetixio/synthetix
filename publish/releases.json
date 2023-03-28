@@ -847,6 +847,12 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2010,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1613,6 +1619,16 @@
 				"minor": 84
 			},
 			"sips": [237],
+			"released": true
+		},
+		{
+			"name": "Almach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 85
+			},
+			"sips": [2010],
 			"released": true
 		}
 	]
