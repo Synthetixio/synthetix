@@ -154,7 +154,6 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         // Cleanup any outstanding delayed order
         DelayedOrder memory order = marketState.delayedOrders(account);
         if (order.sizeDelta != 0) {
-            Position memory position = marketState.positions(account);
             _updatePositionMargin(account, position, order.sizeDelta, price, int(order.commitDeposit + order.keeperDeposit));
             emitPositionModified(
                 position.id,
