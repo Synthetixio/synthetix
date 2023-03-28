@@ -177,17 +177,9 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         _cancelDelayedOrder(account, order);
     }
 
-    // solhint-disable no-unused-vars
-    function _confirmCanCancel(
-        address account,
-        DelayedOrder memory order,
-        uint currentRoundId
-    ) internal {
+    function _confirmCanCancel(DelayedOrder memory order, uint currentRoundId) internal {
         if (order.isOffchain) {
-            require(
-                block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()) * 2,
-                "cannot cancel yet"
-            );
+            require(block.timestamp - order.intentionTime > _offchainDelayedOrderMaxAge(_marketKey()), "cannot cancel yet");
         } else {
             require(
                 _confirmationWindowOver(order.executableAtTime, currentRoundId, order.targetRoundId),
@@ -237,7 +229,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
     function _cancelDelayedOrder(address account, DelayedOrder memory order) internal notFlagged(account) {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
-        _confirmCanCancel(account, order, currentRoundId);
+        _confirmCanCancel(order, currentRoundId);
 
         if (account == messageSender) {
             // this is account owner - refund keeper fee to margin
