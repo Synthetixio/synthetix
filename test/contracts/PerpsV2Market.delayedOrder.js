@@ -1048,7 +1048,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					);
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 6);
+					assert.equal(decodedLogs.length, 5);
+					assert.deepEqual(
+						decodedLogs.map(({ name }) => name),
+						['Issued', 'FundingRecomputed', 'Issued', 'PositionModified', 'DelayedOrderRemoved']
+					);
 					// keeper fee, funding, position(refund), issued (exchange fee), position(trade), order removed
 					decodedEventEqual({
 						event: 'Issued',
@@ -1061,12 +1065,14 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				let expectedMargin = currentMargin.add(expectedRefund);
 
 				// trader was refunded correctly
-				decodedEventEqual({
-					event: 'PositionModified',
-					emittedFrom: perpsV2Market.address,
-					args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, preSkew],
-					log: decodedLogs.slice(-4, -3)[0],
-				});
+				if (from === trader) {
+					decodedEventEqual({
+						event: 'PositionModified',
+						emittedFrom: perpsV2Market.address,
+						args: [toBN('1'), trader, expectedMargin, 0, 0, fillPrice, toBN(2), 0, preSkew],
+						log: decodedLogs.slice(-4, -3)[0],
+					});
+				}
 
 				// trade was executed correctly
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));
