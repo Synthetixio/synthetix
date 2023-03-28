@@ -33,7 +33,11 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
 
     ///// Mutative methods
 
-    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external {
+    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode)
+        external
+        onlyProxy
+        notFlagged(messageSender)
+    {
         _submitCloseDelayedOrder(0, desiredFillPrice, trackingCode, IPerpsV2MarketBaseTypes.OrderType.Offchain);
     }
 
@@ -41,7 +45,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint desiredTimeDelta,
         uint desiredFillPrice,
         bytes32 trackingCode
-    ) external {
+    ) external onlyProxy notFlagged(messageSender) {
         _submitCloseDelayedOrder(
             desiredTimeDelta,
             desiredFillPrice,
@@ -128,7 +132,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         uint desiredFillPrice,
         bytes32 trackingCode,
         IPerpsV2MarketBaseTypes.OrderType orderType
-    ) internal onlyProxy notFlagged(messageSender) {
+    ) internal {
         Position memory position = marketState.positions(messageSender);
 
         // a position must be present before closing.
