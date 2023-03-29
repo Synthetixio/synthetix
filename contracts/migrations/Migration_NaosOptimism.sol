@@ -4,7 +4,7 @@ import "../BaseMigration.sol";
 import "../AddressResolver.sol";
 import "../ProxyERC20.sol";
 import "../SystemStatus.sol";
-import "../legacy/LegacyTokenState.sol";
+import "../TokenState.sol";
 import "../RewardsDistribution.sol";
 import "../Issuer.sol";
 
@@ -15,35 +15,35 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_NaosOptimism is BaseMigration {
-    // https://goerli-explorer.optimism.io/address/0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
-    address public constant OWNER = 0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9;
+    // https://explorer.optimism.io/address/0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
+    address public constant OWNER = 0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
 
     // ----------------------------
     // EXISTING SYNTHETIX CONTRACTS
     // ----------------------------
 
-    // https://goerli-explorer.optimism.io/address/0x1d551351613a28d676BaC1Af157799e201279198
-    AddressResolver public constant addressresolver_i = AddressResolver(0x1d551351613a28d676BaC1Af157799e201279198);
-    // https://goerli-explorer.optimism.io/address/0x2E5ED97596a8368EB9E44B1f3F25B2E813845303
-    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0x2E5ED97596a8368EB9E44B1f3F25B2E813845303);
-    // https://goerli-explorer.optimism.io/address/0x9D89fF8C6f3CC22F4BbB859D0F85FB3a4e1FA916
-    SystemStatus public constant systemstatus_i = SystemStatus(0x9D89fF8C6f3CC22F4BbB859D0F85FB3a4e1FA916);
-    // https://goerli-explorer.optimism.io/address/0xB9525040A5B6a2d9e013240397079Fd1320559C4
-    LegacyTokenState public constant tokenstatesynthetix_i = LegacyTokenState(0xB9525040A5B6a2d9e013240397079Fd1320559C4);
-    // https://goerli-explorer.optimism.io/address/0xb12704F8BddA7CF3eBa5F9A463404D4ba5d0e282
+    // https://explorer.optimism.io/address/0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C
+    AddressResolver public constant addressresolver_i = AddressResolver(0x95A6a3f44a70172E7d50a9e28c85Dfd712756B8C);
+    // https://explorer.optimism.io/address/0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4
+    ProxyERC20 public constant proxysynthetix_i = ProxyERC20(0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4);
+    // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
+    SystemStatus public constant systemstatus_i = SystemStatus(0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD);
+    // https://explorer.optimism.io/address/0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE
+    TokenState public constant tokenstatesynthetix_i = TokenState(0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE);
+    // https://explorer.optimism.io/address/0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e
     RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0xb12704F8BddA7CF3eBa5F9A463404D4ba5d0e282);
-    // https://goerli-explorer.optimism.io/address/0x42E3288434a04283C55C50D8f61056a955F3bbFA
-    Issuer public constant issuer_i = Issuer(0x42E3288434a04283C55C50D8f61056a955F3bbFA);
+        RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
+    // https://explorer.optimism.io/address/0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453
+    Issuer public constant issuer_i = Issuer(0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
     // ----------------------------------
 
-    // https://goerli-explorer.optimism.io/address/0xB8779a07186ae7555f96eb276925c5B5b7bE4096
-    address public constant new_Synthetix_contract = 0xB8779a07186ae7555f96eb276925c5B5b7bE4096;
-    // https://goerli-explorer.optimism.io/address/0x42E3288434a04283C55C50D8f61056a955F3bbFA
-    address public constant new_Issuer_contract = 0x42E3288434a04283C55C50D8f61056a955F3bbFA;
+    // https://explorer.optimism.io/address/0xfF5c26abD36078C768C40847672202eC343AC5ad
+    address public constant new_Synthetix_contract = 0xfF5c26abD36078C768C40847672202eC343AC5ad;
+    // https://explorer.optimism.io/address/0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453
+    address public constant new_Issuer_contract = 0xEb66Fc1BFdF3284Cb0CA1dE57149dcf3cEFa5453;
 
     constructor() public BaseMigration(OWNER) {}
 
@@ -109,33 +109,37 @@ contract Migration_NaosOptimism is BaseMigration {
     }
 
     function addressresolver_rebuildCaches_1() internal {
-        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](18);
-        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xF6C92Ad11fa67b7b685aDb435FbE932c049B670c);
-        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0x5e042334B5Bb0434aB2512d16FfcD4Db61F94f18);
-        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0x1c6C0a89064206e397E75b11Bcd370E8A8A007B4);
-        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x164724726608622b6e5Fa1aF8932b45A7Bd1a94D);
+        MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
+        addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0x6330D5F08f51057F36F46d6751eCDc0c65Ef7E9e);
+        addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(0xB589Af3f2e3377A9a57da74bE1b6598926479505);
+        addressresolver_rebuildCaches_destinations_1_0[2] = MixinResolver(0xF4EebDD0704021eF2a6Bbe993fdf93030Cd784b4);
+        addressresolver_rebuildCaches_destinations_1_0[3] = MixinResolver(0x24b4b6703a2eE7bA75a4Fc859B606F0bbaeef4EA);
         addressresolver_rebuildCaches_destinations_1_0[4] = MixinResolver(new_Issuer_contract);
-        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x08fb827Ee5A00232aDe347964225Ba4344665eD5);
-        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0xD2b3F0Ea40dB68088415412b0043F37B3088836D);
+        addressresolver_rebuildCaches_destinations_1_0[5] = MixinResolver(0x2DcAD1A019fba8301b77810Ae14007cc88ED004B);
+        addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0x136b1EC699c62b0606854056f02dC7Bb80482d63);
         addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(new_Synthetix_contract);
-        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x3c710172e7f95aCAaDeD243982a90F8F235fF9f1);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x41B88d77A1C0Ea3cdcf44D69365399F4dCBab5B0);
-        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x216EaF79575563A5e13227ad075850cDeb004083);
-        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0x5cB8210159f486dFE8Dc779357ee5A15B8f233bC);
-        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0xFdb50671276DbC9D24D68b272B54dE4a87aaCc6c);
-        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0x2A8338199D802620B4516a557195a498595d7Eb6);
-        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0xfDa54191F3C0999dbf4c193dEF1B83EDD3e3Ba39);
-        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0x7D442107e2AD048C02F06332C918b1F81bd6850d);
-        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0xFdB84151Bfc76857398BC3efd8d1b32A32c571f2);
-        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0x0440f82444C825a0842f50e1c25cb68676d736e3);
+        addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(0x45c55BF488D3Cb8640f12F63CbeDC027E8261E79);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0xf9FE3607e6d19D8dC690DD976061a91D4A0db30B);
+        addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x17628A557d1Fc88D1c35989dcBAC3f3e275E2d2B);
+        addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0x803FD1d99C3a6cbcbABAB79C44e108dC2fb67102);
+        addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x7322e8F6cB6c6a7B4e6620C486777fcB9Ea052a4);
+        addressresolver_rebuildCaches_destinations_1_0[13] = MixinResolver(0xA997BD647AEe62Ef03b41e6fBFAdaB43d8E57535);
+        addressresolver_rebuildCaches_destinations_1_0[14] = MixinResolver(0xDfA2d3a0d32F870D87f8A0d7AA6b9CdEB7bc5AdB);
+        addressresolver_rebuildCaches_destinations_1_0[15] = MixinResolver(0xe9dceA0136FEFC76c4E639Ec60CCE70482E2aCF7);
+        addressresolver_rebuildCaches_destinations_1_0[16] = MixinResolver(0x421DEF861D623F7123dfE0878D86E9576cbb3975);
+        addressresolver_rebuildCaches_destinations_1_0[17] = MixinResolver(0xdEdb0b04AFF1525bb4B6167F00e61601690c1fF2);
+        addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0x34c2360ffe5D21542f76e991FFD104f281D4B3fb);
+        addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0x15E7D4972a3E477878A5867A47617122BE2d1fF0);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
     }
 
     function issuer_addSynths_8() internal {
-        ISynth[] memory issuer_addSynths_synthsToAdd_8_0 = new ISynth[](3);
-        issuer_addSynths_synthsToAdd_8_0[0] = ISynth(0xfDa54191F3C0999dbf4c193dEF1B83EDD3e3Ba39);
-        issuer_addSynths_synthsToAdd_8_0[1] = ISynth(0x7D442107e2AD048C02F06332C918b1F81bd6850d);
-        issuer_addSynths_synthsToAdd_8_0[2] = ISynth(0xFdB84151Bfc76857398BC3efd8d1b32A32c571f2);
+        ISynth[] memory issuer_addSynths_synthsToAdd_8_0 = new ISynth[](5);
+        issuer_addSynths_synthsToAdd_8_0[0] = ISynth(0xDfA2d3a0d32F870D87f8A0d7AA6b9CdEB7bc5AdB);
+        issuer_addSynths_synthsToAdd_8_0[1] = ISynth(0xe9dceA0136FEFC76c4E639Ec60CCE70482E2aCF7);
+        issuer_addSynths_synthsToAdd_8_0[2] = ISynth(0x421DEF861D623F7123dfE0878D86E9576cbb3975);
+        issuer_addSynths_synthsToAdd_8_0[3] = ISynth(0xdEdb0b04AFF1525bb4B6167F00e61601690c1fF2);
+        issuer_addSynths_synthsToAdd_8_0[4] = ISynth(0x34c2360ffe5D21542f76e991FFD104f281D4B3fb);
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_8_0);
     }
 }
