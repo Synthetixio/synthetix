@@ -234,7 +234,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         return (price, publishTime);
     }
 
-    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal notFlagged(account) {
+    function _cancelDelayedOrder(address account, DelayedOrder memory order) internal {
         uint currentRoundId = _exchangeRates().getCurrentRoundId(_baseAsset());
 
         _confirmCanCancel(account, order, currentRoundId);
@@ -285,7 +285,7 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
         uint currentRoundId,
         uint takerFee,
         uint makerFee
-    ) internal notFlagged(account) {
+    ) internal {
         // handle the fees and refunds according to the mechanism rules
         //
         // note: commitDeposit will always be 0 as we no longer charge a commitDeposit on submit. however,
@@ -308,19 +308,21 @@ contract PerpsV2MarketDelayedExecution is IPerpsV2MarketDelayedExecution, PerpsV
 
         // refund the commitFee (and possibly the keeperFee) to the margin before executing the order
         // if the order later fails this is reverted of course
-        _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
-        // emit event for modifying the position (refunding fee/s)
-        emitPositionModified(
-            position.id,
-            account,
-            position.margin,
-            position.size,
-            0,
-            fillPrice,
-            fundingIndex,
-            0,
-            marketState.marketSkew()
-        );
+        if (toRefund > 0) {
+            _updatePositionMargin(account, position, order.sizeDelta, fillPrice, int(toRefund));
+            // emit event for modifying the position (refunding fee/s)
+            emitPositionModified(
+                position.id,
+                account,
+                position.margin,
+                position.size,
+                0,
+                fillPrice,
+                fundingIndex,
+                0,
+                marketState.marketSkew()
+            );
+        }
 
         // execute or revert
         _trade(

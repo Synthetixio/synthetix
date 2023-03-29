@@ -1051,6 +1051,7 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				const decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [
+						mockPyth,
 						sUSD,
 						perpsV2Market,
 						perpsV2MarketDelayedExecution,
@@ -1063,12 +1064,37 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					// trader gets refunded keeperFee
 					expectedRefund = expectedRefund.add(keeperFee);
 					// no event for keeper payment
-					assert.equal(decodedLogs.length, 8);
+					console.log(decodedLogs.map(({ name }) => name));
+					assert.deepEqual(
+						decodedLogs.map(({ name }) => name),
+						[
+							'PriceFeedUpdate',
+							'BatchPriceFeedUpdate',
+							'UpdatePriceFeeds',
+							'FundingRecomputed',
+							'PositionModified',
+							'Issued',
+							'PositionModified',
+							'DelayedOrderRemoved',
+						]
+					);
 					// funding, position(refund), issued (exchange fee), position(trade), order removed
 				} else {
 					// keeper gets paid
-					assert.equal(decodedLogs.length, 9);
-					// keeper fee, funding, position(refund), issued (exchange fee), position(trade), order removed
+					assert.equal(decodedLogs.length, 8);
+					assert.deepEqual(
+						decodedLogs.map(({ name }) => name),
+						[
+							'PriceFeedUpdate',
+							'BatchPriceFeedUpdate',
+							'UpdatePriceFeeds',
+							'Issued',
+							'FundingRecomputed',
+							'Issued',
+							'PositionModified',
+							'DelayedOrderRemoved',
+						]
+					);
 					decodedEventEqual({
 						event: 'Issued',
 						emittedFrom: sUSD.address,
@@ -1080,22 +1106,24 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 				// trader was refunded correctly
 				let expectedMargin = currentMargin.add(expectedRefund);
 
-				decodedEventEqual({
-					event: 'PositionModified',
-					emittedFrom: perpsV2Market.address,
-					args: [
-						toBN('1'),
-						trader,
-						expectedMargin,
-						0,
-						0,
-						currentOffchainPrice,
-						toBN(2),
-						0,
-						preSkew,
-					],
-					log: decodedLogs.slice(-4, -3)[0],
-				});
+				if (from === trader) {
+					decodedEventEqual({
+						event: 'PositionModified',
+						emittedFrom: perpsV2Market.address,
+						args: [
+							toBN('1'),
+							trader,
+							expectedMargin,
+							0,
+							0,
+							currentOffchainPrice,
+							toBN(2),
+							0,
+							preSkew,
+						],
+						log: decodedLogs.slice(-4, -3)[0],
+					});
+				}
 
 				// trade was executed correctly
 				const expectedFee = multiplyDecimal(size, multiplyDecimal(targetPrice, feeRate));

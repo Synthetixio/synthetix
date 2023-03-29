@@ -101,6 +101,7 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
             legacyState = PerpsV2MarketStateLegacyR1(_legacyState);
             _legacyContractExists = true;
             // Confirm same asset/market key
+            // Passing the marketKey as parameter and confirming with the legacy allows for double check the intended market is configured
             require(
                 baseAsset == legacyState.baseAsset() && marketKey == legacyState.marketKey(),
                 "Invalid legacy state baseAsset or marketKey"
@@ -108,6 +109,12 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         }
     }
 
+    /*
+     * Links this State contract with the legacy one fixing the latest state on the previous contract.
+     * This function should be called with the market paused to prevent any issue.
+     * Note: It's not called on constructor to allow separation of deployment and
+     * setup/linking and reduce downtime.
+     */
     function linkOrInitializeState() external onlyOwner {
         require(!initialized, "State already initialized");
 
@@ -205,6 +212,9 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _delayedOrders[account];
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getPositionAddressesPage(uint index, uint pageSize)
         external
         view
@@ -214,25 +224,38 @@ contract PerpsV2MarketState is Owned, StateShared, IPerpsV2MarketBaseTypes {
         return _positionAddresses.getPage(index, pageSize);
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getDelayedOrderAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
         return _delayedOrderAddresses.getPage(index, pageSize);
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getFlaggedAddressesPage(uint index, uint pageSize) external view returns (address[] memory) {
-        // Flagged doesn't exist in legacy, don't need to check
         return _flaggedAddresses.getPage(index, pageSize);
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getPositionAddressesLength() external view returns (uint) {
         return _positionAddresses.elements.length;
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getDelayedOrderAddressesLength() external view returns (uint) {
         return _delayedOrderAddresses.elements.length;
     }
 
+    /*
+     * helper function for migration and analytics. Not linked to legacy state
+     */
     function getFlaggedAddressesLength() external view returns (uint) {
-        // Flagged doesn't exist in legacy, don't need to check
         return _flaggedAddresses.elements.length;
     }
 

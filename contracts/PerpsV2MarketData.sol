@@ -70,12 +70,6 @@ contract PerpsV2MarketData {
         uint makerFeeOffchainDelayedOrder;
     }
 
-    struct FundingDetails {
-        int currentFundingRate;
-        int unrecordedFunding;
-        uint fundingLastRecomputed;
-    }
-
     struct MarketData {
         address market;
         bytes32 baseAsset;

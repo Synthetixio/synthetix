@@ -570,13 +570,14 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			});
 		});
 
-		describe('PerpsV2MarketDelayedOrders', () => {
+		describe('PerpsV2Market - Submit, Cancel, Execute Close', () => {
 			it('Only proxy functions only work for proxy', async () => {
 				const sizeDelta = toUnit('1');
 				const desiredFillPrice = (
 					await perpsV2MarketHelper.fillPriceWithMeta(sizeDelta, priceImpactDelta, 0)
 				)[1];
 
+				// Submit
 				await onlyGivenAddressCanInvoke({
 					fnc: perpsV2MarketDelayedIntent.submitDelayedOrder,
 					args: [sizeDelta, 60, desiredFillPrice],
@@ -592,37 +593,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,
 				});
-
-				// set an order to prevent reverting with no-order
-				await perpsV2Market.transferMargin(initialPrice, { from: trader3 });
-				await perpsV2Market.submitDelayedOrder(sizeDelta, 0, desiredFillPrice, {
-					from: trader3,
-				});
-
-				await onlyGivenAddressCanInvoke({
-					fnc: perpsV2MarketDelayedExecution.cancelDelayedOrder,
-					args: [trader3],
-					accounts: [owner, trader, trader2, trader3],
-					reason: 'Only the proxy can call',
-					skipPassCheck: true,
-				});
-
-				await onlyGivenAddressCanInvoke({
-					fnc: perpsV2MarketDelayedExecution.executeDelayedOrder,
-					args: [trader3],
-					accounts: [owner, trader, trader2, trader3],
-					reason: 'Only the proxy can call',
-					skipPassCheck: true,
-				});
-			});
-		});
-
-		describe('PerpsV2MarketDelayedOrdersOffchain', () => {
-			it('Only proxy functions only work for proxy', async () => {
-				const sizeDelta = toUnit('1');
-				const desiredFillPrice = (
-					await perpsV2MarketHelper.fillPriceWithMeta(sizeDelta, priceImpactDelta, 0)
-				)[1];
 
 				await onlyGivenAddressCanInvoke({
 					fnc: perpsV2MarketDelayedIntent.submitOffchainDelayedOrder,
@@ -640,7 +610,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					skipPassCheck: true,
 				});
 
-				// set an order to prevent reverting with no-order
+				// Cancel
 				await perpsV2Market.transferMargin(initialPrice, { from: trader3 });
 				await perpsV2Market.submitOffchainDelayedOrder(sizeDelta, desiredFillPrice, {
 					from: trader3,
@@ -654,17 +624,51 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					skipPassCheck: true,
 				});
 
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketDelayedExecution.cancelDelayedOrder,
+					args: [trader3],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				// Execute
 				const updateFeedData = await getFeedUpdateData({
 					publishTime: await currentTime(),
 				});
 
 				await onlyGivenAddressCanInvoke({
 					fnc: perpsV2MarketDelayedExecution.executeOffchainDelayedOrder,
-					args: [trader3, [updateFeedData]],
+					args: [trader2, [updateFeedData]],
 					accounts: [owner, trader, trader2, trader3],
 					reason: 'Only the proxy can call',
 					skipPassCheck: true,
 					value: pythFee,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketDelayedExecution.executeDelayedOrder,
+					args: [trader3],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				// Close
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketDelayedIntent.submitCloseDelayedOrderWithTracking,
+					args: [60, desiredFillPrice, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
+				});
+
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketDelayedIntent.submitCloseOffchainDelayedOrderWithTracking,
+					args: [desiredFillPrice, toBytes32('code')],
+					accounts: [owner, trader, trader2, trader3],
+					reason: 'Only the proxy can call',
+					skipPassCheck: true,
 				});
 			});
 		});
