@@ -613,7 +613,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					let ffDelta = 0;
 					const maxAge = 60;
 					const executionExpiredDelay = maxAge + 1;
-					const cancellableDelay = 2 * maxAge + 1;
 					await perpsV2MarketSettings.setOffchainDelayedOrderMaxAge(marketKey, maxAge, {
 						from: owner,
 					});
@@ -632,7 +631,14 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						price: feedBaseFromUNIT(offChainPrice),
 						conf: feedBaseFromUNIT(confidence),
 					});
-					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
+
+					// cannot cancel yet (need to reach the execution/cancelation age)
+					await assert.revert(
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward, order cannot be executed (due to maxAge) and is cancellable
 					ffDelta = executionExpiredDelay - ffDelta;
 					await fastForward(ffDelta);
 
@@ -641,25 +647,17 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						'order too old, use cancel'
 					);
 
-					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
-						'cannot cancel yet'
-					);
-
-					// time has moved forward and now is cancellable
-					ffDelta = cancellableDelay - ffDelta;
-					await fastForward(ffDelta);
+					// now is cancellable
 					await checkCancellation(trader);
 				});
 			});
 
 			describe('non-account owner moving in time', () => {
-				it('cannot cancel before time based 2 maxAge', async () => {
+				it('cannot cancel before time passed maxAge', async () => {
 					// set a known and deterministic confirmation window.
 					let ffDelta = 0;
 					const maxAge = 60;
 					const executionExpiredDelay = maxAge + 1;
-					const cancellableDelay = 2 * maxAge + 1;
 					await perpsV2MarketSettings.setOffchainDelayedOrderMaxAge(marketKey, maxAge, {
 						from: owner,
 					});
@@ -670,8 +668,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						'cannot cancel yet'
 					);
 
-					// time has moved forward, order cannot be executed (due to maxAge) but is not cancellable yet
-					ffDelta = executionExpiredDelay - ffDelta;
+					// time has moved forward, almost to reach the time it will be too late for update the price
+					ffDelta = executionExpiredDelay - 10 - ffDelta;
 					await fastForward(ffDelta);
 					const updateFeedData = await getFeedUpdateData({
 						id: defaultFeedId,
@@ -679,19 +677,22 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						conf: feedBaseFromUNIT(confidence),
 					});
 
+					// cannot cancel yet (need to reach the execution/cancelation age)
+					await assert.revert(
+						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader }),
+						'cannot cancel yet'
+					);
+
+					// time has moved forward, order cannot be executed (due to maxAge) and is cancellable
+					ffDelta = executionExpiredDelay - ffDelta;
+					await fastForward(ffDelta);
+
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader2 }),
 						'order too old, use cancel'
 					);
 
-					await assert.revert(
-						perpsV2Market.cancelOffchainDelayedOrder(trader, { from: trader2 }),
-						'cannot cancel yet'
-					);
-
-					// time has moved forward and now is cancellable
-					ffDelta = cancellableDelay - ffDelta;
-					await fastForward(ffDelta);
+					//  is cancellable
 					await checkCancellation(trader2);
 				});
 			});
