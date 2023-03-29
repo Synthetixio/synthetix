@@ -56,7 +56,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    // bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
