@@ -266,6 +266,9 @@
 	"ExchangeSettlementLib": {
 		"deploy": false
 	},
+	"DebtMigratorOnOptimism": {
+		"deploy": false
+	},
 	"PerpsV2MarketSettings": {
 		"deploy": false
 	},
@@ -687,6 +690,24 @@
 		"deploy": false
 	},
 	"PerpsV2OffchainDelayedOrderGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedOrderARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2OffchainDelayedOrderARBPERP": {
 		"deploy": false
 	}
 }

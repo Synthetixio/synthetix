@@ -103,6 +103,10 @@
 		"asset": "GBP",
 		"feed": "0x540D48C01F946e729174517E013Ad0bdaE5F08C0"
 	},
+	"ARB": {
+		"asset": "ARB",
+		"feed": "0x8f14546d0B960793180ee355B73fA55041a4a356"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
