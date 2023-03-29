@@ -656,9 +656,10 @@
 			"sip": 237,
 			"layer": "both",
 			"sources": {
-				"base": ["Issuer", "Synthetix"],
-				"ovm": ["Issuer", "Synthetix"]
-			}
+				"base": ["Issuer", "Synthetix", "DebtMigratorOnEthereum"],
+				"ovm": ["Issuer", "Synthetix", "DebtMigratorOnOptimism"]
+			},
+			"released": "both"
 		},
 		{
 			"sip": 238,
@@ -870,6 +871,12 @@
 					"PerpsV2MarketLiquidate.+"
 				]
 			}
+		},
+		{
+			"sip": 2010,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1625,7 +1632,8 @@
 				"major": 2,
 				"minor": 84
 			},
-			"sips": [237]
+			"sips": [237],
+			"released": true
 		},
 		{
 			"name": "Naos (Optimism)",
@@ -1634,15 +1642,8 @@
 				"major": 2,
 				"minor": 84
 			},
-			"sips": [237]
-		},
-		{
-			"name": "Almach",
-			"version": {
-				"major": 2,
-				"minor": 85
-			},
-			"sips": [2004, 2005]
+			"sips": [237],
+			"released": true
 		},
 		{
 			"name": "Almach (Optimism)",
@@ -1650,6 +1651,24 @@
 			"version": {
 				"major": 2,
 				"minor": 85
+			},
+			"sips": [2010],
+			"released": true
+		},
+		{
+			"name": "Caph",
+			"version": {
+				"major": 2,
+				"minor": 86
+			},
+			"sips": [2004, 2005]
+		},
+		{
+			"name": "Caph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 86
 			},
 			"sips": [2004, 2005]
 		}
