@@ -666,6 +666,9 @@
 		"offchainPriceDivergence": "0.03",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocARBPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.0025",
 		"paused": false,
 		"offchainPaused": false
 	}
