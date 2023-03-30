@@ -136,7 +136,7 @@ contract PerpsV2MarketDelayedIntent is IPerpsV2MarketDelayedIntent, PerpsV2Marke
         Position memory position = marketState.positions(messageSender);
 
         // a position must be present before closing.
-        require(position.size != 0, "no existing position");
+        _revertIfError(position.size == 0, Status.NoPositionOpen);
 
         // we only allow off-chain and delayed orders.
         //

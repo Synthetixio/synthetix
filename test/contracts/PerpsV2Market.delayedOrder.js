@@ -571,7 +571,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					trackingCode,
 					{ from: trader }
 				),
-				'no existing position'
+				'No position open'
 			);
 		});
 

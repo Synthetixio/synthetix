@@ -18,9 +18,9 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     /*
-     * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
+     * Flag a position to be liquidated if its remaining margin is below the liquidation fee. This succeeds if and only if
      * `canLiquidate(account)` is true, and reverts otherwise.
-     * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
+     * Upon flagging, the position will be flagged and the only operation enabled will be liquidatation.
      */
     function flagPosition(address account) external onlyProxy notFlagged(account) {
         uint price = _assetPriceRequireSystemChecks(false);
