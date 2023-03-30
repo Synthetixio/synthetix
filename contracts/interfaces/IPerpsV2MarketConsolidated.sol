@@ -216,7 +216,16 @@ interface IPerpsV2MarketConsolidated {
 
     event PositionFlagged(uint id, address account, address flagger, uint timestamp);
 
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+    event PositionLiquidated(
+        uint id,
+        address account,
+        address liquidator,
+        int size,
+        uint price,
+        uint flaggerFee,
+        uint liquidatorFee,
+        uint stakersFee
+    );
 
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
 

@@ -158,7 +158,16 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
         emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0, marketState.marketSkew());
 
-        emitPositionLiquidated(position.id, account, messageSender, position.size, price, totalFees);
+        emitPositionLiquidated(
+            position.id,
+            account,
+            messageSender,
+            position.size,
+            price,
+            flaggerFee,
+            liquidatorFee,
+            remainingMargin
+        );
     }
 
     /* ========== EVENTS ========== */
@@ -175,9 +184,18 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         proxy._emit(abi.encode(id, account, flagger, timestamp), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
     }
 
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+    event PositionLiquidated(
+        uint id,
+        address account,
+        address liquidator,
+        int size,
+        uint price,
+        uint flaggerFee,
+        uint liquidatorFee,
+        uint stakersFee
+    );
     bytes32 internal constant POSITIONLIQUIDATED_SIG =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
+        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256,uint256,uint256)");
 
     function emitPositionLiquidated(
         uint id,
@@ -185,8 +203,17 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         address liquidator,
         int size,
         uint price,
-        uint fee
+        uint flaggerFee,
+        uint liquidatorFee,
+        uint stakersFee
     ) internal {
-        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
+        proxy._emit(
+            abi.encode(id, account, liquidator, size, price, flaggerFee, liquidatorFee, stakersFee),
+            1,
+            POSITIONLIQUIDATED_SIG,
+            0,
+            0,
+            0
+        );
     }
 }
