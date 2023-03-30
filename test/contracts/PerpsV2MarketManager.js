@@ -820,7 +820,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
 					from: owner,
 				});
-				await confirmAddedEvents(tx, [someAccount1, someAccount3]);
+				await confirmAddedEvents(tx, endorsedAddresses);
 
 				const addresses = await futuresMarketManager.allEndorsedAddresses();
 				confirmEndorsedAddressList(addresses, [
@@ -847,7 +847,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				const addresses = await futuresMarketManager.allEndorsedAddresses();
 				confirmEndorsedAddressList(addresses, expectedAddresses);
 
-				await confirmAddedEvents(tx, expectedAddresses);
+				await confirmAddedEvents(tx, endorsedAddresses);
 			});
 		});
 
