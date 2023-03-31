@@ -88,12 +88,16 @@ const deployPerpsV2Generics = async ({
 			writeArg: [prevFuturesMarketManagerConfig.nonProxiedMarkets],
 		});
 
-		await runStep({
-			contract: 'FuturesMarketManager',
-			target: futuresMarketManager,
-			write: 'addProxiedMarkets',
-			writeArg: [prevFuturesMarketManagerConfig.proxiedMarkets],
-		});
+		const chunkSize = 10;
+		for (let i = 0; i < prevFuturesMarketManagerConfig.proxiedMarkets.length; i += chunkSize) {
+			const chunk = prevFuturesMarketManagerConfig.proxiedMarkets.slice(i, i + chunkSize);
+			await runStep({
+				contract: 'FuturesMarketManager',
+				target: futuresMarketManager,
+				write: 'addProxiedMarkets',
+				writeArg: [chunk],
+			});
+		}
 	}
 
 	// This belongs in dapp-utils, but since we are only deploying perpsV2 on L2,
