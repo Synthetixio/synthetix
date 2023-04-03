@@ -240,7 +240,7 @@ const linkToPerpsExchangeRate = async ({
 
 	const requiredAddresses = implementations
 		.filter(imp => imp.useExchangeRate)
-		.map(item => item.target.address);
+		.map(item => item.address);
 
 	const { toRemove, toAdd } = filteredLists(currentAddresses, requiredAddresses);
 

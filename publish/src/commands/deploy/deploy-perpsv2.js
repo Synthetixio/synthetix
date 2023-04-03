@@ -411,7 +411,7 @@ const cleanupPerpsV2 = async ({
 		const implementations = getImplementationNamesAndAddresses({ deployer, marketKey });
 
 		allMarketProxies.push(proxy.address);
-		allImplementations.push(implementations);
+		allImplementations.push(...implementations);
 	}
 
 	// cleanup perps exchange rate associated contracts
