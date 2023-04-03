@@ -323,7 +323,7 @@ const deployPerpsV2Markets = async ({
 			runStep,
 			futuresMarketManager,
 			proxies: [deployedMarketProxy.target.address],
-			someUpdated: someImplementationUpdated,
+			someImplementationUpdated,
 		});
 
 		await importAddresses({
