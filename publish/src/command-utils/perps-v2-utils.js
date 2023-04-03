@@ -384,6 +384,7 @@ const linkToMarketManager = async ({
 	futuresMarketManager,
 	proxies,
 	onlyRemoveUnusedProxies,
+	someImplementationUpdated,
 }) => {
 	const managerKnownMarkets = Array.from(
 		await futuresMarketManager['allMarkets(bool)'](true)
@@ -401,13 +402,17 @@ const linkToMarketManager = async ({
 			});
 		}
 
-		if (toKeep.length > 0) {
-			await runStep({
-				contract: 'FuturesMarketManager',
-				target: futuresMarketManager,
-				write: 'updateMarketsImplementations',
-				writeArg: [toKeep],
-			});
+		if (someImplementationUpdated) {
+			if (toKeep.length > 0) {
+				await runStep({
+					contract: 'FuturesMarketManager',
+					target: futuresMarketManager,
+					write: 'updateMarketsImplementations',
+					writeArg: [toKeep],
+				});
+			}
+		} else {
+			console.log(gray(`No implementations updated for market proxy ${toKeep[0]}`));
 		}
 	}
 
@@ -537,7 +542,7 @@ const configureMarket = async ({
 		offchainDelayedOrderMaxAge: marketConfig.offchainDelayedOrderMaxAge,
 		maxLeverage: ethers.utils.parseUnits(marketConfig.maxLeverage).toString(),
 		maxMarketValue: ethers.utils.parseUnits(marketConfig.maxMarketValue).toString(),
-		maxFundingVelocity: ethers.utils.parseUnits(marketConfig.maxFundingVelocity),
+		maxFundingVelocity: ethers.utils.parseUnits(marketConfig.maxFundingVelocity).toString(),
 		skewScale: ethers.utils.parseUnits(marketConfig.skewScale).toString(),
 		offchainMarketKey: toBytes32(offchainMarketKey).toString(),
 		offchainPriceDivergence: ethers.utils
@@ -663,39 +668,43 @@ async function resumeMarket({
 	const { SystemStatus } = deployer.deployedContracts;
 	const marketKeyBytes = toBytes32(marketKey);
 
-	let resume;
+	const isPaused = (await SystemStatus.futuresMarketSuspension(marketKeyBytes)).suspended;
 
-	if (!yes) {
-		// in case we're trying to resume something that doesn't need to be resumed
-		console.log(
-			yellow(
-				`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
-				`but according to config should be resumed. Confirm that this market should`,
-				`be resumed in this release and it's not a misconfiguration issue.`
-			)
-		);
-		try {
-			await confirmAction(gray('Unpause the market? (y/n) '));
+	if (isPaused) {
+		let resume;
+
+		if (!yes) {
+			// in case we're trying to resume something that doesn't need to be resumed
+			console.log(
+				yellow(
+					`⚠⚠⚠ WARNING: The market ${marketKey} is paused,`,
+					`but according to config should be resumed. Confirm that this market should`,
+					`be resumed in this release and it's not a misconfiguration issue.`
+				)
+			);
+			try {
+				await confirmAction(gray('Unpause the market? (y/n) '));
+				resume = true;
+			} catch (err) {
+				console.log(gray('Market will remain paused'));
+				resume = false;
+			}
+		} else {
+			// yes mode (e.g. tests)
 			resume = true;
-		} catch (err) {
-			console.log(gray('Market will remain paused'));
-			resume = false;
 		}
-	} else {
-		// yes mode (e.g. tests)
-		resume = true;
-	}
 
-	if (resume) {
-		await runStep({
-			contract: 'SystemStatus',
-			target: SystemStatus,
-			write: 'resumeFuturesMarket',
-			writeArg: [marketKeyBytes],
-			comment: 'Ensure perpsV2 market is un-paused according to config',
-		});
-		if (generateSolidity) {
-			migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
+		if (resume) {
+			await runStep({
+				contract: 'SystemStatus',
+				target: SystemStatus,
+				write: 'resumeFuturesMarket',
+				writeArg: [marketKeyBytes],
+				comment: 'Ensure perpsV2 market is un-paused according to config',
+			});
+			if (generateSolidity) {
+				migrationContractNoACLWarning(`unpause ${marketKey} perpsV2 market`);
+			}
 		}
 	}
 }

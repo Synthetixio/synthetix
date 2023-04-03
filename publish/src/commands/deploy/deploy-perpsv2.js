@@ -210,6 +210,9 @@ const deployPerpsV2Markets = async ({
 	await runStep({
 		contract: 'SystemStatus',
 		target: SystemStatus,
+		read: 'accessControl',
+		readArg: [toBytes32('Futures'), account],
+		expected: ({ canSuspend } = {}) => canSuspend,
 		write: 'updateAccessControl',
 		writeArg: [toBytes32('Futures'), account, true, true],
 	});
@@ -308,7 +311,11 @@ const deployPerpsV2Markets = async ({
 			implementations,
 		});
 
+		let someImplementationUpdated = false;
 		for (const implementation of implementations) {
+			if (!someImplementationUpdated && implementation.updated) {
+				someImplementationUpdated = true;
+			}
 			updatedContracts.push(implementation.target);
 		}
 
@@ -316,6 +323,7 @@ const deployPerpsV2Markets = async ({
 			runStep,
 			futuresMarketManager,
 			proxies: [deployedMarketProxy.target.address],
+			someUpdated: someImplementationUpdated,
 		});
 
 		await importAddresses({
@@ -356,6 +364,9 @@ const deployPerpsV2Markets = async ({
 	await runStep({
 		contract: 'SystemStatus',
 		target: SystemStatus,
+		read: 'accessControl',
+		readArg: [toBytes32('Futures'), account],
+		expected: ({ canSuspend } = {}) => !canSuspend,
 		write: 'updateAccessControl',
 		writeArg: [toBytes32('Futures'), account, false, false],
 	});
