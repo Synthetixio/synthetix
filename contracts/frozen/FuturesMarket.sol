@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./FuturesMarketBase.sol";
 import "./MixinFuturesNextPriceOrders.sol";
 import "./MixinFuturesViews.sol";
-import "./interfaces/IFuturesMarket.sol";
+import "./../interfaces/IFuturesMarket.sol";
 
 /*
  * Synthetic Futures

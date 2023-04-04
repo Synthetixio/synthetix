@@ -9,7 +9,7 @@ const {
 	excludedTestableFunctions,
 	getFunctionSignatures,
 } = require('./setup');
-const { toUnit } = require('../utils')();
+const { toUnit, multiplyDecimal } = require('../utils')();
 const { toBytes32, constants } = require('../..');
 const {
 	onlyGivenAddressCanInvoke,
@@ -19,7 +19,7 @@ const {
 } = require('./helpers');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 const MockExchanger = artifacts.require('MockExchanger');
 
@@ -34,9 +34,13 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		feePool,
 		synthetix,
 		addressResolver;
+
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const otherAddress = accounts[3];
+	const someAccount1 = accounts[4];
+	const someAccount2 = accounts[5];
+	const someAccount3 = accounts[6];
 	const initialMint = toUnit('100000');
 	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 
@@ -128,6 +132,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					'payFee',
 					'payFee',
 					'updateMarketsImplementations',
+					'addEndorsedAddresses',
+					'removeEndorsedAddresses',
 				],
 			});
 		});
@@ -706,6 +712,223 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		});
 	});
 
+	// Liquidation helper
+	describe('Endorsed addresses admin', () => {
+		const confirmEndorsedAddressList = (current, expected) => {
+			assert.equal(current.length, expected.length);
+			if (expected.length > 0) {
+				const sortedCurrent = current.map(e => e.toString()).sort();
+				const sortedExpected = expected.map(e => e.toString()).sort();
+				assert.deepEqual(sortedCurrent, sortedExpected);
+			}
+		};
+
+		const confirmAddedEvents = async (tx, expected) => {
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			assert.equal(decodedLogs.length, expected.length);
+			let idx = 0;
+			for (const expectedAddress of expected) {
+				decodedEventEqual({
+					event: 'EndorsedAddressAdded',
+					emittedFrom: futuresMarketManager.address,
+					args: [expectedAddress],
+					log: decodedLogs[idx++],
+				});
+			}
+		};
+
+		const confirmRemovedEvents = async (tx, expected) => {
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarketManager] });
+			assert.equal(decodedLogs.length, expected.length);
+			let idx = 0;
+			for (const expectedAddress of expected) {
+				decodedEventEqual({
+					event: 'EndorsedAddressRemoved',
+					emittedFrom: futuresMarketManager.address,
+					args: [expectedAddress],
+					log: decodedLogs[idx++],
+				});
+			}
+		};
+
+		describe('gets the list of endorsed addresses', () => {
+			it('returns an empty address when no addresses are endorsed', async () => {
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, []);
+			});
+
+			it('returns 1 address when only one address is endorsed', async () => {
+				const endorsedAddresses = [someAccount1];
+
+				// add the addresses
+				await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, { from: owner });
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('returns the list of endorsed addresses', async () => {
+				const endorsedAddresses = [someAccount1, someAccount2, someAccount3];
+
+				// add the addresses
+				await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, { from: owner });
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+			// confirmRemovedEvents();
+		});
+
+		describe('when there is no addresses endorsed', () => {
+			it('reverts if trying to add from an unauthorized address', async () => {
+				await assert.revert(
+					futuresMarketManager.addEndorsedAddresses([someAccount1], { from: someAccount2 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+
+			it('allows to add 1 address', async () => {
+				const endorsedAddresses = [someAccount1];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, endorsedAddresses);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('allows to add more than 1 address', async () => {
+				const endorsedAddresses = [someAccount1, someAccount2];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, endorsedAddresses);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, endorsedAddresses);
+			});
+
+			it('allows to pass addresses already endorsed', async () => {
+				const preEndorsedAddresses = [otherAddress, someAccount2];
+				const endorsedAddresses = [someAccount1, someAccount2, someAccount3, otherAddress];
+
+				await futuresMarketManager.addEndorsedAddresses(preEndorsedAddresses, {
+					from: owner,
+				});
+
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+				await confirmAddedEvents(tx, endorsedAddresses);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [
+					otherAddress,
+					someAccount2,
+					someAccount1,
+					someAccount3,
+				]);
+			});
+
+			it('allows to pass repeated addresses in the array', async () => {
+				const endorsedAddresses = [
+					someAccount1,
+					someAccount2,
+					otherAddress,
+					someAccount1,
+					someAccount3,
+				];
+				const expectedAddresses = [someAccount1, someAccount2, otherAddress, someAccount3];
+				const tx = await futuresMarketManager.addEndorsedAddresses(endorsedAddresses, {
+					from: owner,
+				});
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, expectedAddresses);
+
+				await confirmAddedEvents(tx, endorsedAddresses);
+			});
+		});
+
+		describe('when there are some addresses endorsed', () => {
+			const preEndorsedAddresses = [someAccount1, someAccount3, otherAddress];
+
+			beforeEach(async () => {
+				// Add some endorsed addresses
+				await futuresMarketManager.addEndorsedAddresses(preEndorsedAddresses, {
+					from: owner,
+				});
+			});
+
+			it('reverts if trying to remove from an unauthorized address', async () => {
+				await assert.revert(
+					futuresMarketManager.removeEndorsedAddresses([someAccount1], { from: someAccount2 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+
+			it('validates the endorsed addresses', async () => {
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), true);
+			});
+
+			it('not validate unendorsed addresses', async () => {
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount2), false);
+			});
+
+			it('can remove some addresses', async () => {
+				const unendorsedAddresses = [someAccount1];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, unendorsedAddresses);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount1), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [someAccount3, otherAddress]);
+			});
+
+			it('can remove some addresses, allows to pass addresses not endorsed', async () => {
+				const unendorsedAddresses = [someAccount1, someAccount2, someAccount3];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, [someAccount1, someAccount3]);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [otherAddress]);
+			});
+
+			it('can remove some addresses, allows to pass repeated addresses in the array', async () => {
+				const unendorsedAddresses = [
+					someAccount1,
+					someAccount2,
+					someAccount3,
+					someAccount1,
+					someAccount2,
+				];
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), true);
+				const tx = await futuresMarketManager.removeEndorsedAddresses(unendorsedAddresses, {
+					from: owner,
+				});
+				await confirmRemovedEvents(tx, [someAccount1, someAccount3]);
+
+				assert.equal(await futuresMarketManager.isEndorsed(someAccount3), false);
+
+				const addresses = await futuresMarketManager.allEndorsedAddresses();
+				confirmEndorsedAddressList(addresses, [otherAddress]);
+			});
+		});
+	});
+
 	// helpful views
 	describe('Market summaries', () => {
 		const traderInitialBalance = toUnit(1000000);
@@ -731,6 +954,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 						[owner],
 						assetKey, // base asset
 						marketKey,
+						ZERO_ADDRESS,
 					],
 				});
 
@@ -776,6 +1000,10 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					)
 				);
 
+				await marketState.linkOrInitializeState({
+					from: owner,
+				});
+
 				await marketState.addAssociatedContracts([marketImpl.address], { from: owner });
 				await Promise.all(
 					filteredFunctions.map(e =>
@@ -807,7 +1035,6 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					[
 						toUnit('0.005'), // 0.5% taker fee
 						toUnit('0.001'), // 0.1% maker fee
-						toUnit('0'), // 0% override commit fee for delayed/offchain order
 						toUnit('0.0005'), // 0.05% taker fee delayed order
 						toUnit('0'), // 0% maker fee delayed order
 						toUnit('0.00005'), // 0.005% taker fee offchain delayed order
@@ -829,6 +1056,9 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 						toUnit('0.05'),
 
 						toUnit('1'), // 1 liquidation premium multiplier
+						toUnit('0.0025'), // liquidation buffer ratio
+						toUnit('0'),
+						toUnit('0'),
 					],
 					{ from: owner }
 				);
@@ -841,14 +1071,17 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			await sUSD.issue(trader, traderInitialBalance);
 
 			// Update the rates to ensure they aren't stale
-			await setPrice(await markets[0].baseAsset(), toUnit(100));
+			const price = toUnit('100');
+			await setPrice(await markets[0].baseAsset(), price);
 
 			// The traders take positions on market
+			const desiredFillPrice = multiplyDecimal(price, toUnit('1') + priceImpactDelta);
+
 			await markets[0].transferMargin(toUnit('1000'), { from: trader });
-			await markets[0].modifyPosition(toUnit('5'), priceImpactDelta, { from: trader });
+			await markets[0].modifyPosition(toUnit('5'), desiredFillPrice, { from: trader });
 
 			await markets[1].transferMargin(toUnit('3000'), { from: trader });
-			await markets[1].modifyPosition(toUnit('4'), priceImpactDelta, { from: trader });
+			await markets[1].modifyPosition(toUnit('4'), desiredFillPrice, { from: trader });
 			await setPrice(await markets[1].baseAsset(), toUnit('999'));
 		});
 

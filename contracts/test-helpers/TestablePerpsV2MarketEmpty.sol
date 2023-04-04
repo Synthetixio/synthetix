@@ -117,6 +117,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         returns (uint fee, bool invalid)
     {
         sizeDelta;
+        orderType;
         return (0, false);
     }
 
@@ -139,6 +140,7 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
     {
         sizeDelta;
         tradePrice;
+        orderType;
         sender;
         return (0, 0, 0, 0, 0, Status.Ok);
     }
@@ -154,56 +156,89 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
 
     function withdrawAllMargin() external {}
 
-    function modifyPosition(int sizeDelta, uint priceImpactDelta) external {
+    function modifyPosition(int sizeDelta, uint desiredFillPrice) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
     }
 
     function modifyPositionWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         sizeDelta;
-        priceImpactDelta;
+        desiredFillPrice;
         trackingCode;
     }
 
-    function closePosition(uint priceImpactDelta) external {
-        priceImpactDelta;
+    function closePosition(uint desiredFillPrice) external {
+        desiredFillPrice;
     }
 
-    function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
-        priceImpactDelta;
+    function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external {
+        desiredFillPrice;
         trackingCode;
     }
+
+    function flagPosition(address account) external {}
 
     function liquidatePosition(address account) external {}
 
-    /* ========== DelayedOrder ========== */
+    function forceLiquidatePosition(address account) external {}
+
+    /* ========== Delayed Intent ========== */
+    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
+
+    function submitCloseDelayedOrderWithTracking(
+        uint desiredTimeDelta,
+        uint desiredFillPrice,
+        bytes32 trackingCode
+    ) external;
+
     function submitDelayedOrder(
         int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
+        uint desiredTimeDelta,
+        uint desiredFillPrice
     ) external {
         sizeDelta;
-        priceImpactDelta;
         desiredTimeDelta;
+        desiredFillPrice;
     }
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
         sizeDelta;
-        priceImpactDelta;
         desiredTimeDelta;
+        desiredFillPrice;
         trackingCode;
     }
 
-    function cancelDelayedOrder(address account) external {
+    function submitOffchainDelayedOrder(int sizeDelta, uint desiredFillPrice) external {
+        sizeDelta;
+        desiredFillPrice;
+    }
+
+    function submitOffchainDelayedOrderWithTracking(
+        int sizeDelta,
+        uint desiredFillPrice,
+        bytes32 trackingCode
+    ) external {
+        sizeDelta;
+        desiredFillPrice;
+        trackingCode;
+    }
+
+    /* ========== Delayed Execution ========== */
+    function executeOrder(address account, bytes[] calldata priceUpdateData) external payable {
+        account;
+        priceUpdateData;
+    }
+
+    function cancelOrder(address account) external {
         account;
     }
 
@@ -211,28 +246,16 @@ contract TestablePerpsV2MarketEmpty is IPerpsV2MarketConsolidated {
         account;
     }
 
-    /* ========== OffchainDelayedOrder ========== */
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external {
-        sizeDelta;
-        priceImpactDelta;
+    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {
+        account;
+        priceUpdateData;
     }
 
-    function submitOffchainDelayedOrderWithTracking(
-        int sizeDelta,
-        uint priceImpactDelta,
-        bytes32 trackingCode
-    ) external {
-        sizeDelta;
-        priceImpactDelta;
-        trackingCode;
+    function cancelDelayedOrder(address account) external {
+        account;
     }
 
     function cancelOffchainDelayedOrder(address account) external {
         account;
-    }
-
-    function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable {
-        account;
-        priceUpdateData;
     }
 }

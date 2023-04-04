@@ -13,17 +13,15 @@ interface IPerpsV2Market {
 
     function withdrawAllMargin() external;
 
-    function modifyPosition(int sizeDelta, uint priceImpactDelta) external;
+    function modifyPosition(int sizeDelta, uint desiredFillPrice) external;
 
     function modifyPositionWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 
-    function closePosition(uint priceImpactDelta) external;
+    function closePosition(uint desiredFillPrice) external;
 
-    function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
-
-    function liquidatePosition(address account) external;
+    function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
 }

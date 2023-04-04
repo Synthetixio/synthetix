@@ -1,18 +1,19 @@
 pragma solidity ^0.5.16;
-
-import "./IPerpsV2MarketBaseTypes.sol";
 pragma experimental ABIEncoderV2;
 
-// Helper Interface, only used in tests and to provide a consolidated interface to PerpsV2 users/integrators
+import "./IPerpsV2MarketBaseTypes.sol";
+
+// Helper Interface - used in tests and to provide a consolidated PerpsV2 interface for users/integrators.
 
 interface IPerpsV2MarketConsolidated {
     /* ========== TYPES ========== */
+
     enum OrderType {Atomic, Delayed, Offchain}
 
     enum Status {
         Ok,
         InvalidPrice,
-        InvalidOrderPrice,
+        InvalidOrderType,
         PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
@@ -23,10 +24,12 @@ interface IPerpsV2MarketConsolidated {
         NilOrder,
         NoPositionOpen,
         PriceTooVolatile,
-        PriceImpactToleranceExceeded
+        PriceImpactToleranceExceeded,
+        PositionFlagged,
+        PositionNotFlagged
     }
 
-    // If margin/size are positive, the position is long; if negative then it is short.
+    /* @dev: See IPerpsV2MarketBaseTypes */
     struct Position {
         uint64 id;
         uint64 lastFundingIndex;
@@ -35,20 +38,21 @@ interface IPerpsV2MarketConsolidated {
         int128 size;
     }
 
-    // Delayed order storage
+    /* @dev: See IPerpsV2MarketBaseTypes */
     struct DelayedOrder {
-        bool isOffchain; // flag indicating the delayed order is offchain
-        int128 sizeDelta; // difference in position to pass to modifyPosition
-        uint128 priceImpactDelta; // price impact tolerance as a percentage used on fillPrice at execution
-        uint128 targetRoundId; // price oracle roundId using which price this order needs to executed
-        uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
-        uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation
-        uint256 executableAtTime; // The timestamp at which this order is executable at
-        uint256 intentionTime; // The block timestamp of submission
-        bytes32 trackingCode; // tracking code to emit on execution for volume source fee sharing
+        bool isOffchain;
+        int128 sizeDelta;
+        uint128 desiredFillPrice;
+        uint128 targetRoundId;
+        uint128 commitDeposit;
+        uint128 keeperDeposit;
+        uint256 executableAtTime;
+        uint256 intentionTime;
+        bytes32 trackingCode;
     }
 
     /* ========== Views ========== */
+
     /* ---------- Market Details ---------- */
 
     function marketKey() external view returns (bytes32 key);
@@ -61,6 +65,8 @@ interface IPerpsV2MarketConsolidated {
 
     function fundingLastRecomputed() external view returns (uint32 timestamp);
 
+    function fundingRateLastRecomputed() external view returns (int128 fundingRate);
+
     function fundingSequence(uint index) external view returns (int128 netFunding);
 
     function positions(address account) external view returns (Position memory);
@@ -68,6 +74,8 @@ interface IPerpsV2MarketConsolidated {
     function delayedOrders(address account) external view returns (DelayedOrder memory);
 
     function assetPrice() external view returns (uint price, bool invalid);
+
+    function fillPrice(int sizeDelta) external view returns (uint price, bool invalid);
 
     function marketSizes() external view returns (uint long, uint short);
 
@@ -96,6 +104,8 @@ interface IPerpsV2MarketConsolidated {
     function liquidationPrice(address account) external view returns (uint price, bool invalid);
 
     function liquidationFee(address account) external view returns (uint);
+
+    function isFlagged(address account) external view returns (bool);
 
     function canLiquidate(address account) external view returns (bool);
 
@@ -128,50 +138,65 @@ interface IPerpsV2MarketConsolidated {
 
     function withdrawAllMargin() external;
 
-    function modifyPosition(int sizeDelta, uint priceImpactDelta) external;
+    function modifyPosition(int sizeDelta, uint desiredFillPrice) external;
 
     function modifyPositionWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 
-    function closePosition(uint priceImpactDelta) external;
+    function closePosition(uint desiredFillPrice) external;
 
-    function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external;
+    function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
+
+    /* ========== Liquidate    ========== */
+
+    function flagPosition(address account) external;
 
     function liquidatePosition(address account) external;
 
-    /* ========== DelayedOrder ========== */
+    function forceLiquidatePosition(address account) external;
+
+    /* ========== Delayed Intent ========== */
+    function submitCloseOffchainDelayedOrderWithTracking(uint desiredFillPrice, bytes32 trackingCode) external;
+
+    function submitCloseDelayedOrderWithTracking(
+        uint desiredTimeDelta,
+        uint desiredFillPrice,
+        bytes32 trackingCode
+    ) external;
+
     function submitDelayedOrder(
         int sizeDelta,
-        uint priceImpactDelta,
-        uint desiredTimeDelta
+        uint desiredTimeDelta,
+        uint desiredFillPrice
     ) external;
 
     function submitDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
         uint desiredTimeDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 
-    function cancelDelayedOrder(address account) external;
-
-    function executeDelayedOrder(address account) external;
-
-    /* ========== OffchainDelayedOrder ========== */
-    function submitOffchainDelayedOrder(int sizeDelta, uint priceImpactDelta) external;
+    function submitOffchainDelayedOrder(int sizeDelta, uint desiredFillPrice) external;
 
     function submitOffchainDelayedOrderWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external;
 
-    function cancelOffchainDelayedOrder(address account) external;
+    /* ========== Delayed Execution ========== */
+
+    function executeDelayedOrder(address account) external;
 
     function executeOffchainDelayedOrder(address account, bytes[] calldata priceUpdateData) external payable;
+
+    function cancelDelayedOrder(address account) external;
+
+    function cancelOffchainDelayedOrder(address account) external;
 
     /* ========== Events ========== */
 
@@ -183,12 +208,24 @@ interface IPerpsV2MarketConsolidated {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     );
 
     event MarginTransferred(address indexed account, int marginDelta);
 
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
+    event PositionFlagged(uint id, address account, address flagger, uint timestamp);
+
+    event PositionLiquidated(
+        uint id,
+        address account,
+        address liquidator,
+        int size,
+        uint price,
+        uint flaggerFee,
+        uint liquidatorFee,
+        uint stakersFee
+    );
 
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
 

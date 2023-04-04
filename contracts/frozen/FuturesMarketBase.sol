@@ -1,21 +1,21 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./MixinFuturesMarketSettings.sol";
-import "./interfaces/IFuturesMarketBaseTypes.sol";
+import "./../MixinFuturesMarketSettings.sol";
+import "./../interfaces/IFuturesMarketBaseTypes.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./SignedSafeMath.sol";
-import "./SignedSafeDecimalMath.sol";
-import "./SafeDecimalMath.sol";
+import "./../SignedSafeMath.sol";
+import "./../SignedSafeDecimalMath.sol";
+import "./../SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IExchangeCircuitBreaker.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchanger.sol";
-import "./interfaces/ISystemStatus.sol";
-import "./interfaces/IERC20.sol";
+import "./../interfaces/IExchangeCircuitBreaker.sol";
+import "./../interfaces/IExchangeRates.sol";
+import "./../interfaces/IExchanger.sol";
+import "./../interfaces/ISystemStatus.sol";
+import "./../interfaces/IERC20.sol";
 
 /*
  * Synthetic Futures

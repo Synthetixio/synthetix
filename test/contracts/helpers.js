@@ -39,7 +39,7 @@ async function setupMissingPriceAggregators(exchangeRates, owner, keys) {
 }
 // utility function update rates for aggregators that are already set up
 /// @param exchangeRates instance of ExchangeRates contract
-/// @param owner owner account of exchangeRates contract for adding an aggregator
+/// @param owner account of exchangeRates contract for adding an aggregator
 /// @param keys array of bytes32 currency keys
 /// @param rates array of BN rates
 /// @param timestamp optional timestamp for the update, currentTime() is used by default
@@ -174,16 +174,26 @@ module.exports = {
 		address = undefined,
 		skipPassCheck = false,
 		reason = undefined,
+		value = undefined,
 	}) {
 		for (const user of accounts) {
 			if (user === address) {
 				continue;
 			}
 
-			await assert.revert(fnc(...args, { from: user }), reason);
+			const options = { from: user };
+			if (value) {
+				options.value = value;
+			}
+
+			await assert.revert(fnc(...args, options), reason);
 		}
 		if (!skipPassCheck && address) {
-			await fnc(...args, { from: address });
+			const options = { from: address };
+			if (value) {
+				options.value = value;
+			}
+			await fnc(...args, options);
 		}
 	},
 

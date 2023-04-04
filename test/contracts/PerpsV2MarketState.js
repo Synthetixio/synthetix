@@ -1,6 +1,6 @@
 const { contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { toBytes32 } = require('../..');
+const { toBytes32, constants } = require('../..');
 const { setupContract } = require('./setup');
 const { assert } = require('./common');
 
@@ -19,7 +19,7 @@ contract('PerpsV2MarketState', accounts => {
 		perpsV2MarketState = await setupContract({
 			accounts,
 			contract: 'PerpsV2MarketState',
-			args: [owner, [owner], baseAsset, marketKey],
+			args: [owner, [owner], baseAsset, marketKey, constants.ZERO_ADDRESS],
 			skipPostDeploy: true,
 		});
 
@@ -28,6 +28,10 @@ contract('PerpsV2MarketState', accounts => {
 			contract: 'MockPerpsV2StateConsumer',
 			args: [perpsV2MarketState.address],
 			skipPostDeploy: true,
+		});
+
+		await perpsV2MarketState.linkOrInitializeState({
+			from: owner,
 		});
 
 		await perpsV2MarketState.removeAssociatedContracts([owner], {
@@ -58,6 +62,9 @@ contract('PerpsV2MarketState', accounts => {
 					'updatePosition',
 					'deleteDelayedOrder',
 					'deletePosition',
+					'flag',
+					'unflag',
+					'linkOrInitializeState',
 				],
 			});
 		});
@@ -273,7 +280,7 @@ contract('PerpsV2MarketState', accounts => {
 				anotherPerpsV2MarketState = await setupContract({
 					accounts,
 					contract: 'PerpsV2MarketState',
-					args: [owner, [owner], toBytes32(''), toBytes32('')],
+					args: [owner, [owner], toBytes32(''), toBytes32(''), constants.ZERO_ADDRESS],
 					skipPostDeploy: true,
 				});
 
@@ -282,6 +289,10 @@ contract('PerpsV2MarketState', accounts => {
 					contract: 'MockPerpsV2StateConsumer',
 					args: [anotherPerpsV2MarketState.address],
 					skipPostDeploy: true,
+				});
+
+				await anotherPerpsV2MarketState.linkOrInitializeState({
+					from: owner,
 				});
 
 				await anotherPerpsV2MarketState.removeAssociatedContracts([owner], {
