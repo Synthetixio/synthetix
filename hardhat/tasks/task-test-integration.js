@@ -19,6 +19,10 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
 	.addFlag('useSips', 'Use sources from SIPs directly, instead of releases')
 	.addFlag('useFork', 'Run the tests against a fork of mainnet')
+	.addFlag(
+		'ignoreSafetyChecks',
+		'Ignores some validations regarding paths, compiler versions, etc.'
+	)
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
@@ -59,6 +63,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					providerUrl,
 					useFork: true,
 					useOvm,
+					ignoreSafetyChecks: taskArguments.ignoreSafetyChecks,
 				});
 			} else {
 				await deployInstance({
@@ -81,6 +86,10 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
 	.addFlag('useSips', 'Use sources from SIPs directly, instead of releases')
 	.addFlag('useFork', 'Run the tests against a fork of mainnet')
+	.addFlag(
+		'ignoreSafetyChecks',
+		'Ignores some validations regarding paths, compiler versions, etc.'
+	)
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
@@ -123,6 +132,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					providerUrl,
 					useFork: true,
 					useOvm,
+					ignoreSafetyChecks: taskArguments.ignoreSafetyChecks,
 				});
 			} else {
 				await deployInstance({

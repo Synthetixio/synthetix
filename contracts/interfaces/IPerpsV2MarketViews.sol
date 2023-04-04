@@ -16,11 +16,17 @@ interface IPerpsV2MarketViews {
 
     function fundingLastRecomputed() external view returns (uint32 timestamp);
 
+    function fundingRateLastRecomputed() external view returns (int128 fundingRate);
+
     function fundingSequence(uint index) external view returns (int128 netFunding);
 
     function positions(address account) external view returns (IPerpsV2MarketBaseTypes.Position memory);
 
+    function delayedOrders(address account) external view returns (IPerpsV2MarketBaseTypes.DelayedOrder memory);
+
     function assetPrice() external view returns (uint price, bool invalid);
+
+    function fillPrice(int sizeDelta) external view returns (uint price, bool invalid);
 
     function marketSizes() external view returns (uint long, uint short);
 
@@ -49,6 +55,8 @@ interface IPerpsV2MarketViews {
     function liquidationPrice(address account) external view returns (uint price, bool invalid);
 
     function liquidationFee(address account) external view returns (uint);
+
+    function isFlagged(address account) external view returns (bool);
 
     function canLiquidate(address account) external view returns (bool);
 

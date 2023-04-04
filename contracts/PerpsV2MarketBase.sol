@@ -29,6 +29,8 @@ interface IFuturesMarketManagerInternal {
     function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
     function payFee(uint amount) external;
+
+    function isEndorsed(address account) external view returns (bool);
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/PerpsV2MarketBase
@@ -54,13 +56,13 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    // bytes32 internal constant CONTRACT_CIRCUIT_BREAKER = "ExchangeCircuitBreaker";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_PERPSV2MARKETSETTINGS = "PerpsV2MarketSettings";
     bytes32 internal constant CONTRACT_PERPSV2EXCHANGERATE = "PerpsV2ExchangeRate";
+    bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
@@ -70,9 +72,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         int sizeDelta;
         uint oraclePrice;
         uint fillPrice;
+        uint desiredFillPrice;
         uint takerFee;
         uint makerFee;
-        uint priceImpactDelta;
         bytes32 trackingCode; // optional tracking code for volume source fee sharing
     }
 
@@ -99,26 +101,24 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
         _errorMessages[uint8(Status.PriceTooVolatile)] = "Price too volatile";
         _errorMessages[uint8(Status.PriceImpactToleranceExceeded)] = "Price impact exceeded";
+        _errorMessages[uint8(Status.PositionFlagged)] = "Position flagged";
+        _errorMessages[uint8(Status.PositionNotFlagged)] = "Position not flagged";
     }
 
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinPerpsV2MarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_EXCHANGER;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
         newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
         newAddresses[4] = CONTRACT_PERPSV2MARKETSETTINGS;
         newAddresses[5] = CONTRACT_PERPSV2EXCHANGERATE;
-        // newAddresses[1] = CONTRACT_CIRCUIT_BREAKER;
+        newAddresses[6] = CONTRACT_FLEXIBLESTORAGE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
-
-    // function _exchangeCircuitBreaker() internal view returns (IExchangeCircuitBreaker) {
-    //     return IExchangeCircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
-    // }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
@@ -326,7 +326,7 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Similar to _remainingMargin except it accounts for the premium to be paid upon liquidation.
+     * @dev Similar to _remainingMargin except it accounts for the premium and fees to be paid upon liquidation.
      */
     function _remainingLiquidatableMargin(Position memory position, uint price) internal view returns (uint) {
         int remaining = _marginPlusProfitFunding(position, price).sub(int(_liquidationPremium(position.size, price)));
@@ -378,7 +378,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /**
-     * The minimal margin at which liquidation can happen. Is the sum of liquidationBuffer and liquidationFee
+     * The minimal margin at which liquidation can happen.
+     * Is the sum of liquidationBuffer, liquidationFee (for flagger) and keeperLiquidationFee (for liquidator)
      * @param positionSize size of position in fixed point decimal baseAsset units
      * @param price price of single baseAsset unit in sUSD fixed point decimal units
      * @return lMargin liquidation margin to maintain in sUSD fixed point decimal units
@@ -388,8 +389,9 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      * account's margin.
      */
     function _liquidationMargin(int positionSize, uint price) internal view returns (uint lMargin) {
-        uint liquidationBuffer = _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio());
-        return liquidationBuffer.add(_liquidationFee(positionSize, price));
+        uint liquidationBuffer =
+            _abs(positionSize).multiplyDecimal(price).multiplyDecimal(_liquidationBufferRatio(_marketKey()));
+        return liquidationBuffer.add(_liquidationFee(positionSize, price)).add(_keeperLiquidationFee());
     }
 
     /**
@@ -646,40 +648,6 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
     }
 
     /*
-     * @dev Given the current oracle price (not fillPrice) and priceImpactDelta, return the max priceImpactDelta
-     * price which is a price that is inclusive of the priceImpactDelta tolerance.
-     *
-     * For instance, if price ETH is $1000 and priceImpactDelta is 1% then maxPriceImpact is $1010. The fillPrice
-     * on the trade must be below $1010 for the trade to succeed.
-     *
-     * For clarity when priceImpactDelta is:
-     *  0.1   then 10%
-     *  0.01  then 1%
-     *  0.001 then 0.1%
-     *
-     * When price is $1000, I long, and priceImpactDelta is:
-     *  0.1   then price * (1 + 0.1)   = 1100
-     *  0.01  then price * (1 + 0.01)  = 1010
-     *  0.001 then price * (1 + 0.001) = 1001
-     *
-     * When same but short then,
-     *  0.1   then price * (1 - 0.1)   = 900
-     *  0.01  then price * (1 - 0.01)  = 990
-     *  0.001 then price * (1 - 0.001) = 999
-     *
-     * This forms the limit at which the fillPrice can reach before we revert the trade.
-     */
-    function _priceImpactLimit(
-        uint price,
-        uint priceImpactDelta,
-        int sizeDelta
-    ) internal pure returns (uint) {
-        // A lower price would be less desirable for shorts and a higher price is less desirable for longs. As such
-        // we derive the maxPriceImpact based on whether the position is going long/short.
-        return price.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT).add(priceImpactDelta) : uint(_UNIT).sub(priceImpactDelta));
-    }
-
-    /*
      * Absolute value of the input, returned as a signed number.
      */
     function _signedAbs(int x) internal pure returns (int) {
@@ -701,8 +669,10 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
         return x < y ? x : y;
     }
 
-    // True if and only if two positions a and b are on the same side of the market;
-    // that is, if they have the same sign, or either of them is zero.
+    /*
+     * True if and only if two positions a and b are on the same side of the market; that is, if they have the same
+     * sign, or either of them is zero.
+     */
     function _sameSide(int a, int b) internal pure returns (bool) {
         return (a == 0) || (b == 0) || (a > 0) == (b > 0);
     }

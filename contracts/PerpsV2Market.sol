@@ -39,34 +39,50 @@ import "./interfaces/IPerpsV2Market.sol";
  *                                  the base asset, these settings determine the behaviour of each market.
  *                                  See that contract for descriptions of the meanings of each setting.
  *
+ * Proxy/Implementations/State Contracts architecture diagram
+ *
+ *                 ┌-> PerpsV2Market                 ─┐
+ *                 ├-> PerpsV2MarketViews            -┤
+ *   ProxyPerpsV2 ─┼-> PerpsV2MarketLiquidate        ─┼─> PerpsV2MarketState -> PerpsV2MarketStateLegacyR1
+ *                 ├-> PerpsV2MarketDelayedIntent    -┤
+ *                 └-> PerpsV2MarketDelayedExecution ─┘
+ *
  * Each market is composed of the following pieces, one of each of this exists per asset:
+ *
  *
  *     - ProxyPerpsV2.sol:          The Proxy is the main entry point and visible, permanent address of the market.
  *                                  It acts as a combination of Proxy and Router sending the messages to the
  *                                  appropriate implementation (or fragment) of the Market.
  *                                  Margin is maintained isolated per market. each market is composed of several
- *                                  contracts (or fragments) accessed by this proxy:
- *                                  `base` contains all the common logic and is inherited by other fragments.
- *                                  It's treated as abstract and not deployed alone;
- *                                  `proxyable` is an extension of `base` that implements the proxyable interface
- *                                  and is used as base for fragments that require the messageSender.
- *                                  `mutations` contains the basic market behaviour
- *                                  `views` contains functions to provide visibility to different parameters and
- *                                  is used by external or manager contracts.
- *                                  `delayedOrders` contains the logic to implement the delayed order flows.
- *                                  `offchainDelayedOrders` contains the logic to implement the delayed order
- *                                  with off-chain pricing flows.
+ *                                  contracts (or fragments) accessed by this proxy.
+ *
+ *    - PerpsV2MarketBase.sol:      Treated as abstract and not deployed alone. Contains all the common logic and is
+ *                                  inherited by other fragments.
+ *
+ *    - PerpsV2MarketProxyable.sol: Treated as abstract and not deployed alone. It is an extension of `base` that implements
+ *                                  the proxyable interface and is used as base for fragments that require the messageSender.
  *
  *     - PerpsV2State.sol:          The State contracts holds all the state for the market and is consumed/updated
  *                                  by the fragments.
- *                                  It provides access to the positions in case a migration is needed in the future.
+ *
+ *     - PerpsV2MarketStateLegacyR1.sol:
+ *                                  Legacy State contracts holds all the state for the market prior to the state migration.
+ *                                  It is consumed/updated only by the State to access old positions.
  *
  *     - PerpsV2Market.sol:         Contains the core logic to implement the market and position flows.
  *
  *     - PerpsV2MarketViews.sol:    Contains the logic to access market and positions parameters by external or
- *                                  manager contracts
+ *                                  manager contracts.
  *
- *     - PerpsV2MarketDelayedOrdersOffchain.sol: Contains the logic to implement delayed order with off-chain pricing flows
+ *     - PerpsV2MarketLiquidate.sol: Contains the logic to flag and liquidate positions.
+ *
+ *     - PerpsV2MarketDelayedIntent.sol:
+ *                                   Contains the logic to implement intentions (submit/close) for delayed on-chain and
+ *                                   off-chain orders.
+ *
+ *     - PerpsV2MarketDelayedExecution.sol:
+ *                                   Contains the logic to implement execution (execute/cancel) of delayed on-chain and
+ *                                   off-chain orders.
  *
  *
  * Technical note: internal functions within the PerpsV2Market contract assume the following:
@@ -115,7 +131,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         int marginDelta,
         uint price,
         address sender
-    ) internal {
+    ) internal notFlagged(sender) {
         // Transfer no tokens if marginDelta is 0
         uint absDelta = _abs(marginDelta);
         if (marginDelta > 0) {
@@ -139,11 +155,21 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
         Position memory position = marketState.positions(sender);
 
-        _updatePositionMargin(sender, position, price, marginDelta);
+        _updatePositionMargin(sender, position, 0, price, marginDelta);
 
         emitMarginTransferred(sender, marginDelta);
 
-        emitPositionModified(position.id, sender, position.margin, position.size, 0, price, _latestFundingIndex(), 0);
+        emitPositionModified(
+            position.id,
+            sender,
+            position.margin,
+            position.size,
+            0,
+            price,
+            _latestFundingIndex(),
+            0,
+            marketState.marketSkew()
+        );
     }
 
     /*
@@ -174,8 +200,8 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
-    function modifyPosition(int sizeDelta, uint priceImpactDelta) external {
-        _modifyPosition(sizeDelta, priceImpactDelta, bytes32(0));
+    function modifyPosition(int sizeDelta, uint desiredFillPrice) external {
+        _modifyPosition(sizeDelta, desiredFillPrice, bytes32(0));
     }
 
     /*
@@ -184,15 +210,15 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
      */
     function modifyPositionWithTracking(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) external {
-        _modifyPosition(sizeDelta, priceImpactDelta, trackingCode);
+        _modifyPosition(sizeDelta, desiredFillPrice, trackingCode);
     }
 
     function _modifyPosition(
         int sizeDelta,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         bytes32 trackingCode
     ) internal onlyProxy {
         uint price = _assetPriceRequireSystemChecks(false);
@@ -205,7 +231,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 fillPrice: _fillPrice(sizeDelta, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
-                priceImpactDelta: priceImpactDelta,
+                desiredFillPrice: desiredFillPrice,
                 trackingCode: trackingCode
             })
         );
@@ -214,16 +240,16 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
     /*
      * Submit an order to close a position.
      */
-    function closePosition(uint priceImpactDelta) external {
-        _closePosition(priceImpactDelta, bytes32(0));
+    function closePosition(uint desiredFillPrice) external {
+        _closePosition(desiredFillPrice, bytes32(0));
     }
 
     /// Same as closePosition, but emits an even with the trackingCode for volume source fee sharing
-    function closePositionWithTracking(uint priceImpactDelta, bytes32 trackingCode) external {
-        _closePosition(priceImpactDelta, trackingCode);
+    function closePositionWithTracking(uint desiredFillPrice, bytes32 trackingCode) external {
+        _closePosition(desiredFillPrice, trackingCode);
     }
 
-    function _closePosition(uint priceImpactDelta, bytes32 trackingCode) internal onlyProxy {
+    function _closePosition(uint desiredFillPrice, bytes32 trackingCode) internal onlyProxy {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks(false);
@@ -237,64 +263,18 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
                 fillPrice: _fillPrice(-size, price),
                 takerFee: _takerFee(_marketKey()),
                 makerFee: _makerFee(_marketKey()),
-                priceImpactDelta: priceImpactDelta,
+                desiredFillPrice: desiredFillPrice,
                 trackingCode: trackingCode
             })
         );
     }
 
-    function _liquidatePosition(
-        address account,
-        address liquidator,
-        uint price
-    ) internal {
-        Position memory position = marketState.positions(account);
+    /* ========== EVENTS ========== */
 
-        // Get remaining margin for sending any leftover buffer to fee pool
-        //
-        // note: we do _not_ use `_remainingLiquidatableMargin` here as we want to send this premium to the fee pool
-        // upon liquidation to give back to stakers.
-        uint remMargin = _remainingMargin(position, price);
+    event MarginTransferred(address indexed account, int marginDelta);
+    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
 
-        // Record updates to market size and debt.
-        int positionSize = position.size;
-        uint positionId = position.id;
-        marketState.setMarketSkew(int128(int(marketState.marketSkew()).sub(positionSize)));
-        marketState.setMarketSize(uint128(uint(marketState.marketSize()).sub(_abs(positionSize))));
-
-        uint fundingIndex = _latestFundingIndex();
-        _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), 0, uint128(price), 0),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
-        );
-
-        // Close the position itself.
-        marketState.deletePosition(account);
-
-        // Issue the reward to the liquidator.
-        uint liqFee = _liquidationFee(positionSize, price);
-        _manager().issueSUSD(liquidator, liqFee);
-
-        emitPositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
-        emitPositionLiquidated(positionId, account, liquidator, positionSize, price, liqFee);
-
-        // Send any positive margin buffer to the fee pool
-        if (remMargin > liqFee) {
-            _manager().payFee(remMargin.sub(liqFee));
-        }
-    }
-
-    /*
-     * Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
-     * `canLiquidate(account)` is true, and reverts otherwise.
-     * Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
-     */
-    function liquidatePosition(address account) external onlyProxy {
-        uint price = _assetPriceRequireSystemChecks(false);
-        _recomputeFunding(price);
-
-        _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
-
-        _liquidatePosition(account, messageSender, price);
+    function emitMarginTransferred(address account, int marginDelta) internal {
+        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
     }
 }

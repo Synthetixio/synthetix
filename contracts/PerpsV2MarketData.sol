@@ -16,7 +16,6 @@ contract PerpsV2MarketData {
     struct FuturesGlobals {
         uint minInitialMargin;
         uint liquidationFeeRatio;
-        uint liquidationBufferRatio;
         uint minKeeperFee;
         uint maxKeeperFee;
     }
@@ -69,13 +68,6 @@ contract PerpsV2MarketData {
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
-        uint overrideCommitFee;
-    }
-
-    struct FundingDetails {
-        int currentFundingRate;
-        int unrecordedFunding;
-        uint fundingLastRecomputed;
     }
 
     struct MarketData {
@@ -132,7 +124,6 @@ contract PerpsV2MarketData {
             FuturesGlobals({
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
-                liquidationBufferRatio: settings.liquidationBufferRatio(),
                 minKeeperFee: settings.minKeeperFee(),
                 maxKeeperFee: settings.maxKeeperFee()
             });
@@ -175,8 +166,7 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder,
-                    params.overrideCommitFee
+                    params.makerFeeOffchainDelayedOrder
                 )
             );
         }
@@ -232,8 +222,7 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder,
-                    params.overrideCommitFee
+                    params.makerFeeOffchainDelayedOrder
                 ),
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),

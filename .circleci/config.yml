@@ -86,7 +86,7 @@ jobs:
             if [ -z "$NEW_CONTRACTS" ]; then
               npx hardhat test:integration:l2 --use-fork
             else
-              npx hardhat test:integration:l2 --deploy --use-sips --use-fork
+              npx hardhat test:integration:l2 --deploy --use-sips --use-fork --ignore-safety-checks
             fi;
       - store_test_results:
           path: /tmp/junit/

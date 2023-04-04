@@ -1,17 +1,18 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-import "../PerpsV2Market.sol";
-import "../interfaces/IPerpsV2MarketViews.sol";
+import "../PerpsV2MarketProxyable.sol";
 import "../interfaces/IPerpsV2MarketBaseTypes.sol";
 
-contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
+contract TestablePerpsV2Market is PerpsV2MarketProxyable {
+    int private constant _UNIT = int(10**uint(18));
+
     constructor(
         address payable _proxy,
         address _marketState,
         address _owner,
         address _resolver
-    ) public PerpsV2Market(_proxy, _marketState, _owner, _resolver) {}
+    ) public PerpsV2MarketProxyable(_proxy, _marketState, _owner, _resolver) {}
 
     function entryDebtCorrection() external view returns (int) {
         return marketState.entryDebtCorrection();
@@ -33,7 +34,7 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
             bool invalid
         )
     {
-        (, bool invalid) = _assetPrice();
+        (, invalid) = _assetPrice();
         int sizeLimit = int(_maxMarketValue(_marketKey()));
 
         int size = int(marketState.marketSize());
@@ -67,139 +68,41 @@ contract TestablePerpsV2Market is PerpsV2Market, IPerpsV2MarketViews {
         return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
-    // Empty views to implement interface
-    function marketKey() external view returns (bytes32 key) {
-        return "";
-    }
-
-    function baseAsset() external view returns (bytes32 key) {
-        return "";
-    }
-
-    function marketSize() external view returns (uint128 size) {
-        return 0;
-    }
-
-    function marketSkew() external view returns (int128 skew) {
-        return 0;
-    }
-
-    function fundingLastRecomputed() external view returns (uint32 timestamp) {
-        return 0;
-    }
-
-    // solhint-disable no-unused-vars
-    function fundingSequence(uint index) external view returns (int128 netFunding) {
-        return 0;
-    }
-
-    function positions(address account) external view returns (IPerpsV2MarketBaseTypes.Position memory) {
-        return Position(0, 0, 0, 0, 0);
-    }
-
-    function assetPrice() external view returns (uint price, bool invalid) {
-        return (0, false);
-    }
-
-    /* @dev Given the size and basePrice (e.g. current off-chain price), return the expected fillPrice */
-    function fillPriceWithBasePrice(int sizeDelta, uint basePrice) external view returns (uint, bool) {
-        uint price = basePrice;
+    /*
+     * @dev Give the fillPrice given `sizeDelta` and optional `basePrice` with metadata
+     *
+     * @param sizeDelta size of the position to derive fillPrice
+     * @param priceImpactDelta used to compute the desiredPrice given basically slippage/price impact delta
+     * @param assetPrice optional asset price if not provided get on-chain price
+     */
+    function fillPriceWithMeta(
+        int sizeDelta,
+        uint priceImpactDelta,
+        uint assetPrice
+    )
+        external
+        view
+        returns (
+            uint,
+            uint,
+            bool
+        )
+    {
+        uint price = assetPrice;
         bool invalid;
-        if (basePrice == 0) {
+        if (assetPrice == 0) {
             (price, invalid) = _assetPrice();
         }
-        return (_fillPrice(sizeDelta, price), invalid);
+
+        uint fillPrice = _fillPrice(sizeDelta, price);
+        uint desiredFillPrice =
+            fillPrice.multiplyDecimal(sizeDelta > 0 ? uint(_UNIT) + priceImpactDelta : uint(_UNIT) - priceImpactDelta);
+        return (fillPrice, desiredFillPrice, invalid);
     }
 
     /* @dev Given an account, find the associated position and return the netFundingPerUnit. */
     function netFundingPerUnit(address account) external view returns (int) {
         (uint price, ) = _assetPrice();
         return _netFundingPerUnit(marketState.positions(account).lastFundingIndex, price);
-    }
-
-    function marketSizes() external view returns (uint long, uint short) {
-        return (0, 0);
-    }
-
-    function marketDebt() external view returns (uint debt, bool isInvalid) {
-        return (0, false);
-    }
-
-    function currentFundingRate() external view returns (int fundingRate) {
-        return 0;
-    }
-
-    function currentFundingVelocity() external view returns (int fundingVelocity) {
-        return 0;
-    }
-
-    function unrecordedFunding() external view returns (int funding, bool invalid) {
-        return (0, false);
-    }
-
-    function fundingSequenceLength() external view returns (uint length) {
-        return 0;
-    }
-
-    /* ---------- Position Details ---------- */
-
-    function notionalValue(address account) external view returns (int value, bool invalid) {
-        return (0, false);
-    }
-
-    function profitLoss(address account) external view returns (int pnl, bool invalid) {
-        return (0, false);
-    }
-
-    function accruedFunding(address account) external view returns (int funding, bool invalid) {
-        return (0, false);
-    }
-
-    function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
-        return (0, false);
-    }
-
-    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
-        return (0, false);
-    }
-
-    function liquidationPrice(address account) external view returns (uint price, bool invalid) {
-        return (0, false);
-    }
-
-    function liquidationFee(address account) external view returns (uint) {
-        return 0;
-    }
-
-    function canLiquidate(address account) external view returns (bool) {
-        return false;
-    }
-
-    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
-        external
-        view
-        returns (uint fee, bool invalid)
-    {
-        return (0, false);
-    }
-
-    function postTradeDetails(
-        int sizeDelta,
-        uint tradePrice,
-        IPerpsV2MarketBaseTypes.OrderType orderType,
-        address sender
-    )
-        external
-        view
-        returns (
-            uint margin,
-            int size,
-            uint price,
-            uint liqPrice,
-            uint fee,
-            IPerpsV2MarketBaseTypes.Status status
-        )
-    {
-        return (0, 0, 0, 0, 0, IPerpsV2MarketBaseTypes.Status.Ok);
     }
 }

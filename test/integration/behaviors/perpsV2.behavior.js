@@ -1,6 +1,11 @@
 const ethers = require('ethers');
+const path = require('path');
+const fs = require('fs');
 const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
+const {
+	constants: { COMPILED_FOLDER, BUILD_FOLDER },
+} = require('../../../');
 
 const { addAggregatorAndSetRate } = require('../utils/rates');
 const { ensureBalance } = require('../utils/balances');
@@ -14,6 +19,28 @@ const multiplyDecimal = (a, b) => a.mul(b).div(unit);
 
 const proxiedContract = (proxy, abi, user) => {
 	return new ethers.Contract(proxy.address, abi, user);
+};
+
+const deployHelper = async ({ AddressResolver, owner, args }) => {
+	const buildPath = path.join(__dirname, '..', '..', '..', BUILD_FOLDER, COMPILED_FOLDER);
+
+	const builtArtifact = JSON.parse(
+		fs.readFileSync(path.resolve(buildPath, 'TestablePerpsV2Market.json'), 'utf8')
+	);
+
+	const factory = new ethers.ContractFactory(builtArtifact.abi, builtArtifact.evm.bytecode, owner);
+
+	const deployedContract = await factory.deploy(
+		args.proxy,
+		args.marketState,
+		args.owner,
+		args.resolver
+	);
+	await deployedContract.deployTransaction.wait();
+
+	await AddressResolver.connect(owner).rebuildCaches([deployedContract.address]);
+
+	return deployedContract;
 };
 
 const unifyAbis = implementations => {
@@ -42,29 +69,37 @@ function itCanTrade({ ctx }) {
 			FuturesMarketSettings,
 			PerpsV2MarketSettings,
 			PerpsV2MarketData,
+			PerpsV2MarketHelper,
 			PerpsV2MarketETH,
 			PerpsV2MarketImplETHPERP,
-			PerpsV2DelayedOrderETHPERP,
-			PerpsV2OffchainDelayedOrderETHPERP,
+			PerpsV2MarketLiquidateETHPERP,
+			PerpsV2DelayedIntentETHPERP,
+			PerpsV2DelayedExecutionETHPERP,
 			PerpsV2MarketViewsETHPERP,
+			PerpsV2MarketStateETHPERP,
 			PerpsV2ProxyETHPERP,
 			FuturesMarketBTC,
 			ExchangeRates,
+			AddressResolver,
 			SynthsUSD;
 
-		before('target contracts and users', () => {
+		before('target contracts and users', async () => {
 			({
 				FuturesMarketManager,
 				FuturesMarketSettings,
 				PerpsV2MarketSettings,
 				PerpsV2MarketData,
+				TestablePerpsV2MarketETH: PerpsV2MarketHelper,
 				PerpsV2MarketETHPERP: PerpsV2MarketImplETHPERP,
-				PerpsV2DelayedOrderETHPERP,
-				PerpsV2OffchainDelayedOrderETHPERP,
+				PerpsV2MarketLiquidateETHPERP,
+				PerpsV2DelayedIntentETHPERP,
+				PerpsV2DelayedExecutionETHPERP,
 				PerpsV2MarketViewsETHPERP,
+				PerpsV2MarketStateETHPERP,
 				PerpsV2ProxyETHPERP,
 				FuturesMarketBTC,
 				ExchangeRates,
+				AddressResolver,
 				SynthsUSD,
 			} = ctx.contracts);
 
@@ -72,18 +107,33 @@ function itCanTrade({ ctx }) {
 			someUser = ctx.users.someUser;
 			otherUser = ctx.users.otherUser;
 
+			if (!PerpsV2MarketHelper) {
+				// Deploy it
+				PerpsV2MarketHelper = await deployHelper({
+					AddressResolver,
+					owner,
+					args: {
+						proxy: PerpsV2ProxyETHPERP.address,
+						marketState: PerpsV2MarketStateETHPERP.address,
+						owner: owner.address,
+						resolver: AddressResolver.address,
+					},
+				});
+			}
+
 			const unifiedAbis = unifyAbis([
 				PerpsV2MarketImplETHPERP,
 				PerpsV2MarketViewsETHPERP,
-				PerpsV2DelayedOrderETHPERP,
-				PerpsV2OffchainDelayedOrderETHPERP,
+				PerpsV2MarketLiquidateETHPERP,
+				PerpsV2DelayedIntentETHPERP,
+				PerpsV2DelayedExecutionETHPERP,
 			]);
 			if (unifiedAbis && PerpsV2ProxyETHPERP) {
 				PerpsV2MarketETH = proxiedContract(PerpsV2ProxyETHPERP, unifiedAbis, someUser);
 			}
 		});
 
-		before('ensure users have sUSD', async () => {
+		before('ensure users have sUSD ', async () => {
 			await ensureBalance({ ctx, symbol: 'sUSD', user: someUser, balance: sUSDAmount });
 		});
 
@@ -159,7 +209,10 @@ function itCanTrade({ ctx }) {
 					}
 					// open position
 					const initialMargin = (await market.positions(someUser.address)).margin;
-					await market.modifyPosition(posSize1x, priceImpactDelta);
+					const desiredFillPrice1 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(posSize1x, priceImpactDelta, 0)
+					)[1];
+					await market.modifyPosition(posSize1x, desiredFillPrice1);
 
 					const position = await market.positions(someUser.address);
 					assert.bnGt(initialMargin, position.margin); // fee was taken
@@ -167,7 +220,14 @@ function itCanTrade({ ctx }) {
 					assert.bnEqual(position.size, posSize1x); // right position size
 
 					// close
-					await (await market.closePosition(priceImpactDelta)).wait();
+					const desiredFillPrice2 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(
+							multiplyDecimal(posSize1x, toUnit('-1')),
+							priceImpactDelta,
+							0
+						)
+					)[1];
+					await (await market.closePosition(desiredFillPrice2)).wait();
 					assert.bnEqual((await market.positions(someUser.address)).size, 0); // no position
 				});
 
@@ -175,14 +235,24 @@ function itCanTrade({ ctx }) {
 					if (skipTest) {
 						return;
 					}
-					const size = multiplyDecimal(posSize1x, toUnit('-5'));
+					const size = multiplyDecimal(posSize1x, toUnit('-2'));
 
-					await market.modifyPosition(size, priceImpactDelta);
+					const desiredFillPrice1 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+					)[1];
+					await market.modifyPosition(size, desiredFillPrice1);
 					const position = await market.positions(someUser.address);
 					assert.bnEqual(position.size, size); // right position size
 
 					// close
-					await market.closePosition(priceImpactDelta);
+					const desiredFillPrice2 = (
+						await PerpsV2MarketHelper.fillPriceWithMeta(
+							multiplyDecimal(size, toUnit('-1')),
+							priceImpactDelta,
+							0
+						)
+					)[1];
+					await market.closePosition(desiredFillPrice2);
 				});
 
 				describe('existing position', () => {
@@ -222,7 +292,10 @@ function itCanTrade({ ctx }) {
 						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
 						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
 
-						await market.modifyPosition(size, priceImpactDelta);
+						const desiredFillPrice = (
+							await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
+						)[1];
+						await market.modifyPosition(size, desiredFillPrice);
 					});
 
 					before('if new aggregator is set and price drops 20%', async () => {
@@ -241,13 +314,16 @@ function itCanTrade({ ctx }) {
 						await assert.revert(market.transferMargin(toBN(-1)), 'Insufficient margin');
 
 						// cannot modify
+						const desiredFillPrice = (
+							await PerpsV2MarketHelper.fillPriceWithMeta(toBN(-1), priceImpactDelta, 0)
+						)[1];
 						await assert.revert(
-							market.modifyPosition(toBN(-1), priceImpactDelta),
+							market.modifyPosition(toBN(-1), desiredFillPrice),
 							'can be liquidated'
 						);
 
 						// cannot close
-						await assert.revert(market.closePosition(priceImpactDelta), 'can be liquidated');
+						await assert.revert(market.closePosition(desiredFillPrice), 'can be liquidated');
 					});
 
 					it('position can be liquidated by another user', async () => {
@@ -259,8 +335,12 @@ function itCanTrade({ ctx }) {
 						assert.ok(await market.canLiquidate(someUser.address));
 
 						// liquidation tx
+						await (
+							await FuturesMarketManager.connect(owner).addEndorsedAddresses([otherUser.address])
+						).wait();
 						const otherCaller = PerpsV2MarketETH.connect(otherUser);
-						await (await otherCaller.liquidatePosition(someUser.address)).wait(); // wait for views to be correct
+						await (await otherCaller.flagPosition(someUser.address)).wait(); // flag
+						await (await otherCaller.forceLiquidatePosition(someUser.address)).wait(); // force liquidate (to prevent reverts due to exceeded price impact)
 
 						// position: rekt
 						const pos = await market.positions(someUser.address);
