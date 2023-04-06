@@ -408,13 +408,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateMATICPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketMATICPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsMATICPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderMATICPERP": {
 		"deploy": false
@@ -498,13 +498,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateDOGEPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketDOGEPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsDOGEPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderDOGEPERP": {
 		"deploy": false
@@ -834,6 +834,24 @@
 		"deploy": false
 	},
 	"PerpsV2DelayedExecutionEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDOGEPERP": {
 		"deploy": false
 	}
 }
