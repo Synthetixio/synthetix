@@ -207,14 +207,15 @@ const deployPerpsV2Markets = async ({
 	}
 
 	// Grant futures pause/resume ACL to owner
+	const fakeAccountToReplace = '0x0011223344556677889900112233445566778899';
 	await runStep({
 		contract: 'SystemStatus',
 		target: SystemStatus,
-		read: 'accessControl',
-		readArg: [toBytes32('Futures'), account],
-		expected: ({ canSuspend } = {}) => canSuspend,
+		// read: 'accessControl',
+		// readArg: [toBytes32('Futures'), fakeAccountToReplace],
+		// expected: ({ canSuspend } = {}) => canSuspend,
 		write: 'updateAccessControl',
-		writeArg: [toBytes32('Futures'), account, true, true],
+		writeArg: [toBytes32('Futures'), fakeAccountToReplace, true, true],
 	});
 
 	for (const marketConfig of perpsv2Markets) {
@@ -283,8 +284,13 @@ const deployPerpsV2Markets = async ({
 
 			// if updated, enable in legacy state
 			if (deployedMarketState.updated && deployedMarketState.previousContractTarget) {
+				// fix missing source
+				deployedMarketState.previousContractTarget.source = 'PerpsV2MarketState';
 				await runStep({
-					contract: deployedMarketState.contract,
+					customAddress: deployedMarketState.previousContractTarget.address,
+					customSource: deployedMarketState.previousContractTarget.source,
+
+					contract: `${deployedMarketState.contract}Legacy`,
 					target: deployedMarketState.previousContractTarget,
 					write: 'addAssociatedContracts',
 					writeArg: [[deployedMarketState.target.address]],
@@ -364,11 +370,11 @@ const deployPerpsV2Markets = async ({
 	await runStep({
 		contract: 'SystemStatus',
 		target: SystemStatus,
-		read: 'accessControl',
-		readArg: [toBytes32('Futures'), account],
-		expected: ({ canSuspend } = {}) => !canSuspend,
+		// read: 'accessControl',
+		// readArg: [toBytes32('Futures'), fakeAccountToReplace],
+		// expected: ({ canSuspend } = {}) => !canSuspend,
 		write: 'updateAccessControl',
-		writeArg: [toBytes32('Futures'), account, false, false],
+		writeArg: [toBytes32('Futures'), fakeAccountToReplace, false, false],
 	});
 };
 
