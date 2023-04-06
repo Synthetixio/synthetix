@@ -282,13 +282,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateETHPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketETHPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsETHPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderETHPERP": {
 		"deploy": false
@@ -300,13 +300,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateBTCPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketBTCPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsBTCPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderBTCPERP": {
 		"deploy": false
@@ -906,6 +906,24 @@
 		"deploy": false
 	},
 	"PerpsV2DelayedExecutionARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBTCPERP": {
 		"deploy": false
 	}
 }
