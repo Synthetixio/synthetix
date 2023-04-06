@@ -354,13 +354,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateAVAXPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketAVAXPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsAVAXPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderAVAXPERP": {
 		"deploy": false
@@ -696,13 +696,13 @@
 		"deploy": false
 	},
 	"PerpsV2MarketStateARBPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketARBPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsARBPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedOrderARBPERP": {
 		"deploy": false
@@ -888,6 +888,24 @@
 		"deploy": false
 	},
 	"PerpsV2DelayedExecutionXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionARBPERP": {
 		"deploy": false
 	}
 }
