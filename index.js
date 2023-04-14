@@ -210,6 +210,7 @@ const defaults = {
 	FUTURES_LIQUIDATION_FEE_RATIO: w3utils.toWei('0.0035'), // 35 basis points liquidation incentive
 	FUTURES_LIQUIDATION_BUFFER_RATIO: w3utils.toWei('0.0025'), // 25 basis points liquidation buffer
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('40'), // minimum initial margin for all markets
+	PERPSV2_KEEPER_LIQUIDATION_FEE: w3utils.toWei('2'), // 2 sUSD keeper liquidation fee (not flagger)
 	// SIP-120
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${2e5}`), // 200k
 	ATOMIC_TWAP_WINDOW: '1800', // 30 mins
@@ -525,10 +526,20 @@ const getPerpsV2ProxiedMarkets = ({ network = 'mainnet', fs, deploymentPath, pat
 	const _analyzeAndIncludePerpsV2 = (target, targetData, sourceData, PerpsV2Proxied) => {
 		const proxyPrefix = 'PerpsV2Proxy';
 		const marketPrefix = 'PerpsV2Market';
-		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData'];
-		const prefixes = ['PerpsV2MarketViews', 'PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
+		const excludedContracts = ['PerpsV2MarketSettings', 'PerpsV2MarketData', 'PerpsV2ExchangeRate'];
+		const excludedLegacyContracts = ['PerpsV2DelayedOrder', 'PerpsV2OffchainDelayedOrder'];
+		const prefixes = [
+			'PerpsV2MarketViews',
+			'PerpsV2DelayedIntent',
+			'PerpsV2DelayedExecution',
+			'PerpsV2MarketLiquidate',
+		];
 
-		if (excludedContracts.includes(target) || target.startsWith('PerpsV2MarketState')) {
+		if (
+			excludedContracts.includes(target) ||
+			target.startsWith('PerpsV2MarketState') ||
+			excludedLegacyContracts.some(prefix => target.startsWith(prefix))
+		) {
 			// Markets helper or Market state. Do nothing
 			return;
 		}

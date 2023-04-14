@@ -55,6 +55,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     AddressSetLib.AddressSet internal _implementations;
     mapping(address => address[]) internal _marketImplementation;
 
+    // PerpsV2 endorsed addresses
+    AddressSetLib.AddressSet internal _endorsedAddresses;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 public constant CONTRACT_NAME = "FuturesMarketManager";
@@ -234,6 +237,14 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         return _marketSummaries(allMarkets());
     }
 
+    function allEndorsedAddresses() external view returns (address[] memory) {
+        return _endorsedAddresses.getPage(0, _endorsedAddresses.elements.length);
+    }
+
+    function isEndorsed(address account) external view returns (bool) {
+        return _endorsedAddresses.contains(account);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function _addImplementations(address market) internal {
@@ -411,6 +422,30 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
         pool.recordFeePaid(amount);
     }
 
+    /*
+     * Removes a group of endorsed addresses.
+     * For each address, if it's present is removed, if it's not present it does nothing
+     */
+    function removeEndorsedAddresses(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            if (_endorsedAddresses.contains(addresses[i])) {
+                _endorsedAddresses.remove(addresses[i]);
+                emit EndorsedAddressRemoved(addresses[i]);
+            }
+        }
+    }
+
+    /*
+     * Adds a group of endorsed addresses.
+     * For each address, if it's not present it is added, if it's already present it does nothing
+     */
+    function addEndorsedAddresses(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            _endorsedAddresses.add(addresses[i]);
+            emit EndorsedAddressAdded(addresses[i]);
+        }
+    }
+
     /* ========== MODIFIERS ========== */
 
     function _requireIsMarketOrImplementation() internal view {
@@ -430,4 +465,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     event MarketAdded(address market, bytes32 indexed asset, bytes32 indexed marketKey);
 
     event MarketRemoved(address market, bytes32 indexed asset, bytes32 indexed marketKey);
+
+    event EndorsedAddressAdded(address endorsedAddress);
+
+    event EndorsedAddressRemoved(address endorsedAddress);
 }

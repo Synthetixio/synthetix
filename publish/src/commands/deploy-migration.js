@@ -44,6 +44,8 @@ const deployMigration = async ({
 	useOvm,
 	buildPath = DEFAULTS.buildPath,
 	privateKey,
+	overrideProviderUrl,
+	skipVerification,
 	yes,
 	dryRun = false,
 	migrationLibrary = false,
@@ -82,7 +84,9 @@ const deployMigration = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const effectiveProviderUrl = overrideProviderUrl || providerUrl;
+
+	const provider = new ethers.providers.JsonRpcProvider(effectiveProviderUrl);
 
 	const ownerAddress = getUsers({ user: 'owner' }).address;
 
@@ -96,6 +100,7 @@ const deployMigration = async ({
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
+		'Skip contracts verification': skipVerification ? yellow('⚠ true') : green('NO'),
 		Network: network,
 		'Use OVM': useOvm,
 		Gas: `Base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`,
@@ -110,6 +115,7 @@ const deployMigration = async ({
 		'Release Name': releaseName,
 		'Deployer account:': signer.address,
 		'Using migration library:': migrationLibrary,
+		'Provider URL': effectiveProviderUrl,
 	});
 
 	if (!yes) {
@@ -163,13 +169,16 @@ const deployMigration = async ({
 		signer
 	);
 
+	// TODO: hardcode the contract address to avoid re-deploying when re-running it
 	const deployedContract = await migrationContract.deploy();
 	await deployedContract.deployTransaction.wait();
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));
 
-	// TODO: hardcode the contract address to avoid re-deploying when
+	// TODO: hardcode the contract address to avoid re-deploying when re-running it
 	// const deployedContract = new ethers.Contract(
-	// 	"0xbla", compiled['Migration_' + releaseName].abi, signer
+	// 	'0x..blah..',
+	// 	compiled['Migration_' + releaseName].abi,
+	// 	signer
 	// );
 
 	// always appending to mainnet owner actions now
@@ -191,9 +200,15 @@ const deployMigration = async ({
 	const targets = getTarget();
 
 	const findContractByAddress = ({ addr }) => {
-		const [, entry] = Object.entries(targets).find(
+		const item = Object.entries(targets).find(
 			([, { address }]) => address.toLowerCase() === addr.toLowerCase()
 		);
+		if (!item) {
+			// We need to call nominate / accept that is on all owned contracts
+			// this usually happens on the migration of state, so I'll use the PerpsV2MarketState as source
+			return { name: `At${addr}`, source: 'PerpsV2MarketState' };
+		}
+		const [, entry] = item;
 		return entry;
 	};
 
@@ -246,27 +261,29 @@ const deployMigration = async ({
 		});
 	}
 
-	if (migrationLibrary) {
-		// verify lib
-		await verifyContract({
-			deployedContract: deployedLib,
-			contractName: libName,
-			buildPath,
-			etherscanUrl,
-			useOvm,
-		});
-		// verify contract
-		await verifyContract({
-			deployedContract,
-			contractName,
-			buildPath,
-			etherscanUrl,
-			useOvm,
-			linkedLibraryName: libName,
-			linkedLibraryAddress: deployedLib.address,
-		});
-	} else {
-		await verifyContract({ deployedContract, contractName, buildPath, etherscanUrl, useOvm });
+	if (!skipVerification) {
+		if (migrationLibrary) {
+			// verify lib
+			await verifyContract({
+				deployedContract: deployedLib,
+				contractName: libName,
+				buildPath,
+				etherscanUrl,
+				useOvm,
+			});
+			// verify contract
+			await verifyContract({
+				deployedContract,
+				contractName,
+				buildPath,
+				etherscanUrl,
+				useOvm,
+				linkedLibraryName: libName,
+				linkedLibraryAddress: deployedLib.address,
+			});
+		} else {
+			await verifyContract({ deployedContract, contractName, buildPath, etherscanUrl, useOvm });
+		}
 	}
 
 	console.log(gray(`Done.`));
@@ -354,11 +371,13 @@ module.exports = {
 				x => x.toLowerCase(),
 				DEFAULTS.network
 			)
+			.option('-p, --override-provider-url <value>', 'Override .env PROVIDER_URL.')
 			.option('--use-ovm', 'Use OVM')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
+			.option('--skip-verification', 'Skip etherscan contract verification')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'

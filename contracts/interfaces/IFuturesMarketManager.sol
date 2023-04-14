@@ -22,4 +22,12 @@ interface IFuturesMarketManager {
     function marketsForKeys(bytes32[] calldata marketKeys) external view returns (address[] memory);
 
     function totalDebt() external view returns (uint debt, bool isInvalid);
+
+    function isEndorsed(address account) external view returns (bool);
+
+    function allEndorsedAddresses() external view returns (address[] memory);
+
+    function addEndorsedAddresses(address[] calldata addresses) external;
+
+    function removeEndorsedAddresses(address[] calldata addresses) external;
 }
