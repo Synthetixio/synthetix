@@ -40,7 +40,7 @@ const owner = async ({
 	useOvm,
 	useFork,
 	providerUrl,
-	isTest,
+	isTest = false,
 	skipAcceptance = false,
 	throwOnNotNominatedOwner = false,
 }) => {
