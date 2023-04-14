@@ -169,13 +169,16 @@ const deployMigration = async ({
 		signer
 	);
 
+	// TODO: hardcode the contract address to avoid re-deploying when re-running it
 	const deployedContract = await migrationContract.deploy();
 	await deployedContract.deployTransaction.wait();
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));
 
-	// TODO: hardcode the contract address to avoid re-deploying when
+	// TODO: hardcode the contract address to avoid re-deploying when re-running it
 	// const deployedContract = new ethers.Contract(
-	// 	"0xbla", compiled['Migration_' + releaseName].abi, signer
+	// 	'0x..blah..',
+	// 	compiled['Migration_' + releaseName].abi,
+	// 	signer
 	// );
 
 	// always appending to mainnet owner actions now
@@ -197,9 +200,15 @@ const deployMigration = async ({
 	const targets = getTarget();
 
 	const findContractByAddress = ({ addr }) => {
-		const [, entry] = Object.entries(targets).find(
+		const item = Object.entries(targets).find(
 			([, { address }]) => address.toLowerCase() === addr.toLowerCase()
 		);
+		if (!item) {
+			// We need to call nominate / accept that is on all owned contracts
+			// this usually happens on the migration of state, so I'll use the PerpsV2MarketState as source
+			return { name: `At${addr}`, source: 'PerpsV2MarketState' };
+		}
+		const [, entry] = item;
 		return entry;
 	};
 
