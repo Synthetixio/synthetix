@@ -851,7 +851,8 @@
 		{
 			"sip": 2004,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "both"
 		},
 		{
 			"sip": 2005,
@@ -870,7 +871,8 @@
 					"PerpsV2DelayedExecution.+",
 					"PerpsV2MarketLiquidate.+"
 				]
-			}
+			},
+			"released": "both"
 		},
 		{
 			"sip": 2010,
@@ -1661,7 +1663,8 @@
 				"major": 2,
 				"minor": 86
 			},
-			"sips": [2004, 2005]
+			"sips": [2004, 2005],
+			"released": true
 		},
 		{
 			"name": "Caph (Optimism)",
@@ -1670,7 +1673,8 @@
 				"major": 2,
 				"minor": 86
 			},
-			"sips": [2004, 2005]
+			"sips": [2004, 2005],
+			"released": true
 		}
 	]
 }

@@ -598,8 +598,9 @@
 		"contracts": {
 			"FuturesMarketManager": {
 				"address": "0x6928767b677aBfd34aEF4ac67E9c275125B95907",
-				"status": "current",
-				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51"
+				"status": "replaced",
+				"keccak256": "0xcc4662d94ccbfa5d22d42bacdc362b7da22294be65f6b02ea32e350b7c661a51",
+				"replaced_in": "v2.86.0-alpha"
 			}
 		}
 	},
@@ -706,6 +707,21 @@
 				"address": "0x7918C32F223A56c62719Fae762eac615DB2Fc0e6",
 				"status": "current",
 				"keccak256": "0x1342b154b1e8b7133e92ed3300d3a689eda400bac661c1baf9c67341cf6a0012"
+			}
+		}
+	},
+	"v2.86.0-alpha": {
+		"tag": "v2.86.0-alpha",
+		"fulltag": "v2.86.0-alpha",
+		"release": "Caph",
+		"network": "goerli",
+		"date": "2023-04-05T00:08:25+01:00",
+		"commit": "5e0b515bc0c5d020edf0a9b7962396921cc27b38",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0x203d79e75532Da8701ffb43cec3a40828Ebfc4a9",
+				"status": "current",
+				"keccak256": "0x0e1391394e3eead86ca2ee2e3ddb46150935bc9c1251cb49f1d9509b825b390f"
 			}
 		}
 	}
