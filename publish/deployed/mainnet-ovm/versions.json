@@ -1551,13 +1551,15 @@
 		"contracts": {
 			"FuturesMarketManager": {
 				"address": "0xdb89f3fc45A707Dd49781495f77f8ae69bF5cA6e",
-				"status": "current",
-				"keccak256": "0xa3e61f9cc4cdadb555143e7b8e9a1c7819a7ade8706b8d4816dcd96abb90d0d1"
+				"status": "replaced",
+				"keccak256": "0xa3e61f9cc4cdadb555143e7b8e9a1c7819a7ade8706b8d4816dcd96abb90d0d1",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketData": {
 				"address": "0xF7D3D05cCeEEcC9d77864Da3DdE67Ce9a0215A9D",
-				"status": "current",
-				"keccak256": "0x6c261f68839a3e1b0e0628bb5dbd894d714103d797dd4589112d56b2b8854860"
+				"status": "replaced",
+				"keccak256": "0x6c261f68839a3e1b0e0628bb5dbd894d714103d797dd4589112d56b2b8854860",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketSettings": {
 				"address": "0xd442Dc2Ac1f3cA1C86C8329246e47Ca0C91D0471",
@@ -1567,8 +1569,9 @@
 			},
 			"PerpsV2ExchangeRate": {
 				"address": "0x4aD2d14Bed21062Ef7B85C378F69cDdf6ED7489C",
-				"status": "current",
-				"keccak256": "0xd999737a0ad9825757d9bd616af24e79fec7bd7d30fe70559f4aa8b1a0299716"
+				"status": "replaced",
+				"keccak256": "0xd999737a0ad9825757d9bd616af24e79fec7bd7d30fe70559f4aa8b1a0299716",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2ProxyETHPERP": {
 				"address": "0x2B3bb4c683BFc5239B029131EEf3B1d214478d93",
@@ -1577,8 +1580,9 @@
 			},
 			"PerpsV2MarketStateETHPERP": {
 				"address": "0x038dC05D68ED32F23e6856c0D44b0696B325bfC8",
-				"status": "current",
-				"keccak256": "0xf680ad7a51bbf8491940c287780b2be785e6c2a795fa8a03de13118480e4cdc9"
+				"status": "replaced",
+				"keccak256": "0xf680ad7a51bbf8491940c287780b2be785e6c2a795fa8a03de13118480e4cdc9",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketETHPERP": {
 				"address": "0x517D0676E80115c1Aab36332B1732567Ce6D7010",
@@ -1616,18 +1620,21 @@
 		"contracts": {
 			"PerpsV2MarketSettings": {
 				"address": "0x09793Aad1518B8d8CC72FDd356479E3CBa7B4Ad1",
-				"status": "current",
-				"keccak256": "0x2b0eae2142e1ed316f5cf4688bbaa14d02a3755460234cdecf050f86c80e1ef6"
+				"status": "replaced",
+				"keccak256": "0x2b0eae2142e1ed316f5cf4688bbaa14d02a3755460234cdecf050f86c80e1ef6",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketETHPERP": {
 				"address": "0x35CcAC0A67D2a1EF1FDa8898AEcf1415FE6cf94c",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsETHPERP": {
 				"address": "0x9363c080Ca0B16EAD12Fd33aac65c8D0214E9d6D",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderETHPERP": {
 				"address": "0xe343542366A9f3Af56Acc6D68154Cfaf23efeba6",
@@ -1656,18 +1663,21 @@
 			},
 			"PerpsV2MarketStateBTCPERP": {
 				"address": "0xFEAF9e0A57e626f72E1a5fff507D7A2d9A9F0EE9",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketBTCPERP": {
 				"address": "0x5F8203298Fa0B01386b0F879F0Aa3DDD0470C896",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsBTCPERP": {
 				"address": "0xb0A1d2c68Bf4D0980402DC220Ca6Ddeb8DbfbC56",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderBTCPERP": {
 				"address": "0xD8c3F087000DC990Fc84a776aED78d31507F716B",
@@ -1686,18 +1696,21 @@
 			},
 			"PerpsV2MarketStateLINKPERP": {
 				"address": "0x49dC714eaD0cc585eBaC8A412098914a2CE7B7B2",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketLINKPERP": {
 				"address": "0xc98e2439711EDf1Ab1E8BD23133145c3E1287f94",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsLINKPERP": {
 				"address": "0xcD077EAb8efBcb94aa04F2055D7A9216F23697A6",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderLINKPERP": {
 				"address": "0x45C93D2C1994a70fD2Af98DA6ba100953b96A768",
@@ -1716,18 +1729,21 @@
 			},
 			"PerpsV2MarketStateSOLPERP": {
 				"address": "0x5da48D842542eF497ad68FAEd3480b3B1609Afe5",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketSOLPERP": {
 				"address": "0xe52757A0D7eB6c380b6F6Ae2A30a91b67FF16B9C",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsSOLPERP": {
 				"address": "0x6eE44d9e0f868833A5543bcABc3Bd1a7d843eDB8",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderSOLPERP": {
 				"address": "0xAEb1Cc5FD71CfFD1462808eE13b1051196bF6224",
@@ -1746,18 +1762,21 @@
 			},
 			"PerpsV2MarketStateAVAXPERP": {
 				"address": "0x3d368332c5E5c454f179f36e716b7cfA09906454",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketAVAXPERP": {
 				"address": "0x6345d77B30E60FFCdcEb2E303b432F0665dD5a9f",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsAVAXPERP": {
 				"address": "0x69d255473d0d15DC087cbf4962a65839aa28A2C5",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderAVAXPERP": {
 				"address": "0x580f76aF1FC4BB29F0032EeC6e0F7460D26b5f56",
@@ -1776,18 +1795,21 @@
 			},
 			"PerpsV2MarketStateAAVEPERP": {
 				"address": "0x9821CC43096b3F35744423C9B029854064dfe9Ab",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketAAVEPERP": {
 				"address": "0x722E8e89dD4217FB27447053b2cB3AEC336A2F1f",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsAAVEPERP": {
 				"address": "0x8C14dB69b1778c7Bbb0683B2deA21F79b9B5f059",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderAAVEPERP": {
 				"address": "0x95597eaC456983645d4aD0cC83C5356cc245Ea0D",
@@ -1806,18 +1828,21 @@
 			},
 			"PerpsV2MarketStateUNIPERP": {
 				"address": "0xcF4a5F99902887d6CF5A2271cC1f54b5c2321e29",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketUNIPERP": {
 				"address": "0x4AD314a760a6173326eF5C828f51EDE93b432A12",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsUNIPERP": {
 				"address": "0xda3a5e9502b23Eaedc8cC048998893013e09787d",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderUNIPERP": {
 				"address": "0xcC0ceC53572d4e10a8fdABb468356287B170c6A9",
@@ -1836,18 +1861,21 @@
 			},
 			"PerpsV2MarketStateMATICPERP": {
 				"address": "0xfC99d08D8ff69e31095E7372620369Fa92c82960",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketMATICPERP": {
 				"address": "0x07A82aEe97F1011256A9Db69e2D4cec2EF2D84EC",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsMATICPERP": {
 				"address": "0xF23c5eC62eC4398302eFd84587eb8BA26f21B155",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderMATICPERP": {
 				"address": "0xDF89210B03E319B08EC0cC73C4B50468306e1252",
@@ -1866,18 +1894,21 @@
 			},
 			"PerpsV2MarketStateAPEPERP": {
 				"address": "0xDaA88C67eBA3a95715d678557A4F42e26cd01F1A",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketAPEPERP": {
 				"address": "0x3f8dc633227DeC2E4a52cE8dB91c4858A8E3Ae78",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsAPEPERP": {
 				"address": "0x74DCCf74644485A6920d0CFE1A4D34B2F4216181",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderAPEPERP": {
 				"address": "0x70aEA7B455510640217CBCB78C5f2d29DB5a4a01",
@@ -1896,18 +1927,21 @@
 			},
 			"PerpsV2MarketStateDYDXPERP": {
 				"address": "0xA1c26b1ff002993dD1fd43c0f662C5d93cC5B66E",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketDYDXPERP": {
 				"address": "0x3eaf011A9B8393ceDD4F331eB5dD1739cf7DDd71",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsDYDXPERP": {
 				"address": "0x6Aa31707bD6aCf24063A806570160978E62752A0",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderDYDXPERP": {
 				"address": "0x9B20476899C8Fb22d96af37D2017016A80647159",
@@ -1926,18 +1960,21 @@
 			},
 			"PerpsV2MarketStateBNBPERP": {
 				"address": "0x7b75C4857E84C8421D422E06447A7Fb03c398eDd",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketBNBPERP": {
 				"address": "0x7ebCBBD835D17661b26b8AFAe75b5f94BfDC12cA",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsBNBPERP": {
 				"address": "0x857d91d6c63892B383CF10cd15285604FF9976b8",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderBNBPERP": {
 				"address": "0xaf476d7817105437aed79a86E802b79D4B1c473F",
@@ -1956,18 +1993,21 @@
 			},
 			"PerpsV2MarketStateOPPERP": {
 				"address": "0xa26c97A0c9788e937986ee6276f3762c20C06ef5",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketOPPERP": {
 				"address": "0x4F5f4617482b6399d63329c5070E6f37020dE286",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsOPPERP": {
 				"address": "0x423ddc17a01e3E44A0Bd125eC2F645b8B9Ad3259",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderOPPERP": {
 				"address": "0x3c30CBd400f8e7c099ab27cF28DA843cD4433FFE",
@@ -1986,18 +2026,21 @@
 			},
 			"PerpsV2MarketStateDOGEPERP": {
 				"address": "0xd6fe35B896FaE8b22AA6E47bE2752CF87eB1FcaC",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketDOGEPERP": {
 				"address": "0x5E744132337608c075d4fce7F32F17bb8D9fF8ec",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsDOGEPERP": {
 				"address": "0xEa46a4dfa7D2767FF4BaE2B76F5C6BD80057c723",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderDOGEPERP": {
 				"address": "0x62B6f3733AB95Ec88864F03f758DE4377d6C751d",
@@ -2016,18 +2059,21 @@
 			},
 			"PerpsV2MarketStateXAUPERP": {
 				"address": "0x58e7da4Ee20f1De44F59D3Dd2640D5D844e443cF",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketXAUPERP": {
 				"address": "0x22AF5e22F07715fa2e267D2B49062949F71474B6",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsXAUPERP": {
 				"address": "0xE05637e338b11640C51766304878B08181463413",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderXAUPERP": {
 				"address": "0x5AE6b5DD28F44689e4D17F47aeF1f863C36Df556",
@@ -2046,18 +2092,21 @@
 			},
 			"PerpsV2MarketStateXAGPERP": {
 				"address": "0x90276BA2Ac35D2BE30588b5019CF257f80b89E71",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketXAGPERP": {
 				"address": "0xcf24D8db427325011D5CD473fEf1A8B056FeF8a9",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsXAGPERP": {
 				"address": "0x9AB1f9B25b312f162e815a027b4805516401093e",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderXAGPERP": {
 				"address": "0x31A53d5238391d1449b443eDB5476b5D8dF23239",
@@ -2076,18 +2125,21 @@
 			},
 			"PerpsV2MarketStateEURPERP": {
 				"address": "0x0E48C8662e98f576e84d0ccDb146538269653225",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketEURPERP": {
 				"address": "0xE052f0E650C3a11057037e285b6CbC8a8a144A9D",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsEURPERP": {
 				"address": "0x156E18B355b36Ff3b9Cb36bcaaF3155d95D3319A",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderEURPERP": {
 				"address": "0x3459276E8f644F111539804e08253799b176Ab83",
@@ -2106,18 +2158,21 @@
 			},
 			"PerpsV2MarketStateATOMPERP": {
 				"address": "0x91a480Bf2518C037E644fE70F207E66fdAA4d948",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketATOMPERP": {
 				"address": "0xD12Fc7a381bFFbc05c709472097a0a4E9cd8D410",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsATOMPERP": {
 				"address": "0x407e5a7548869cE520354d8EcA127754625CC9c8",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderATOMPERP": {
 				"address": "0xC0204F82ce1e25d15D2cE8DC1deA3f319BB64a8F",
@@ -2136,18 +2191,21 @@
 			},
 			"PerpsV2MarketStateAXSPERP": {
 				"address": "0x78fC32b982F5f35325996655a8Bd92715CfEfD06",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketAXSPERP": {
 				"address": "0x84810bF5dCB0e4651Ba2848E08965a2869ab80e6",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsAXSPERP": {
 				"address": "0x637340ce915a6E2EEe7C02521aC334c30c219d0D",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderAXSPERP": {
 				"address": "0xfce521766201013974Dbf3B71E68b0CF8FBcd05B",
@@ -2166,18 +2224,21 @@
 			},
 			"PerpsV2MarketStateFLOWPERP": {
 				"address": "0x49700Eb35841E9CD637B3352A26B7d685aDaFD94",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketFLOWPERP": {
 				"address": "0x7b513667c34130FE2F63812A40c71Ec104356e87",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsFLOWPERP": {
 				"address": "0x0965EFeb0579c9bf8D15A77A4F14eC623421d902",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderFLOWPERP": {
 				"address": "0xB9202087852298E5e2ebC0c30758fA4E07faf6fB",
@@ -2196,18 +2257,21 @@
 			},
 			"PerpsV2MarketStateFTMPERP": {
 				"address": "0xe76DF4d2554C74B746c5A1Df8EAA4eA8F657916d",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketFTMPERP": {
 				"address": "0x16D1cEE82608b12C4116626DCc1E69685561bf4c",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsFTMPERP": {
 				"address": "0x0868d8421B6C4f13B392eA4B72f8012884c45b74",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderFTMPERP": {
 				"address": "0x7F87AEc4938770e52AF9A0B5239521BD9C53F28E",
@@ -2226,18 +2290,21 @@
 			},
 			"PerpsV2MarketStateNEARPERP": {
 				"address": "0xea53A19B50C51881C0734a7169Fe9C6E44A09cf9",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketNEARPERP": {
 				"address": "0xfD66B08E8190ba4997337a18451bdfe744D92155",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsNEARPERP": {
 				"address": "0x1EaEd534ee8D25DA73a4E21cDE96e4Fca9C46187",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderNEARPERP": {
 				"address": "0xF6CB6699367F8f61A8bF504CBe914C639D051E19",
@@ -2256,18 +2323,21 @@
 			},
 			"PerpsV2MarketStateAUDPERP": {
 				"address": "0x973dE36Bb8022942e2658D5d129CbDdCF105a470",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketAUDPERP": {
 				"address": "0xF6B1867B51d30d6f34fF9aD603dEdfb32bF6322D",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsAUDPERP": {
 				"address": "0x002089829127A5769db0D53372d5d53a4D1a87A2",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderAUDPERP": {
 				"address": "0x6B9cbCdaE03C4cDfD9fb9D987C74856Ac332fDCf",
@@ -2286,18 +2356,21 @@
 			},
 			"PerpsV2MarketStateGBPPERP": {
 				"address": "0x4E1F44E48D2E87E279d25EEd88ced1Ec7f51438e",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketGBPPERP": {
 				"address": "0x73230988dBfaeC3CD3A34927cE57052838A21bc8",
-				"status": "current",
-				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f"
+				"status": "replaced",
+				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsGBPPERP": {
 				"address": "0x1FB664858da319b68Fc5f6d47dD6cA0D994055a2",
-				"status": "current",
-				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c"
+				"status": "replaced",
+				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderGBPPERP": {
 				"address": "0xf3DCf19D397F5A696A106b4287379Fb53fE33005",
@@ -2372,18 +2445,21 @@
 			},
 			"PerpsV2MarketStateARBPERP": {
 				"address": "0xa31717145C27bb37868829E92A3601014768d145",
-				"status": "current",
-				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31"
+				"status": "replaced",
+				"keccak256": "0xd055193b502acf2b9a648ef331eed4ee8972bb102f14604d6bfa9327bf419b31",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketARBPERP": {
 				"address": "0xF676e375eD19bd05C85F7EF8958C69684fD1b3c6",
-				"status": "current",
-				"keccak256": "0xacad701da53122ef351cb0f78d70dfb7b6cdf69c637fd2025b61f9085361465c"
+				"status": "replaced",
+				"keccak256": "0xacad701da53122ef351cb0f78d70dfb7b6cdf69c637fd2025b61f9085361465c",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2MarketViewsARBPERP": {
 				"address": "0x4DC1636f5B4C1143cB03772A93923718E4320543",
-				"status": "current",
-				"keccak256": "0x506c9e2bbb26041908d2f8df8210f53643ac64a6f5265ff7aa6ce040828948e0"
+				"status": "replaced",
+				"keccak256": "0x506c9e2bbb26041908d2f8df8210f53643ac64a6f5265ff7aa6ce040828948e0",
+				"replaced_in": "v2.86.1"
 			},
 			"PerpsV2DelayedOrderARBPERP": {
 				"address": "0x0f5af2A8a4Df79e354455788fdA73bed85AB435C",
@@ -2394,6 +2470,756 @@
 				"address": "0x5d89892BCa7aa5619fd6168D38F73bb84D777e9C",
 				"status": "current",
 				"keccak256": "0xd24df0a5e922069fa7b9e64f2a127e9741951bf7f312a66c9b31b110ec3103f4"
+			}
+		}
+	},
+	"v2.86.1": {
+		"tag": "v2.86.1",
+		"fulltag": "v2.86.1",
+		"release": "Caph",
+		"network": "mainnet",
+		"date": "2023-04-14T01:30:43+01:00",
+		"commit": "4f982ecefbec86946eed0980c1e813fc7da4da06",
+		"contracts": {
+			"FuturesMarketManager": {
+				"address": "0xd30bdFd7e7a65fE109D5dE1D4e95F3B800FB7463",
+				"status": "current",
+				"keccak256": "0xa3cbb62115ffba274772e31f298d60e857f159c0d95d58cfd299a542ad858bd9"
+			},
+			"PerpsV2MarketData": {
+				"address": "0x58e6227510F83d3F45B339F2f7A05a699fDEE6D4",
+				"status": "current",
+				"keccak256": "0x586017ff32beb9eda3e341b74f943d4ce898fc1e97ce70303f750ef034f78494"
+			},
+			"PerpsV2MarketSettings": {
+				"address": "0x649F44CAC3276557D03223Dbf6395Af65b11c11c",
+				"status": "current",
+				"keccak256": "0xc65960395723b7ea4a08a6d983cb7b05b4a7c1161e450b6b8d258e16412252a8"
+			},
+			"PerpsV2ExchangeRate": {
+				"address": "0x2C15259D4886e2C0946f9aB7a5E389c86b3c3b04",
+				"status": "current",
+				"keccak256": "0xc70dadb26b69eec386f54e9abb8898ccf803e6055ac19012dbea59219e27aafd"
+			},
+			"PerpsV2MarketStateETHPERP": {
+				"address": "0x6aBC19F21D5Ce23abf392329Ef7B118c7b5F2AA8",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketETHPERP": {
+				"address": "0xf1B530F3dEfD144A024A958D4Ae37d138615D91D",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsETHPERP": {
+				"address": "0x989D359dBF9C531aE6C305c37AC37220b8Dd99Eb",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateBTCPERP": {
+				"address": "0x68287419FcFA1c186515E99a35FF3c970B3B3C66",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketBTCPERP": {
+				"address": "0x8bE1893E1D29FCf2B966Cdd083efe30DBf78D7f6",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsBTCPERP": {
+				"address": "0xE662e0aF5fCaBe78aaaF4cFF0a13ca69512Fc481",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateLINKPERP": {
+				"address": "0xEed3618dd59163CC6849758F07fA9369823aa710",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketLINKPERP": {
+				"address": "0xD86e7B02cbaCb63eF6E91915205F7b122b8a8C3a",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsLINKPERP": {
+				"address": "0x2903C913BBbac9fBb6c4A080210cEd9EeC1f66a6",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateSOLPERP": {
+				"address": "0x435e6e499610B6De3510F0Cb047D3575C7bca6E1",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketSOLPERP": {
+				"address": "0xF715727ab8458C5792961a1EB944f97A67289A61",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsSOLPERP": {
+				"address": "0xFaf84737Dae0DA0c093BC172e32FB845016Df642",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateAVAXPERP": {
+				"address": "0xC02AF29944301c8FbA606a7dF8ef446dc103238C",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketAVAXPERP": {
+				"address": "0x3E4EA2A0679Dec8C9040d6538B45425c72bE80D0",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsAVAXPERP": {
+				"address": "0xBb1250d0D96a22CF62ee12AEcC2FA684F3Ca04E8",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateAAVEPERP": {
+				"address": "0x3773dfbbc894bfa9DF22855FCec1D1572eFC5e0a",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketAAVEPERP": {
+				"address": "0xB6E1BAb2E6349942aB472eF5C9456019b85dD5C7",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsAAVEPERP": {
+				"address": "0x619676Df5C402D0eb008104e9a658C1F65DBF702",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateUNIPERP": {
+				"address": "0x0db1B224C5203fA22CFdFA3F92519D150ad86612",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketUNIPERP": {
+				"address": "0x0A7B5CAabA3FFC775a0ab83544400005622F62D5",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsUNIPERP": {
+				"address": "0x90efaafEc5B183D09bc5b2cE81E8A12e4c2A6002",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateMATICPERP": {
+				"address": "0x82f962aF60e6627d3ea5Db5Fd7e1a57f7E1Ef2B8",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketMATICPERP": {
+				"address": "0xC703B8d6a2F6c9F9Fd3b92Bc38F3ED716461d943",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsMATICPERP": {
+				"address": "0x2F94942764C997e777F7Ded68679a5eCC6B7514c",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateAPEPERP": {
+				"address": "0x089af032687993426A628184cb3D0610d2cda6F2",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketAPEPERP": {
+				"address": "0xF9e5FafA7B744d75F10ffe24fb2A7f7FF40e6033",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsAPEPERP": {
+				"address": "0x2891452e2068Ac9471E3610e956510C46B4EffE5",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateDYDXPERP": {
+				"address": "0xac3F9a2753f185731324907E6802395d59Bb62a2",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketDYDXPERP": {
+				"address": "0xB766E4F63da917d3D289b1d52ba5Ac3829e7c679",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsDYDXPERP": {
+				"address": "0x2e26D4beC1464409c154f653A238cE5BAAA00198",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateBNBPERP": {
+				"address": "0x3DfBB7D0770e6Eb77fBEc89C0840E9A0f29C76Ff",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketBNBPERP": {
+				"address": "0xBccaC7cbc37aa2De510863647197D584F55AE46b",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsBNBPERP": {
+				"address": "0xA227c833786E46d53cf9E9a14cFF906477335D91",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateOPPERP": {
+				"address": "0xBdD0D09f73AC6f8Ef59A71baab283C12dcab06fA",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketOPPERP": {
+				"address": "0x939d077817dFB5a6F87C89c4792842Ce91c7e5A0",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsOPPERP": {
+				"address": "0x2fffEBeD35931abD9014A39AE41fa26D511E31F4",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateDOGEPERP": {
+				"address": "0x0A0A22189c8732cA089D6fB6709e65140a446a41",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketDOGEPERP": {
+				"address": "0x8F1C7653e0d29CDc1a1F1220EeCC7dB1BB82cdc2",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsDOGEPERP": {
+				"address": "0x9c79C19FF4d1a6531D9a4F91e96534F5D002dF8B",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateXAUPERP": {
+				"address": "0xc564040630d6929070D85DF237FDf60F6bfE4b5F",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketXAUPERP": {
+				"address": "0x9bb2fEaB8fDe79e48234C2d3Ea3F2568d08C42E2",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsXAUPERP": {
+				"address": "0x9A3Ecffd8Cb317685EF0Df7B4aF5C4c9d1aF53eC",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateXAGPERP": {
+				"address": "0x28E1CE29aCdFe1E74e6fA18591E1D5481D2085a1",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketXAGPERP": {
+				"address": "0x00751b4cceF0800bB4FA33B685363D4cFf1A981E",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsXAGPERP": {
+				"address": "0x9BdC86302479112e61f3BA7761dC704f7044D304",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateEURPERP": {
+				"address": "0x4eD08210706F5b74584cC7F03b38d800DC27936B",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketEURPERP": {
+				"address": "0x4673A25b84097df253a6ff9c314f11ca60Bf8C05",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsEURPERP": {
+				"address": "0x5Ade35CEdDEd082BDB27A94e2A20aC327a67172e",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateATOMPERP": {
+				"address": "0xe46Ef097d2CF6FF95Ad172d5da0E65A0dE9e2468",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketATOMPERP": {
+				"address": "0xF5F5821b1236d7624A6c009190B4Dd7f54Bb18d2",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsATOMPERP": {
+				"address": "0xA92C0142c3239e8e07cbb9f33e4C0dD4Fc19089b",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateAXSPERP": {
+				"address": "0xcfdC039BDB8E4b578857b759f27D6BAa2617EDD3",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketAXSPERP": {
+				"address": "0xdFa823f131Baa72334eDaB7c4e163a65024C6B3c",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsAXSPERP": {
+				"address": "0xcaDD53c5fAAe5111c7a0429Ee1f99A695433Fb17",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateFLOWPERP": {
+				"address": "0xECc8A6Af92d825ACC5B871993FC83d86CCEd5a19",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketFLOWPERP": {
+				"address": "0x16f7332ECEC126F8Bcd791887D6c576F35525f2B",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsFLOWPERP": {
+				"address": "0x73d8fD1dC5E38cEF6754Fc5009015CaaEE218461",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateFTMPERP": {
+				"address": "0x1951c6b2D9DD9A3CF10aaC5e79A7EcA0a5300BB5",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketFTMPERP": {
+				"address": "0x43C5F53fFd4F909AeD9b51C562eBf1D762c2b496",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsFTMPERP": {
+				"address": "0xab0d9E3FF817faa88F4bBC783CFA6D55E5f10F3E",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateNEARPERP": {
+				"address": "0x779f424d3B3A617beB4a0DB1C21D5505De297a8A",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketNEARPERP": {
+				"address": "0xB9AbecE4Fcd56E2e3EE63fC9f60dC8A825379193",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsNEARPERP": {
+				"address": "0xC314CFB9C5706f316F3916543aD2F3e4c3aa2d02",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateAUDPERP": {
+				"address": "0x6d62aA1535C7C33D7f6592562f091D193E180c57",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketAUDPERP": {
+				"address": "0xb153f06077aF9448C53c7102760e59836a27Ed27",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsAUDPERP": {
+				"address": "0x7D0256E0936103b32AAD59E80257B59E988E75e2",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateGBPPERP": {
+				"address": "0x733a69D080B10Bc897452eF783020cdFe012974A",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketGBPPERP": {
+				"address": "0x2a837135a1F18EEEa18E3bfb16265550Bf705b4B",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsGBPPERP": {
+				"address": "0x3f30190416EBdE7F50749cf3579Af1beeF2E7Fa8",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketStateARBPERP": {
+				"address": "0x6393113A43A4A88b9F3D53b4b21e7feEb5d3D821",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketARBPERP": {
+				"address": "0x69cc4951D587D11577F16ca9B7D0e9D2745b27Cb",
+				"status": "current",
+				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238"
+			},
+			"PerpsV2MarketViewsARBPERP": {
+				"address": "0x23b2558318E4955DfC3402567E22B1FF102DB3DD",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2MarketLiquidateBNBPERP": {
+				"address": "0x7C5FbeBDfE7659BEe68A4Aa284575a21055651eA",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentBNBPERP": {
+				"address": "0x2ae5608AB3fb3863a713715f3F59216bCAbc5150",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionBNBPERP": {
+				"address": "0x210BA565130f2aF399fD8435a279b22894e8D096",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateAXSPERP": {
+				"address": "0x08c2c8d7175C5766a8aFCd1f7B69a6D999e21824",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentAXSPERP": {
+				"address": "0x6FBcabaa42cE1818f23a0b909dbD9BC7691FC1E6",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionAXSPERP": {
+				"address": "0x2b8cE8a8ABF039DB01B2ad7F512b9157467eb264",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateAAVEPERP": {
+				"address": "0x34830e0959FdEebB0F3C8c463AFE064f210DbDDf",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentAAVEPERP": {
+				"address": "0xc4786C4484C06bD463f124EBeF2175f67759EA1A",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionAAVEPERP": {
+				"address": "0xf73fA296DF4C46b7182B14AC7862f6E08Da84150",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateFLOWPERP": {
+				"address": "0x773098F036FcfFC88Cd5d347821ea2f8312CC12F",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentFLOWPERP": {
+				"address": "0x81b5c28e3905233bc4B96B182160593779d2CB83",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionFLOWPERP": {
+				"address": "0x19BA5013824a45Ee0F9E4738c8618d40bA11234a",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateNEARPERP": {
+				"address": "0x40542FEa068ED07247645581C04EfA1f83Ff04E5",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentNEARPERP": {
+				"address": "0x699c039c9E21d49B8c38768619942dfaB6E8E38d",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionNEARPERP": {
+				"address": "0x3403A3430e4a62577e70fB48e070268D84a8F910",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateAUDPERP": {
+				"address": "0x0B6364488E14568A125440F3C42aD59698fb9E38",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentAUDPERP": {
+				"address": "0x010a2f40B3b09FdBc60cb06f1b7F1a2A757d0eF2",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionAUDPERP": {
+				"address": "0x0D8121E17b74e537286304c7804a5bC592A7964f",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateDYDXPERP": {
+				"address": "0xAbA508B0F09fb7ff9a3fe129c09BC87a00B0ddeC",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentDYDXPERP": {
+				"address": "0xdFaEBe6A2B2BDAc52aC2E172e0175988d7472c60",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionDYDXPERP": {
+				"address": "0xE6aC817Cfdd83073aec079cD9EBb9c35479b7665",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateGBPPERP": {
+				"address": "0x77769c01168011f26a39B71C9c7bA0607752E9ff",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentGBPPERP": {
+				"address": "0xc8590aEb1484e642f7321bd0586B6DB3165a862C",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionGBPPERP": {
+				"address": "0xD3d59d4b8B504Ea6e49c5788Fe1BC7505c6f61EA",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateAPEPERP": {
+				"address": "0x9074b2389baaC5Ea4Fa9d1b1D37589142888697f",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentAPEPERP": {
+				"address": "0x3Cf1BE829C5eE73630482D2E92bF9461Adf1b213",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionAPEPERP": {
+				"address": "0xdDeB6cb0D6050C9221D037Aa099a2D11C443548a",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateFTMPERP": {
+				"address": "0xA6808A69b3CA50CB2E4a41A51f8979FFaB2D2db2",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentFTMPERP": {
+				"address": "0x88b7BD7A245F2fB597de88a6EDA0CAEe047f607a",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionFTMPERP": {
+				"address": "0x50197701bd09f8DBDd6716b1b9080574819a3776",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateUNIPERP": {
+				"address": "0xa71E06546F0278dA6C4732e8b885378Fc0781FE8",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentUNIPERP": {
+				"address": "0xB0b6b79Fbb09290b0663D6D767FFCEE7EA742428",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionUNIPERP": {
+				"address": "0x418d195155058ABC4A26D59c8A6CE83A7d52288A",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateATOMPERP": {
+				"address": "0x8f765028e9701462c07ef83312cFFD3a5b9A6652",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentATOMPERP": {
+				"address": "0x2c5fc227AF9100F8d6FC963549De3e3BadA8c3A9",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionATOMPERP": {
+				"address": "0x76FB9F147d40480b6e030c09CD53fDF912C6178f",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateXAGPERP": {
+				"address": "0x35BFC780c232171B5830A76632a70821c1A1b087",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentXAGPERP": {
+				"address": "0xF40E46c74CA3E72d8dC490493FA9499999C6256E",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionXAGPERP": {
+				"address": "0x546Ee4A4299dC3d3b64D6a889759E04aCef6B92D",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateEURPERP": {
+				"address": "0xD9E7D2CC5EF478c8E6535D1F416F0c3AD477b78E",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentEURPERP": {
+				"address": "0x4BA1bdbc15281775a8437EAcdbAF8fbfD3A6a224",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionEURPERP": {
+				"address": "0xEAacaDa91015c11D43bD788F09B2d54decfdc2e8",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateMATICPERP": {
+				"address": "0x0d9A83b625d9793371bF4777De4F24f57f4527e1",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentMATICPERP": {
+				"address": "0x7F059E5FAA4972B098C7539A6721c596BDc942de",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionMATICPERP": {
+				"address": "0x8e1B638EF5E796504BE87fB81943e613875EcabE",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateDOGEPERP": {
+				"address": "0xf2425A167bFD229e64D9e28258013cA959e9991A",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentDOGEPERP": {
+				"address": "0x128d0Eb5E26Cf95128AA9aC395f88dcE705AedAc",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionDOGEPERP": {
+				"address": "0x374f2D3353bd664a2B25508df4a3b58939999E1B",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateLINKPERP": {
+				"address": "0x360Bc3aCB4fEA8112D8Ac20CE1E93b9B70C3d85a",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentLINKPERP": {
+				"address": "0x560F562be696BaEfA0029c954cC69352bfb33e41",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionLINKPERP": {
+				"address": "0xd3f1BDdC7F25eAfDB939d6B4f62Cb9d5b19d346F",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateOPPERP": {
+				"address": "0xdD28261FC65c4Ed29b9D11aac0F44079cfCA4F32",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentOPPERP": {
+				"address": "0xF9F70F783BE3ee6ebde9504BA0AC0730151b0a22",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionOPPERP": {
+				"address": "0xbF1E06FaCb51B8A9223F266F303a88d3Dfc46226",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateSOLPERP": {
+				"address": "0x5c59426a609398A9753522E840F422faEDE70A5A",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentSOLPERP": {
+				"address": "0xA5BAff7D9928AE32C5e1ff441e4575951CB01111",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionSOLPERP": {
+				"address": "0x9A90C6FA8828baCD5B9eDD513F77bA7e4528C7E8",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateXAUPERP": {
+				"address": "0xa95e89d93A7432A2Ce9453ec4E264940a96B364b",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentXAUPERP": {
+				"address": "0x76c6C768ac45F0a3d266FF3e73257937Fc962FE6",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionXAUPERP": {
+				"address": "0x1a83bBccFaB68A8bF901c298c5dB5ACb8a2C7b05",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateAVAXPERP": {
+				"address": "0x7d109dB6D68bC03BfbA4e5f129922fEc300Ab7Fe",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentAVAXPERP": {
+				"address": "0x9D6Db4d562D670a987b5D9e07Db71bab33Eb1428",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionAVAXPERP": {
+				"address": "0xC56a0198c08c3610980340660C39f6D6C7Ea765a",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateARBPERP": {
+				"address": "0xa1Dea0c759Eb44e9aD9697E3c50E8dF8d19a402e",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentARBPERP": {
+				"address": "0x99ae21FeB485A89252B9bFB394E6Eb8c736436Bd",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionARBPERP": {
+				"address": "0x31Ec26dE77aA4c859b7a15A37D2Fc9EB61289C14",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateETHPERP": {
+				"address": "0x248aB8Ac4BDb4ef401cCAD33B5fd7fB82Eb31eD2",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentETHPERP": {
+				"address": "0x3ADA6D040314676B1e8A4BC1a0a16060b42A00eF",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionETHPERP": {
+				"address": "0x2227af48ec971E3C786f3E06064CbA455724d6ba",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketLiquidateBTCPERP": {
+				"address": "0x802E609928a2Fc12e587766C078F341BAD8c4D4F",
+				"status": "current",
+				"keccak256": "0xc023bee63757feaf86344043a6a1a24f3acf48a4f068f7f5d3b3ed0562e82c82"
+			},
+			"PerpsV2DelayedIntentBTCPERP": {
+				"address": "0x527b99E3d31F71D2414CC2dbAbE0d527f9160926",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionBTCPERP": {
+				"address": "0x33C8daF48c691C54897070C3621fdecC249C7202",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
 			}
 		}
 	}
