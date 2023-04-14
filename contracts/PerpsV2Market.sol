@@ -132,6 +132,9 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         uint price,
         address sender
     ) internal notFlagged(sender) {
+        // Prevent any change in margin if a pending order exists - SIP-2011
+        require(marketState.delayedOrders(messageSender).sizeDelta == 0, "Pending order exists");
+
         // Transfer no tokens if marginDelta is 0
         uint absDelta = _abs(marginDelta);
         if (marginDelta > 0) {

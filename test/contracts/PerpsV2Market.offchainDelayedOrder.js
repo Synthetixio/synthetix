@@ -703,17 +703,16 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					await perpsV2MarketSettings.setOffchainDelayedOrderMinAge(marketKey, 0, { from: owner });
 					// go to next round
 					await setOnchainPrice(baseAsset, price);
-					// withdraw margin (will cause order to fail)
-					await perpsV2Market.withdrawAllMargin({ from: trader });
+					// update price to some large value that make it fail
 					const updateFeedData = await getFeedUpdateData({
 						id: defaultFeedId,
-						price: feedBaseFromUNIT(offChainPrice),
+						price: feedBaseFromUNIT(offChainPrice.mul(toBN(10))),
 						conf: feedBaseFromUNIT(confidence),
 					});
 					// check execution would fail
 					await assert.revert(
 						perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-						'Insufficient margin'
+						'price divergence too high'
 					);
 				});
 
@@ -872,20 +871,20 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
 					});
 
-					it('if margin removed', async () => {
+					it('prevents margin to be reduced', async () => {
 						// withdraw margin (will cause order to fail)
-						await perpsV2Market.withdrawAllMargin({ from: trader });
-
-						// account owner
+						const reduceMargin = multiplyDecimal(margin, toUnit('-0.1')); // small fraction of margin to reduce
 						await assert.revert(
-							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], { from: trader }),
-							'Insufficient margin'
+							perpsV2Market.transferMargin(reduceMargin, { from: trader }),
+							'Pending order exists'
 						);
+					});
+
+					it('prevents margin to be removed', async () => {
+						// withdraw margin (will cause order to fail)
 						await assert.revert(
-							perpsV2Market.executeOffchainDelayedOrder(trader, [updateFeedData], {
-								from: trader2,
-							}),
-							'Insufficient margin'
+							perpsV2Market.withdrawAllMargin({ from: trader }),
+							'Pending order exists'
 						);
 					});
 
