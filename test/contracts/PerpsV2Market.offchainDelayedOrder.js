@@ -871,8 +871,15 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
 					});
 
+					it('prevents margin to be increased', async () => {
+						const increaseMargin = margin; // increase the margin by same margin amount
+						await assert.revert(
+							perpsV2Market.transferMargin(increaseMargin, { from: trader }),
+							'Pending order exists'
+						);
+					});
+
 					it('prevents margin to be reduced', async () => {
-						// withdraw margin (will cause order to fail)
 						const reduceMargin = multiplyDecimal(margin, toUnit('-0.1')); // small fraction of margin to reduce
 						await assert.revert(
 							perpsV2Market.transferMargin(reduceMargin, { from: trader }),
@@ -881,7 +888,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					});
 
 					it('prevents margin to be removed', async () => {
-						// withdraw margin (will cause order to fail)
 						await assert.revert(
 							perpsV2Market.withdrawAllMargin({ from: trader }),
 							'Pending order exists'
