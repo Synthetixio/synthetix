@@ -80,6 +80,7 @@ contract('PerpsV2MarketData', accounts => {
 				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
+				{ contract: 'FuturesMarketBTC', properties: { perpSuffix: keySuffix } },
 			],
 		}));
 
@@ -453,9 +454,11 @@ contract('PerpsV2MarketData', accounts => {
 		it('All summaries', async () => {
 			const summaries = await perpsV2MarketData.allMarketSummaries();
 
-			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
-			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
-			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
+			const sBTCSummary = summaries.find(summary => summary.key === toBytes32('sBTC'));
+			const sETHSummary = summaries.find(summary => summary.key === toBytes32('sETH' + keySuffix));
+			const sLINKSummary = summaries.find(
+				summary => summary.key === toBytes32('sLINK' + keySuffix)
+			);
 
 			const fmParams = await perpsV2MarketData.parameters(marketKey);
 
