@@ -863,8 +863,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					});
 				});
 
-				describe('orders on time', () => {
+				describe('order and margin modifications', () => {
+					let sizeDelta, desiredFillPrice, trackingCode;
 					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						sizeDelta = toUnit('1');
+						desiredFillPrice = toUnit('1');
+						trackingCode = toBytes32('code');
+
 						// keeperFee is the minimum keeperFee for the system
 						keeperFee = await perpsV2MarketSettings.minKeeperFee();
 
@@ -892,6 +897,47 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 							perpsV2Market.withdrawAllMargin({ from: trader }),
 							'Pending order exists'
 						);
+					});
+
+					it('prevents position to be modified (spot)', async () => {
+						await assert.revert(
+							perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice, { from: trader }),
+							'Pending order exists'
+						);
+					});
+
+					it('prevents position to be modified (spot with tracking)', async () => {
+						await assert.revert(
+							perpsV2Market.modifyPositionWithTracking(sizeDelta, desiredFillPrice, trackingCode, {
+								from: trader,
+							}),
+							'Pending order exists'
+						);
+					});
+
+					it('prevents position to be closed (spot)', async () => {
+						await assert.revert(
+							perpsV2Market.closePosition(desiredFillPrice, { from: trader }),
+							'Pending order exists'
+						);
+					});
+
+					it('prevents position to be closed (spot with tracking)', async () => {
+						await assert.revert(
+							perpsV2Market.closePositionWithTracking(desiredFillPrice, trackingCode, {
+								from: trader,
+							}),
+							'Pending order exists'
+						);
+					});
+				});
+
+				describe('orders on time', () => {
+					beforeEach('submitOrder and prepare updateFeedData', async () => {
+						// keeperFee is the minimum keeperFee for the system
+						keeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+						await submitOffchainOrderAndDelay(offchainDelayedOrderMinAge + 1);
 					});
 
 					it('if price too high', async () => {
@@ -1070,7 +1116,6 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 					// trader gets refunded keeperFee
 					expectedRefund = expectedRefund.add(keeperFee);
 					// no event for keeper payment
-					console.log(decodedLogs.map(({ name }) => name));
 					assert.deepEqual(
 						decodedLogs.map(({ name }) => name),
 						[
