@@ -15,6 +15,7 @@ const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
+		legacyFuturesMarket,
 		perpsV2Market,
 		perpsV2MarketHelper,
 		sethMarket,
@@ -52,6 +53,7 @@ contract('PerpsV2MarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
+			FuturesMarketBTC: legacyFuturesMarket,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
 			TestablePerpsV2MarketBTC: perpsV2MarketHelper,
 			FuturesMarketManager: futuresMarketManager,
@@ -438,6 +440,23 @@ contract('PerpsV2MarketData', accounts => {
 				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
 				params.makerFeeOffchainDelayedOrder
 			);
+		});
+
+		it('For market keys with legacy markets', async () => {
+			const summaries1 = await perpsV2MarketData.marketSummaries([legacyFuturesMarket.address]);
+			assert.equal(summaries1.length, 1);
+
+			// Velocity is _not_ a feature in legacy v1 markets. When summaries called on legacy markets, velocity should
+			// default and not throw a revert.
+			assert.equal(summaries1[0].currentFundingVelocity, 0);
+
+			// Multiple markets (one legacy, one v2).
+			const summaries2 = await perpsV2MarketData.marketSummaries([
+				legacyFuturesMarket.address,
+				perpsV2Market.address,
+			]);
+			assert.equal(summaries2.length, 2);
+			assert.equal(summaries2[0].currentFundingVelocity, 0);
 		});
 
 		it('For market keys', async () => {
