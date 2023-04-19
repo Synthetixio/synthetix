@@ -936,6 +936,70 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				});
 			});
 
+			describe('order and margin modifications', () => {
+				let sizeDelta, desiredFillPrice, trackingCode;
+				beforeEach('prepare variables', async () => {
+					sizeDelta = toUnit('1');
+					desiredFillPrice = toUnit('1');
+					trackingCode = toBytes32('code');
+				});
+
+				it('prevents margin to be increased', async () => {
+					const increaseMargin = margin; // increase the margin by same margin amount
+					await assert.revert(
+						perpsV2Market.transferMargin(increaseMargin, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents margin to be reduced', async () => {
+					const reduceMargin = multiplyDecimal(margin, toUnit('-0.1')); // small fraction of margin to reduce
+					await assert.revert(
+						perpsV2Market.transferMargin(reduceMargin, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents margin to be removed', async () => {
+					await assert.revert(
+						perpsV2Market.withdrawAllMargin({ from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be modified (spot)', async () => {
+					await assert.revert(
+						perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be modified (spot with tracking)', async () => {
+					await assert.revert(
+						perpsV2Market.modifyPositionWithTracking(sizeDelta, desiredFillPrice, trackingCode, {
+							from: trader,
+						}),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be closed (spot)', async () => {
+					await assert.revert(
+						perpsV2Market.closePosition(desiredFillPrice, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be closed (spot with tracking)', async () => {
+					await assert.revert(
+						perpsV2Market.closePositionWithTracking(desiredFillPrice, trackingCode, {
+							from: trader,
+						}),
+						'Pending order exists'
+					);
+				});
+			});
+
 			describe('execution reverts', () => {
 				it('in same round', async () => {
 					// account owner
@@ -967,30 +1031,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					await assert.revert(
 						perpsV2Market.executeDelayedOrder(trader, { from: trader2 }),
 						'order too old, use cancel'
-					);
-				});
-
-				it('prevents margin to be increased', async () => {
-					const increaseMargin = margin; // increase the margin by same margin amount
-					await assert.revert(
-						perpsV2Market.transferMargin(increaseMargin, { from: trader }),
-						'Pending order exists'
-					);
-				});
-
-				it('prevents margin to be reduced', async () => {
-					const reduceMargin = multiplyDecimal(margin, toUnit('-0.1')); // small fraction of margin to reduce
-					await assert.revert(
-						perpsV2Market.transferMargin(reduceMargin, { from: trader }),
-						'Pending order exists'
-					);
-				});
-
-				it('prevents margin to be removed', async () => {
-					// withdraw margin
-					await assert.revert(
-						perpsV2Market.withdrawAllMargin({ from: trader }),
-						'Pending order exists'
 					);
 				});
 
