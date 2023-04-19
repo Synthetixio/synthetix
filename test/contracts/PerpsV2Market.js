@@ -4757,18 +4757,10 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			return { flaggerFee, liquidatorFee, feePoolFee };
 		};
 
-		const assertFlagTx = async ({
-			tx,
-			positionId,
-			flaggedAccount,
-			flaggerAccount,
-			closeDelayed = false,
-		}) => {
-			const eventsLen = closeDelayed ? 3 : 2;
-			const events = closeDelayed
-				? ['FundingRecomputed', 'PositionModified', 'PositionFlagged']
-				: ['FundingRecomputed', 'PositionFlagged'];
-			const positionFlaggedIdx = closeDelayed ? 2 : 1;
+		const assertFlagTx = async ({ tx, positionId, flaggedAccount, flaggerAccount }) => {
+			const eventsLen = 2;
+			const events = ['FundingRecomputed', 'PositionFlagged'];
+			const positionFlaggedIdx = 1;
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSD, perpsV2Market],
@@ -6443,7 +6435,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							positionId,
 							flaggedAccount: trader2,
 							flaggerAccount: flagger,
-							closeDelayed: true,
 						});
 
 						await assertLiquidateTx({
