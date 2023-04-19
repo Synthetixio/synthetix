@@ -24,11 +24,11 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
      */
     function flagPosition(address account) external onlyProxy notFlagged(account) {
         uint price = _assetPriceRequireSystemChecks(false);
-        uint fundingIndex = _recomputeFunding(price);
+        _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
-        _flagPosition(account, messageSender, price, fundingIndex);
+        _flagPosition(account, messageSender);
     }
 
     /*
@@ -69,12 +69,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         _liquidatePosition(position, account, messageSender, price, 0);
     }
 
-    function _flagPosition(
-        address account,
-        address flagger,
-        uint price,
-        uint fundingIndex
-    ) internal {
+    function _flagPosition(address account, address flagger) internal {
         Position memory position = marketState.positions(account);
 
         // Flag position
@@ -83,17 +78,16 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         // Cleanup any outstanding delayed order
         DelayedOrder memory order = marketState.delayedOrders(account);
         if (order.sizeDelta != 0) {
-            _updatePositionMargin(account, position, order.sizeDelta, price, int(order.commitDeposit + order.keeperDeposit));
-            emitPositionModified(
-                position.id,
+            position.margin += order.commitDeposit + order.keeperDeposit;
+
+            // persist position changes
+            marketState.updatePosition(
                 account,
+                position.id,
+                position.lastFundingIndex,
                 position.margin,
-                position.size,
-                0,
-                price,
-                fundingIndex,
-                0,
-                marketState.marketSkew()
+                position.lastPrice,
+                position.size
             );
 
             marketState.deleteDelayedOrder(account);
