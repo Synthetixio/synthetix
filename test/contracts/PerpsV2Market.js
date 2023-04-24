@@ -4729,6 +4729,58 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	describe('PerpsV2 Liquidations', () => {
 		let skew = toBN(0);
 
+		const getExpectedLiquidationPrice = async ({
+			skewScale,
+			margin,
+			size,
+			fillPrice,
+			price,
+			fee,
+			account,
+			minFee,
+			feeRatio,
+			bufferRatio,
+			liquidationPremiumMultiplier,
+		}) => {
+			const defaultLiquidationBufferRatio = toUnit('0.0025');
+			const defaultLiquidationFeeRatio = toUnit('0.0035');
+			const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
+			const defaultLiquidationPremiumMultiplier = toUnit('1'); // *1
+
+			const liqMinFee = minFee || defaultLiquidationMinFee;
+			const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
+			const liqBufferRatio = bufferRatio || defaultLiquidationBufferRatio;
+			const liqPremiumMultiplier =
+				liquidationPremiumMultiplier || defaultLiquidationPremiumMultiplier;
+
+			// How is the liquidation price calculated?
+			//
+			// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
+			// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
+			// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees - premium)) / pos.size - fundingPerUnit
+
+			const expectedNetFundingPerUnit = await perpsV2MarketHelper.netFundingPerUnit(account);
+			const expectedLiquidationFee = BN.max(
+				multiplyDecimal(multiplyDecimal(size.abs(), price), liqFeeRatio),
+				liqMinFee
+			);
+			const expectedLiquidationMargin = multiplyDecimal(
+				multiplyDecimal(size.abs(), price),
+				liqBufferRatio
+			).add(expectedLiquidationFee);
+
+			const premium = multiplyDecimal(
+				multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
+				liqPremiumMultiplier
+			);
+
+			//  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
+			// note: we use fillPrice here because this the same as position.lastPrice
+			return fillPrice
+				.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
+				.sub(expectedNetFundingPerUnit);
+		};
+
 		const computeFees = async (remainingMargin, positionSize, price) => {
 			const min = (a, b) => (a.lt(b) ? a : b);
 			const max = (a, b) => (a.gt(b) ? a : b);
@@ -4901,58 +4953,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		};
 
 		describe('Liquidation price', () => {
-			const getExpectedLiquidationPrice = async ({
-				skewScale,
-				margin,
-				size,
-				fillPrice,
-				price,
-				fee,
-				account,
-				minFee,
-				feeRatio,
-				bufferRatio,
-				liquidationPremiumMultiplier,
-			}) => {
-				const defaultLiquidationBufferRatio = toUnit('0.0025');
-				const defaultLiquidationFeeRatio = toUnit('0.0035');
-				const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
-				const defaultLiquidationPremiumMultiplier = toUnit('1'); // *1
-
-				const liqMinFee = minFee || defaultLiquidationMinFee;
-				const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
-				const liqBufferRatio = bufferRatio || defaultLiquidationBufferRatio;
-				const liqPremiumMultiplier =
-					liquidationPremiumMultiplier || defaultLiquidationPremiumMultiplier;
-
-				// How is the liquidation price calculated?
-				//
-				// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
-				// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
-				// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees - premium)) / pos.size - fundingPerUnit
-
-				const expectedNetFundingPerUnit = await perpsV2MarketHelper.netFundingPerUnit(account);
-				const expectedLiquidationFee = BN.max(
-					multiplyDecimal(multiplyDecimal(size.abs(), price), liqFeeRatio),
-					liqMinFee
-				);
-				const expectedLiquidationMargin = multiplyDecimal(
-					multiplyDecimal(size.abs(), price),
-					liqBufferRatio
-				).add(expectedLiquidationFee);
-
-				const premium = multiplyDecimal(
-					multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
-					liqPremiumMultiplier
-				);
-
-				//  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
-				// note: we use fillPrice here because this the same as position.lastPrice
-				return fillPrice
-					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
-					.sub(expectedNetFundingPerUnit);
-			};
-
 			it('Liquidation price is accurate with funding', async () => {
 				const price = toUnit('100');
 				await setPrice(baseAsset, price);
