@@ -879,6 +879,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2011,
+			"layer": "ovm",
+			"sources": ["PerpsV2Market[A-Z]+"]
 		}
 	],
 	"releases": [
@@ -1675,6 +1680,15 @@
 			},
 			"sips": [2004, 2005],
 			"released": true
+		},
+		{
+			"name": "Izar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 87
+			},
+			"sips": [2011]
 		}
 	]
 }
