@@ -122,7 +122,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
-// Futures V2 Proxy
+// Perps V2 Proxy
 const excludedFunctions = [
 	// Owned
 	'nominateNewOwner',
