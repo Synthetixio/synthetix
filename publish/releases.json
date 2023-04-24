@@ -883,7 +883,7 @@
 		{
 			"sip": 2011,
 			"layer": "ovm",
-			"sources": ["PerpsV2Market[A-Z]+"]
+			"sources": ["PerpsV2MarketData", "PerpsV2Market[A-Z]+"]
 		}
 	],
 	"releases": [
