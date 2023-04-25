@@ -13,7 +13,7 @@ const excludedFunctions = [
 	'resolver',
 	'resolverAddressesRequired',
 	'rebuildCache',
-	'isResolvedCache',
+	'isResolverCached',
 	// ProxyPerpsV2
 	'addRoute',
 	'removeRoute',
@@ -21,6 +21,11 @@ const excludedFunctions = [
 	'getRoutesLength',
 	'getRoutesPage',
 	'getAllTargets',
+	// Proxyable
+	'messageSender',
+	'setMessageSender',
+	'proxy',
+	'setProxy',
 	// PerpsV2MarketBase
 	'marketState',
 ];
@@ -48,10 +53,11 @@ const implementationConfigurations = [
 	},
 ];
 
-const getFunctionSignatures = (instance, excludedFunctions) => {
+const getFunctionSignatures = (instance, excludedFunctions, contractName = '') => {
 	const contractInterface = instance.abi
 		? new ethers.utils.Interface(instance.abi)
 		: instance.interface;
+
 	const signatures = [];
 	const funcNames = Object.keys(contractInterface.functions);
 	for (const funcName of funcNames) {
@@ -61,6 +67,7 @@ const getFunctionSignatures = (instance, excludedFunctions) => {
 			stateMutability: contractInterface.functions[funcName].stateMutability,
 			isView: contractInterface.functions[funcName].stateMutability === 'view',
 			contractAddress: instance.address,
+			contractName,
 		};
 		signatures.push(signature);
 	}
@@ -223,7 +230,7 @@ const deployMarketImplementations = async ({
 			updateState: !implementation.isView,
 			useExchangeRate: implementation.useExchangeRate,
 			updated: !isSameContract,
-			functionSignatures: getFunctionSignatures(newContract, excludedFunctions),
+			functionSignatures: getFunctionSignatures(newContract, excludedFunctions, name),
 		});
 	}
 
@@ -375,6 +382,7 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 				readResult.isView === f.isView,
 			write: 'addRoute',
 			writeArg: [f.signature, f.contractAddress, f.isView],
+			comment: `Add route to ${f.contractName}.${f.functionName}`,
 		});
 	}
 };
