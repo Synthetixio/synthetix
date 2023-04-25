@@ -4815,6 +4815,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			positionId,
 			flaggedAccount,
 			flaggerAccount,
+			price,
 			pendingOrder = false,
 		}) => {
 			const eventsLen = pendingOrder ? 3 : 2;
@@ -4835,7 +4836,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			decodedEventEqual({
 				event: 'PositionFlagged',
 				emittedFrom: perpsV2Market.address,
-				args: [positionId, flaggedAccount, flaggerAccount],
+				args: [positionId, flaggedAccount, flaggerAccount, price],
 				log: decodedLogs[positionFlaggedIdx],
 			});
 		};
@@ -5717,6 +5718,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5769,6 +5771,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader3,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5822,6 +5825,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5912,6 +5916,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader3,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5966,6 +5971,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -6369,6 +6375,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							positionId,
 							flaggedAccount: trader,
 							flaggerAccount: flagger,
+							price: newPrice,
 						});
 
 						await assertLiquidateTx({
@@ -6442,6 +6449,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							flaggedAccount: trader2,
 							flaggerAccount: flagger,
 							pendingOrder: true,
+							price: newPrice,
 						});
 
 						await assertLiquidateTx({
