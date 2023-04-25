@@ -28,7 +28,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
-        _flagPosition(account, messageSender);
+        _flagPosition(account, messageSender, price);
     }
 
     /*
@@ -69,7 +69,11 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         _liquidatePosition(position, account, messageSender, price, 0);
     }
 
-    function _flagPosition(address account, address flagger) internal {
+    function _flagPosition(
+        address account,
+        address flagger,
+        uint price
+    ) internal {
         Position memory position = marketState.positions(account);
 
         // Flag position
@@ -89,6 +93,18 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
                     position.lastPrice,
                     position.size
                 );
+
+                emitPositionModified(
+                    position.id,
+                    account,
+                    position.margin + order.commitDeposit,
+                    position.size,
+                    0,
+                    position.lastPrice,
+                    position.lastFundingIndex,
+                    0,
+                    marketState.marketSkew()
+                );
             }
 
             // take keeper fee and send to flagger
@@ -99,7 +115,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
             marketState.deleteDelayedOrder(account);
         }
 
-        emitPositionFlagged(position.id, account, flagger, block.timestamp);
+        emitPositionFlagged(position.id, account, flagger, price, block.timestamp);
     }
 
     function _liquidatePosition(
@@ -172,16 +188,17 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
     /* ========== EVENTS ========== */
 
-    event PositionFlagged(uint id, address account, address flagger, uint timestamp);
-    bytes32 internal constant POSITIONFLAGGED_SIG = keccak256("PositionFlagged(uint256,address,address,uint256)");
+    event PositionFlagged(uint id, address account, address flagger, uint price, uint timestamp);
+    bytes32 internal constant POSITIONFLAGGED_SIG = keccak256("PositionFlagged(uint256,address,address,uint256,uint256)");
 
     function emitPositionFlagged(
         uint id,
         address account,
         address flagger,
+        uint price,
         uint timestamp
     ) internal {
-        proxy._emit(abi.encode(id, account, flagger, timestamp), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(id, account, flagger, price, timestamp), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
     }
 
     event PositionLiquidated(
