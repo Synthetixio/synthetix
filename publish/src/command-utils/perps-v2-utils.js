@@ -13,7 +13,7 @@ const excludedFunctions = [
 	'resolver',
 	'resolverAddressesRequired',
 	'rebuildCache',
-	'isResolvedCache',
+	'isResolverCached',
 	// ProxyPerpsV2
 	'addRoute',
 	'removeRoute',
@@ -21,6 +21,11 @@ const excludedFunctions = [
 	'getRoutesLength',
 	'getRoutesPage',
 	'getAllTargets',
+	// Proxyable
+	'messageSender',
+	'setMessageSender',
+	'proxy',
+	'setProxy',
 	// PerpsV2MarketBase
 	'marketState',
 ];
