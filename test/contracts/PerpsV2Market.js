@@ -4788,6 +4788,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			const minKeeperFee = await perpsV2MarketSettings.minKeeperFee();
 			const maxKeeperFee = await perpsV2MarketSettings.maxKeeperFee();
 			const keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
+			const delayedOrderKeeperFee = minKeeperFee;
 
 			const calculatedFee = multiplyDecimal(
 				multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), price),
@@ -4806,7 +4807,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					? remainingMargin.sub(flaggerFee).sub(liquidatorFee)
 					: toBN(0);
 
-			return { flaggerFee, liquidatorFee, feePoolFee };
+			return { flaggerFee, liquidatorFee, feePoolFee, delayedOrderKeeperFee };
 		};
 
 		const assertFlagTx = async ({
@@ -4814,13 +4815,13 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			positionId,
 			flaggedAccount,
 			flaggerAccount,
-			closeDelayed = false,
+			pendingOrder = false,
 		}) => {
-			const eventsLen = closeDelayed ? 3 : 2;
-			const events = closeDelayed
-				? ['FundingRecomputed', 'PositionModified', 'PositionFlagged']
+			const eventsLen = pendingOrder ? 3 : 2;
+			const events = pendingOrder
+				? ['FundingRecomputed', 'Issued', 'PositionFlagged']
 				: ['FundingRecomputed', 'PositionFlagged'];
-			const positionFlaggedIdx = closeDelayed ? 2 : 1;
+			const positionFlaggedIdx = pendingOrder ? 2 : 1;
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSD, perpsV2Market],
@@ -6401,9 +6402,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						// get margin in delayed order (will be returned as fees)
 						let delayedOrder = await perpsV2Market.delayedOrders(trader2);
 						assert.bnNotEqual(delayedOrder.sizeDelta, toUnit('0'));
-						const delayedOrderFees = toBN(delayedOrder.commitDeposit).add(
-							toBN(delayedOrder.keeperDeposit)
-						);
 
 						// Liquidate the position
 						// Move price to liquidation zone for trader
@@ -6416,11 +6414,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 						const { size: positionSize, id: positionId } = await perpsV2Market.positions(trader2);
 						const remainingMargin = (await perpsV2Market.remainingMargin(trader2)).marginRemaining;
-						const fees = await computeFees(
-							remainingMargin.add(delayedOrderFees),
-							positionSize,
-							newPrice
-						);
+						const fees = await computeFees(remainingMargin, positionSize, newPrice);
 
 						const txFlag = await perpsV2Market.flagPosition(trader2, { from: flagger });
 						const txLiquidate = await perpsV2Market.liquidatePosition(trader2, {
@@ -6435,7 +6429,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						assert.bnGt(fees.flaggerFee, toBN(0));
 						assert.bnLt(remainingMargin, fees.flaggerFee);
 
-						assert.bnClose(await sUSD.balanceOf(flagger), fees.flaggerFee, toUnit('0.001'));
+						assert.bnClose(
+							await sUSD.balanceOf(flagger),
+							fees.flaggerFee.add(fees.delayedOrderKeeperFee),
+							toUnit('0.001')
+						);
 						assert.bnClose(await sUSD.balanceOf(liquidator), fees.liquidatorFee, toUnit('0.001'));
 
 						await assertFlagTx({
@@ -6443,7 +6441,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							positionId,
 							flaggedAccount: trader2,
 							flaggerAccount: flagger,
-							closeDelayed: true,
+							pendingOrder: true,
 						});
 
 						await assertLiquidateTx({
