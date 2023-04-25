@@ -109,7 +109,7 @@
 		"hardhat-cannon": "^2.1.2",
 		"hardhat-gas-reporter": "^1.0.9",
 		"hardhat-interact": "^0.2.3",
-		"husky": "^4.3.0",
+		"husky": "^8.0.3",
 		"is-ci": "^2.0.0",
 		"lodash.clonedeep": "^4.5.0",
 		"lodash.uniq": "^4.5.0",
