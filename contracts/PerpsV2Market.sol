@@ -131,7 +131,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         int marginDelta,
         uint price,
         address sender
-    ) internal notFlagged(sender) {
+    ) internal notFlagged(sender) onlyIfNotPendingOrder {
         // Transfer no tokens if marginDelta is 0
         uint absDelta = _abs(marginDelta);
         if (marginDelta > 0) {
@@ -220,7 +220,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         int sizeDelta,
         uint desiredFillPrice,
         bytes32 trackingCode
-    ) internal onlyProxy {
+    ) internal onlyProxy onlyIfNotPendingOrder {
         uint price = _assetPriceRequireSystemChecks(false);
         _recomputeFunding(price);
         _trade(
@@ -249,7 +249,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         _closePosition(desiredFillPrice, trackingCode);
     }
 
-    function _closePosition(uint desiredFillPrice, bytes32 trackingCode) internal onlyProxy {
+    function _closePosition(uint desiredFillPrice, bytes32 trackingCode) internal onlyProxy onlyIfNotPendingOrder {
         int size = marketState.positions(messageSender).size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireSystemChecks(false);
@@ -276,5 +276,11 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
 
     function emitMarginTransferred(address account, int marginDelta) internal {
         proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
+    }
+
+    modifier onlyIfNotPendingOrder() {
+        // Prevent any change in the position if a pending order exists - SIP-2011
+        require(marketState.delayedOrders(messageSender).sizeDelta == 0, "Pending order exists");
+        _;
     }
 }

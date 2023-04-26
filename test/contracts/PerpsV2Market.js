@@ -4729,6 +4729,58 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	describe('PerpsV2 Liquidations', () => {
 		let skew = toBN(0);
 
+		const getExpectedLiquidationPrice = async ({
+			skewScale,
+			margin,
+			size,
+			fillPrice,
+			price,
+			fee,
+			account,
+			minFee,
+			feeRatio,
+			bufferRatio,
+			liquidationPremiumMultiplier,
+		}) => {
+			const defaultLiquidationBufferRatio = toUnit('0.0025');
+			const defaultLiquidationFeeRatio = toUnit('0.0035');
+			const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
+			const defaultLiquidationPremiumMultiplier = toUnit('1'); // *1
+
+			const liqMinFee = minFee || defaultLiquidationMinFee;
+			const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
+			const liqBufferRatio = bufferRatio || defaultLiquidationBufferRatio;
+			const liqPremiumMultiplier =
+				liquidationPremiumMultiplier || defaultLiquidationPremiumMultiplier;
+
+			// How is the liquidation price calculated?
+			//
+			// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
+			// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
+			// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees - premium)) / pos.size - fundingPerUnit
+
+			const expectedNetFundingPerUnit = await perpsV2MarketHelper.netFundingPerUnit(account);
+			const expectedLiquidationFee = BN.max(
+				multiplyDecimal(multiplyDecimal(size.abs(), price), liqFeeRatio),
+				liqMinFee
+			);
+			const expectedLiquidationMargin = multiplyDecimal(
+				multiplyDecimal(size.abs(), price),
+				liqBufferRatio
+			).add(expectedLiquidationFee);
+
+			const premium = multiplyDecimal(
+				multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
+				liqPremiumMultiplier
+			);
+
+			//  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
+			// note: we use fillPrice here because this the same as position.lastPrice
+			return fillPrice
+				.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
+				.sub(expectedNetFundingPerUnit);
+		};
+
 		const computeFees = async (remainingMargin, positionSize, price) => {
 			const min = (a, b) => (a.lt(b) ? a : b);
 			const max = (a, b) => (a.gt(b) ? a : b);
@@ -4736,6 +4788,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			const minKeeperFee = await perpsV2MarketSettings.minKeeperFee();
 			const maxKeeperFee = await perpsV2MarketSettings.maxKeeperFee();
 			const keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
+			const delayedOrderKeeperFee = minKeeperFee;
 
 			const calculatedFee = multiplyDecimal(
 				multiplyDecimal(await perpsV2MarketSettings.liquidationFeeRatio(), price),
@@ -4754,7 +4807,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					? remainingMargin.sub(flaggerFee).sub(liquidatorFee)
 					: toBN(0);
 
-			return { flaggerFee, liquidatorFee, feePoolFee };
+			return { flaggerFee, liquidatorFee, feePoolFee, delayedOrderKeeperFee };
 		};
 
 		const assertFlagTx = async ({
@@ -4762,13 +4815,14 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			positionId,
 			flaggedAccount,
 			flaggerAccount,
-			closeDelayed = false,
+			price,
+			pendingOrder = false,
 		}) => {
-			const eventsLen = closeDelayed ? 3 : 2;
-			const events = closeDelayed
-				? ['FundingRecomputed', 'PositionModified', 'PositionFlagged']
+			const eventsLen = pendingOrder ? 3 : 2;
+			const events = pendingOrder
+				? ['FundingRecomputed', 'Issued', 'PositionFlagged']
 				: ['FundingRecomputed', 'PositionFlagged'];
-			const positionFlaggedIdx = closeDelayed ? 2 : 1;
+			const positionFlaggedIdx = pendingOrder ? 2 : 1;
 			const decodedLogs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSD, perpsV2Market],
@@ -4782,7 +4836,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			decodedEventEqual({
 				event: 'PositionFlagged',
 				emittedFrom: perpsV2Market.address,
-				args: [positionId, flaggedAccount, flaggerAccount],
+				args: [positionId, flaggedAccount, flaggerAccount, price],
 				log: decodedLogs[positionFlaggedIdx],
 			});
 		};
@@ -4901,58 +4955,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 		};
 
 		describe('Liquidation price', () => {
-			const getExpectedLiquidationPrice = async ({
-				skewScale,
-				margin,
-				size,
-				fillPrice,
-				price,
-				fee,
-				account,
-				minFee,
-				feeRatio,
-				bufferRatio,
-				liquidationPremiumMultiplier,
-			}) => {
-				const defaultLiquidationBufferRatio = toUnit('0.0025');
-				const defaultLiquidationFeeRatio = toUnit('0.0035');
-				const defaultLiquidationMinFee = toUnit('20'); // 20 sUSD
-				const defaultLiquidationPremiumMultiplier = toUnit('1'); // *1
-
-				const liqMinFee = minFee || defaultLiquidationMinFee;
-				const liqFeeRatio = feeRatio || defaultLiquidationFeeRatio;
-				const liqBufferRatio = bufferRatio || defaultLiquidationBufferRatio;
-				const liqPremiumMultiplier =
-					liquidationPremiumMultiplier || defaultLiquidationPremiumMultiplier;
-
-				// How is the liquidation price calculated?
-				//
-				// liqFee    = max(abs(size) * price * liquidationFeeRatio, minFee)
-				// liqMargin = abs(pos.size) * price * liquidationBufferRatio + liqFee
-				// liqPrice  = pos.lastPrice + (liqMargin - (pos.margin - fees - premium)) / pos.size - fundingPerUnit
-
-				const expectedNetFundingPerUnit = await perpsV2MarketHelper.netFundingPerUnit(account);
-				const expectedLiquidationFee = BN.max(
-					multiplyDecimal(multiplyDecimal(size.abs(), price), liqFeeRatio),
-					liqMinFee
-				);
-				const expectedLiquidationMargin = multiplyDecimal(
-					multiplyDecimal(size.abs(), price),
-					liqBufferRatio
-				).add(expectedLiquidationFee);
-
-				const premium = multiplyDecimal(
-					multiplyDecimal(divideDecimal(size.abs(), skewScale), multiplyDecimal(size.abs(), price)),
-					liqPremiumMultiplier
-				);
-
-				//  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
-				// note: we use fillPrice here because this the same as position.lastPrice
-				return fillPrice
-					.add(divideDecimal(expectedLiquidationMargin.sub(margin.sub(fee).sub(premium)), size))
-					.sub(expectedNetFundingPerUnit);
-			};
-
 			it('Liquidation price is accurate with funding', async () => {
 				const price = toUnit('100');
 				await setPrice(baseAsset, price);
@@ -5716,6 +5718,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5768,6 +5771,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader3,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5821,6 +5825,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5911,6 +5916,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader3,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -5965,6 +5971,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					positionId,
 					flaggedAccount: trader,
 					flaggerAccount: noBalance,
+					price: newPrice,
 				});
 
 				await assertLiquidateTx({
@@ -6368,6 +6375,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							positionId,
 							flaggedAccount: trader,
 							flaggerAccount: flagger,
+							price: newPrice,
 						});
 
 						await assertLiquidateTx({
@@ -6401,9 +6409,6 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						// get margin in delayed order (will be returned as fees)
 						let delayedOrder = await perpsV2Market.delayedOrders(trader2);
 						assert.bnNotEqual(delayedOrder.sizeDelta, toUnit('0'));
-						const delayedOrderFees = toBN(delayedOrder.commitDeposit).add(
-							toBN(delayedOrder.keeperDeposit)
-						);
 
 						// Liquidate the position
 						// Move price to liquidation zone for trader
@@ -6416,11 +6421,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 						const { size: positionSize, id: positionId } = await perpsV2Market.positions(trader2);
 						const remainingMargin = (await perpsV2Market.remainingMargin(trader2)).marginRemaining;
-						const fees = await computeFees(
-							remainingMargin.add(delayedOrderFees),
-							positionSize,
-							newPrice
-						);
+						const fees = await computeFees(remainingMargin, positionSize, newPrice);
 
 						const txFlag = await perpsV2Market.flagPosition(trader2, { from: flagger });
 						const txLiquidate = await perpsV2Market.liquidatePosition(trader2, {
@@ -6435,7 +6436,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 						assert.bnGt(fees.flaggerFee, toBN(0));
 						assert.bnLt(remainingMargin, fees.flaggerFee);
 
-						assert.bnClose(await sUSD.balanceOf(flagger), fees.flaggerFee, toUnit('0.001'));
+						assert.bnClose(
+							await sUSD.balanceOf(flagger),
+							fees.flaggerFee.add(fees.delayedOrderKeeperFee),
+							toUnit('0.001')
+						);
 						assert.bnClose(await sUSD.balanceOf(liquidator), fees.liquidatorFee, toUnit('0.001'));
 
 						await assertFlagTx({
@@ -6443,7 +6448,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 							positionId,
 							flaggedAccount: trader2,
 							flaggerAccount: flagger,
-							closeDelayed: true,
+							pendingOrder: true,
+							price: newPrice,
 						});
 
 						await assertLiquidateTx({

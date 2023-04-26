@@ -659,7 +659,12 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			let roundId, keeperFee;
 
 			// helper function to check cancellation tx effects
-			async function checkCancellation(from) {
+			async function checkCancellation(
+				from,
+				priceToVerify = price,
+				desiredPriceToUse = desiredFillPrice,
+				newSize = size
+			) {
 				const currentMargin = toBN((await perpsV2Market.positions(trader)).margin);
 				// cancel the order
 				const tx = await perpsV2Market.cancelDelayedOrder(trader, { from: from });
@@ -694,7 +699,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 							currentMargin.add(keeperFee),
 							0,
 							0,
-							price,
+							priceToVerify,
 							toBN(2),
 							0,
 							toBN(0),
@@ -722,11 +727,11 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				// transfer more margin
 				await perpsV2Market.transferMargin(margin, { from: trader });
 				// and can submit new order
-				await perpsV2Market.submitDelayedOrder(size, desiredTimeDelta, desiredFillPrice, {
+				await perpsV2Market.submitDelayedOrder(newSize, desiredTimeDelta, desiredPriceToUse, {
 					from: trader,
 				});
 				const newOrder = await perpsV2MarketState.delayedOrders(trader);
-				assert.bnEqual(newOrder.sizeDelta, size);
+				assert.bnEqual(newOrder.sizeDelta, newSize);
 			}
 
 			beforeEach(async () => {
@@ -787,34 +792,37 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			});
 
 			describe('an order that would revert on execution can be cancelled', () => {
+				let largePrice, largeDesiredPrice;
 				beforeEach(async () => {
-					// go to next round
-					await setPrice(baseAsset, price);
-					// withdraw margin (will cause order to fail)
-					await perpsV2Market.withdrawAllMargin({ from: trader });
+					largePrice = price.mul(toBN(10));
+					largeDesiredPrice = (
+						await perpsV2MarketHelper.fillPriceWithMeta(largePrice, priceImpactDelta, 0)
+					)[1];
+					// go to next round and update price to a price that will make it revert
+					await setPrice(baseAsset, largePrice);
 					// check execution would fail
 					await assert.revert(
 						perpsV2Market.executeDelayedOrder(trader, { from: trader }),
-						'Insufficient margin'
+						'Max leverage exceeded'
 					);
 				});
 
 				it('by account owner', async () => {
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
 					// can only be cancellable after confirmation window
-					await checkCancellation(trader);
+					await checkCancellation(trader, largePrice, largeDesiredPrice, size.div(toBN(10)));
 				});
 
 				it('by non-account owner, after confirmation window', async () => {
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
-					await setPrice(baseAsset, price);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
+					await setPrice(baseAsset, largePrice);
 					// now cancel
-					await checkCancellation(trader2);
+					await checkCancellation(trader2, largePrice, largeDesiredPrice, size.div(toBN(10)));
 				});
 			});
 
@@ -928,6 +936,70 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				});
 			});
 
+			describe('order and margin modifications', () => {
+				let sizeDelta, desiredFillPrice, trackingCode;
+				beforeEach('prepare variables', async () => {
+					sizeDelta = toUnit('1');
+					desiredFillPrice = toUnit('1');
+					trackingCode = toBytes32('code');
+				});
+
+				it('prevents margin to be increased', async () => {
+					const increaseMargin = margin; // increase the margin by same margin amount
+					await assert.revert(
+						perpsV2Market.transferMargin(increaseMargin, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents margin to be reduced', async () => {
+					const reduceMargin = multiplyDecimal(margin, toUnit('-0.1')); // small fraction of margin to reduce
+					await assert.revert(
+						perpsV2Market.transferMargin(reduceMargin, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents margin to be removed', async () => {
+					await assert.revert(
+						perpsV2Market.withdrawAllMargin({ from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be modified (spot)', async () => {
+					await assert.revert(
+						perpsV2Market.modifyPosition(sizeDelta, desiredFillPrice, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be modified (spot with tracking)', async () => {
+					await assert.revert(
+						perpsV2Market.modifyPositionWithTracking(sizeDelta, desiredFillPrice, trackingCode, {
+							from: trader,
+						}),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be closed (spot)', async () => {
+					await assert.revert(
+						perpsV2Market.closePosition(desiredFillPrice, { from: trader }),
+						'Pending order exists'
+					);
+				});
+
+				it('prevents position to be closed (spot with tracking)', async () => {
+					await assert.revert(
+						perpsV2Market.closePositionWithTracking(desiredFillPrice, trackingCode, {
+							from: trader,
+						}),
+						'Pending order exists'
+					);
+				});
+			});
+
 			describe('execution reverts', () => {
 				it('in same round', async () => {
 					// account owner
@@ -959,23 +1031,6 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 					await assert.revert(
 						perpsV2Market.executeDelayedOrder(trader, { from: trader2 }),
 						'order too old, use cancel'
-					);
-				});
-
-				it('if margin removed', async () => {
-					// go to target round
-					await setPrice(baseAsset, price);
-					// withdraw margin (will cause order to fail)
-					await perpsV2Market.withdrawAllMargin({ from: trader });
-
-					// account owner
-					await assert.revert(
-						perpsV2Market.executeDelayedOrder(trader, { from: trader }),
-						'Insufficient margin'
-					);
-					await assert.revert(
-						perpsV2Market.executeDelayedOrder(trader, { from: trader2 }),
-						'Insufficient margin'
 					);
 				});
 
