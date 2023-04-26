@@ -411,7 +411,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketMATICPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsMATICPERP": {
 		"deploy": false
@@ -447,7 +447,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketDYDXPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsDYDXPERP": {
 		"deploy": false
@@ -465,7 +465,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketBNBPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsBNBPERP": {
 		"deploy": false
@@ -483,7 +483,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketOPPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsOPPERP": {
 		"deploy": false
@@ -519,7 +519,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketXAUPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsXAUPERP": {
 		"deploy": false
@@ -627,7 +627,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketFTMPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2MarketViewsFTMPERP": {
 		"deploy": false
@@ -711,7 +711,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateBNBPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentBNBPERP": {
 		"deploy": false
@@ -765,7 +765,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateDYDXPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentDYDXPERP": {
 		"deploy": false
@@ -792,7 +792,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateFTMPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentFTMPERP": {
 		"deploy": false
@@ -837,7 +837,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateMATICPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentMATICPERP": {
 		"deploy": false
@@ -864,7 +864,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateOPPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentOPPERP": {
 		"deploy": false
@@ -882,7 +882,7 @@
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateXAUPERP": {
-		"deploy": true
+		"deploy": false
 	},
 	"PerpsV2DelayedIntentXAUPERP": {
 		"deploy": false
