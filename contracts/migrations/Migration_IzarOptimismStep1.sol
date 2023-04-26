@@ -274,7 +274,6 @@ contract Migration_IzarOptimismStep1 is BaseMigration {
         futuresmarketmanager_updateMarketsImplementations_113();
         // Import all new contracts into the address resolver;
         addressresolver_importAddresses_114();
-        systemstatus_i.updateAccessControl("Futures", 0x302d2451d9f47620374B54c521423Bf0403916A2, false, false);
         // Import all new contracts into the address resolver;
         addressresolver_importAddresses_116();
 
