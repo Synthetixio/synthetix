@@ -24,11 +24,11 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
      */
     function flagPosition(address account) external onlyProxy notFlagged(account) {
         uint price = _assetPriceRequireSystemChecks(false);
-        uint fundingIndex = _recomputeFunding(price);
+        _recomputeFunding(price);
 
         _revertIfError(!_canLiquidate(marketState.positions(account), price), Status.CannotLiquidate);
 
-        _flagPosition(account, messageSender, price, fundingIndex);
+        _flagPosition(account, messageSender, price);
     }
 
     /*
@@ -72,8 +72,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
     function _flagPosition(
         address account,
         address flagger,
-        uint price,
-        uint fundingIndex
+        uint price
     ) internal {
         Position memory position = marketState.positions(account);
 
@@ -83,23 +82,40 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         // Cleanup any outstanding delayed order
         DelayedOrder memory order = marketState.delayedOrders(account);
         if (order.sizeDelta != 0) {
-            _updatePositionMargin(account, position, order.sizeDelta, price, int(order.commitDeposit + order.keeperDeposit));
-            emitPositionModified(
-                position.id,
-                account,
-                position.margin,
-                position.size,
-                0,
-                price,
-                fundingIndex,
-                0,
-                marketState.marketSkew()
-            );
+            // commitDeposit should be zero. If not it means it's a legacy order
+            if (order.commitDeposit > 0) {
+                // persist position changes
+                marketState.updatePosition(
+                    account,
+                    position.id,
+                    position.lastFundingIndex,
+                    position.margin + order.commitDeposit,
+                    position.lastPrice,
+                    position.size
+                );
+
+                emitPositionModified(
+                    position.id,
+                    account,
+                    position.margin + order.commitDeposit,
+                    position.size,
+                    0,
+                    position.lastPrice,
+                    position.lastFundingIndex,
+                    0,
+                    marketState.marketSkew()
+                );
+            }
+
+            // take keeper fee and send to flagger
+            if (order.keeperDeposit > 0) {
+                _manager().issueSUSD(messageSender, order.keeperDeposit);
+            }
 
             marketState.deleteDelayedOrder(account);
         }
 
-        emitPositionFlagged(position.id, account, flagger, block.timestamp);
+        emitPositionFlagged(position.id, account, flagger, price, block.timestamp);
     }
 
     function _liquidatePosition(
@@ -172,16 +188,17 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
     /* ========== EVENTS ========== */
 
-    event PositionFlagged(uint id, address account, address flagger, uint timestamp);
-    bytes32 internal constant POSITIONFLAGGED_SIG = keccak256("PositionFlagged(uint256,address,address,uint256)");
+    event PositionFlagged(uint id, address account, address flagger, uint price, uint timestamp);
+    bytes32 internal constant POSITIONFLAGGED_SIG = keccak256("PositionFlagged(uint256,address,address,uint256,uint256)");
 
     function emitPositionFlagged(
         uint id,
         address account,
         address flagger,
+        uint price,
         uint timestamp
     ) internal {
-        proxy._emit(abi.encode(id, account, flagger, timestamp), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(id, account, flagger, price, timestamp), 1, POSITIONFLAGGED_SIG, 0, 0, 0);
     }
 
     event PositionLiquidated(
