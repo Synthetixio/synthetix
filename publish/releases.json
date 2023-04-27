@@ -887,7 +887,8 @@
 				"PerpsV2MarketData",
 				"PerpsV2Market[A-Z]+",
 				"PerpsV2MarketLiquidate[A-Z]+"
-			]
+			],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1692,7 +1693,8 @@
 				"major": 2,
 				"minor": 87
 			},
-			"sips": [2011]
+			"sips": [2011],
+			"released": true
 		}
 	]
 }
