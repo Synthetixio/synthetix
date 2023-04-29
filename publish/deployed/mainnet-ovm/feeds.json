@@ -107,6 +107,42 @@
 		"asset": "ARB",
 		"feed": "0x8f14546d0B960793180ee355B73fA55041a4a356"
 	},
+	"APT": {
+		"asset": "APT",
+		"feed": "0x48f2EcF0Bd180239AEF474a9da945F2e2d41daA3"
+	},
+	"LDO": {
+		"asset": "LDO",
+		"feed": "0x221618871470f78D8a3391d35B77dFb3C0fbc383"
+	},
+	"ADA": {
+		"asset": "ADA",
+		"feed": "0x43dEa17DeE1ca50c6266acb59b32659E44D3ee5D"
+	},
+	"GMX": {
+		"asset": "GMX",
+		"feed": "0x62f42f70ba85De1086476bB6BADE926d0E0b8a4C"
+	},
+	"FIL": {
+		"asset": "FIL",
+		"feed": "0x66F61FEe824c1dF059BccCC5F21ca39e083EefDf"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"feed": "0x45954efBD01f5A12428A09E4C38b8434C3dD4Ac3"
+	},
+	"BCH": {
+		"asset": "BCH",
+		"feed": "0x33E047119359161288bcB143e0C15467C7151d4c"
+	},
+	"SHIB": {
+		"asset": "SHIB",
+		"feed": "0xd1e56e7657C0E0d20c0e11C2B6ae0D90932d5665"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"feed": "0xbD92C6c284271c227a1e0bF1786F468b539f51D9"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
