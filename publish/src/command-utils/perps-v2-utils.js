@@ -328,6 +328,8 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 		});
 	}
 
+	const overrides = perpsV2MarketProxy.updated ? { generateSolidity: false } : {};
+
 	// compile signatures
 	let filteredFunctions = [];
 	for (const implementation of implementations) {
@@ -371,19 +373,22 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 	);
 
 	for (const f of toAdd) {
-		await runStep({
-			contract: perpsV2MarketProxy.contract,
-			target: perpsV2MarketProxy.target,
-			read: 'getRoute',
-			readArg: [f.signature],
-			expected: readResult =>
-				readResult.selector === f.signature &&
-				readResult.implementation === f.contractAddress &&
-				readResult.isView === f.isView,
-			write: 'addRoute',
-			writeArg: [f.signature, f.contractAddress, f.isView],
-			comment: `Add route to ${f.contractName}.${f.functionName}`,
-		});
+		await runStep(
+			{
+				contract: perpsV2MarketProxy.contract,
+				target: perpsV2MarketProxy.target,
+				read: 'getRoute',
+				readArg: [f.signature],
+				expected: readResult =>
+					readResult.selector === f.signature &&
+					readResult.implementation === f.contractAddress &&
+					readResult.isView === f.isView,
+				write: 'addRoute',
+				writeArg: [f.signature, f.contractAddress, f.isView],
+				comment: `Add route to ${f.contractName}.${f.functionName}`,
+			},
+			overrides
+		);
 	}
 };
 
