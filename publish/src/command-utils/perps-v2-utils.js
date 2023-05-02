@@ -85,7 +85,7 @@ const filteredLists = (originalList, newList) => {
 };
 
 const isNewMarket = ({ existingMarkets, marketKey }) =>
-	existingMarkets.includes(toBytes32(marketKey));
+	!existingMarkets.includes(toBytes32(marketKey));
 
 const getProxyNameAndCurrentAddress = ({ deployer, marketKey }) => {
 	const marketProxyName = 'PerpsV2Proxy' + marketKey.slice('1'); // remove s prefix
@@ -127,9 +127,23 @@ const getStateNameAndCurrentAddress = ({ deployer, marketKey }) => {
 
 	let target;
 	if (previousContractAddress) {
-		target = deployer.getExistingContract({
-			contract: marketProxyName,
-		});
+		try {
+			target = deployer.getExistingContract({
+				contract: marketProxyName,
+			});
+		} catch (e) {
+			// failed. If the release wasn't finished it won't find in versions.
+			// find in deployment.json
+			console.log(
+				yellow(
+					`Not found in versions. If it's new release that is right. Check contract: ${marketProxyName}`
+				)
+			);
+			target = deployer.getExistingContract({
+				contract: marketProxyName,
+				useDeployment: true,
+			});
+		}
 	}
 
 	return { name: marketProxyName, address: previousContractAddress, target };
