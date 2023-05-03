@@ -143,7 +143,7 @@ function itCanTrade({ ctx }) {
 
 		describe('position management', () => {
 			let market, assetKey, marketKey, price, posSize1x, debt, priceImpactDelta;
-			const margin = toUnit('100');
+			const margin = toUnit('10000');
 			let skipTest;
 
 			before('market and conditions', async () => {
@@ -266,6 +266,7 @@ function itCanTrade({ ctx }) {
 
 						// ensure maxLeverage is set to 100 (mainnet vs localhost config)
 						await PerpsV2MarketSettings.connect(owner).setMaxLeverage(marketKey, toUnit('100'));
+						await PerpsV2MarketSettings.connect(owner).setMinKeeperFee(toUnit('2'));
 
 						// lever up
 						const maxLeverage = await PerpsV2MarketSettings.maxLeverage(marketKey);
@@ -290,7 +291,7 @@ function itCanTrade({ ctx }) {
 						// causing a MaxLeverageExceeded error. we lower the multiple by 0.5 to stay within maxLev
 
 						// Note: Since MaxLeverage is set to 100, we need to reduce more the size in order to prevent liquidations
-						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('4')));
+						const size = multiplyDecimal(posSize1x, divideDecimal(maxLeverage, toUnit('6')));
 
 						const desiredFillPrice = (
 							await PerpsV2MarketHelper.fillPriceWithMeta(size, priceImpactDelta, 0)
