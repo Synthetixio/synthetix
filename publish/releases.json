@@ -837,6 +837,11 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 298,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 299,
 			"layer": "both",
 			"sources": ["Synthetix", "Liquidator"],
@@ -1695,6 +1700,15 @@
 			},
 			"sips": [2011],
 			"released": true
+		},
+		{
+			"name": "Dschubba (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 88
+			},
+			"sips": [298]
 		}
 	]
 }

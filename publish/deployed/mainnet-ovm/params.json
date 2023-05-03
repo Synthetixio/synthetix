@@ -80,6 +80,14 @@
 	},
 	{
 		"name": "FUTURES_MIN_KEEPER_FEE",
-		"value": "2000000000000000000"
+		"value": "4000000000000000000"
+	},
+	{
+		"name": "FUTURES_MAX_KEEPER_FEE",
+		"value": "100000000000000000000"
+	},
+	{
+		"name": "FUTURES_LIQUIDATION_FEE_RATIO",
+		"value": "200000000000000"
 	}
 ]

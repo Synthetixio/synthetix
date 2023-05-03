@@ -85,7 +85,7 @@ const filteredLists = (originalList, newList) => {
 };
 
 const isNewMarket = ({ existingMarkets, marketKey }) =>
-	existingMarkets.includes(toBytes32(marketKey));
+	!existingMarkets.includes(toBytes32(marketKey));
 
 const getProxyNameAndCurrentAddress = ({ deployer, marketKey }) => {
 	const marketProxyName = 'PerpsV2Proxy' + marketKey.slice('1'); // remove s prefix
@@ -127,9 +127,23 @@ const getStateNameAndCurrentAddress = ({ deployer, marketKey }) => {
 
 	let target;
 	if (previousContractAddress) {
-		target = deployer.getExistingContract({
-			contract: marketProxyName,
-		});
+		try {
+			target = deployer.getExistingContract({
+				contract: marketProxyName,
+			});
+		} catch (e) {
+			// failed. If the release wasn't finished it won't find in versions.
+			// find in deployment.json
+			console.log(
+				yellow(
+					`Not found in versions. If it's new release that is right. Check contract: ${marketProxyName}`
+				)
+			);
+			target = deployer.getExistingContract({
+				contract: marketProxyName,
+				useDeployment: true,
+			});
+		}
 	}
 
 	return { name: marketProxyName, address: previousContractAddress, target };
@@ -328,6 +342,8 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 		});
 	}
 
+	const overrides = perpsV2MarketProxy.updated ? { generateSolidity: false } : {};
+
 	// compile signatures
 	let filteredFunctions = [];
 	for (const implementation of implementations) {
@@ -371,19 +387,22 @@ const linkToProxy = async ({ runStep, perpsV2MarketProxy, implementations }) => 
 	);
 
 	for (const f of toAdd) {
-		await runStep({
-			contract: perpsV2MarketProxy.contract,
-			target: perpsV2MarketProxy.target,
-			read: 'getRoute',
-			readArg: [f.signature],
-			expected: readResult =>
-				readResult.selector === f.signature &&
-				readResult.implementation === f.contractAddress &&
-				readResult.isView === f.isView,
-			write: 'addRoute',
-			writeArg: [f.signature, f.contractAddress, f.isView],
-			comment: `Add route to ${f.contractName}.${f.functionName}`,
-		});
+		await runStep(
+			{
+				contract: perpsV2MarketProxy.contract,
+				target: perpsV2MarketProxy.target,
+				read: 'getRoute',
+				readArg: [f.signature],
+				expected: readResult =>
+					readResult.selector === f.signature &&
+					readResult.implementation === f.contractAddress &&
+					readResult.isView === f.isView,
+				write: 'addRoute',
+				writeArg: [f.signature, f.contractAddress, f.isView],
+				comment: `Add route to ${f.contractName}.${f.functionName}`,
+			},
+			overrides
+		);
 	}
 };
 
