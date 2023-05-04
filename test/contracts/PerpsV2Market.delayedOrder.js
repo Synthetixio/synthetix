@@ -299,7 +299,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				);
 			});
 
-			it('should not allow submit for close when newPos is still above maxLeverage', async () => {
+			it('should not allow submit for reduction when newPos is still above maxLeverage', async () => {
 				const leverage = toUnit('24');
 				const sizeDelta = divideDecimal(multiplyDecimal(leverage, margin), price);
 				const position = await submitAndFastForwardAndExecute(sizeDelta, desiredFillPrice, trader);

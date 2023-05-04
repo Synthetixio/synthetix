@@ -500,5 +500,35 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Arbitrum"
+	},
+	"APT": {
+		"asset": "APT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Aptos"
+	},
+	"LDO": {
+		"asset": "LDO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Lido DAO"
+	},
+	"GMX": {
+		"asset": "GMX",
+		"category": "crypto",
+		"sign": "",
+		"description": "GMX"
+	},
+	"FIL": {
+		"asset": "FIL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Filecoin"
+	},
+	"SHIB": {
+		"asset": "SHIB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Shiba Inu"
 	}
 }
