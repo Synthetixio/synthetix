@@ -435,10 +435,15 @@ function itCanTrade({ ctx }) {
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLte(maxLeverage, toUnit(100));
 
-					const maxMarketValue = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
-						: await FuturesMarketSettings.maxMarketValueUSD(marketKey);
-					assert.bnLt(maxMarketValue, toUnit(100000000));
+					if (marketKeyIsV2[marketKey]) {
+						// units (not dollar value), depends on asset price
+						// with markets like SHIBA we need to adjust the "makes sense" notion
+						const maxMarketValue = await PerpsV2MarketSettings.maxMarketValue(marketKey);
+						assert.bnLt(maxMarketValue, toUnit(100000000000));
+					} else {
+						const maxMarketValue = await FuturesMarketSettings.maxMarketValueUSD(marketKey);
+						assert.bnLt(maxMarketValue, toUnit(100000000));
+					}
 
 					const skewScale = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.skewScale(marketKey)
