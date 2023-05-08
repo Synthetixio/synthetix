@@ -31,6 +31,7 @@ const deployPerpsV2Generics = async ({
 	runStep,
 	useOvm,
 	limitPromise,
+	getDeployParameter,
 }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 	const contractsRequiringAddressResolver = [];
@@ -109,9 +110,11 @@ const deployPerpsV2Generics = async ({
 	});
 	// not adding to contractsRequiringAddressResolver since it doesn't need it
 
+	const L2_SAFE_ADDRESSES = await getDeployParameter('L2_SAFE_ADDRESSES');
+
 	const perpsV2MarketSettings = await deployer.deployContract({
 		name: 'PerpsV2MarketSettings',
-		args: [account, addressOf(ReadProxyAddressResolver)],
+		args: [account, L2_SAFE_ADDRESSES, addressOf(ReadProxyAddressResolver)],
 	});
 	contractsRequiringAddressResolver.push({
 		name: 'PerpsV2MarketSettings',
@@ -493,6 +496,17 @@ const configurePerpsV2GenericParams = async ({ deployer, getDeployParameter, run
 		write: 'setKeeperLiquidationFee',
 		writeArg: PERPSV2_KEEPER_LIQUIDATION_FEE,
 		comment: 'Set the keeper liquidation fee',
+	});
+
+	const L2_SAFE_ADDRESSES = await getDeployParameter('L2_SAFE_ADDRESSES');
+	await runStep({
+		contract: 'PerpsV2MarketSettings',
+		target: futuresMarketSettings,
+		read: 'endorsedAddress',
+		expected: input => input === L2_SAFE_ADDRESSES,
+		write: 'setEndorsedAddress',
+		writeArg: FUTURES_MIN_INITIAL_MARGIN,
+		comment: 'Set the L2 SAFE address as endorsed (SIP-2013)',
 	});
 };
 
