@@ -15,6 +15,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
+	onlyGivenAddressesCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
@@ -26,6 +27,7 @@ contract('PerpsV2MarketSettings', accounts => {
 	let mockPerpsV2MarketBTCImpl, mockPerpsV2MarketBTC;
 
 	const owner = accounts[1];
+	const endorsedAddress = accounts[2];
 
 	const marketKey = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
@@ -140,6 +142,8 @@ contract('PerpsV2MarketSettings', accounts => {
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				// Market Agnostic
+				'setEndorsedAddress',
+				// Market Agnostic
 				'setMinKeeperFee',
 				'setMaxKeeperFee',
 				'setLiquidationBufferRatio',
@@ -170,6 +174,51 @@ contract('PerpsV2MarketSettings', accounts => {
 				'setMaxPD',
 				'setParameters',
 			],
+		});
+	});
+
+	describe('Endorsed setMinKeeperFee Address', () => {
+		describe('When endorsed address is not set', () => {
+			it('owner can call setMinKeeperFee', async () => {
+				const minKeeperFee = toUnit('10');
+				const oldKeeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+				await onlyGivenAddressCanInvoke({
+					fnc: perpsV2MarketSettings.setMinKeeperFee,
+					args: [minKeeperFee.toString()],
+					address: owner,
+					accounts,
+					reason: 'Only the contract owner or endorsed may perform this action',
+				});
+
+				await perpsV2MarketSettings.setMinKeeperFee(oldKeeperFee, { from: owner });
+			});
+		});
+
+		describe('When endorsed address is set', () => {
+			it('only owner and endorsed address can call setMinKeeperFee', async () => {
+				const minKeeperFee = toUnit('10');
+				const oldKeeperFee = await perpsV2MarketSettings.minKeeperFee();
+
+				await perpsV2MarketSettings.setEndorsedAddress(endorsedAddress, {
+					from: owner,
+				});
+
+				await onlyGivenAddressesCanInvoke({
+					fnc: perpsV2MarketSettings.setMinKeeperFee,
+					args: [minKeeperFee.toString()],
+					addresses: [owner, endorsedAddress],
+					accounts,
+					reason: 'Only the contract owner or endorsed may perform this action',
+				});
+
+				// Set owner as endorsed to not alter following tests
+				await perpsV2MarketSettings.setEndorsedAddress(owner, {
+					from: owner,
+				});
+
+				await perpsV2MarketSettings.setMinKeeperFee(oldKeeperFee, { from: owner });
+			});
 		});
 	});
 
@@ -377,7 +426,7 @@ contract('PerpsV2MarketSettings', accounts => {
 				args: [minKeeperFee.toString()],
 				address: owner,
 				accounts,
-				reason: 'Only the contract owner may perform this action',
+				reason: 'Only the contract owner or endorsed may perform this action',
 			});
 		});
 

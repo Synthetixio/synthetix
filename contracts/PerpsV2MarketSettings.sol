@@ -20,6 +20,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
+    /* ========== STORAGE ========== */
+    address internal endorsedAddress;
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}
@@ -259,7 +262,15 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         return _keeperLiquidationFee();
     }
 
+    function getEndorsedAddress() public view returns (address) {
+        return endorsedAddress;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function setEndorsedAddress(address _endorsedAddress) public onlyOwner {
+        endorsedAddress = _endorsedAddress;
+    }
 
     /* ---------- Setters --------- */
 
@@ -418,7 +429,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setMaxPD(_marketKey, _parameters.maxPD);
     }
 
-    function setMinKeeperFee(uint _sUSD) external onlyOwner {
+    function setMinKeeperFee(uint _sUSD) external onlyOwnerOrApproved {
         require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
         if (_maxKeeperFee() > 0) {
             // only check if already set
@@ -448,6 +459,15 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     function setKeeperLiquidationFee(uint _keeperFee) external onlyOwner {
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_LIQUIRATION_FEE, _keeperFee);
         emit KeeperLiquidationFeeUpdated(_keeperFee);
+    }
+
+    /* ========== MODIFIER ========== */
+    modifier onlyOwnerOrApproved() {
+        require(
+            msg.sender == owner || msg.sender == endorsedAddress,
+            "Only the contract owner or endorsed may perform this action"
+        );
+        _;
     }
 
     /* ========== EVENTS ========== */
