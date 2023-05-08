@@ -25,7 +25,13 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {}
+    constructor(
+        address _owner,
+        address _endorsed,
+        address _resolver
+    ) public Owned(_owner) MixinPerpsV2MarketSettings(_resolver) {
+        endorsedAddress = _endorsed;
+    }
 
     /* ========== VIEWS ========== */
 
