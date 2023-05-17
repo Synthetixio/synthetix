@@ -543,6 +543,12 @@
 		"sign": "",
 		"description": "Sui"
 	},
+	"BLUR": {
+		"asset": "BLUR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Blur"
+	},
 	"FLOKI": {
 		"asset": "FLOKI",
 		"category": "crypto",
