@@ -143,6 +143,18 @@
 		"asset": "CRV",
 		"feed": "0xbD92C6c284271c227a1e0bF1786F468b539f51D9"
 	},
+	"PEPE": {
+		"asset": "PEPE",
+		"feed": "0x64Ecf089a6594Be781908D5a26FC8fA6CB08A2C7"
+	},
+	"SUI": {
+		"asset": "SUI",
+		"feed": "0xEaf1a9fe242aa9928faedc6CE7e09aD4875f7133"
+	},
+	"BLUR": {
+		"asset": "BLUR",
+		"feed": "0x517C2557c29F7c53Aa5F97a1DAE465E0d5C174AA"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
