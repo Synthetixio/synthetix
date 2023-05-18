@@ -895,6 +895,16 @@
 				"PerpsV2MarketLiquidate[A-Z]+"
 			],
 			"released": "ovm"
+		},
+		{
+			"sip": 2014,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2015,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1711,6 +1721,15 @@
 			},
 			"sips": [298],
 			"released": true
+		},
+		{
+			"name": "Larawag (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 89
+			},
+			"sips": [2014]
 		}
 	]
 }

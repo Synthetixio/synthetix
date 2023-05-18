@@ -530,5 +530,35 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Shiba Inu"
+	},
+	"PEPE": {
+		"asset": "PEPE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Pepe"
+	},
+	"SUI": {
+		"asset": "SUI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Sui"
+	},
+	"BLUR": {
+		"asset": "BLUR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Blur"
+	},
+	"FLOKI": {
+		"asset": "FLOKI",
+		"category": "crypto",
+		"sign": "",
+		"description": "FLOKI"
+	},
+	"INJ": {
+		"asset": "INJ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Injective"
 	}
 }

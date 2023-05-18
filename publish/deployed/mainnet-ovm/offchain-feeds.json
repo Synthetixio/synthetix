@@ -200,5 +200,53 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "CRV",
 		"feedId": "0xa19d04ac696c7a6616d291c7e5d1377cc8be437c327b75adb5dc1bad745fcae8"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PEPE",
+		"feedId": "0xd69731a2e74ac1ce884fc3890f7ee324b6deb66147055249568869ed700882e4"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "SUI",
+		"feedId": "0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BLUR",
+		"feedId": "0x856aac602516addee497edf6f50d39e8c95ae5fb0da1ed434a8c2ab9c3e877e9"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "XRP",
+		"feedId": "0xec5d399846a9209f3fe5881d70aae9268c94339ff9817e8d18ff19fa05eea1c8"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "DOT",
+		"feedId": "0xca3eed9b267293f6595901c734c7525ce8ef49adafe8284606ceb307afa2ca5b"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TRX",
+		"feedId": "0x67aed5a24fdad045475e7195c98a98aea119c763f272d4523f5bac93a4f33c2b"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FLOKI",
+		"feedId": "0x6b1381ce7e874dc5410b197ac8348162c0dd6c0d4c9cd6322672d6c2b1d58293"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "INJ",
+		"feedId": "0x7a5bc1d2b56ad029048cd63964b3ad2776eadf812edc1a43a31406cb54bff592"
 	}
 ]
