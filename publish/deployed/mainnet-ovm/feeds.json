@@ -155,6 +155,26 @@
 		"asset": "BLUR",
 		"feed": "0x517C2557c29F7c53Aa5F97a1DAE465E0d5C174AA"
 	},
+	"XRP": {
+		"asset": "XRP",
+		"feed": "0x8788F0DBDa7678244Ac7FF09d963d7696D56A8a0"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x28e67BAeEB5dE7A788f3Dde6CF6ee491369Bb3Fa"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"feed": "0x0E09921cf7801A5aD47B892C8727593275625a9f"
+	},
+	"FLOKI": {
+		"asset": "FLOKI",
+		"feed": "0x34E0E85CeEc6be6146c4f0115769a29a9539222e"
+	},
+	"INJ": {
+		"asset": "INJ",
+		"feed": "0x90CC16F5493894eff84a5Fedd1dcE297d174fEEf"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
