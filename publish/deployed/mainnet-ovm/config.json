@@ -1114,5 +1114,173 @@
 	},
 	"PerpsV2MarketViewsCRVPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyPEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStatePEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketPEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidatePEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentPEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionPEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsPEPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxySUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsSUIPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBLURPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsXRPPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsDOTPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsTRXPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsFLOKIPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsINJPERP": {
+		"deploy": false
 	}
 }
