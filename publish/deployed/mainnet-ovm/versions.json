@@ -1638,12 +1638,12 @@
 			},
 			"PerpsV2DelayedOrderETHPERP": {
 				"address": "0xe343542366A9f3Af56Acc6D68154Cfaf23efeba6",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderETHPERP": {
 				"address": "0x0454E103a712b257819efBBB797EaE80918dd2FF",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			}
 		}
@@ -1681,12 +1681,12 @@
 			},
 			"PerpsV2DelayedOrderBTCPERP": {
 				"address": "0xD8c3F087000DC990Fc84a776aED78d31507F716B",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderBTCPERP": {
 				"address": "0x194ffc3D2cE0552720F24FefDf57a6c534223174",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyLINKPERP": {
@@ -1714,12 +1714,12 @@
 			},
 			"PerpsV2DelayedOrderLINKPERP": {
 				"address": "0x45C93D2C1994a70fD2Af98DA6ba100953b96A768",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderLINKPERP": {
 				"address": "0xf67fDa142f31686523D2b52CE25aD66895f23116",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxySOLPERP": {
@@ -1747,12 +1747,12 @@
 			},
 			"PerpsV2DelayedOrderSOLPERP": {
 				"address": "0xAEb1Cc5FD71CfFD1462808eE13b1051196bF6224",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderSOLPERP": {
 				"address": "0x139AF9de51Ca2594911502E7A5653D4693EFb4ED",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyAVAXPERP": {
@@ -1780,12 +1780,12 @@
 			},
 			"PerpsV2DelayedOrderAVAXPERP": {
 				"address": "0x580f76aF1FC4BB29F0032EeC6e0F7460D26b5f56",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderAVAXPERP": {
 				"address": "0xF7df260a4F46Eaf5A82589B9e9D3879e6FCee431",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyAAVEPERP": {
@@ -1813,12 +1813,12 @@
 			},
 			"PerpsV2DelayedOrderAAVEPERP": {
 				"address": "0x95597eaC456983645d4aD0cC83C5356cc245Ea0D",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderAAVEPERP": {
 				"address": "0x2BF61b08F3e8DA40799D90C3b1e60f1c4DDb7fDA",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyUNIPERP": {
@@ -1846,12 +1846,12 @@
 			},
 			"PerpsV2DelayedOrderUNIPERP": {
 				"address": "0xcC0ceC53572d4e10a8fdABb468356287B170c6A9",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderUNIPERP": {
 				"address": "0x85875A05bE4db7a21dB6C53CeD09b06a5aD83402",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyMATICPERP": {
@@ -1879,12 +1879,12 @@
 			},
 			"PerpsV2DelayedOrderMATICPERP": {
 				"address": "0xDF89210B03E319B08EC0cC73C4B50468306e1252",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderMATICPERP": {
 				"address": "0x1651e832dcc1B9cF697810d822aee35A9f5fFD64",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyAPEPERP": {
@@ -1912,12 +1912,12 @@
 			},
 			"PerpsV2DelayedOrderAPEPERP": {
 				"address": "0x70aEA7B455510640217CBCB78C5f2d29DB5a4a01",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderAPEPERP": {
 				"address": "0xE99dB61288A4e8968ee58C03cc142c6ddB500598",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyDYDXPERP": {
@@ -1945,12 +1945,12 @@
 			},
 			"PerpsV2DelayedOrderDYDXPERP": {
 				"address": "0x9B20476899C8Fb22d96af37D2017016A80647159",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderDYDXPERP": {
 				"address": "0xF612F3098a277cb80Ad03f20cf7787aD1Dc48f4a",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyBNBPERP": {
@@ -1978,12 +1978,12 @@
 			},
 			"PerpsV2DelayedOrderBNBPERP": {
 				"address": "0xaf476d7817105437aed79a86E802b79D4B1c473F",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderBNBPERP": {
 				"address": "0x8c2c26494eAe20A8a22f94ED5Fa4B104FAD6bcca",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyOPPERP": {
@@ -2011,12 +2011,12 @@
 			},
 			"PerpsV2DelayedOrderOPPERP": {
 				"address": "0x3c30CBd400f8e7c099ab27cF28DA843cD4433FFE",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderOPPERP": {
 				"address": "0xd2471115Be883EA7A32907D78062C323a5E85593",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyDOGEPERP": {
@@ -2044,12 +2044,12 @@
 			},
 			"PerpsV2DelayedOrderDOGEPERP": {
 				"address": "0x62B6f3733AB95Ec88864F03f758DE4377d6C751d",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderDOGEPERP": {
 				"address": "0xfde9d8F4d2fB18823363fdd0E1fF305c4696A19D",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyXAUPERP": {
@@ -2077,12 +2077,12 @@
 			},
 			"PerpsV2DelayedOrderXAUPERP": {
 				"address": "0x5AE6b5DD28F44689e4D17F47aeF1f863C36Df556",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderXAUPERP": {
 				"address": "0xf8B9Dd242BDAF6242cb783F02b49D1Dd9126DE5c",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyXAGPERP": {
@@ -2110,12 +2110,12 @@
 			},
 			"PerpsV2DelayedOrderXAGPERP": {
 				"address": "0x31A53d5238391d1449b443eDB5476b5D8dF23239",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderXAGPERP": {
 				"address": "0x909c690556D8389AEa348377EB27dECFb1b27d29",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyEURPERP": {
@@ -2143,12 +2143,12 @@
 			},
 			"PerpsV2DelayedOrderEURPERP": {
 				"address": "0x3459276E8f644F111539804e08253799b176Ab83",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderEURPERP": {
 				"address": "0xB0A058c7781F6EcA709d4b469FCc522a6fA38E60",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyATOMPERP": {
@@ -2176,12 +2176,12 @@
 			},
 			"PerpsV2DelayedOrderATOMPERP": {
 				"address": "0xC0204F82ce1e25d15D2cE8DC1deA3f319BB64a8F",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderATOMPERP": {
 				"address": "0x14688DFAa8b4085DA485579f72F3DE467485411a",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyAXSPERP": {
@@ -2209,12 +2209,12 @@
 			},
 			"PerpsV2DelayedOrderAXSPERP": {
 				"address": "0xfce521766201013974Dbf3B71E68b0CF8FBcd05B",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderAXSPERP": {
 				"address": "0x43406c99fc8a7776F2870800e38FF5c8Cc96a2fE",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyFLOWPERP": {
@@ -2242,12 +2242,12 @@
 			},
 			"PerpsV2DelayedOrderFLOWPERP": {
 				"address": "0xB9202087852298E5e2ebC0c30758fA4E07faf6fB",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderFLOWPERP": {
 				"address": "0xF40482B4DA5509d6a9fb3Bed08E2356D72c31028",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyFTMPERP": {
@@ -2275,12 +2275,12 @@
 			},
 			"PerpsV2DelayedOrderFTMPERP": {
 				"address": "0x7F87AEc4938770e52AF9A0B5239521BD9C53F28E",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderFTMPERP": {
 				"address": "0x08941749026fF010c22E8B9d93a76EEBFC61C13b",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyNEARPERP": {
@@ -2308,12 +2308,12 @@
 			},
 			"PerpsV2DelayedOrderNEARPERP": {
 				"address": "0xF6CB6699367F8f61A8bF504CBe914C639D051E19",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderNEARPERP": {
 				"address": "0xBF3B13F155070a61156f261b26D0Eb06f629C2e6",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyAUDPERP": {
@@ -2341,12 +2341,12 @@
 			},
 			"PerpsV2DelayedOrderAUDPERP": {
 				"address": "0x6B9cbCdaE03C4cDfD9fb9D987C74856Ac332fDCf",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderAUDPERP": {
 				"address": "0x2A656E9618185782A638c86C64b5702854DDB11A",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			},
 			"PerpsV2ProxyGBPPERP": {
@@ -2374,12 +2374,12 @@
 			},
 			"PerpsV2DelayedOrderGBPPERP": {
 				"address": "0xf3DCf19D397F5A696A106b4287379Fb53fE33005",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x50c7889a6be3697ac46b2d673ae566b696ddddc643f5b932f8b8639e9af770b2"
 			},
 			"PerpsV2OffchainDelayedOrderGBPPERP": {
 				"address": "0x0BB25623946960D8FB1696a9D70466766F2C8aa7",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x0dacd347d9414b86b6481e4606ba9382946082293506f5511b37398036439fb4"
 			}
 		}
@@ -2463,12 +2463,12 @@
 			},
 			"PerpsV2DelayedOrderARBPERP": {
 				"address": "0x0f5af2A8a4Df79e354455788fdA73bed85AB435C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xe4c064524a1967ffa3c3c6a51b4eb0e400fad6c498a8330cb87441e8da84e30b"
 			},
 			"PerpsV2OffchainDelayedOrderARBPERP": {
 				"address": "0x5d89892BCa7aa5619fd6168D38F73bb84D777e9C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd24df0a5e922069fa7b9e64f2a127e9741951bf7f312a66c9b31b110ec3103f4"
 			}
 		}
@@ -3847,6 +3847,296 @@
 			},
 			"PerpsV2MarketViewsCRVPERP": {
 				"address": "0x94cF2BB95BdC525f90311dDb2eDCd1C481e81A9D",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			}
+		}
+	},
+	"v2.89.1": {
+		"tag": "v2.89.1",
+		"fulltag": "v2.89.1",
+		"release": "Larawag",
+		"network": "mainnet",
+		"date": "2023-05-23T23:16:20+01:00",
+		"commit": "aee58be883a6c6555d826393dac9855c8f0c4339",
+		"contracts": {
+			"PerpsV2ProxyPEPEPERP": {
+				"address": "0x3D3f34416f60f77A0a6cC8e32abe45D32A7497cb",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStatePEPEPERP": {
+				"address": "0x2365D3e91E585c974c28a5B82d6AA266F68a44Ad",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketPEPEPERP": {
+				"address": "0x5Be1C70475422255684E4f312E57Fe782a5102F4",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidatePEPEPERP": {
+				"address": "0x4dFB42753f735fBbbb2b1312F72eB05D905365AD",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentPEPEPERP": {
+				"address": "0x41aE759b8e75f4EE544cD08B4369e5F4719561FE",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionPEPEPERP": {
+				"address": "0xe9e46a7323d54af1550B931c8bD6F8615f079379",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsPEPEPERP": {
+				"address": "0x17ccEfad2AE2784Af7012af04c76bdafAa4E7b37",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxySUIPERP": {
+				"address": "0x09F9d7aaa6Bef9598c3b676c0E19C9786Aa566a8",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateSUIPERP": {
+				"address": "0x2cCaf0500142F8E563fF361C3b34AbEe16B6205d",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketSUIPERP": {
+				"address": "0xB7c04aa1E49BBEF0A5D7A0E7885b54c9E9309704",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateSUIPERP": {
+				"address": "0xcfe154521ab1fc995a6bc68880Af9888221FD27C",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentSUIPERP": {
+				"address": "0x700EDD66fB75516427C793f5Fe376f6fe1aCc932",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionSUIPERP": {
+				"address": "0xA2C0843c8cb9f29Fa40fc0ffd2B4995A0f05C15c",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsSUIPERP": {
+				"address": "0x748f78A5dC4a4325BcdF251DeE85E481a2dC6929",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyBLURPERP": {
+				"address": "0xa1Ace9ce6862e865937939005b1a6c5aC938A11F",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateBLURPERP": {
+				"address": "0x6aCC3519d10E46E5a228615c9d4B57CC0113A212",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketBLURPERP": {
+				"address": "0x4Fc5beD961d41ba5F198DE7484637800Dac78eb1",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateBLURPERP": {
+				"address": "0x325a0fA8e3A0A40Fa82bc6D222B1af765Ab77B36",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentBLURPERP": {
+				"address": "0xFf82e4012816CC01093565C6d2EE2Af83f3cb3Ae",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionBLURPERP": {
+				"address": "0x2214cD24c13D7B36432C66e73984Bc44D479CD51",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsBLURPERP": {
+				"address": "0xeD20040b21FDf6d68336F6E61AD05F235e3eA9f3",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyXRPPERP": {
+				"address": "0x6110DF298B411a46d6edce72f5CAca9Ad826C1De",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateXRPPERP": {
+				"address": "0x0Ea666319f4f0eAa7f16711f2fe7F4B159957f48",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketXRPPERP": {
+				"address": "0x995f710838a070D43D94d4420194Bb09cFC332E6",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateXRPPERP": {
+				"address": "0x95366aC32995d4C31f72C2D0029211E19bF6eB7d",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentXRPPERP": {
+				"address": "0x7F4B56A8Fe268666d95e64F16A96bBDCfB89DF54",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionXRPPERP": {
+				"address": "0x28bDE5C67624B2eF7Fa27C9C9B0678fE3009913e",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsXRPPERP": {
+				"address": "0x047B3714f3B3adFC1aa1F31c710ca3cA967Aeaa3",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyDOTPERP": {
+				"address": "0x8B9B5f94aac2316f048025B3cBe442386E85984b",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateDOTPERP": {
+				"address": "0xCF33a35F0f2095ABdD0C81dbde3A1cD37bE0c5cC",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketDOTPERP": {
+				"address": "0x9Cd7ccac32231ccb842f14368B3DA3B33f20d3BE",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateDOTPERP": {
+				"address": "0x4C2A2390c2908E0e489F8a487CE332f7CD6c1357",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentDOTPERP": {
+				"address": "0x4d178B91a3B16a124d2A90d944dB8C70A334FBdA",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionDOTPERP": {
+				"address": "0x5C4fD006f3dC9C6a2259B2fb82CfD500056978ec",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsDOTPERP": {
+				"address": "0x29533e33226E5383A36eb4BF515Ff067379eD841",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyTRXPERP": {
+				"address": "0x031A448F59111000b96F016c37e9c71e57845096",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateTRXPERP": {
+				"address": "0x52cCa59bFa0228F41Ab69558F5f2EE3739323c02",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketTRXPERP": {
+				"address": "0x093583D2135aF25ab49a4E148698ee0125bCF2F8",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateTRXPERP": {
+				"address": "0x5076C4fa56fb78b28eF4a542c7ef2B0F95186e58",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentTRXPERP": {
+				"address": "0xc254F4A4Bc16218eD30A3D674d8fae3f25B6Af5d",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionTRXPERP": {
+				"address": "0xC20e63aB2F1303079a6cC31013534e3989CFC8dc",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsTRXPERP": {
+				"address": "0xD1c8E9B404053560bc6A0302c4395FfB0FfD1C79",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyFLOKIPERP": {
+				"address": "0x5ed8D0946b59d015f5A60039922b870537d43689",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateFLOKIPERP": {
+				"address": "0x94a1D572baE06A31C029D4C26e1fA705f54286ef",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketFLOKIPERP": {
+				"address": "0x47F99a380cc020b5DB4B000aF445a232081ceEe7",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateFLOKIPERP": {
+				"address": "0xfc328bb84082AAe68cC47d7f032b177b8da348bc",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentFLOKIPERP": {
+				"address": "0x3FCC706dd9ab9Ac3DAF6f205AbE26712ddcBbd3E",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionFLOKIPERP": {
+				"address": "0xF52Df12Dd62731a11180403212EE67cb5F4d6345",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsFLOKIPERP": {
+				"address": "0xab5745E6cD602742636491409E18a73E223C8aff",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			},
+			"PerpsV2ProxyINJPERP": {
+				"address": "0x852210F0616aC226A486ad3387DBF990e690116A",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateINJPERP": {
+				"address": "0x4C35c27fF8F0dD039B4C4F0D670f2D58f6215c9C",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketINJPERP": {
+				"address": "0x84e12CCEa1311DA4090002279C2f46EC828199f3",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateINJPERP": {
+				"address": "0xc2aA78B6d0D2A72557EdD79845b43BEE4eA4DD10",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentINJPERP": {
+				"address": "0x0cDFdbF84Ac56D54657d3895602BB2982fD1EFE4",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionINJPERP": {
+				"address": "0x53bAd7c8cE47Fa070e5BB25adea796409E0e8058",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsINJPERP": {
+				"address": "0x3713BC72567A6C797AC69678f72a5A0d80c56dC9",
 				"status": "current",
 				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
 			}

@@ -899,12 +899,14 @@
 		{
 			"sip": 2014,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2015,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1729,7 +1731,8 @@
 				"major": 2,
 				"minor": 89
 			},
-			"sips": [2014, 2015]
+			"sips": [2014, 2015],
+			"released": true
 		}
 	]
 }
