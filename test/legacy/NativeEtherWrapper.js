@@ -2,7 +2,7 @@
 
 const { contract, web3 } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('../contracts/common');
 
 const { toUnit } = require('../utils')();
 const { GAS_PRICE } = require('../../hardhat.config');
@@ -13,9 +13,9 @@ const {
 	decodedEventEqual,
 	setupPriceAggregators,
 	updateAggregatorRates,
-} = require('./helpers');
+} = require('../contracts/helpers');
 
-const { setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('../contracts/setup');
 
 const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');

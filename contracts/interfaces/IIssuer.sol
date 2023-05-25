@@ -130,4 +130,6 @@ interface IIssuer {
         address to,
         uint amount
     ) external returns (bool rateInvalid);
+
+    function modifyDebtSharesForMigration(address account, uint amount) external;
 }

@@ -4,7 +4,7 @@
 		"asset": "sBTC",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
-		"overrideCommitFee": "0",
+
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0",
 		"takerFeeOffchainDelayedOrder": "0.0001",
@@ -22,6 +22,9 @@
 		"offchainPriceDivergence": "0.05",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocBTCPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.0025",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -30,7 +33,7 @@
 		"asset": "sETH",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
-		"overrideCommitFee": "0",
+
 		"takerFeeDelayedOrder": "0.001",
 		"makerFeeDelayedOrder": "0.0",
 		"takerFeeOffchainDelayedOrder": "0.0001",
@@ -48,6 +51,9 @@
 		"offchainPriceDivergence": "0.05",
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocETHPERP",
+		"maxLiquidationDelta": "0.05",
+		"maxPD": "0.05",
+		"liquidationBufferRatio": "0.0025",
 		"paused": false,
 		"offchainPaused": false
 	}

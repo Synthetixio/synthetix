@@ -49,19 +49,6 @@ module.exports = async ({
 		comment: 'Set the reward for liquidating a perpsV2 position (SIP-80)',
 	});
 
-	const FUTURES_LIQUIDATION_BUFFER_RATIO = await getDeployParameter(
-		'FUTURES_LIQUIDATION_BUFFER_RATIO'
-	);
-	await runStep({
-		contract: 'PerpsV2MarketSettings',
-		target: futuresMarketSettings,
-		read: 'liquidationBufferRatio',
-		expected: input => input === FUTURES_LIQUIDATION_BUFFER_RATIO,
-		write: 'setLiquidationBufferRatio',
-		writeArg: FUTURES_LIQUIDATION_BUFFER_RATIO,
-		comment: 'Set the reward for liquidating a perpsV2 position (SIP-80)',
-	});
-
 	const FUTURES_MIN_KEEPER_FEE = await getDeployParameter('FUTURES_MIN_KEEPER_FEE');
 	await runStep({
 		contract: 'PerpsV2MarketSettings',
@@ -82,6 +69,17 @@ module.exports = async ({
 		write: 'setMaxKeeperFee',
 		writeArg: FUTURES_MAX_KEEPER_FEE,
 		comment: 'Set the maximum reward for liquidating a perpsV2 position',
+	});
+
+	const PERPSV2_KEEPER_LIQUIDATION_FEE = await getDeployParameter('PERPSV2_KEEPER_LIQUIDATION_FEE');
+	await runStep({
+		contract: 'PerpsV2MarketSettings',
+		target: futuresMarketSettings,
+		read: 'keeperLiquidationFee',
+		expected: input => input === PERPSV2_KEEPER_LIQUIDATION_FEE,
+		write: 'setKeeperLiquidationFee',
+		writeArg: PERPSV2_KEEPER_LIQUIDATION_FEE,
+		comment: 'Set the keeper liquidation fee',
 	});
 
 	//
@@ -111,6 +109,9 @@ module.exports = async ({
 			offchainMarketKey,
 			offchainPriceDivergence,
 			liquidationPremiumMultiplier,
+			maxLiquidationDelta,
+			liquidationBufferRatio,
+			maxPD,
 			paused,
 			offchainPaused,
 		} = market;
@@ -140,6 +141,9 @@ module.exports = async ({
 			offchainMarketKey: offchainMarketKeyBytes,
 			offchainPriceDivergence: w3utils.toWei(offchainPriceDivergence),
 			liquidationPremiumMultiplier: w3utils.toWei(liquidationPremiumMultiplier),
+			maxLiquidationDelta: w3utils.toWei(maxLiquidationDelta),
+			liquidationBufferRatio: w3utils.toWei(liquidationBufferRatio),
+			maxPD: w3utils.toWei(maxPD),
 		};
 
 		for (const setting in settings) {

@@ -94,25 +94,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         return price;
     }
 
-    /*
-     * @dev Checks if the fillPrice does not exceed priceImpactDelta tolerance.
-     *
-     * This will vary depending on the side you're taking. The intuition is if you're short, a discount is negatively
-     * impactful to your order but a premium is not. As such, the priceImpactDelta is asserted differently depending
-     * on which side of the trade you take.
-     */
-    function _assertPriceImpact(
-        uint price,
+    /** TODO: Docs */
+    function _assertFillPrice(
         uint fillPrice,
-        uint priceImpactDelta,
+        uint desiredFillPrice,
         int sizeDelta
     ) internal view returns (uint) {
-        uint priceImpactLimit = _priceImpactLimit(price, priceImpactDelta, sizeDelta);
         _revertIfError(
-            sizeDelta > 0 ? fillPrice > priceImpactLimit : fillPrice < priceImpactLimit,
+            sizeDelta > 0 ? fillPrice > desiredFillPrice : fillPrice < desiredFillPrice,
             Status.PriceImpactToleranceExceeded
         );
-        return priceImpactLimit;
+        return fillPrice;
     }
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
@@ -133,6 +125,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
     function _updatePositionMargin(
         address account,
         Position memory position,
+        int orderSizeDelta,
         uint price,
         int marginDelta
     ) internal {
@@ -142,35 +135,47 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         _revertIfError(status);
 
         // Update the debt correction.
-        int positionSize = position.size;
         uint fundingIndex = _latestFundingIndex();
         _applyDebtCorrection(
-            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(positionSize)),
-            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(positionSize))
+            Position(0, uint64(fundingIndex), uint128(margin), uint128(price), int128(position.size)),
+            Position(0, position.lastFundingIndex, position.margin, position.lastPrice, int128(position.size))
         );
 
         // Update the account's position with the realised margin.
         position.margin = uint128(margin);
+
         // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize != 0) {
+        if (position.size != 0) {
             position.lastPrice = uint128(price);
             position.lastFundingIndex = uint64(fundingIndex);
 
             // The user can always decrease their margin if they have no position, or as long as:
-            //   * they have sufficient margin to do so
             //   * the resulting margin would not be lower than the liquidation margin or min initial margin
             //     * liqMargin accounting for the liqPremium
-            //   * the resulting leverage is lower than the maximum leverage
             if (marginDelta < 0) {
                 // note: We .add `liqPremium` to increase the req margin to avoid entering into liquidation
                 uint liqPremium = _liquidationPremium(position.size, price);
                 uint liqMargin = _liquidationMargin(position.size, price).add(liqPremium);
-                _revertIfError(
-                    (margin < _minInitialMargin()) ||
-                        (margin <= liqMargin) ||
-                        (_maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin))),
-                    Status.InsufficientMargin
-                );
+
+                _revertIfError(margin <= liqMargin, Status.InsufficientMargin);
+
+                // `marginDelta` can be decreasing (due to e.g. fees). However, price could also have moved in the
+                // opposite direction resulting in a loss. A reduced remainingMargin to calc currentLeverage can
+                // put the position above maxLeverage.
+                //
+                // To account for this, a check on `positionDecreasing` ensures that we can always perform this action
+                // so long as we're reducing the position size and not liquidatable.
+                int newPositionSize = int(position.size).add(orderSizeDelta);
+                bool positionDecreasing =
+                    _sameSide(position.size, newPositionSize) && _abs(newPositionSize) < _abs(position.size);
+
+                if (!positionDecreasing) {
+                    _revertIfError(
+                        _maxLeverage(_marketKey()) < _abs(_currentLeverage(position, price, margin)),
+                        Status.MaxLeverageExceeded
+                    );
+                    _revertIfError(margin < _minInitialMargin(), Status.InsufficientMargin);
+                }
             }
         }
 
@@ -185,7 +190,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         );
     }
 
-    function _trade(address sender, TradeParams memory params) internal {
+    function _trade(address sender, TradeParams memory params) internal notFlagged(sender) {
         Position memory position = marketState.positions(sender);
         Position memory oldPosition =
             Position({
@@ -200,7 +205,7 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         (Position memory newPosition, uint fee, Status status) = _postTradeDetails(oldPosition, params);
         _revertIfError(status);
 
-        _assertPriceImpact(params.oraclePrice, params.fillPrice, params.priceImpactDelta, params.sizeDelta);
+        _assertFillPrice(params.fillPrice, params.desiredFillPrice, params.sizeDelta);
 
         // Update the aggregated market size and skew with the new order size
         marketState.setMarketSkew(int128(int(marketState.marketSkew()).add(newPosition.size).sub(oldPosition.size)));
@@ -211,10 +216,10 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         // Send the fee to the fee pool
         if (0 < fee) {
             _manager().payFee(fee);
-            // emit tracking code event
-            if (params.trackingCode != bytes32(0)) {
-                emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
-            }
+        }
+        // emit tracking code event
+        if (params.trackingCode != bytes32(0)) {
+            emitPerpsTracking(params.trackingCode, _baseAsset(), _marketKey(), params.sizeDelta, fee);
         }
 
         // Update the margin, and apply the resulting debt correction
@@ -261,11 +266,13 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
             params.sizeDelta,
             params.fillPrice,
             fundingIndex,
-            fee
+            fee,
+            marketState.marketSkew()
         );
     }
 
     /* ========== EVENTS ========== */
+
     function addressToBytes32(address input) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(input)));
     }
@@ -278,10 +285,11 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     );
     bytes32 internal constant POSITIONMODIFIED_SIG =
-        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
+        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256,int256)");
 
     function emitPositionModified(
         uint id,
@@ -291,38 +299,17 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         int tradeSize,
         uint lastPrice,
         uint fundingIndex,
-        uint fee
+        uint fee,
+        int skew
     ) internal {
         proxy._emit(
-            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee, skew),
             3,
             POSITIONMODIFIED_SIG,
             bytes32(id),
             addressToBytes32(account),
             0
         );
-    }
-
-    event MarginTransferred(address indexed account, int marginDelta);
-    bytes32 internal constant MARGINTRANSFERRED_SIG = keccak256("MarginTransferred(address,int256)");
-
-    function emitMarginTransferred(address account, int marginDelta) internal {
-        proxy._emit(abi.encode(marginDelta), 2, MARGINTRANSFERRED_SIG, addressToBytes32(account), 0, 0);
-    }
-
-    event PositionLiquidated(uint id, address account, address liquidator, int size, uint price, uint fee);
-    bytes32 internal constant POSITIONLIQUIDATED_SIG =
-        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
-
-    function emitPositionLiquidated(
-        uint id,
-        address account,
-        address liquidator,
-        int size,
-        uint price,
-        uint fee
-    ) internal {
-        proxy._emit(abi.encode(id, account, liquidator, size, price, fee), 1, POSITIONLIQUIDATED_SIG, 0, 0, 0);
     }
 
     event FundingRecomputed(int funding, int fundingRate, uint index, uint timestamp);
@@ -348,5 +335,21 @@ contract PerpsV2MarketProxyable is PerpsV2MarketBase, Proxyable {
         uint fee
     ) internal {
         proxy._emit(abi.encode(baseAsset, marketKey, sizeDelta, fee), 2, PERPSTRACKING_SIG, trackingCode, 0, 0);
+    }
+
+    /* ========== MODIFIERS ========== */
+
+    modifier flagged(address account) {
+        if (!marketState.isFlagged(account)) {
+            revert(_errorMessages[uint8(Status.PositionNotFlagged)]);
+        }
+        _;
+    }
+
+    modifier notFlagged(address account) {
+        if (marketState.isFlagged(account)) {
+            revert(_errorMessages[uint8(Status.PositionFlagged)]);
+        }
+        _;
     }
 }

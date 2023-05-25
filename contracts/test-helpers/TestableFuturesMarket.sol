@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "../FuturesMarket.sol";
+import "../frozen/FuturesMarket.sol";
 
 contract TestableFuturesMarket is FuturesMarket {
     constructor(

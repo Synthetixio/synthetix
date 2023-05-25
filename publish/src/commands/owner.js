@@ -40,6 +40,7 @@ const owner = async ({
 	useOvm,
 	useFork,
 	providerUrl,
+	isTest = false,
 	skipAcceptance = false,
 	throwOnNotNominatedOwner = false,
 }) => {
@@ -88,7 +89,7 @@ const owner = async ({
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	let signer;
-	if (!privateKey) {
+	if (!privateKey || isTest) {
 		const account = getUsers({ network, user: 'owner', useOvm }).address;
 		signer = provider.getSigner(account);
 		signer.address = await signer.getAddress();
@@ -101,7 +102,7 @@ const owner = async ({
 	let relayers;
 
 	let safeBatchSubmitter;
-	if (!useFork) {
+	if (!useFork && !isTest) {
 		safeBatchSubmitter = await safeInitializer({ network, signer, safeAddress: newOwner });
 	}
 
@@ -112,7 +113,7 @@ const owner = async ({
 		const deployedCode = await provider.getCode(newOwner);
 		const isContract = deployedCode !== '0x';
 
-		if (isContract && useOvm) {
+		if (isContract && useOvm && !isTest) {
 			console.log(gray('New owner is a contract. Assuming it is a relayer.'));
 			// load up L1 deployment for relaying
 			const { providerUrl: l1ProviderUrl, privateKey: l1PrivateKey } = loadConnections({
@@ -153,7 +154,7 @@ const owner = async ({
 			);
 		}
 
-		if (!yes && !isContract) {
+		if (!yes && (!isContract || isTest)) {
 			try {
 				await confirmAction(
 					yellow(
@@ -493,6 +494,7 @@ module.exports = {
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
 			.option('-s, --skip-acceptance', 'Skip ownership acceptance checks.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option('--is-test', 'Is a test deployment (on a forked network as it were mainnet).')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
 				'-p, --provider-url <value>',

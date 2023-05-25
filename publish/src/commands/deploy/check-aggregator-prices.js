@@ -49,12 +49,13 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 
 			const liveAggregator = new ethers.Contract(feed, abi, provider);
 
-			const [aggAnswerRaw, exRatesAnswerRaw] = await Promise.all([
+			const [aggAnswerRaw, aggAnswerDecimals, exRatesAnswerRaw] = await Promise.all([
 				liveAggregator.latestAnswer(),
+				liveAggregator.decimals(),
 				oldExrates.rateForCurrency(toBytes32(currencyKey)),
 			]);
 
-			const answer = (aggAnswerRaw / 1e8).toString();
+			const answer = (aggAnswerRaw / 10 ** aggAnswerDecimals).toString();
 
 			const existing = ethers.utils.formatUnits(exRatesAnswerRaw);
 

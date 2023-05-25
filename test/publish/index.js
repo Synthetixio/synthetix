@@ -1183,6 +1183,8 @@ describe('publish scripts', () => {
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
 									// Same applies to the owner relays
 									.filter(([contract]) => !/^OwnerRelay/.test(contract))
+									// Same applies to the debt migrators
+									.filter(([contract]) => !/^DebtMigrator/.test(contract))
 									// same for external contracts
 									.filter(([contract]) => !/^ext:/.test(contract))
 									// remove debt oracles

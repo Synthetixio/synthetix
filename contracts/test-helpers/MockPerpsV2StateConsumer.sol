@@ -9,6 +9,10 @@ contract MockPerpsV2StateConsumer {
         marketState = IPerpsV2MarketState(_marketState);
     }
 
+    function nextPositionId() external view returns (uint64) {
+        return marketState.nextPositionId();
+    }
+
     function setMarketKey(bytes32 _marketKey) external {
         marketState.setMarketKey(_marketKey);
     }
@@ -60,7 +64,7 @@ contract MockPerpsV2StateConsumer {
         address account,
         bool isOffchain,
         int128 sizeDelta,
-        uint128 priceImpactDelta,
+        uint128 desiredFillPrice,
         uint128 targetRoundId,
         uint128 commitDeposit,
         uint128 keeperDeposit,
@@ -72,7 +76,7 @@ contract MockPerpsV2StateConsumer {
             account,
             isOffchain,
             sizeDelta,
-            priceImpactDelta,
+            desiredFillPrice,
             targetRoundId,
             commitDeposit,
             keeperDeposit,

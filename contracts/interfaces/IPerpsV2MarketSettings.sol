@@ -5,7 +5,6 @@ interface IPerpsV2MarketSettings {
     struct Parameters {
         uint takerFee;
         uint makerFee;
-        uint overrideCommitFee;
         uint takerFeeDelayedOrder;
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
@@ -23,6 +22,9 @@ interface IPerpsV2MarketSettings {
         bytes32 offchainMarketKey;
         uint offchainPriceDivergence;
         uint liquidationPremiumMultiplier;
+        uint liquidationBufferRatio;
+        uint maxLiquidationDelta;
+        uint maxPD;
     }
 
     function takerFee(bytes32 _marketKey) external view returns (uint);
@@ -57,13 +59,19 @@ interface IPerpsV2MarketSettings {
 
     function maxDelayTimeDelta(bytes32 _marketKey) external view returns (uint);
 
-    function parameters(bytes32 _marketKey) external view returns (Parameters memory);
-
     function offchainMarketKey(bytes32 _marketKey) external view returns (bytes32);
 
     function offchainPriceDivergence(bytes32 _marketKey) external view returns (uint);
 
     function liquidationPremiumMultiplier(bytes32 _marketKey) external view returns (uint);
+
+    function maxPD(bytes32 _marketKey) external view returns (uint);
+
+    function maxLiquidationDelta(bytes32 _marketKey) external view returns (uint);
+
+    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint);
+
+    function parameters(bytes32 _marketKey) external view returns (Parameters memory);
 
     function minKeeperFee() external view returns (uint);
 
@@ -71,7 +79,7 @@ interface IPerpsV2MarketSettings {
 
     function liquidationFeeRatio() external view returns (uint);
 
-    function liquidationBufferRatio() external view returns (uint);
-
     function minInitialMargin() external view returns (uint);
+
+    function keeperLiquidationFee() external view returns (uint);
 }

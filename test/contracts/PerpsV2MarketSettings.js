@@ -34,7 +34,6 @@ contract('PerpsV2MarketSettings', accounts => {
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
 	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
-	const overrideCommitFee = toUnit('0');
 
 	const nextPriceConfirmWindow = toBN('2');
 
@@ -51,6 +50,9 @@ contract('PerpsV2MarketSettings', accounts => {
 	const offchainPriceDivergence = toUnit('0.05');
 
 	const liquidationPremiumMultiplier = toUnit('1');
+
+	const maxLiquidationDelta = toUnit('0.05');
+	const maxPD = toUnit('0.05');
 
 	const marketAbi = {
 		abi: [
@@ -137,44 +139,47 @@ contract('PerpsV2MarketSettings', accounts => {
 			abi: perpsV2MarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setDelayedOrderConfirmWindow',
+				// Market Agnostic
+				'setMinKeeperFee',
+				'setMaxKeeperFee',
 				'setLiquidationBufferRatio',
 				'setLiquidationFeeRatio',
+				'setMinInitialMargin',
+				'setKeeperLiquidationFee',
+				// Per Market
 				'setMakerFee',
 				'setMakerFeeDelayedOrder',
 				'setMakerFeeOffchainDelayedOrder',
-				'setMaxDelayTimeDelta',
-				'setMaxFundingVelocity',
-				'setMaxLeverage',
-				'setMaxMarketValue',
-				'setMinDelayTimeDelta',
-				'setMinInitialMargin',
-				'setMinKeeperFee',
-				'setMaxKeeperFee',
-				'setNextPriceConfirmWindow',
-				'setParameters',
-				'setSkewScale',
 				'setTakerFee',
 				'setTakerFeeDelayedOrder',
 				'setTakerFeeOffchainDelayedOrder',
-				'setOverrideCommitFee',
+				'setNextPriceConfirmWindow',
+				'setDelayedOrderConfirmWindow',
 				'setOffchainDelayedOrderMinAge',
 				'setOffchainDelayedOrderMaxAge',
+				'setMaxLeverage',
+				'setMaxMarketValue',
+				'setMaxFundingVelocity',
+				'setSkewScale',
+				'setMinDelayTimeDelta',
+				'setMaxDelayTimeDelta',
 				'setOffchainMarketKey',
 				'setOffchainPriceDivergence',
 				'setLiquidationPremiumMultiplier',
+				'setMaxLiquidationDelta',
+				'setMaxPD',
+				'setParameters',
 			],
 		});
 	});
 
-	describe('Parameter setting', () => {
+	describe('Market Related Parameter setting', () => {
 		let params;
 
 		before('init params', async () => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
-				overrideCommitFee,
 				takerFeeDelayedOrder,
 				makerFeeDelayedOrder,
 				takerFeeOffchainDelayedOrder,
@@ -189,6 +194,8 @@ contract('PerpsV2MarketSettings', accounts => {
 				offchainMarketKey,
 				offchainPriceDivergence,
 				liquidationPremiumMultiplier,
+				maxLiquidationDelta,
+				maxPD,
 			}).map(([key, val]) => {
 				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
 				return [key, val, perpsV2MarketSettings[`set${capKey}`], perpsV2MarketSettings[`${key}`]];
@@ -490,37 +497,37 @@ contract('PerpsV2MarketSettings', accounts => {
 		});
 	});
 
-	describe('setLiquidationBufferRatio()', () => {
-		let liquidationBufferRatio;
+	describe('setKeeperLiquidationFee()', () => {
+		let keeperLiquidationFee;
 		beforeEach(async () => {
-			liquidationBufferRatio = await perpsV2MarketSettings.liquidationBufferRatio();
+			keeperLiquidationFee = await perpsV2MarketSettings.keeperLiquidationFee();
 		});
-		it('should be able to change liquidationBufferRatio', async () => {
-			const originalValue = await perpsV2MarketSettings.liquidationBufferRatio();
-			await perpsV2MarketSettings.setLiquidationBufferRatio(originalValue.mul(toUnit(0.0002)), {
+		it('should be able to change keeperLiquidationFee', async () => {
+			const originalValue = await perpsV2MarketSettings.keeperLiquidationFee();
+			await perpsV2MarketSettings.setKeeperLiquidationFee(originalValue.mul(toBN(2)), {
 				from: owner,
 			});
-			const newValue = await perpsV2MarketSettings.liquidationBufferRatio.call();
-			assert.bnEqual(newValue, originalValue.mul(toUnit(0.0002)));
+			const newValue = await perpsV2MarketSettings.keeperLiquidationFee.call();
+			assert.bnEqual(newValue, originalValue.mul(toBN(2)));
 		});
 
-		it('only owner is permitted to change liquidationBufferRatio', async () => {
+		it('only owner is permitted to change keeperLiquidationFee', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: perpsV2MarketSettings.setLiquidationBufferRatio,
-				args: [liquidationBufferRatio.toString()],
+				fnc: perpsV2MarketSettings.setKeeperLiquidationFee,
+				args: [keeperLiquidationFee.toString()],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
-		it('should emit event on successful liquidationBufferRatio change', async () => {
+		it('should emit event on successful keeperLiquidationFee change', async () => {
 			const newValue = toBN(100);
-			const txn = await perpsV2MarketSettings.setLiquidationBufferRatio(newValue, {
+			const txn = await perpsV2MarketSettings.setKeeperLiquidationFee(newValue, {
 				from: owner,
 			});
-			assert.eventEqual(txn, 'LiquidationBufferRatioUpdated', {
-				bps: newValue,
+			assert.eventEqual(txn, 'KeeperLiquidationFeeUpdated', {
+				keeperFee: newValue,
 			});
 		});
 	});

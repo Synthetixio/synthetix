@@ -50,7 +50,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     function fillPrice(int sizeDelta) external view returns (uint price, bool invalid) {
-        (uint price, bool invalid) = _assetPrice();
+        (price, invalid) = _assetPrice();
         return (_fillPrice(sizeDelta, price), invalid);
     }
 
@@ -59,6 +59,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      */
     function fundingLastRecomputed() external view returns (uint32) {
         return marketState.fundingLastRecomputed();
+    }
+
+    /*
+     * The funding rate last time it was recomputed..
+     */
+    function fundingRateLastRecomputed() external view returns (int128) {
+        return marketState.fundingRateLastRecomputed();
     }
 
     /*
@@ -73,6 +80,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      */
     function positions(address account) external view returns (Position memory) {
         return marketState.positions(account);
+    }
+
+    /*
+     * Delayed Orders details
+     */
+    function delayedOrders(address account) external view returns (DelayedOrder memory) {
+        return marketState.delayedOrders(account);
     }
 
     /*
@@ -200,6 +214,13 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /*
+     * True if the position is already flagged for liquidation.
+     */
+    function isFlagged(address account) external view returns (bool) {
+        return marketState.isFlagged(account);
+    }
+
+    /*
      * True if and only if a position is ready to be liquidated.
      */
     function canLiquidate(address account) external view returns (bool) {
@@ -230,14 +251,15 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             return (0, true);
         }
 
+        uint fillPrice = _fillPrice(sizeDelta, price);
         TradeParams memory params =
             TradeParams({
                 sizeDelta: sizeDelta,
                 oraclePrice: price,
-                fillPrice: _fillPrice(sizeDelta, price),
+                fillPrice: fillPrice,
+                desiredFillPrice: fillPrice,
                 makerFee: makerFee,
                 takerFee: takerFee,
-                priceImpactDelta: 0, // price impact is not needed to calculate order fees.
                 trackingCode: bytes32(0)
             });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
@@ -291,10 +313,10 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             TradeParams({
                 sizeDelta: sizeDelta,
                 oraclePrice: tradePrice,
+                desiredFillPrice: tradePrice,
                 fillPrice: _fillPrice(sizeDelta, tradePrice),
                 makerFee: makerFee,
                 takerFee: takerFee,
-                priceImpactDelta: 0,
                 trackingCode: bytes32(0)
             });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(marketState.positions(sender), params);

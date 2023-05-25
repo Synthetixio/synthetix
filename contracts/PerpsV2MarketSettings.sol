@@ -16,6 +16,7 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
+    bytes32 public constant CONTRACT_NAME = "PerpsV2MarketSettings";
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
@@ -50,13 +51,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
      */
     function makerFee(bytes32 _marketKey) public view returns (uint) {
         return _makerFee(_marketKey);
-    }
-
-    /*
-     * The fee charged as commit fee if set. It will override the default calculation if this value is larger than  zero.
-     */
-    function overrideCommitFee(bytes32 _marketKey) external view returns (uint) {
-        return _parameter(_marketKey, PARAMETER_OVERRIDE_COMMIT_FEE);
     }
 
     /*
@@ -178,12 +172,32 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         return _liquidationPremiumMultiplier(_marketKey);
     }
 
+    /*
+     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
+     */
+    function liquidationBufferRatio(bytes32 _marketKey) external view returns (uint) {
+        return _liquidationBufferRatio(_marketKey);
+    }
+
+    /*
+     * The maximum price impact to allow an instantaneous liquidation.
+     */
+    function maxLiquidationDelta(bytes32 _marketKey) public view returns (uint) {
+        return _maxLiquidationDelta(_marketKey);
+    }
+
+    /*
+     * The maximum premium/discount to allow an instantaneous liquidation.
+     */
+    function maxPD(bytes32 _marketKey) public view returns (uint) {
+        return _maxPD(_marketKey);
+    }
+
     function parameters(bytes32 _marketKey) external view returns (Parameters memory) {
         return
             Parameters(
                 _takerFee(_marketKey),
                 _makerFee(_marketKey),
-                _overrideCommitFee(_marketKey),
                 _takerFeeDelayedOrder(_marketKey),
                 _makerFeeDelayedOrder(_marketKey),
                 _takerFeeOffchainDelayedOrder(_marketKey),
@@ -200,7 +214,10 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
                 _offchainDelayedOrderMaxAge(_marketKey),
                 _offchainMarketKey(_marketKey),
                 _offchainPriceDivergence(_marketKey),
-                _liquidationPremiumMultiplier(_marketKey)
+                _liquidationPremiumMultiplier(_marketKey),
+                _liquidationBufferRatio(_marketKey),
+                _maxLiquidationDelta(_marketKey),
+                _maxPD(_marketKey)
             );
     }
 
@@ -228,18 +245,18 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     }
 
     /*
-     * Liquidation price buffer in basis points to prevent negative margin on liquidation.
-     */
-    function liquidationBufferRatio() external view returns (uint) {
-        return _liquidationBufferRatio();
-    }
-
-    /*
      * The minimum margin required to open a position.
      * This quantity must be no less than `minKeeperFee`.
      */
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
+    }
+
+    /*
+     * The fixed fee sent to a keeper upon liquidation.
+     */
+    function keeperLiquidationFee() external view returns (uint) {
+        return _keeperLiquidationFee();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -263,10 +280,6 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     function setMakerFee(bytes32 _marketKey, uint _makerFee) public onlyOwner {
         require(_makerFee <= 1e18, "maker fee greater than 1");
         _setParameter(_marketKey, PARAMETER_MAKER_FEE, _makerFee);
-    }
-
-    function setOverrideCommitFee(bytes32 _marketKey, uint _overrideCommitFee) public onlyOwner {
-        _setParameter(_marketKey, PARAMETER_OVERRIDE_COMMIT_FEE, _overrideCommitFee);
     }
 
     function setTakerFeeDelayedOrder(bytes32 _marketKey, uint _takerFeeDelayedOrder) public onlyOwner {
@@ -367,11 +380,22 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         _setParameter(_marketKey, PARAMETER_LIQUIDATION_PREMIUM_MULTIPLIER, _liquidationPremiumMultiplier);
     }
 
+    function setLiquidationBufferRatio(bytes32 _marketKey, uint _ratio) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_LIQUIDATION_BUFFER_RATIO, _ratio);
+    }
+
+    function setMaxLiquidationDelta(bytes32 _marketKey, uint _maxLiquidationDelta) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_LIQUIDAION_DELTA, _maxLiquidationDelta);
+    }
+
+    function setMaxPD(bytes32 _marketKey, uint _maxPD) public onlyOwner {
+        _setParameter(_marketKey, PARAMETER_MAX_LIQUIDATION_PD, _maxPD);
+    }
+
     function setParameters(bytes32 _marketKey, Parameters calldata _parameters) external onlyOwner {
         _recomputeFunding(_marketKey);
         setTakerFee(_marketKey, _parameters.takerFee);
         setMakerFee(_marketKey, _parameters.makerFee);
-        setOverrideCommitFee(_marketKey, _parameters.overrideCommitFee);
         setMaxLeverage(_marketKey, _parameters.maxLeverage);
         setMaxMarketValue(_marketKey, _parameters.maxMarketValue);
         setMaxFundingVelocity(_marketKey, _parameters.maxFundingVelocity);
@@ -389,6 +413,9 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         setOffchainMarketKey(_marketKey, _parameters.offchainMarketKey);
         setOffchainPriceDivergence(_marketKey, _parameters.offchainPriceDivergence);
         setLiquidationPremiumMultiplier(_marketKey, _parameters.liquidationPremiumMultiplier);
+        setLiquidationBufferRatio(_marketKey, _parameters.liquidationBufferRatio);
+        setMaxLiquidationDelta(_marketKey, _parameters.maxLiquidationDelta);
+        setMaxPD(_marketKey, _parameters.maxPD);
     }
 
     function setMinKeeperFee(uint _sUSD) external onlyOwner {
@@ -412,15 +439,15 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
         emit LiquidationFeeRatioUpdated(_ratio);
     }
 
-    function setLiquidationBufferRatio(uint _ratio) external onlyOwner {
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_BUFFER_RATIO, _ratio);
-        emit LiquidationBufferRatioUpdated(_ratio);
-    }
-
     function setMinInitialMargin(uint _minMargin) external onlyOwner {
         require(_minKeeperFee() <= _minMargin, "min margin < liquidation fee");
         _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
         emit MinInitialMarginUpdated(_minMargin);
+    }
+
+    function setKeeperLiquidationFee(uint _keeperFee) external onlyOwner {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_LIQUIRATION_FEE, _keeperFee);
+        emit KeeperLiquidationFeeUpdated(_keeperFee);
     }
 
     /* ========== EVENTS ========== */
@@ -432,4 +459,5 @@ contract PerpsV2MarketSettings is Owned, MixinPerpsV2MarketSettings, IPerpsV2Mar
     event LiquidationFeeRatioUpdated(uint bps);
     event LiquidationBufferRatioUpdated(uint bps);
     event MinInitialMarginUpdated(uint minMargin);
+    event KeeperLiquidationFeeUpdated(uint keeperFee);
 }
