@@ -107,6 +107,74 @@
 		"asset": "ARB",
 		"feed": "0x8f14546d0B960793180ee355B73fA55041a4a356"
 	},
+	"APT": {
+		"asset": "APT",
+		"feed": "0x48f2EcF0Bd180239AEF474a9da945F2e2d41daA3"
+	},
+	"LDO": {
+		"asset": "LDO",
+		"feed": "0x221618871470f78D8a3391d35B77dFb3C0fbc383"
+	},
+	"ADA": {
+		"asset": "ADA",
+		"feed": "0x43dEa17DeE1ca50c6266acb59b32659E44D3ee5D"
+	},
+	"GMX": {
+		"asset": "GMX",
+		"feed": "0x62f42f70ba85De1086476bB6BADE926d0E0b8a4C"
+	},
+	"FIL": {
+		"asset": "FIL",
+		"feed": "0x66F61FEe824c1dF059BccCC5F21ca39e083EefDf"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"feed": "0x45954efBD01f5A12428A09E4C38b8434C3dD4Ac3"
+	},
+	"BCH": {
+		"asset": "BCH",
+		"feed": "0x33E047119359161288bcB143e0C15467C7151d4c"
+	},
+	"SHIB": {
+		"asset": "SHIB",
+		"feed": "0xd1e56e7657C0E0d20c0e11C2B6ae0D90932d5665"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"feed": "0xbD92C6c284271c227a1e0bF1786F468b539f51D9"
+	},
+	"PEPE": {
+		"asset": "PEPE",
+		"feed": "0x64Ecf089a6594Be781908D5a26FC8fA6CB08A2C7"
+	},
+	"SUI": {
+		"asset": "SUI",
+		"feed": "0xEaf1a9fe242aa9928faedc6CE7e09aD4875f7133"
+	},
+	"BLUR": {
+		"asset": "BLUR",
+		"feed": "0x517C2557c29F7c53Aa5F97a1DAE465E0d5C174AA"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"feed": "0x8788F0DBDa7678244Ac7FF09d963d7696D56A8a0"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x28e67BAeEB5dE7A788f3Dde6CF6ee491369Bb3Fa"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"feed": "0x0E09921cf7801A5aD47B892C8727593275625a9f"
+	},
+	"FLOKI": {
+		"asset": "FLOKI",
+		"feed": "0x34E0E85CeEc6be6146c4f0115769a29a9539222e"
+	},
+	"INJ": {
+		"asset": "INJ",
+		"feed": "0x90CC16F5493894eff84a5Fedd1dcE297d174fEEf"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",

@@ -137,9 +137,22 @@ contract PerpsV2MarketData {
         return _perpsV2MarketSettings().parameters(marketKey);
     }
 
+    function _isLegacyMarket(address[] memory legacyMarkets, address market) internal view returns (bool) {
+        for (uint i; i < legacyMarkets.length; i++) {
+            if (legacyMarkets[i] == market) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
+
+        // get mapping of legacyMarkets
+        address[] memory legacyMarkets = _futuresMarketManager().allMarkets(false);
+
         for (uint i; i < numMarkets; i++) {
             IPerpsV2MarketViews market = IPerpsV2MarketViews(markets[i]);
             bytes32 marketKey = market.marketKey();
@@ -148,6 +161,7 @@ contract PerpsV2MarketData {
 
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
+            bool isLegacy = _isLegacyMarket(legacyMarkets, markets[i]);
 
             summaries[i] = MarketSummary(
                 address(market),
@@ -159,7 +173,7 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                market.currentFundingVelocity(),
+                isLegacy ? 0 : market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,

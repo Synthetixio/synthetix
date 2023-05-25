@@ -122,7 +122,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	await instance.mockReturns(signature, responseAsEncodedData);
 };
 
-// Futures V2 Proxy
+// Perps V2 Proxy
 const excludedFunctions = [
 	// Owned
 	'nominateNewOwner',
@@ -133,7 +133,7 @@ const excludedFunctions = [
 	'resolver',
 	'resolverAddressesRequired',
 	'rebuildCache',
-	'isResolvedCache',
+	'isResolverCached',
 	// ProxyPerpsV2
 	'addRoute',
 	'removeRoute',
@@ -141,6 +141,11 @@ const excludedFunctions = [
 	'getRoutesLength',
 	'getRoutesPage',
 	'getAllTargets',
+	// Proxyable
+	'messageSender',
+	'setMessageSender',
+	'proxy',
+	'setProxy',
 	// PerpsV2MarketBase
 	'marketState',
 ];

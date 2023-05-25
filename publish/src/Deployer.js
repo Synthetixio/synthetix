@@ -399,7 +399,7 @@ class Deployer {
 		return new ethers.Contract(address, abi, this.signer);
 	}
 
-	getExistingContract({ contract }) {
+	getExistingContract({ contract, useDeployment = false }) {
 		let address;
 		if (this.network === 'local') {
 			// try find the last replaced contract
@@ -409,6 +409,8 @@ class Deployer {
 			({ address } = this.replacedContracts[contract]
 				? this.replacedContracts[contract]
 				: this.deployment.targets[contract]);
+		} else if (useDeployment === true) {
+			address = this.deployment.targets[contract].address;
 		} else {
 			const contractVersion = getVersions({
 				network: this.network,
