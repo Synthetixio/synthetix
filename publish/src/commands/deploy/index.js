@@ -29,14 +29,18 @@ const configureStandalonePriceFeeds = require('./configure-standalone-price-feed
 const configureOffchainPriceFeeds = require('./configure-offchain-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureFutures = require('./configure-futures');
-const configurePerpsV2 = require('./configure-perpsv2');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
 const deploySynths = require('./deploy-synths');
 const deployFutures = require('./deploy-futures');
-const deployPerpsV2 = require('./deploy-perpsv2');
+const {
+	deployPerpsV2Generics,
+	deployPerpsV2Markets,
+	cleanupPerpsV2,
+	configurePerpsV2GenericParams,
+} = require('./deploy-perpsv2');
 const generateSolidityOutput = require('./generate-solidity-output');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 const importAddresses = require('./import-addresses');
@@ -80,6 +84,9 @@ const deploy = async ({
 	yes,
 	includeFutures = false,
 	includePerpsV2 = false,
+	runPerpsV2Cleanup = false,
+	perpsV2Markets,
+	stepName = '',
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -265,7 +272,7 @@ const deploy = async ({
 		});
 
 		// only add to solidity steps when the transaction is NOT a no-op
-		if (!noop) {
+		if (!noop && !(overrides && overrides.generateSolidity === false)) {
 			runSteps.push(opts);
 		}
 
@@ -307,14 +314,13 @@ const deploy = async ({
 		useOvm,
 	});
 
-	console.log(gray(`\n------ DEPLOY FUTURES MARKETS MANAGER (Legacy and PerpsV2) ------\n`));
-
-	const { ReadProxyAddressResolver } = deployer.deployedContracts;
-	const futuresMarketManager = await deployer.deployContract({
-		name: 'FuturesMarketManager',
-		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
-		args: useOvm ? [account, addressOf(ReadProxyAddressResolver)] : [],
-		deps: ['ReadProxyAddressResolver'],
+	const { futuresMarketManager } = await deployPerpsV2Generics({
+		account,
+		addressOf,
+		deployer,
+		runStep,
+		useOvm,
+		limitPromise,
 	});
 
 	if (includeFutures) {
@@ -331,11 +337,11 @@ const deploy = async ({
 			futuresMarketManager,
 		});
 	} else {
-		console.log(gray(`\n------ EXCLUDE FUTURES MARKETS ------\n`));
+		console.log(gray(`\n------ EXCLUDE LEGACY FUTURES MARKETS ------\n`));
 	}
 
 	if (includePerpsV2) {
-		await deployPerpsV2({
+		await deployPerpsV2Markets({
 			account,
 			addressOf,
 			getDeployParameter,
@@ -346,9 +352,34 @@ const deploy = async ({
 			deploymentPath,
 			loadAndCheckRequiredSources,
 			futuresMarketManager,
+			generateSolidity,
+			yes,
+			specificMarkets: perpsV2Markets,
+			limitPromise,
 		});
 	} else {
 		console.log(gray(`\n------ EXCLUDE PERPS V2 MARKETS ------\n`));
+	}
+
+	if (runPerpsV2Cleanup) {
+		await cleanupPerpsV2({
+			account,
+			addressOf,
+			getDeployParameter,
+			deployer,
+			runStep,
+			useOvm,
+			network,
+			deploymentPath,
+			loadAndCheckRequiredSources,
+			futuresMarketManager,
+			generateSolidity,
+			yes,
+			specificMarkets: perpsV2Markets,
+			limitPromise,
+		});
+	} else {
+		console.log(gray(`\n------ SKIP PERPS V2 POST-DEPLOY CLEANUP STEP ------\n`));
 	}
 
 	await deployDappUtils({
@@ -494,20 +525,9 @@ const deploy = async ({
 		});
 	}
 
+	// Generic Perps V2 configuration
 	if (includePerpsV2) {
-		await configurePerpsV2({
-			addressOf,
-			deployer,
-			loadAndCheckRequiredSources,
-			runStep,
-			getDeployParameter,
-			useOvm,
-			freshDeploy,
-			deploymentPath,
-			network,
-			generateSolidity,
-			yes,
-		});
+		await configurePerpsV2GenericParams({ deployer, getDeployParameter, runStep, useOvm });
 	}
 
 	// await takeDebtSnapshotWhenRequired({
@@ -534,6 +554,7 @@ const deploy = async ({
 			runSteps,
 			sourceOf,
 			useOvm,
+			stepName,
 		});
 	}
 };
@@ -638,8 +659,17 @@ module.exports = {
 				'--include-perps-v2',
 				'Include PerpsV2 (deployment, configuration and offchain feeds)'
 			)
+			.option('--run-perps-v2-cleanup', 'Run PerpsV2 post-deployment cleanup')
+			.option(
+				'--perps-v2-markets <market...>',
+				'PerpsV2 Markets to deplot/upgrade. If not present will process all markets'
+			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'--step-name <value>',
+				'Optional: Step name to add to migration contract if generate solidity is used.'
+			)
 			.action(async (...args) => {
 				try {
 					await deploy(...args);

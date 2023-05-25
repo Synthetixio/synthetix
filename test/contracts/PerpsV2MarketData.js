@@ -1,6 +1,6 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { toBytes32 } = require('../..');
+const { toBytes32, constants } = require('../..');
 const { toUnit } = require('../utils')();
 const {
 	setupContract,
@@ -11,11 +11,13 @@ const {
 const { assert } = require('./common');
 const { setupPriceAggregators, updateAggregatorRates } = require('./helpers');
 
-const PerpsV2Market = artifacts.require('TestablePerpsV2Market');
+const PerpsV2Market = artifacts.require('TestablePerpsV2MarketEmpty');
 
 contract('PerpsV2MarketData', accounts => {
 	let addressResolver,
+		legacyFuturesMarket,
 		perpsV2Market,
+		perpsV2MarketHelper,
 		sethMarket,
 		futuresMarketManager,
 		perpsV2MarketSettings,
@@ -26,6 +28,7 @@ contract('PerpsV2MarketData', accounts => {
 		systemSettings,
 		marketKey,
 		baseAsset;
+
 	const keySuffix = '-perp';
 	const newMarketKey = toBytes32('sETH' + keySuffix);
 	const newAssetKey = toBytes32('sETH');
@@ -50,7 +53,9 @@ contract('PerpsV2MarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
+			FuturesMarketBTC: legacyFuturesMarket,
 			ProxyPerpsV2MarketBTC: perpsV2Market,
+			TestablePerpsV2MarketBTC: perpsV2MarketHelper,
 			FuturesMarketManager: futuresMarketManager,
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			PerpsV2MarketData: perpsV2MarketData,
@@ -66,6 +71,7 @@ contract('PerpsV2MarketData', accounts => {
 				'PerpsV2MarketSettings',
 				'PerpsV2MarketStateBTC',
 				'PerpsV2MarketViewsBTC',
+				'TestablePerpsV2MarketBTC',
 				'PerpsV2MarketBTC',
 				'PerpsV2MarketData',
 				'AddressResolver',
@@ -76,6 +82,7 @@ contract('PerpsV2MarketData', accounts => {
 				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
+				{ contract: 'FuturesMarketBTC', properties: { perpSuffix: keySuffix } },
 			],
 		}));
 
@@ -99,6 +106,7 @@ contract('PerpsV2MarketData', accounts => {
 					[owner],
 					assetKey, // base asset
 					marketKey,
+					constants.ZERO_ADDRESS,
 				],
 			});
 
@@ -123,16 +131,30 @@ contract('PerpsV2MarketData', accounts => {
 				args: [marketState.address, owner, addressResolver.address],
 			});
 
-			const marketDelayedOrder = await setupContract({
+			const marketDelayedIntent = await setupContract({
 				accounts,
-				contract: 'PerpsV2DelayedOrderAdded' + symbol,
-				source: 'PerpsV2MarketDelayedOrders',
+				contract: 'PerpsV2MarketDelayedIntentAdded' + symbol,
+				source: 'PerpsV2MarketDelayedIntent',
 				args: [market.address, marketState.address, owner, addressResolver.address],
 			});
 
-			await marketState.addAssociatedContracts([marketImpl.address, marketDelayedOrder.address], {
+			const marketDelayedExecution = await setupContract({
+				accounts,
+				contract: 'PerpsV2MarketDelayedExecutionAdded' + symbol,
+				source: 'PerpsV2MarketDelayedExecution',
+				args: [market.address, marketState.address, owner, addressResolver.address],
+			});
+
+			await marketState.linkOrInitializeState({
 				from: owner,
 			});
+
+			await marketState.addAssociatedContracts(
+				[marketImpl.address, marketDelayedIntent.address, marketDelayedExecution.address],
+				{
+					from: owner,
+				}
+			);
 
 			filteredFunctions = getFunctionSignatures(marketImpl, excludedFunctions);
 			await Promise.all(
@@ -152,10 +174,19 @@ contract('PerpsV2MarketData', accounts => {
 				)
 			);
 
-			filteredFunctions = getFunctionSignatures(marketDelayedOrder, excludedFunctions);
+			filteredFunctions = getFunctionSignatures(marketDelayedIntent, excludedFunctions);
 			await Promise.all(
 				filteredFunctions.map(e =>
-					market.addRoute(e.signature, marketDelayedOrder.address, e.isView, {
+					market.addRoute(e.signature, marketDelayedIntent.address, e.isView, {
+						from: owner,
+					})
+				)
+			);
+
+			filteredFunctions = getFunctionSignatures(marketDelayedExecution, excludedFunctions);
+			await Promise.all(
+				filteredFunctions.map(e =>
+					market.addRoute(e.signature, marketDelayedExecution.address, e.isView, {
 						from: owner,
 					})
 				)
@@ -166,7 +197,12 @@ contract('PerpsV2MarketData', accounts => {
 			});
 
 			await addressResolver.rebuildCaches(
-				[marketImpl.address, marketViews.address, marketDelayedOrder.address],
+				[
+					marketImpl.address,
+					marketViews.address,
+					marketDelayedIntent.address,
+					marketDelayedExecution.address,
+				],
 				{
 					from: owner,
 				}
@@ -181,7 +217,6 @@ contract('PerpsV2MarketData', accounts => {
 				[
 					toUnit('0.005'), // 0.5% taker fee
 					toUnit('0.001'), // 0.1% maker fee
-					toUnit('0'), // 0% override commit fee for delayed/offchain order
 					toUnit('0.0005'), // 0.05% taker fee delayed order
 					toUnit('0'), // 0% maker fee delayed order
 					toUnit('0.00005'), // 0.005% taker fee offchain delayed order
@@ -204,6 +239,9 @@ contract('PerpsV2MarketData', accounts => {
 					toUnit('0.05'),
 
 					toUnit('1'), // 1 liquidation premium multiplier
+					toUnit('0.0025'), // liquidation buffer ratio
+					toUnit('0'),
+					toUnit('0'),
 				],
 				{ from: owner }
 			);
@@ -224,20 +262,42 @@ contract('PerpsV2MarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
+		let desiredFillPrice;
+
+		// 1
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('5'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('1000'), { from: trader1 });
-		await perpsV2Market.modifyPosition(toUnit('5'), priceImpactDelta, { from: trader1 });
+		await perpsV2Market.modifyPosition(toUnit('5'), desiredFillPrice, { from: trader1 });
 
+		// 2
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('-10'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('750'), { from: trader2 });
-		await perpsV2Market.modifyPosition(toUnit('-10'), priceImpactDelta, { from: trader2 });
+		await perpsV2Market.modifyPosition(toUnit('-10'), desiredFillPrice, { from: trader2 });
 
+		// 3
 		await setPrice(baseAsset, toUnit('100'));
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(toUnit('1.25'), priceImpactDelta, 0)
+		)[1];
 		await perpsV2Market.transferMargin(toUnit('4000'), { from: trader3 });
-		await perpsV2Market.modifyPosition(toUnit('1.25'), priceImpactDelta, { from: trader3 });
+		await perpsV2Market.modifyPosition(toUnit('1.25'), desiredFillPrice, { from: trader3 });
 
 		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
+		// 4
+		desiredFillPrice = (
+			await perpsV2MarketHelper.fillPriceWithMeta(
+				toUnit('4'),
+				priceImpactDelta,
+				(await sethMarket.assetPrice())[0]
+			)
+		)[1];
 		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), priceImpactDelta, { from: trader3 });
+		await sethMarket.modifyPosition(toUnit('4'), desiredFillPrice, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 
@@ -260,11 +320,6 @@ contract('PerpsV2MarketData', accounts => {
 				globals.liquidationFeeRatio
 			);
 			assert.bnEqual(globals.liquidationFeeRatio, toUnit('0.0035'));
-			assert.bnEqual(
-				await perpsV2MarketSettings.liquidationBufferRatio(),
-				globals.liquidationBufferRatio
-			);
-			assert.bnEqual(globals.liquidationBufferRatio, toUnit('0.0025'));
 		});
 	});
 
@@ -278,7 +333,6 @@ contract('PerpsV2MarketData', accounts => {
 			assert.equal(details.baseAsset, baseAsset);
 			assert.bnEqual(details.feeRates.takerFee, params.takerFee);
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
-			assert.bnEqual(details.feeRates.overrideCommitFee, params.overrideCommitFee);
 			assert.bnEqual(details.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
 			assert.bnEqual(details.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.bnEqual(
@@ -388,6 +442,23 @@ contract('PerpsV2MarketData', accounts => {
 			);
 		});
 
+		it('For market keys with legacy markets', async () => {
+			const summaries1 = await perpsV2MarketData.marketSummaries([legacyFuturesMarket.address]);
+			assert.equal(summaries1.length, 1);
+
+			// Velocity is _not_ a feature in legacy v1 markets. When summaries called on legacy markets, velocity should
+			// default and not throw a revert.
+			assert.equal(summaries1[0].currentFundingVelocity, 0);
+
+			// Multiple markets (one legacy, one v2).
+			const summaries2 = await perpsV2MarketData.marketSummaries([
+				legacyFuturesMarket.address,
+				perpsV2Market.address,
+			]);
+			assert.equal(summaries2.length, 2);
+			assert.equal(summaries2[0].currentFundingVelocity, 0);
+		});
+
 		it('For market keys', async () => {
 			const summaries = await perpsV2MarketData.marketSummaries([
 				perpsV2Market.address,
@@ -402,9 +473,11 @@ contract('PerpsV2MarketData', accounts => {
 		it('All summaries', async () => {
 			const summaries = await perpsV2MarketData.allMarketSummaries();
 
-			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
-			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
-			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
+			const sBTCSummary = summaries.find(summary => summary.key === toBytes32('sBTC'));
+			const sETHSummary = summaries.find(summary => summary.key === toBytes32('sETH' + keySuffix));
+			const sLINKSummary = summaries.find(
+				summary => summary.key === toBytes32('sLINK' + keySuffix)
+			);
 
 			const fmParams = await perpsV2MarketData.parameters(marketKey);
 

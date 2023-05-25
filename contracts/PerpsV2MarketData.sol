@@ -16,7 +16,6 @@ contract PerpsV2MarketData {
     struct FuturesGlobals {
         uint minInitialMargin;
         uint liquidationFeeRatio;
-        uint liquidationBufferRatio;
         uint minKeeperFee;
         uint maxKeeperFee;
     }
@@ -69,13 +68,6 @@ contract PerpsV2MarketData {
         uint makerFeeDelayedOrder;
         uint takerFeeOffchainDelayedOrder;
         uint makerFeeOffchainDelayedOrder;
-        uint overrideCommitFee;
-    }
-
-    struct FundingDetails {
-        int currentFundingRate;
-        int unrecordedFunding;
-        uint fundingLastRecomputed;
     }
 
     struct MarketData {
@@ -132,7 +124,6 @@ contract PerpsV2MarketData {
             FuturesGlobals({
                 minInitialMargin: settings.minInitialMargin(),
                 liquidationFeeRatio: settings.liquidationFeeRatio(),
-                liquidationBufferRatio: settings.liquidationBufferRatio(),
                 minKeeperFee: settings.minKeeperFee(),
                 maxKeeperFee: settings.maxKeeperFee()
             });
@@ -146,9 +137,22 @@ contract PerpsV2MarketData {
         return _perpsV2MarketSettings().parameters(marketKey);
     }
 
+    function _isLegacyMarket(address[] memory legacyMarkets, address market) internal view returns (bool) {
+        for (uint i; i < legacyMarkets.length; i++) {
+            if (legacyMarkets[i] == market) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
+
+        // get mapping of legacyMarkets
+        address[] memory legacyMarkets = _futuresMarketManager().allMarkets(false);
+
         for (uint i; i < numMarkets; i++) {
             IPerpsV2MarketViews market = IPerpsV2MarketViews(markets[i]);
             bytes32 marketKey = market.marketKey();
@@ -157,6 +161,7 @@ contract PerpsV2MarketData {
 
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
+            bool isLegacy = _isLegacyMarket(legacyMarkets, markets[i]);
 
             summaries[i] = MarketSummary(
                 address(market),
@@ -168,15 +173,14 @@ contract PerpsV2MarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                market.currentFundingVelocity(),
+                isLegacy ? 0 : market.currentFundingVelocity(),
                 FeeRates(
                     params.takerFee,
                     params.makerFee,
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder,
-                    params.overrideCommitFee
+                    params.makerFeeOffchainDelayedOrder
                 )
             );
         }
@@ -232,8 +236,7 @@ contract PerpsV2MarketData {
                     params.takerFeeDelayedOrder,
                     params.makerFeeDelayedOrder,
                     params.takerFeeOffchainDelayedOrder,
-                    params.makerFeeOffchainDelayedOrder,
-                    params.overrideCommitFee
+                    params.makerFeeOffchainDelayedOrder
                 ),
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),

@@ -19,7 +19,9 @@ interface IPerpsV2MarketBaseTypes {
         NilOrder,
         NoPositionOpen,
         PriceTooVolatile,
-        PriceImpactToleranceExceeded
+        PriceImpactToleranceExceeded,
+        PositionFlagged,
+        PositionNotFlagged
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
@@ -35,7 +37,7 @@ interface IPerpsV2MarketBaseTypes {
     struct DelayedOrder {
         bool isOffchain; // flag indicating the delayed order is offchain
         int128 sizeDelta; // difference in position to pass to modifyPosition
-        uint128 priceImpactDelta; // price impact tolerance as a percentage used on fillPrice at execution
+        uint128 desiredFillPrice; // desired fill price as usd used on fillPrice at execution
         uint128 targetRoundId; // price oracle roundId using which price this order needs to executed
         uint128 commitDeposit; // the commitDeposit paid upon submitting that needs to be refunded if order succeeds
         uint128 keeperDeposit; // the keeperDeposit paid upon submitting that needs to be paid / refunded on tx confirmation

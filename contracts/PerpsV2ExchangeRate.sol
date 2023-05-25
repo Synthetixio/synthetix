@@ -157,7 +157,7 @@ contract PerpsV2ExchangeRate is Owned, ReentrancyGuard, MixinSystemSettings {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyAssociatedContracts {
+    modifier onlyAssociatedContracts() {
         require(_associatedContracts.contains(msg.sender), "Only an associated contract can perform this action");
         _;
     }

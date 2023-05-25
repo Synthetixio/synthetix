@@ -36,6 +36,7 @@ async function deployInstance({
 	skipFeedChecks = true,
 	useFork = false,
 	useOvm,
+	ignoreSafetyChecks = false,
 }) {
 	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
@@ -56,6 +57,8 @@ async function deployInstance({
 		yes: true,
 		includeFutures: true,
 		includePerpsV2: true,
+		runPerpsV2Cleanup: true,
+		ignoreSafetyChecks,
 	});
 }
 

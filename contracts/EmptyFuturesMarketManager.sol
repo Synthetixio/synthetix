@@ -61,4 +61,22 @@ contract EmptyFuturesMarketManager is IFuturesMarketManager {
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         return (0, false);
     }
+
+    function isEndorsed(address account) external view returns (bool) {
+        account;
+        return false;
+    }
+
+    function allEndorsedAddresses() external view returns (address[] memory) {
+        address[] memory _endorsedAddresses;
+        return _endorsedAddresses;
+    }
+
+    function addEndorsedAddresses(address[] calldata addresses) external {
+        addresses;
+    }
+
+    function removeEndorsedAddresses(address[] calldata addresses) external {
+        addresses;
+    }
 }

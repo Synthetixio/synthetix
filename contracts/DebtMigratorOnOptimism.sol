@@ -44,12 +44,30 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         require(success, string(abi.encode("finalize debt call failed:", result)));
     }
 
-    function _finalizeEscrow(bytes memory _escrowPayload) private {
-        address target = address(_rewardEscrowV2()); // target is the RewardEscrowV2 contract on Optimism.
+    function _finalizeEscrow(address account, uint escrowMigrated) private {
+        uint numEntries = 10;
+        uint duration = 8 weeks;
 
-        // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(_escrowPayload);
-        require(success, string(abi.encode("finalize escrow call failed:", result)));
+        // Split up the full amount of migrated escrow into ten chunks.
+        uint amountPerEntry = escrowMigrated.multiplyDecimal(1e17);
+
+        // Make sure to approve the creation of the escrow entries.
+        _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
+
+        // Create ten distinct entries that vest each month for a year. First entry vests in 8 weeks.
+        uint amountEscrowed = 0;
+        for (uint i = 0; i < numEntries; i++) {
+            if (i == numEntries - 1) {
+                // Use the remaining amount of escrow for the last entry to avoid rounding issues.
+                uint remaining = escrowMigrated.sub(amountEscrowed);
+                _rewardEscrowV2().createEscrowEntry(account, remaining, duration);
+            } else {
+                _rewardEscrowV2().createEscrowEntry(account, amountPerEntry, duration);
+            }
+
+            duration += 4 weeks;
+            amountEscrowed += amountPerEntry;
+        }
     }
 
     /* ========== MODIFIERS ============ */
@@ -72,16 +90,13 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         uint debtSharesMigrated,
         uint escrowMigrated,
         uint liquidSnxMigrated,
-        bytes calldata debtPayload,
-        bytes calldata escrowPayload
+        bytes calldata debtPayload
     ) external onlyCounterpart {
         _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtSharesMigrated);
         _finalizeDebt(debtPayload);
 
         if (escrowMigrated > 0) {
-            // Make sure to approve the creation of the escrow entry.
-            _synthetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
-            _finalizeEscrow(escrowPayload);
+            _finalizeEscrow(account, escrowMigrated);
         }
 
         if (liquidSnxMigrated > 0) {
