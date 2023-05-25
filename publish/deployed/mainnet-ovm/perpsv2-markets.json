@@ -185,7 +185,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "70000000",
 		"maxFundingVelocity": "9",
-		"skewScale": "665500000",
+		"skewScale": "732050000",
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocDOGEPERP",
@@ -323,7 +323,7 @@
 		"offchainDelayedOrderMinAge": "15",
 		"offchainDelayedOrderMaxAge": "120",
 		"maxLeverage": "27.5",
-		"maxMarketValue": "700000",
+		"maxMarketValue": "1200000",
 		"maxFundingVelocity": "9",
 		"skewScale": "30000000",
 		"offchainPriceDivergence": "0.02",
@@ -437,7 +437,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "100000",
 		"maxFundingVelocity": "9",
-		"skewScale": "4000000",
+		"skewScale": "4400000",
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocUNIPERP",
@@ -465,7 +465,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "800000",
 		"maxFundingVelocity": "9",
-		"skewScale": "10000000",
+		"skewScale": "11000000",
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocDYDXPERP",
@@ -521,7 +521,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "100000",
 		"maxFundingVelocity": "9",
-		"skewScale": "5000000",
+		"skewScale": "5500000",
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocFLOWPERP",
@@ -857,7 +857,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "6000",
 		"maxFundingVelocity": "9",
-		"skewScale": "340000",
+		"skewScale": "374000",
 		"offchainPriceDivergence": "0.02",
 		"liquidationPremiumMultiplier": "3",
 		"offchainMarketKey": "ocBCHPERP",
@@ -948,8 +948,8 @@
 		"liquidationBufferRatio": "0.0125",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sSUIPERP",
@@ -976,8 +976,8 @@
 		"liquidationBufferRatio": "0.0125",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sBLURPERP",
@@ -1004,8 +1004,8 @@
 		"liquidationBufferRatio": "0.0125",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sXRPPERP",
@@ -1032,8 +1032,8 @@
 		"liquidationBufferRatio": "0.0100",
 		"maxPD": "0.0020",
 		"maxLiquidationDelta": "0.0010",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sDOTPERP",
@@ -1060,8 +1060,8 @@
 		"liquidationBufferRatio": "0.0100",
 		"maxPD": "0.0020",
 		"maxLiquidationDelta": "0.0010",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sTRXPERP",
@@ -1116,8 +1116,8 @@
 		"liquidationBufferRatio": "0.0125",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sINJPERP",
@@ -1144,7 +1144,7 @@
 		"liquidationBufferRatio": "0.0125",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
