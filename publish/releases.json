@@ -907,6 +907,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2021,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1733,6 +1738,15 @@
 			},
 			"sips": [2014, 2015],
 			"released": true
+		},
+		{
+			"name": "Merak (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 90
+			},
+			"sips": [2021]
 		}
 	]
 }

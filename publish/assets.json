@@ -560,5 +560,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Injective"
+	},
+	"STETH": {
+		"asset": "STETH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Lido Staked ETH"
 	}
 }
