@@ -1146,5 +1146,33 @@
 		"maxLiquidationDelta": "0.0012",
 		"paused": false,
 		"offchainPaused": false
+	},
+	{
+		"marketKey": "sSTETHPERP",
+		"asset": "STETH",
+		"makerFee": "0.3",
+		"takerFee": "0.3",
+		"takerFeeDelayedOrder": "0.3",
+		"makerFeeDelayedOrder": "0.3",
+		"takerFeeOffchainDelayedOrder": "0.0010",
+		"makerFeeOffchainDelayedOrder": "0.0002",
+		"nextPriceConfirmWindow": "2",
+		"delayedOrderConfirmWindow": "120",
+		"minDelayTimeDelta": "60",
+		"maxDelayTimeDelta": "6000",
+		"offchainDelayedOrderMinAge": "4",
+		"offchainDelayedOrderMaxAge": "60",
+		"maxLeverage": "27.5",
+		"maxMarketValue": "200000",
+		"maxFundingVelocity": "9",
+		"skewScale": "6275000",
+		"offchainPriceDivergence": "0.02",
+		"liquidationPremiumMultiplier": "3",
+		"offchainMarketKey": "ocSTETHPERP",
+		"liquidationBufferRatio": "0.0125",
+		"maxPD": "0.0024",
+		"maxLiquidationDelta": "0.0012",
+		"paused": true,
+		"offchainPaused": true
 	}
 ]
