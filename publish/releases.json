@@ -911,7 +911,8 @@
 		{
 			"sip": 2021,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1746,7 +1747,8 @@
 				"major": 2,
 				"minor": 90
 			},
-			"sips": [2021]
+			"sips": [2021],
+			"released": true
 		}
 	]
 }
