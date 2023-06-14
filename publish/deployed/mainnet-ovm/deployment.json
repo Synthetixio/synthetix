@@ -251,7 +251,7 @@
 				"0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
 				"0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE",
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"101812103301902538188565358",
+				"103304020128869986104962018",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -5577,6 +5577,106 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x4C35c27fF8F0dD039B4C4F0D670f2D58f6215c9C",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxySTETHPERP": {
+			"name": "PerpsV2ProxySTETHPERP",
+			"address": "0xD91Db82733987513286B81e7115091d96730b62A",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xD91Db82733987513286B81e7115091d96730b62A",
+			"timestamp": "2023-06-14T15:07:53.548Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateSTETHPERP": {
+			"name": "PerpsV2MarketStateSTETHPERP",
+			"address": "0x777A913412D576532120ac1d266d4C908e584DB2",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x777A913412D576532120ac1d266d4C908e584DB2",
+			"timestamp": "2023-06-14T15:08:07.674Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5354455448000000000000000000000000000000000000000000000000000000",
+				"0x7353544554485045525000000000000000000000000000000000000000000000",
+				"0x777A913412D576532120ac1d266d4C908e584DB2"
+			]
+		},
+		"PerpsV2MarketSTETHPERP": {
+			"name": "PerpsV2MarketSTETHPERP",
+			"address": "0x69125856Cfbadba925CE8345D0A5dE98F375920E",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x69125856Cfbadba925CE8345D0A5dE98F375920E",
+			"timestamp": "2023-06-14T15:08:21.905Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xD91Db82733987513286B81e7115091d96730b62A",
+				"0x777A913412D576532120ac1d266d4C908e584DB2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateSTETHPERP": {
+			"name": "PerpsV2MarketLiquidateSTETHPERP",
+			"address": "0xFD306A2B2e78E35F573f8593aeeD50d07ceAB6BD",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xFD306A2B2e78E35F573f8593aeeD50d07ceAB6BD",
+			"timestamp": "2023-06-14T15:08:35.844Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xD91Db82733987513286B81e7115091d96730b62A",
+				"0x777A913412D576532120ac1d266d4C908e584DB2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentSTETHPERP": {
+			"name": "PerpsV2DelayedIntentSTETHPERP",
+			"address": "0x9B0071d4Ee4a078dbdD5100799D8eA700A6dA709",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x9B0071d4Ee4a078dbdD5100799D8eA700A6dA709",
+			"timestamp": "2023-06-14T15:08:49.991Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xD91Db82733987513286B81e7115091d96730b62A",
+				"0x777A913412D576532120ac1d266d4C908e584DB2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionSTETHPERP": {
+			"name": "PerpsV2DelayedExecutionSTETHPERP",
+			"address": "0x02e85b8dD638a5FabD9D67802A92721D2e18fc6d",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x02e85b8dD638a5FabD9D67802A92721D2e18fc6d",
+			"timestamp": "2023-06-14T15:09:04.261Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xD91Db82733987513286B81e7115091d96730b62A",
+				"0x777A913412D576532120ac1d266d4C908e584DB2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsSTETHPERP": {
+			"name": "PerpsV2MarketViewsSTETHPERP",
+			"address": "0x0060b9F4eaA97b310Bf74947EdCdFE2967e54D7d",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x0060b9F4eaA97b310Bf74947EdCdFE2967e54D7d",
+			"timestamp": "2023-06-14T15:09:18.092Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x777A913412D576532120ac1d266d4C908e584DB2",
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
