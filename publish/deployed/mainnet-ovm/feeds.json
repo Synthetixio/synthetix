@@ -175,6 +175,10 @@
 		"asset": "INJ",
 		"feed": "0x90CC16F5493894eff84a5Fedd1dcE297d174fEEf"
 	},
+	"STETH": {
+		"asset": "STETH",
+		"feed": "0x41878779a388585509657CE5Fb95a80050502186"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
