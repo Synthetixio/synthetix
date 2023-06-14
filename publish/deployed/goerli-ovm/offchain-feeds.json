@@ -5,7 +5,6 @@
 		"asset": "sETH",
 		"feedId": "0xca80ba6dc32e08d06f1aa886011eed1d77c77be9eb761cc10d72b7d0a2fd57a6"
 	},
-
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
@@ -141,5 +140,120 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "GBP",
 		"feedId": "0xbcbdc2755bd74a2065f9d3283c2b8acbd898e473bdb90a6764b3dbd467c56ecd"
+	},
+
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ARB",
+		"feedId": "0x37f40d2898159e8f2e52b93cb78f47cc3829a31e525ab975c49cc5c5d9176378"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "APT",
+		"feedId": "0x44a93dddd8effa54ea51076c4e851b6cbbfd938e82eb90197de38fe8876bb66e"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "LDO",
+		"feedId": "0x69b9ca2e7159fe570844c22bac849c490e0ddfd0349626c19fd7d65509e192a3"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ADA",
+		"feedId": "0x73dc009953c83c944690037ea477df627657f45c14f16ad3a61089c5a3f9f4f2"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "GMX",
+		"feedId": "0x4b57c2471f6ab9250d26b7e0ff8807bfd620a609503f52b0b67645f69eb2d5c5"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FIL",
+		"feedId": "0xb5622d32f36dc820af288aab779133ef1205d3123bbe256603849b820de48b87"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "LTC",
+		"feedId": "0x997e0bf451cb36b4aea096e6b5c254d700922211dd933d9d17c467f0d6f34321"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BCH",
+		"feedId": "0x30029479598797290e3638a1712c29bde2367d0eca794f778b25b5a472f192de"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "SHIB",
+		"feedId": "0x672fbb7d9ec665cfbe8c2ffa643ba321a047b7a72d7b6d7c3d8fb120fc40954b"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "CRV",
+		"feedId": "0x94bce4aee88fdfa5b58d81090bd6b3784717fa6df85419d9f04433bb3d615d5c"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PEPE",
+		"feedId": "0xed82efbfade01083ffa8f64664c86af39282c9f084877066ae72b635e77718f0"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "SUI",
+		"feedId": "0x50c67b3fd225db8912a424dd4baed60ffdde625ed2feaaf283724f9608fea266"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BLUR",
+		"feedId": "0xbe2dbc97659e92bf07462aeda414195246515e6b17abd6997f0ab2297cb03e1d"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "XRP",
+		"feedId": "0xbfaf7739cb6fe3e1c57a0ac08e1d931e9e6062d476fa57804e165ab572b5b621"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "DOT",
+		"feedId": "0x36032e522b810babd8e3148e9f0d588af9e95e93b97ffb58566b837fdbd31f7f"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TRX",
+		"feedId": "0x013317758a5b499650d72edcd7ba12bb5cc54ce9434196b607fa5e01e0f7797b"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FLOKI",
+		"feedId": "0x57596fe1a697014b962ac9e693dee99c4bb01d6c5eca271a1a26ad475a92cdbd"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "INJ",
+		"feedId": "0x2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "STETH",
+		"feedId": "0xb7abd25a76ddaffdf847224f03198ccb92723f90b2429cf33f0eecb96e352a86"
 	}
 ]

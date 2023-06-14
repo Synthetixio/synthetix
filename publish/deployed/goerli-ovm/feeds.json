@@ -59,6 +59,10 @@
 		"asset": "BNB",
 		"feed": "0x99fc60321a196794725E6D0c572143eb2F881edB"
 	},
+	"OP": {
+		"asset": "OP",
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
 	"XMR": {
 		"asset": "XMR",
 		"feed": "0xaA4D946f4b081Cc6c2F30b4e343E15c8455DDfFB"
@@ -67,13 +71,13 @@
 		"asset": "DOGE",
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
-	"OP": {
-		"asset": "OP",
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
-	},
 	"ATOM": {
 		"asset": "ATOM",
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"feed": "0x881B413aAf96FEAbb4C92b0C639aa5a7eD746AC8"
 	},
 	"FLOW": {
 		"asset": "FLOW",
@@ -87,10 +91,6 @@
 		"asset": "NEAR",
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
-	"AXS": {
-		"asset": "AXS",
-		"feed": "0x881B413aAf96FEAbb4C92b0C639aa5a7eD746AC8"
-	},
 	"AUD": {
 		"asset": "AUD",
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
@@ -98,5 +98,77 @@
 	"GBP": {
 		"asset": "GBP",
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
+	},
+	"ARB": {
+		"asset": "ARB",
+		"feed": "0x9755f74E6a1a39C0b082Bf56Df8fb6B154368334"
+	},
+	"APT": {
+		"asset": "APT",
+		"feed": "0x799796E8aBB38b135Ac1306d66b4eD63798E10Ce"
+	},
+	"LDO": {
+		"asset": "LDO",
+		"feed": "0xD410bf49381E2f70Aa199fe0F2b666F392b9594d"
+	},
+	"ADA": {
+		"asset": "ADA",
+		"feed": "0xefF5103d97DF5fd65a3F3Fa39670B7255e8FBb88"
+	},
+	"GMX": {
+		"asset": "GMX",
+		"feed": "0xc7ac2522d46852D0Aef803F03CFf1B691530dd82"
+	},
+	"FIL": {
+		"asset": "FIL",
+		"feed": "0xAc01483Da6C9Fb24a3192ab9C53AEb145c7144A7"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"feed": "0x025600F206C83854D33209Adceb23840f2963700"
+	},
+	"BCH": {
+		"asset": "BCH",
+		"feed": "0x1e206027f9da699Eb3A364899D210F1EB4a98e18"
+	},
+	"SHIB": {
+		"asset": "SHIB",
+		"feed": "0xc6cC2F2eB966E9bfc1A91f79ae1f557F2eC7201E"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"feed": "0xC4378Fd42dB9DADB7fA5388bb0DcAB8489CDf29E"
+	},
+	"PEPE": {
+		"asset": "PEPE",
+		"feed": "0x6Bd7c80AD4848ef051458EeFa57Eb8F901a765c3"
+	},
+	"SUI": {
+		"asset": "SUI",
+		"feed": "0x7ae188cb3677a4243567e553312978b09994dcaE"
+	},
+	"BLUR": {
+		"asset": "BLUR",
+		"feed": "0x182573EE17BDcFd25131c8B42792658e483D0548"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"feed": "0x9A01cC5751D109C9A5EA45fc5a60b4af55Cdf23d"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x683677Fe19c36006163292b721a46AFaeaD9683C"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"feed": "0x1ed7edef56F35b10688dF6255B52DfCDE1856eE8"
+	},
+	"FLOKI": {
+		"asset": "FLOKI",
+		"feed": "0xa8bbc836E8858952815876A5f90b37b622faBb9d"
+	},
+	"INJ": {
+		"asset": "INJ",
+		"feed": "0xe38bCB5333C6a6EE0B6C5dA479fd03cD99c66547"
 	}
 }

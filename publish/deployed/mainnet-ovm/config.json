@@ -290,12 +290,6 @@
 	"PerpsV2MarketViewsETHPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderETHPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderETHPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyBTCPERP": {
 		"deploy": false
 	},
@@ -306,12 +300,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderBTCPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyLINKPERP": {
@@ -326,12 +314,6 @@
 	"PerpsV2MarketViewsLINKPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderLINKPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxySOLPERP": {
 		"deploy": false
 	},
@@ -342,12 +324,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderSOLPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyAVAXPERP": {
@@ -362,12 +338,6 @@
 	"PerpsV2MarketViewsAVAXPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAVAXPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyAAVEPERP": {
 		"deploy": false
 	},
@@ -378,12 +348,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAAVEPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyUNIPERP": {
@@ -398,12 +362,6 @@
 	"PerpsV2MarketViewsUNIPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderUNIPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyMATICPERP": {
 		"deploy": false
 	},
@@ -414,12 +372,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderMATICPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyAPEPERP": {
@@ -434,12 +386,6 @@
 	"PerpsV2MarketViewsAPEPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAPEPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyDYDXPERP": {
 		"deploy": false
 	},
@@ -450,12 +396,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderDYDXPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyBNBPERP": {
@@ -470,12 +410,6 @@
 	"PerpsV2MarketViewsBNBPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderBNBPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyOPPERP": {
 		"deploy": false
 	},
@@ -486,12 +420,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderOPPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyDOGEPERP": {
@@ -506,12 +434,6 @@
 	"PerpsV2MarketViewsDOGEPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderDOGEPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyXAUPERP": {
 		"deploy": false
 	},
@@ -522,12 +444,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderXAUPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyXAGPERP": {
@@ -542,12 +458,6 @@
 	"PerpsV2MarketViewsXAGPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderXAGPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyEURPERP": {
 		"deploy": false
 	},
@@ -558,12 +468,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderEURPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyATOMPERP": {
@@ -578,12 +482,6 @@
 	"PerpsV2MarketViewsATOMPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderATOMPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyAXSPERP": {
 		"deploy": false
 	},
@@ -594,12 +492,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAXSPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyFLOWPERP": {
@@ -614,12 +506,6 @@
 	"PerpsV2MarketViewsFLOWPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderFLOWPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyFTMPERP": {
 		"deploy": false
 	},
@@ -630,12 +516,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderFTMPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyNEARPERP": {
@@ -650,12 +530,6 @@
 	"PerpsV2MarketViewsNEARPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderNEARPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyAUDPERP": {
 		"deploy": false
 	},
@@ -666,12 +540,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAUDPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyGBPPERP": {
@@ -686,12 +554,6 @@
 	"PerpsV2MarketViewsGBPPERP": {
 		"deploy": false
 	},
-	"PerpsV2DelayedOrderGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderGBPPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyARBPERP": {
 		"deploy": false
 	},
@@ -702,12 +564,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsARBPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderARBPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderARBPERP": {
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateBNBPERP": {
@@ -1281,6 +1137,27 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsINJPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxySTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateSTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketSTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateSTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentSTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionSTETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsSTETHPERP": {
 		"deploy": false
 	}
 }
