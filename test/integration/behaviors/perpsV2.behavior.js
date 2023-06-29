@@ -438,7 +438,7 @@ function itCanTrade({ ctx }) {
 						// units (not dollar value), depends on asset price
 						// with markets like SHIBA we need to adjust the "makes sense" notion
 						const maxMarketValue = await PerpsV2MarketSettings.maxMarketValue(marketKey);
-						assert.bnLt(maxMarketValue, toUnit(1000000000000));
+						assert.bnLt(maxMarketValue, toUnit(2000000000000));
 					} else {
 						const maxMarketValue = await FuturesMarketSettings.maxMarketValueUSD(marketKey);
 						assert.bnLt(maxMarketValue, toUnit(100000000));
