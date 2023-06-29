@@ -170,5 +170,9 @@
 	"INJ": {
 		"asset": "INJ",
 		"feed": "0xe38bCB5333C6a6EE0B6C5dA479fd03cD99c66547"
+	},
+	"STETH": {
+		"asset": "STETH",
+		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
 	}
 }
