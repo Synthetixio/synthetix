@@ -179,6 +179,22 @@
 		"asset": "STETH",
 		"feed": "0x41878779a388585509657CE5Fb95a80050502186"
 	},
+	"MAV": {
+		"asset": "MAV",
+		"feed": "0x111"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"feed": "0x111"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"feed": "0x111"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"feed": "0x111"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",

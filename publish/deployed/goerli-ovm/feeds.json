@@ -174,5 +174,21 @@
 	"STETH": {
 		"asset": "STETH",
 		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
+	},
+	"MAV": {
+		"asset": "MAV",
+		"feed": "0x111"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"feed": "0x111"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"feed": "0x111"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"feed": "0x111"
 	}
 }

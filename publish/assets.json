@@ -566,5 +566,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Lido Staked ETH"
+	},
+	"MAV": {
+		"asset": "MAV",
+		"category": "crypto",
+		"sign": "",
+		"description": "Maverick Protocol"
 	}
 }
