@@ -463,14 +463,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         // get their liquid SNX balance and transfer it to the migrator contract
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
-            bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
+            bool succeeded = _transferByProxy(account, msg.sender, totalLiquidBalance);
             require(succeeded, "snx transfer failed");
         }
 
         // get their escrowed SNX balance and revoke it all
         totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
         if (totalEscrowRevoked > 0) {
-            rewardEscrowV2().revokeFrom(account, debtMigratorOnEthereum, totalEscrowRevoked, 0);
+            rewardEscrowV2().revokeFrom(account, msg.sender, totalEscrowRevoked, 0);
         }
     }
 
