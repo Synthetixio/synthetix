@@ -5839,6 +5839,106 @@
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
 				"0x9Fc84992dF5496797784374B810E04238728743d"
 			]
+		},
+		"PerpsV2ProxySTETHPERP": {
+			"name": "PerpsV2ProxySTETHPERP",
+			"address": "0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+			"source": "ProxyPerpsV2",
+			"link": "https://goerli-explorer.optimism.io/address/0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+			"timestamp": "2023-06-29T21:56:53.802Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
+		},
+		"PerpsV2MarketStateSTETHPERP": {
+			"name": "PerpsV2MarketStateSTETHPERP",
+			"address": "0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+			"source": "PerpsV2MarketState",
+			"link": "https://goerli-explorer.optimism.io/address/0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+			"timestamp": "2023-06-29T21:57:03.606Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x5354455448000000000000000000000000000000000000000000000000000000",
+				"0x7353544554485045525000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketSTETHPERP": {
+			"name": "PerpsV2MarketSTETHPERP",
+			"address": "0xB2A4d1428238955De5764A6F15ad45bBF26A2646",
+			"source": "PerpsV2Market",
+			"link": "https://goerli-explorer.optimism.io/address/0xB2A4d1428238955De5764A6F15ad45bBF26A2646",
+			"timestamp": "2023-06-29T21:57:14.758Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+				"0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
+		},
+		"PerpsV2MarketLiquidateSTETHPERP": {
+			"name": "PerpsV2MarketLiquidateSTETHPERP",
+			"address": "0xF6ff2A7a89bEb9bCFF7d13458e289d159F4470ad",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://goerli-explorer.optimism.io/address/0xF6ff2A7a89bEb9bCFF7d13458e289d159F4470ad",
+			"timestamp": "2023-06-29T21:57:24.981Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+				"0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
+		},
+		"PerpsV2DelayedIntentSTETHPERP": {
+			"name": "PerpsV2DelayedIntentSTETHPERP",
+			"address": "0xcf005fa0A75788c389401d7bD365398F1D214bFA",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://goerli-explorer.optimism.io/address/0xcf005fa0A75788c389401d7bD365398F1D214bFA",
+			"timestamp": "2023-06-29T21:57:33.958Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+				"0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
+		},
+		"PerpsV2DelayedExecutionSTETHPERP": {
+			"name": "PerpsV2DelayedExecutionSTETHPERP",
+			"address": "0x9502CeD8D03497C76db8eeE779aCaD98245aC945",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://goerli-explorer.optimism.io/address/0x9502CeD8D03497C76db8eeE779aCaD98245aC945",
+			"timestamp": "2023-06-29T21:57:45.243Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0x896dEc99176a0fc3160CB5796ADe25ACe8f2A7D4",
+				"0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
+		},
+		"PerpsV2MarketViewsSTETHPERP": {
+			"name": "PerpsV2MarketViewsSTETHPERP",
+			"address": "0xB74056a20c9b3a4429bbCD9a67962C17b1526A69",
+			"source": "PerpsV2MarketViews",
+			"link": "https://goerli-explorer.optimism.io/address/0xB74056a20c9b3a4429bbCD9a67962C17b1526A69",
+			"timestamp": "2023-06-29T21:57:54.092Z",
+			"txn": "",
+			"network": "goerli",
+			"constructorArgs": [
+				"0xB9FbE7647dA76791b07285e5a082dB4B94b9E457",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x9Fc84992dF5496797784374B810E04238728743d"
+			]
 		}
 	},
 	"sources": {
