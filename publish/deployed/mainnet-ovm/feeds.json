@@ -203,6 +203,10 @@
 		"asset": "RPL",
 		"feed": "0xADE082c91A6AeCC86fC11704a830e933e1b382eA"
 	},
+	"YFI": {
+		"asset": "YFI",
+		"feed": "0x5cdC797acCBf57EE2363Fed9701262Abc87a232e"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",

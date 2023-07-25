@@ -61,6 +61,7 @@
 	},
 	"OP": {
 		"asset": "OP",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"XMR": {
@@ -73,6 +74,7 @@
 	},
 	"ATOM": {
 		"asset": "ATOM",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"AXS": {
@@ -81,22 +83,27 @@
 	},
 	"FLOW": {
 		"asset": "FLOW",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"FTM": {
 		"asset": "FTM",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"NEAR": {
 		"asset": "NEAR",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"AUD": {
 		"asset": "AUD",
+		"fakeFeed": true,
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
 	},
 	"GBP": {
 		"asset": "GBP",
+		"fakeFeed": true,
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
 	},
 	"ARB": {
@@ -177,18 +184,37 @@
 	},
 	"MAV": {
 		"asset": "MAV",
-		"feed": "0x111"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
-		"feed": "0x111"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"ETC": {
 		"asset": "ETC",
-		"feed": "0x111"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"MKR": {
+		"asset": "MKR",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"RPL": {
+		"asset": "RPL",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"COMP": {
 		"asset": "COMP",
-		"feed": "0x111"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	}
 }
