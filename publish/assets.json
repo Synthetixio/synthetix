@@ -38,19 +38,19 @@
 	"XTZ": {
 		"asset": "XTZ",
 		"category": "crypto",
-		"sign": "",
+		"sign": "ꜩ",
 		"description": "Tezos"
 	},
 	"XRP": {
 		"asset": "XRP",
 		"category": "crypto",
-		"sign": "",
+		"sign": "✕",
 		"description": "Ripple"
 	},
 	"LTC": {
 		"asset": "LTC",
 		"category": "crypto",
-		"sign": "",
+		"sign": "Ł",
 		"description": "Litecoin"
 	},
 	"LINK": {
@@ -62,37 +62,31 @@
 	"EOS": {
 		"asset": "EOS",
 		"category": "crypto",
-		"sign": "",
+		"sign": "ε",
 		"description": "EOS"
 	},
 	"BCH": {
 		"asset": "BCH",
 		"category": "crypto",
-		"sign": "",
+		"sign": "Ƀ",
 		"description": "Bitcoin Cash"
-	},
-	"ETC": {
-		"asset": "ETC",
-		"category": "crypto",
-		"sign": "",
-		"description": "Ethereum Classic"
 	},
 	"DASH": {
 		"asset": "DASH",
 		"category": "crypto",
-		"sign": "",
+		"sign": "Đ",
 		"description": "Dash"
 	},
 	"XMR": {
 		"asset": "XMR",
 		"category": "crypto",
-		"sign": "",
+		"sign": "ɱ",
 		"description": "Monero"
 	},
 	"ADA": {
 		"asset": "ADA",
 		"category": "crypto",
-		"sign": "",
+		"sign": "₳",
 		"description": "Cardano"
 	},
 	"COMP": {
@@ -232,12 +226,6 @@
 		"category": "index",
 		"sign": "",
 		"description": "Centralised Exchange Index"
-	},
-	"ETHBTC": {
-		"asset": "ETHBTC",
-		"category": "crypto",
-		"sign": "",
-		"description": "ETH / BTC"
 	},
 	"EUR": {
 		"asset": "EUR",
@@ -522,7 +510,7 @@
 	"FIL": {
 		"asset": "FIL",
 		"category": "crypto",
-		"sign": "",
+		"sign": "⨎",
 		"description": "Filecoin"
 	},
 	"SHIB": {
@@ -566,5 +554,29 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Lido Staked ETH"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"category": "crypto",
+		"sign": "Ξ/₿",
+		"description": "Ether/Bitcoin Ratio"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "ξ",
+		"description": "Ethereum Classic"
+	},
+	"MAV": {
+		"asset": "MAV",
+		"category": "crypto",
+		"sign": "",
+		"description": "Maverick Protocol"
+	},
+	"RPL": {
+		"asset": "RPL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Rocket Pool"
 	}
 }

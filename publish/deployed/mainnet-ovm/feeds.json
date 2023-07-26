@@ -179,6 +179,34 @@
 		"asset": "STETH",
 		"feed": "0x41878779a388585509657CE5Fb95a80050502186"
 	},
+	"MAV": {
+		"asset": "MAV",
+		"feed": "0x51E06250C8E46c8E5DE41ac8B917a47D706128C2"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"feed": "0xe4b9bcD7d0AA917f19019165EB89BdbbF36d2cBe"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"feed": "0xb7B9A39CC63f856b90B364911CC324dC46aC1770"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"feed": "0xe1011160d78a80E2eEBD60C228EEf7af4Dfcd4d7"
+	},
+	"MKR": {
+		"asset": "MKR",
+		"feed": "0x607b417DF51e0E1ed3A12fDb7FC0e8307ED250F3"
+	},
+	"RPL": {
+		"asset": "RPL",
+		"feed": "0xADE082c91A6AeCC86fC11704a830e933e1b382eA"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"feed": "0x5cdC797acCBf57EE2363Fed9701262Abc87a232e"
+	},
 	"DebtRatio": {
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",

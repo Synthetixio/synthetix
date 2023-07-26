@@ -61,6 +61,7 @@
 	},
 	"OP": {
 		"asset": "OP",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"XMR": {
@@ -73,6 +74,7 @@
 	},
 	"ATOM": {
 		"asset": "ATOM",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"AXS": {
@@ -81,22 +83,27 @@
 	},
 	"FLOW": {
 		"asset": "FLOW",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"FTM": {
 		"asset": "FTM",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"NEAR": {
 		"asset": "NEAR",
+		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"AUD": {
 		"asset": "AUD",
+		"fakeFeed": true,
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
 	},
 	"GBP": {
 		"asset": "GBP",
+		"fakeFeed": true,
 		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
 	},
 	"ARB": {
@@ -174,5 +181,40 @@
 	"STETH": {
 		"asset": "STETH",
 		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
+	},
+	"MAV": {
+		"asset": "MAV",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"MKR": {
+		"asset": "MKR",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"RPL": {
+		"asset": "RPL",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	}
 }

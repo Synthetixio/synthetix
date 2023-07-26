@@ -881,6 +881,11 @@
 			"released": "both"
 		},
 		{
+			"sip": 2009,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 2010,
 			"layer": "ovm",
 			"sources": [],
@@ -913,6 +918,31 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2023,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2024,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2025,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2026,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2027,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1749,6 +1779,15 @@
 			},
 			"sips": [2021],
 			"released": true
+		},
+		{
+			"name": "Ankaa (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 91
+			},
+			"sips": [2009, 2023, 2024, 2025, 2026, 2027]
 		}
 	]
 }
