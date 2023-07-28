@@ -17,7 +17,7 @@ class SafeBatchSubmitter {
 		});
 
 		this.service = new SafeServiceClient(
-			`https://safe-transaction${network === 'goerli' ? '.goerli' : ''}.gnosis.io`
+			`https://safe-transaction${network === 'goerli' ? '.goerli' : '-mainnet'}.safe.global`
 		);
 	}
 
