@@ -189,11 +189,13 @@
 	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
-		"feed": "0x8A9f9DB6A84A9089FB0d62A2d15778F5d8D121Fd"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"ETC": {
 		"asset": "ETC",
-		"feed": "0xE30268502Eb3B2341f7961e68a34729302592dC6"
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	},
 	"YFI": {
 		"asset": "YFI",
