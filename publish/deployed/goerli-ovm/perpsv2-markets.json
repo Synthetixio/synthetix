@@ -1200,8 +1200,8 @@
 		"liquidationBufferRatio": "0.0075",
 		"maxPD": "0.0012",
 		"maxLiquidationDelta": "0.0006",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	},
 	{
 		"marketKey": "sETCPERP",
