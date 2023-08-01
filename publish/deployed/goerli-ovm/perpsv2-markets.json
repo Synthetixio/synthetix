@@ -1398,5 +1398,33 @@
 		"maxLiquidationDelta": "0.0017",
 		"paused": false,
 		"offchainPaused": false
+	},
+	{
+		"marketKey": "sWLDPERP",
+		"asset": "WLD",
+		"makerFee": "0.3",
+		"takerFee": "0.3",
+		"takerFeeDelayedOrder": "0.3",
+		"makerFeeDelayedOrder": "0.3",
+		"takerFeeOffchainDelayedOrder": "0.0010",
+		"makerFeeOffchainDelayedOrder": "0.0002",
+		"nextPriceConfirmWindow": "2",
+		"delayedOrderConfirmWindow": "120",
+		"minDelayTimeDelta": "60",
+		"maxDelayTimeDelta": "6000",
+		"offchainDelayedOrderMinAge": "2",
+		"offchainDelayedOrderMaxAge": "60",
+		"maxLeverage": "27.5",
+		"maxMarketValue": "650000",
+		"maxFundingVelocity": "27",
+		"skewScale": "33000000",
+		"offchainPriceDivergence": "0.025",
+		"liquidationPremiumMultiplier": "3",
+		"offchainMarketKey": "ocWLDPERP",
+		"liquidationBufferRatio": "0.0150",
+		"maxPD": "0.0024",
+		"maxLiquidationDelta": "0.0012",
+		"paused": true,
+		"offchainPaused": true
 	}
 ]
