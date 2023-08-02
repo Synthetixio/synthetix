@@ -1432,5 +1432,26 @@
 	},
 	"PerpsV2MarketViewsRPLPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionWLDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsWLDPERP": {
+		"deploy": false
 	}
 }
