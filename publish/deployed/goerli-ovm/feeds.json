@@ -189,13 +189,11 @@
 	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0x8A9f9DB6A84A9089FB0d62A2d15778F5d8D121Fd"
 	},
 	"ETC": {
 		"asset": "ETC",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xE30268502Eb3B2341f7961e68a34729302592dC6"
 	},
 	"YFI": {
 		"asset": "YFI",
@@ -214,6 +212,11 @@
 	},
 	"COMP": {
 		"asset": "COMP",
+		"fakeFeed": true,
+		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"WLD": {
+		"asset": "WLD",
 		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
 	}

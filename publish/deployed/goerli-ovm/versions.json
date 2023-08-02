@@ -3656,5 +3656,50 @@
 				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
 			}
 		}
+	},
+	"v2.92.0-alpha": {
+		"tag": "v2.92.0-alpha",
+		"fulltag": "v2.92.0-alpha",
+		"release": "Enif",
+		"network": "goerli",
+		"date": "2023-08-02T12:56:04+01:00",
+		"commit": "34f7ca70fa11791ddcc7d9417839ba10c85b30bb",
+		"contracts": {
+			"PerpsV2ProxyWLDPERP": {
+				"address": "0x843E61b441f9c7Da31495227F9914B9053f2A043",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateWLDPERP": {
+				"address": "0x25750ACdb8aB62111311873B7d60222293b1F509",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketWLDPERP": {
+				"address": "0x345cfF238693AB931d5283ff94459744B4936Fce",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateWLDPERP": {
+				"address": "0x583fb673F274ac0e4f59dCE7387F5855Fb75AB90",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentWLDPERP": {
+				"address": "0x9c8D4421055f568f6e25695F74aF63f82fBd8314",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionWLDPERP": {
+				"address": "0xb57909636D3A9589e7Aa425648bfEE183b75faBE",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsWLDPERP": {
+				"address": "0x3b69c32EbAD8a675414E67854CDa3783E3bB033b",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			}
+		}
 	}
 }

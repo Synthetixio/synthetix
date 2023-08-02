@@ -949,6 +949,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2028,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1795,6 +1800,15 @@
 			},
 			"sips": [2009, 2023, 2024, 2025, 2026, 2027],
 			"released": true
+		},
+		{
+			"name": "Enif (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 92
+			},
+			"sips": [2028]
 		}
 	]
 }
