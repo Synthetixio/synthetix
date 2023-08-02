@@ -578,5 +578,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Rocket Pool"
+	},
+	"WLD": {
+		"asset": "WLD",
+		"category": "crypto",
+		"sign": "",
+		"description": "Worldcoin"
 	}
 }
