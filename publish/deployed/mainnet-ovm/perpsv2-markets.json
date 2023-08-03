@@ -1417,14 +1417,14 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "650000",
 		"maxFundingVelocity": "27",
-		"skewScale": "33000000",
+		"skewScale": "20000000",
 		"offchainPriceDivergence": "0.025",
 		"liquidationPremiumMultiplier": "3",
 		"offchainMarketKey": "ocWLDPERP",
 		"liquidationBufferRatio": "0.0150",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": true,
-		"offchainPaused": true
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
