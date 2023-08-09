@@ -215,5 +215,9 @@
 		"asset": "DebtRatio",
 		"feed": "0x9779D71945310E75761240E8b9FD5752C6d63155",
 		"note": "A read-proxy with CL feed as target: 0x94A178f2c480D14F8CdDa908D173d7a73F779cb7"
+	},
+	"USDT": {
+		"asset": "USDT",
+		"feed": "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E"
 	}
 }

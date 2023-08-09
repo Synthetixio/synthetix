@@ -955,6 +955,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2030,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1811,6 +1816,15 @@
 			},
 			"sips": [2028],
 			"released": true
+		},
+		{
+			"name": "Scheat (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 93
+			},
+			"sips": [2030]
 		}
 	]
 }
