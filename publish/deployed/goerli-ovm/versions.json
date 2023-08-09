@@ -3701,5 +3701,50 @@
 				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
 			}
 		}
+	},
+	"v2.93.0-alpha": {
+		"tag": "v2.93.0-alpha",
+		"fulltag": "v2.93.0-alpha",
+		"release": "Scheat",
+		"network": "goerli",
+		"date": "2023-08-09T17:49:45+01:00",
+		"commit": "273a9ff375d497bc52938058474ab87f467abd47",
+		"contracts": {
+			"PerpsV2ProxyUSDTPERP": {
+				"address": "0x90cCe6Ea3c6CE1280A679E2c0007A2bA4Ae0E31F",
+				"status": "current",
+				"keccak256": "0xf2b764f8f435fc338d04c110dd021bb0bd438d20c3c5c2ab6671727de614fe1b"
+			},
+			"PerpsV2MarketStateUSDTPERP": {
+				"address": "0xC7e69B66592f75A3BC3dCF1e0a3C1BFe882Dc83e",
+				"status": "current",
+				"keccak256": "0xc98cdb2faf2a5a405aa1b8af9a56218fdfd234bdde37772375c6e23f65bd58cf"
+			},
+			"PerpsV2MarketUSDTPERP": {
+				"address": "0x5C3e7A416F3004212f93A05f4CB4c7c7Ad682CFC",
+				"status": "current",
+				"keccak256": "0xc42eea66d1f1bf2db628906a3bb66cce4cdb8fc86d23e7ef51b37158e4a7a212"
+			},
+			"PerpsV2MarketLiquidateUSDTPERP": {
+				"address": "0x4F83070dc7cF3296aa9992A2Db0A9eD0f7121bD4",
+				"status": "current",
+				"keccak256": "0x05843128c0faaf6d66a51deba285a340767f40bb9561e0d5396d71260acaaca6"
+			},
+			"PerpsV2DelayedIntentUSDTPERP": {
+				"address": "0x7b76b3b0973916945BD21Dbc1bA571A733A0A7c2",
+				"status": "current",
+				"keccak256": "0xc30e0d0475536d8f41b69adf66f26ef168785950166436fd629ff4a4b2d1b287"
+			},
+			"PerpsV2DelayedExecutionUSDTPERP": {
+				"address": "0x54Aeac702208887e87b43B0825354C384850bB80",
+				"status": "current",
+				"keccak256": "0x63d10a8673881405a22f477b1fd5f092116c8b1156bff2bf3af6dcfb0a2048c8"
+			},
+			"PerpsV2MarketViewsUSDTPERP": {
+				"address": "0x98b6082403D88128199C97cD9B8FbfA60201470b",
+				"status": "current",
+				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
+			}
+		}
 	}
 }

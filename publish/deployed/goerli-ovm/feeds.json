@@ -219,5 +219,9 @@
 		"asset": "WLD",
 		"fakeFeed": true,
 		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+	},
+	"USDT": {
+		"asset": "USDT",
+		"feed": "0x2e2147bCd571CE816382485E59Cd145A2b7CA451"
 	}
 }
