@@ -584,5 +584,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Worldcoin"
+	},
+	"USDT": {
+		"asset": "USDT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Tether USD"
 	}
 }
