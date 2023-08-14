@@ -881,6 +881,12 @@
 			"released": "both"
 		},
 		{
+			"sip": 2009,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 2010,
 			"layer": "ovm",
 			"sources": [],
@@ -910,6 +916,48 @@
 		},
 		{
 			"sip": 2021,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2023,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2024,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2025,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2026,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2027,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2028,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2030,
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
@@ -1748,6 +1796,36 @@
 				"minor": 90
 			},
 			"sips": [2021],
+			"released": true
+		},
+		{
+			"name": "Ankaa (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 91
+			},
+			"sips": [2009, 2023, 2024, 2025, 2026, 2027],
+			"released": true
+		},
+		{
+			"name": "Enif (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 92
+			},
+			"sips": [2028],
+			"released": true
+		},
+		{
+			"name": "Scheat (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 93
+			},
+			"sips": [2030],
 			"released": true
 		}
 	]
