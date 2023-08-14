@@ -1451,7 +1451,7 @@
 		"offchainMarketKey": "ocUSDTPERP",
 		"liquidationBufferRatio": "0.0075",
 		"maxPD": "0.00030",
-		"maxLiquidationDelta": "0.0015",
+		"maxLiquidationDelta": "0.00015",
 		"paused": true,
 		"offchainPaused": true
 	}
