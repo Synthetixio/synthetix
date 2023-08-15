@@ -105,7 +105,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		comment: 'Ensure the RewardsDistribution can read the RewardEscrowV2 address',
 	});
 
-	if (DebtMigrator) {
+	if (DebtMigratorOnOptimism) {
 		await runStep({
 			contract: 'RewardEscrowV2',
 			target: RewardEscrowV2,
