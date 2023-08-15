@@ -715,13 +715,13 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 	const map = {
 		mainnet: Object.assign({}, base, {
 			owner: '0xEb3107117FEAd7de89Cd14D463D340A2E6917769',
-			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
+			deployer: '0xEde8a407913A874Dd7e3d5B731AFcA135D30375E',
 			marketClosure: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7',
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		'mainnet-ovm': Object.assign({}, base, {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
-			deployer: '0x302d2451d9f47620374B54c521423Bf0403916A2',
+			deployer: '0xEde8a407913A874Dd7e3d5B731AFcA135D30375E',
 		}),
 		goerli: Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
