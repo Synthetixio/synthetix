@@ -1450,8 +1450,8 @@
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocUSDTPERP",
 		"liquidationBufferRatio": "0.0075",
-		"maxPD": "0.00015",
-		"maxLiquidationDelta": "0.0003",
+		"maxPD": "0.00030",
+		"maxLiquidationDelta": "0.00015",
 		"paused": true,
 		"offchainPaused": true
 	}

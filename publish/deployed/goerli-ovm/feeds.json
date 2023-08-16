@@ -61,8 +61,7 @@
 	},
 	"OP": {
 		"asset": "OP",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xfecc21FAc6943205b0a35CEeEdEb7b4173212794"
 	},
 	"XMR": {
 		"asset": "XMR",
@@ -74,8 +73,7 @@
 	},
 	"ATOM": {
 		"asset": "ATOM",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0x59deEF5F6b03e8Ec6dD9ad30447e7A86D9C196CA"
 	},
 	"AXS": {
 		"asset": "AXS",
@@ -83,28 +81,23 @@
 	},
 	"FLOW": {
 		"asset": "FLOW",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xA4EEd0E99613BA600B2BcCAeDf85a9E7369AF263"
 	},
 	"FTM": {
 		"asset": "FTM",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0x626982b84B2759D61f313054c8CBdA18B0D65cb2"
 	},
 	"NEAR": {
 		"asset": "NEAR",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xEEC0D6Aa4c26FDF3E9D49299EAA38aD8EE3f6462"
 	},
 	"AUD": {
 		"asset": "AUD",
-		"fakeFeed": true,
-		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
+		"feed": "0x441CE757b744f4870AC0a18f4d4fa4E3f552C5CE"
 	},
 	"GBP": {
 		"asset": "GBP",
-		"fakeFeed": true,
-		"feed": "0x619AeaaF08dF3645e138C611bddCaE465312Ef6B"
+		"feed": "0x50EcA3DB4DEedcE395F6Ca0D463EE4D4971a60bA"
 	},
 	"ARB": {
 		"asset": "ARB",
@@ -184,8 +177,7 @@
 	},
 	"MAV": {
 		"asset": "MAV",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xE315F92d959a32406EA52BCF71517F33bD9e1244"
 	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
@@ -197,28 +189,23 @@
 	},
 	"YFI": {
 		"asset": "YFI",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xD51AC716CC28d200987bBFe748E3Cd371E8D30D4"
 	},
 	"MKR": {
 		"asset": "MKR",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xec7775F287ab814de8746a00ECdE6804dF84dB7b"
 	},
 	"RPL": {
 		"asset": "RPL",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0xe4294B63a9B40A6aA49862e32E741f10dF6E4F4c"
 	},
 	"COMP": {
 		"asset": "COMP",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0x875D6bD5c11a83dD27DE6c0F2B8aBb8dA4E06626"
 	},
 	"WLD": {
 		"asset": "WLD",
-		"fakeFeed": true,
-		"feed": "0xd3277B9Db5008116cd8727Fc00E704F2Db2e578F"
+		"feed": "0x0261aAe5D3Fa99bbCE747878F1e7Ae55860E37A3"
 	},
 	"USDT": {
 		"asset": "USDT",
