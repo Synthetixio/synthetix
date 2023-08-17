@@ -315,5 +315,41 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "USDT",
 		"feedId": "0x1fc18861232290221461220bd4e2acd1dcdfbc89c84092c93c18bdc7756c1588"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BAL",
+		"feedId": "0xf3295ef1efc8cb94518faade282e294e718dc65a03aa3b7912b894e61e0a6634"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FXS",
+		"feedId": "0x5befcdb06599c4126afeb0b20d751d6360a28a880c23222be2ee40be38c1fb26"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "RNDR",
+		"feedId": "0xa3cd2f847362125e84d0aebce2d341957b5941dcc07760dbf2782d6300f90128"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ONE",
+		"feedId": "0x9b245faf19d2f3306b58821ef60b194d7b67eb5250635059d8eaae4a36337b28"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PERP",
+		"feedId": "0xf26cf0b5c71699e81f59384824c71b8cdcc29ce409f3e6934c8c18abe652a04f"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ZIL",
+		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
 	}
 ]

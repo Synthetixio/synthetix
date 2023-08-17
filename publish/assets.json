@@ -590,5 +590,72 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Tether USD"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Frax Share"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Render"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Harmony"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Perpetual Protocol"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zilliqa"
+	},
+
+	"ZEC": {
+		"asset": "ZEC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zcash"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Enjin Coin"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Internet Computer"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Stellar"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celo"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Algorand"
 	}
 }

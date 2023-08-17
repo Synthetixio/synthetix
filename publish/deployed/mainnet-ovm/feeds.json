@@ -219,5 +219,33 @@
 	"USDT": {
 		"asset": "USDT",
 		"feed": "0xECef79E109e997bCA29c1c0897ec9d7b03647F5E"
+	},
+	"BAL": {
+		"asset": "BAL",
+		"feed": "0x30D9d31C1ac29Bc2c2c312c1bCa9F8b3D60e2376"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"feed": "0xB9B16330671067B1b062B9aC2eFd2dB75F03436E"
+	},
+	"KNC": {
+		"asset": "KNC",
+		"feed": "0xCB24d22aF35986aC1feb8874AdBbDF68f6dC2e96"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"feed": "0x53623FD50C5Fd8788746af00F088FD7f06fD4116"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"feed": "0x7CFB4fac1a2FDB1267F8bc17FADc12804AC13CFE"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"feed": "0xA12CDDd8e986AF9288ab31E58C60e65F2987fB13"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
 	}
 }
