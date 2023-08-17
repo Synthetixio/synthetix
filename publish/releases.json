@@ -1837,6 +1837,15 @@
 			},
 			"sips": [2030],
 			"released": true
+		},
+		{
+			"name": "Sabik (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 93
+			},
+			"sips": [2032, 2033]
 		}
 	]
 }

@@ -245,8 +245,8 @@
 		"fakeFeed": true,
 		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
 	},
-	"THOR": {
-		"asset": "THOR",
+	"RUNE": {
+		"asset": "RUNE",
 		"fakeFeed": true,
 		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
 	},

@@ -1653,8 +1653,8 @@
 	},
 
 	{
-		"marketKey": "sTHORPERP",
-		"asset": "THOR",
+		"marketKey": "sRUNEPERP",
+		"asset": "RUNE",
 		"makerFee": "0.3",
 		"takerFee": "0.3",
 		"takerFeeDelayedOrder": "0.3",
@@ -1673,7 +1673,7 @@
 		"skewScale": "20000000",
 		"offchainPriceDivergence": "0.025",
 		"liquidationPremiumMultiplier": "3",
-		"offchainMarketKey": "ocTHORPERP",
+		"offchainMarketKey": "ocRUNEPERP",
 		"liquidationBufferRatio": "0.0150",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",

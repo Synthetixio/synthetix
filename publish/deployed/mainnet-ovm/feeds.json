@@ -248,8 +248,8 @@
 		"asset": "ZIL",
 		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
 	},
-	"THOR": {
-		"asset": "THOR",
+	"RUNE": {
+		"asset": "RUNE",
 		"fakeFeed": true,
 		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
 	},
