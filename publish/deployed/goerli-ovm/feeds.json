@@ -244,5 +244,70 @@
 		"asset": "ZIL",
 		"fakeFeed": true,
 		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"THOR": {
+		"asset": "THOR",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"ZEC": {
+		"asset": "ZEC",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"UMA": {
+		"asset": "UMA",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"EOS": {
+		"asset": "EOS",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
+	"ZRX": {
+		"asset": "ZRX",
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
 	}
 }
