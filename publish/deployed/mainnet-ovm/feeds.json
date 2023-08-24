@@ -247,5 +247,70 @@
 	"ZIL": {
 		"asset": "ZIL",
 		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"ZEC": {
+		"asset": "ZEC",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"UMA": {
+		"asset": "UMA",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"EOS": {
+		"asset": "EOS",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"ZRX": {
+		"asset": "ZRX",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
 	}
 }
