@@ -443,5 +443,12 @@
 		"asset": "ZRX",
 		"fakeFeed": true,
 		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "SEI",
+		"fakeFeed": true,
+		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
 	}
 ]

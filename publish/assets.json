@@ -657,5 +657,11 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Algorand"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Algorand"
 	}
 }

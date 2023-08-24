@@ -312,5 +312,10 @@
 		"asset": "ZRX",
 		"fakeFeed": true,
 		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"fakeFeed": true,
+		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
 	}
 }
