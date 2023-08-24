@@ -312,7 +312,6 @@
 	},
 	"SEI": {
 		"asset": "SEI",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xb0817541d2B07B7d78bBB556754173928911bdd3"
 	}
 }

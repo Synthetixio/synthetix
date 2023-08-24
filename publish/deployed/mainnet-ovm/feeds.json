@@ -250,8 +250,7 @@
 	},
 	"RUNE": {
 		"asset": "RUNE",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x372cc5e685115A56F14fa7e4716F1294e04c278A"
 	},
 	"SUSHI": {
 		"asset": "SUSHI",
@@ -315,7 +314,6 @@
 	},
 	"SEI": {
 		"asset": "SEI",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x6f6cED6B096708C1276056fdBdb7BbDe07Ca462C"
 	}
 }
