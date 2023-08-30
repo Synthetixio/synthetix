@@ -175,6 +175,10 @@
 		"asset": "STETH",
 		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
 	},
+	"STETHETH": {
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
 	"MAV": {
 		"asset": "MAV",
 		"feed": "0xE315F92d959a32406EA52BCF71517F33bD9e1244"

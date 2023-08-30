@@ -179,6 +179,10 @@
 		"asset": "STETH",
 		"feed": "0x41878779a388585509657CE5Fb95a80050502186"
 	},
+	"STETHETH": {
+		"asset": "STETHETH",
+		"feed": "0x14d2d3a82AeD4019FddDfe07E8bdc485fb0d2249"
+	},
 	"MAV": {
 		"asset": "MAV",
 		"feed": "0x51E06250C8E46c8E5DE41ac8B917a47D706128C2"
@@ -254,53 +258,44 @@
 	},
 	"SUSHI": {
 		"asset": "SUSHI",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x72155D46FD9f03AF1739637F9E7Db8A87C40A730"
 	},
 	"ZEC": {
 		"asset": "ZEC",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x2FF8822F371b283604369700d6F06da3fBb31064"
 	},
 	"XTZ": {
 		"asset": "XTZ",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0xeA2aeD0087A620995Bf609D1bCD76Ea099905138"
 	},
 	"UMA": {
 		"asset": "UMA",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0xeEC819b2e155CC8FEae194F5129f767409e2327c"
 	},
 	"ENJ": {
 		"asset": "ENJ",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x0cD83cC474e69E611d240f0d35D5794361F5e5C2"
 	},
 	"ICP": {
 		"asset": "ICP",
 		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0xe98290265E4aE3758503a03e937F381A2A7aFB57"
 	},
 	"XLM": {
 		"asset": "XLM",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x799A346e7dBfa0f66Ad0961259366F93A1ee34C4"
 	},
 	"1INCH": {
 		"asset": "1INCH",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x9fCe737834500045FB07AD158991BCAC3b05D5A6"
 	},
 	"EOS": {
 		"asset": "EOS",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x8E8E6C8c4942e4963C682fF54A0d058458393DCC"
 	},
 	"CELO": {
 		"asset": "CELO",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0x5A9072a995E072fD06D8f1EB95933955FDa53C0a"
 	},
 	"ALGO": {
 		"asset": "ALGO",
@@ -309,8 +304,7 @@
 	},
 	"ZRX": {
 		"asset": "ZRX",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0xBfbb4fE2fB71022DbFE0D4232c8C528bddf9c57f"
 	},
 	"SEI": {
 		"asset": "SEI",
