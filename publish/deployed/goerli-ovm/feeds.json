@@ -249,23 +249,19 @@
 	},
 	"SUSHI": {
 		"asset": "SUSHI",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0x2F82b9b502600a96c471DC063Cc7e9C3CeD99CB5"
 	},
 	"ZEC": {
 		"asset": "ZEC",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0x2658C12bF7136960F005a51f7c8BF6419EcE87A4"
 	},
 	"XTZ": {
 		"asset": "XTZ",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xe34CB2eCe8846C0D1367CAfac21C762812E9fd09"
 	},
 	"UMA": {
 		"asset": "UMA",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0x2A2a372EF14c7f9397A0c139bb31E1a19D0B1591"
 	},
 	"ENJ": {
 		"asset": "ENJ",
@@ -273,23 +269,19 @@
 	},
 	"ICP": {
 		"asset": "ICP",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xC1dFe8096Bc1E274e54210650e29f053acc74bbc"
 	},
 	"XLM": {
 		"asset": "XLM",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xd9Ac469d697815ce44e8CaC9c6c6d3226767189d"
 	},
 	"1INCH": {
 		"asset": "1INCH",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xab7565c8736cdf46e8534A527333DF354DDD4168"
 	},
 	"EOS": {
 		"asset": "EOS",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0x4746d2511470F5e8877022cC667c118e6838E43d"
 	},
 	"CELO": {
 		"asset": "CELO",
@@ -301,8 +293,7 @@
 	},
 	"ZRX": {
 		"asset": "ZRX",
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0xEB28708cBE0edE8709832D47e387aeD17319A354"
 	},
 	"SEI": {
 		"asset": "SEI",
