@@ -351,7 +351,12 @@
 		"asset": "ZIL",
 		"feedId": "0x609722f3b6dc10fee07907fe86781d55eb9121cd0705b480954c00695d78f0cb"
 	},
-
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "KNC",
+		"feedId": "0xb9ccc817bfeded3926af791f09f76c5ffbc9b789cac6e9699ec333a79cacbe2a"
+	},
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
@@ -435,5 +440,11 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "SEI",
 		"feedId": "0x53614f1cb0c031d4af66c04cb9c756234adad0e1cee85303795091499a4084eb"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "STETHETH",
+		"feedId": "0x3af6a3098c56f58ff47cc46dee4a5b1910e5c157f7f0b665952445867470d61f"
 	}
 ]

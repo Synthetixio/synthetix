@@ -271,6 +271,11 @@
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "STETHETH",
+		"feedId": "0x51fa95fac7bb8a4790f5733e8b2040937e88e6d8ea8fe172cea56b204b059bc2"
+	},	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "ETC",
 		"feedId": "0xd77bfe9814f5a4718e1420881093efa8c0fe1a783472899f27ad4c7a58ef4d27"
 	},
@@ -326,7 +331,7 @@
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "FXS",
-		"feedId": "0x5befcdb06599c4126afeb0b20d751d6360a28a880c23222be2ee40be38c1fb26"
+		"feedId": "0xac27da9472e28969d829c27312afb08c5f1866336384f0dbdf9a48af97cf28a0"
 	},
 	{
 		"kind": "pyth",
@@ -352,7 +357,6 @@
 		"asset": "ZIL",
 		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
 	},
-
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
@@ -369,8 +373,7 @@
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "ZEC",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0x683832447e2920e3d85ab52609be9822ad0da95de656b8acd9a8f0e3a3717895"
 	},
 	{
 		"kind": "pyth",
@@ -382,8 +385,7 @@
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "UMA",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0xd34659f792d16725786fe9852f80a88dc7b38c338babb60c8519e12a86a15f62"
 	},
 	{
 		"kind": "pyth",
@@ -395,15 +397,13 @@
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "ICP",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0xda0be66c19400cdfce7944ab8def8734cb3858c3f6b34b044deb95929b47c3ab"
 	},
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "XLM",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0xae5645a4463f4b9656694576fe6096b9bce4d37a3bb2c5287ee3d149f1a16767"
 	},
 	{
 		"kind": "pyth",
@@ -433,14 +433,18 @@
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "ZRX",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0x27b9bf666178e240712ec592884bf7654b12a9c98e6b70417c922c91370b262d"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "KNC",
+		"feedId": "0x5befcdb06599c4126afeb0b20d751d6360a28a880c23222be2ee40be38c1fb26"
 	},
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "SEI",
-		"fakeFeed": true,
-		"feedId": "0x2206debd84882bbb4852896580279c34f4b5dff225301bf218380828a193a10e"
+		"feedId": "0x95f1aef92c74670d40f1f37ee6fb158ffd6a0f8913b07b9e61087f9b7273b11c"
 	}
 ]
