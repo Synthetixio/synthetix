@@ -278,7 +278,6 @@
 	},
 	"ICP": {
 		"asset": "ICP",
-		"fakeFeed": true,
 		"feed": "0xe98290265E4aE3758503a03e937F381A2A7aFB57"
 	},
 	"XLM": {
