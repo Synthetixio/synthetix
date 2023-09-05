@@ -298,8 +298,7 @@
 	},
 	"ALGO": {
 		"asset": "ALGO",
-		"fakeFeed": true,
-		"feed": "0x1520874FC216f5F07E03607303Df2Fda6C3Fc203"
+		"feed": "0xBf5384854988939729E8B76b8AeCe7d8D930F9f3"
 	},
 	"ZRX": {
 		"asset": "ZRX",
