@@ -175,6 +175,10 @@
 		"asset": "STETH",
 		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
 	},
+	"STETHETH": {
+		"fakeFeed": true,
+		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+	},
 	"MAV": {
 		"asset": "MAV",
 		"feed": "0xE315F92d959a32406EA52BCF71517F33bD9e1244"
@@ -210,5 +214,89 @@
 	"USDT": {
 		"asset": "USDT",
 		"feed": "0x2e2147bCd571CE816382485E59Cd145A2b7CA451"
+	},
+	"BAL": {
+		"asset": "BAL",
+		"feed": "0x50DE0d15edC5D9399f1bBd6142e50522E889a16C"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"feed": "0xe3b555d71aB14D5A39AD97F7c71FD937cbE9ee89"
+	},
+	"KNC": {
+		"asset": "KNC",
+		"feed": "0xc8f287Befc8960EbB268F07843537FE6cf93cf43"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"feed": "0xBfe4D7B174a98068E5aD9Fd76AD7E8886cF501F3"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"feed": "0xbE23507C88605caBe9b2d16F63b2CeaCdd3aa2Ef"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"feed": "0xFe3943ED8917eacC825D97B711076fa4529c9A34"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"feed": "0x6C26f86A11456D3f95416B6A3F2Eb205dbE43eF1"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"feed": "0x9E37CF212c6c999C75816a12581EeBf0B3f246DE"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"feed": "0x2F82b9b502600a96c471DC063Cc7e9C3CeD99CB5"
+	},
+	"ZEC": {
+		"asset": "ZEC",
+		"feed": "0x2658C12bF7136960F005a51f7c8BF6419EcE87A4"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"feed": "0xe34CB2eCe8846C0D1367CAfac21C762812E9fd09"
+	},
+	"UMA": {
+		"asset": "UMA",
+		"feed": "0x2A2a372EF14c7f9397A0c139bb31E1a19D0B1591"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"feed": "0x50E8430b360097758a47458D58ff1B1885579790"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"feed": "0xC1dFe8096Bc1E274e54210650e29f053acc74bbc"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"feed": "0xd9Ac469d697815ce44e8CaC9c6c6d3226767189d"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"feed": "0xab7565c8736cdf46e8534A527333DF354DDD4168"
+	},
+	"EOS": {
+		"asset": "EOS",
+		"feed": "0x4746d2511470F5e8877022cC667c118e6838E43d"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"feed": "0xD4AdfBd8386312B2c07338b8b6eD5dF06F8d416E"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"feed": "0x4A0f0011153D65F53a97ff462e4287a6b717B2b7"
+	},
+	"ZRX": {
+		"asset": "ZRX",
+		"feed": "0xEB28708cBE0edE8709832D47e387aeD17319A354"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"feed": "0xb0817541d2B07B7d78bBB556754173928911bdd3"
 	}
 }

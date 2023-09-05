@@ -99,7 +99,7 @@
 		"asset": "KNC",
 		"category": "crypto",
 		"sign": "",
-		"description": "Kyber Network"
+		"description": "Kyber Network Crystal"
 	},
 	"AAVE": {
 		"asset": "AAVE",
@@ -129,7 +129,7 @@
 		"asset": "ZRX",
 		"category": "crypto",
 		"sign": "",
-		"description": "0x"
+		"description": "0x Protocol"
 	},
 	"REP": {
 		"asset": "REP",
@@ -312,7 +312,7 @@
 		"asset": "SUSHI",
 		"category": "crypto",
 		"sign": "",
-		"description": "SushiSwap"
+		"description": "Sushi Token"
 	},
 	"1INCH": {
 		"asset": "1INCH",
@@ -324,7 +324,7 @@
 		"asset": "RUNE",
 		"category": "crypto",
 		"sign": "",
-		"description": "THORChain"
+		"description": "RUNE Token"
 	},
 	"AAPL": {
 		"asset": "AAPL",
@@ -555,6 +555,12 @@
 		"sign": "",
 		"description": "Lido Staked ETH"
 	},
+	"STETHETH": {
+		"asset": "STETHETH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Lido Staked ETH against ETH"
+	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
 		"category": "crypto",
@@ -590,5 +596,78 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Tether USD"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Frax Share"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Render"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Harmony"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Perpetual Protocol"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zilliqa"
+	},
+
+	"ZEC": {
+		"asset": "ZEC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zcash"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Enjin Coin"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Internet Computer Protocol"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Stellar"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celo"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Algorand"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Sei"
 	}
 }
