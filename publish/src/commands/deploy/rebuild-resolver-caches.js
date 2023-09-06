@@ -84,6 +84,10 @@ module.exports = async ({
 					'Warning: Cannot fetch logs on this network. Known limitation - cannot search back greater than 10k blocks'
 				)
 			);
+		} else if (/Internal server error/.test(err.message)) {
+			console.log(
+				yellow.bold('Warning: Cannot fetch logs on this network. Tenderly limitation...')
+			);
 		} else {
 			throw err;
 		}

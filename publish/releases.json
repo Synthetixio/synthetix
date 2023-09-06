@@ -957,10 +957,30 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 2029,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 2030,
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2031,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2032,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2033,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1827,6 +1847,15 @@
 			},
 			"sips": [2030],
 			"released": true
+		},
+		{
+			"name": "Sabik (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 93
+			},
+			"sips": [2029, 2031, 2032, 2033]
 		}
 	]
 }
