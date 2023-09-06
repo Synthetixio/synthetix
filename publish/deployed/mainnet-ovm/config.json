@@ -1369,5 +1369,89 @@
 	},
 	"PerpsV2MarketViewsUSDTPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBALPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsFXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsKNCPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionRNDRPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsRNDRPERP": {
+		"deploy": false
 	}
 }
