@@ -1558,5 +1558,110 @@
 	},
 	"PerpsV2MarketViewsSUSHIPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsZECPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsXTZPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsUMAPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsENJPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionICPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsICPPERP": {
+		"deploy": false
 	}
 }
