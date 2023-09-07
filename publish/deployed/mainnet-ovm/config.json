@@ -1663,5 +1663,110 @@
 	},
 	"PerpsV2MarketViewsICPPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsXLMPERP": {
+		"deploy": false
+	},
+	"PerpsV2Proxy1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketState1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2Market1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidate1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntent1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecution1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViews1INCHPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsEOSPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsCELOPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionALGOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsALGOPERP": {
+		"deploy": false
 	}
 }
