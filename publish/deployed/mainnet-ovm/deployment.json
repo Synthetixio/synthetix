@@ -251,7 +251,7 @@
 				"0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
 				"0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE",
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"104665146496802550602329734",
+				"105492587340424709398786025",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -6677,6 +6677,2206 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0xC2231D2cAdDBee015AeDddd3F0EE3874E3bd1d59",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyBALPERP": {
+			"name": "PerpsV2ProxyBALPERP",
+			"address": "0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+			"timestamp": "2023-09-06T14:29:06.689Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateBALPERP": {
+			"name": "PerpsV2MarketStateBALPERP",
+			"address": "0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+			"timestamp": "2023-09-06T14:29:20.780Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x42414c0000000000000000000000000000000000000000000000000000000000",
+				"0x7342414c50455250000000000000000000000000000000000000000000000000",
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f"
+			]
+		},
+		"PerpsV2MarketBALPERP": {
+			"name": "PerpsV2MarketBALPERP",
+			"address": "0x27B9C4af1BACd39Fb216A3a27c9F1E3cd8570b19",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x27B9C4af1BACd39Fb216A3a27c9F1E3cd8570b19",
+			"timestamp": "2023-09-06T14:29:31.299Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateBALPERP": {
+			"name": "PerpsV2MarketLiquidateBALPERP",
+			"address": "0x797c42Ff20162B806b813B78E5ceD6d69E06a09a",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x797c42Ff20162B806b813B78E5ceD6d69E06a09a",
+			"timestamp": "2023-09-06T14:29:41.490Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentBALPERP": {
+			"name": "PerpsV2DelayedIntentBALPERP",
+			"address": "0xBc5B0A6dCaDD4Fc27665601401D6f03D97375B24",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xBc5B0A6dCaDD4Fc27665601401D6f03D97375B24",
+			"timestamp": "2023-09-06T14:29:51.959Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionBALPERP": {
+			"name": "PerpsV2DelayedExecutionBALPERP",
+			"address": "0x8d51BF0759e1a01c15F91940BaaaD08B6B45a637",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x8d51BF0759e1a01c15F91940BaaaD08B6B45a637",
+			"timestamp": "2023-09-06T14:30:01.115Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x71f42cA320b3e9A8e4816e26De70c9b69eAf9d24",
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsBALPERP": {
+			"name": "PerpsV2MarketViewsBALPERP",
+			"address": "0x3FFbC2f1029ccb193d011757E2bbd57538711D86",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x3FFbC2f1029ccb193d011757E2bbd57538711D86",
+			"timestamp": "2023-09-06T14:30:11.293Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyFXSPERP": {
+			"name": "PerpsV2ProxyFXSPERP",
+			"address": "0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+			"timestamp": "2023-09-06T14:41:38.662Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateFXSPERP": {
+			"name": "PerpsV2MarketStateFXSPERP",
+			"address": "0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+			"timestamp": "2023-09-06T14:41:47.684Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x4658530000000000000000000000000000000000000000000000000000000000",
+				"0x7346585350455250000000000000000000000000000000000000000000000000",
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1"
+			]
+		},
+		"PerpsV2MarketFXSPERP": {
+			"name": "PerpsV2MarketFXSPERP",
+			"address": "0x29601BAfeE838F75679e0024E9b8E44D6f1b6f2c",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x29601BAfeE838F75679e0024E9b8E44D6f1b6f2c",
+			"timestamp": "2023-09-06T14:41:58.183Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateFXSPERP": {
+			"name": "PerpsV2MarketLiquidateFXSPERP",
+			"address": "0xEbBeb518d4b4e488f45913A9Ef72Ea57Be676F1a",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xEbBeb518d4b4e488f45913A9Ef72Ea57Be676F1a",
+			"timestamp": "2023-09-06T14:42:08.384Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentFXSPERP": {
+			"name": "PerpsV2DelayedIntentFXSPERP",
+			"address": "0x4022AB250B5c32c286A3953bc740368D6b68b067",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x4022AB250B5c32c286A3953bc740368D6b68b067",
+			"timestamp": "2023-09-06T14:42:18.895Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionFXSPERP": {
+			"name": "PerpsV2DelayedExecutionFXSPERP",
+			"address": "0xcCe2c84C91e6c4de7e87704b3D5C4fba10626234",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xcCe2c84C91e6c4de7e87704b3D5C4fba10626234",
+			"timestamp": "2023-09-06T14:42:29.548Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2fD9a39ACF071Aa61f92F3D7A98332c68d6B6602",
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsFXSPERP": {
+			"name": "PerpsV2MarketViewsFXSPERP",
+			"address": "0x6a15EE080c2FdE246b674918bff3B52d414525cb",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x6a15EE080c2FdE246b674918bff3B52d414525cb",
+			"timestamp": "2023-09-06T14:42:39.784Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyKNCPERP": {
+			"name": "PerpsV2ProxyKNCPERP",
+			"address": "0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+			"timestamp": "2023-09-06T14:53:24.644Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateKNCPERP": {
+			"name": "PerpsV2MarketStateKNCPERP",
+			"address": "0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+			"timestamp": "2023-09-06T14:53:33.646Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x4b4e430000000000000000000000000000000000000000000000000000000000",
+				"0x734b4e4350455250000000000000000000000000000000000000000000000000",
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1"
+			]
+		},
+		"PerpsV2MarketKNCPERP": {
+			"name": "PerpsV2MarketKNCPERP",
+			"address": "0xf9C0122A38c6B85FDAfF3065f3d0822D9802E03e",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xf9C0122A38c6B85FDAfF3065f3d0822D9802E03e",
+			"timestamp": "2023-09-06T14:53:44.153Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateKNCPERP": {
+			"name": "PerpsV2MarketLiquidateKNCPERP",
+			"address": "0x959A4309f7d82e3D34C353a405200D8277032115",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x959A4309f7d82e3D34C353a405200D8277032115",
+			"timestamp": "2023-09-06T14:53:54.291Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentKNCPERP": {
+			"name": "PerpsV2DelayedIntentKNCPERP",
+			"address": "0xE6bf793B3ED4b42f8c3FB883a60e49f976a1791e",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xE6bf793B3ED4b42f8c3FB883a60e49f976a1791e",
+			"timestamp": "2023-09-06T14:54:08.761Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionKNCPERP": {
+			"name": "PerpsV2DelayedExecutionKNCPERP",
+			"address": "0xE1264B2B97be89755FBCE7A280FD276C55F661D1",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xE1264B2B97be89755FBCE7A280FD276C55F661D1",
+			"timestamp": "2023-09-06T14:54:19.417Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x152Da6a8F32F25B56A32ef5559d4A2A96D09148b",
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsKNCPERP": {
+			"name": "PerpsV2MarketViewsKNCPERP",
+			"address": "0xCcff378F3aA9E4ABB36fdCb03371a59008C28708",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xCcff378F3aA9E4ABB36fdCb03371a59008C28708",
+			"timestamp": "2023-09-06T14:54:29.866Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x325AF017A497953734CB7B1F51580ff9aD1122B1",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyRNDRPERP": {
+			"name": "PerpsV2ProxyRNDRPERP",
+			"address": "0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+			"timestamp": "2023-09-06T15:07:02.893Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateRNDRPERP": {
+			"name": "PerpsV2MarketStateRNDRPERP",
+			"address": "0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+			"timestamp": "2023-09-06T15:07:13.010Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x524e445200000000000000000000000000000000000000000000000000000000",
+				"0x73524e4452504552500000000000000000000000000000000000000000000000",
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2"
+			]
+		},
+		"PerpsV2MarketRNDRPERP": {
+			"name": "PerpsV2MarketRNDRPERP",
+			"address": "0x3942722D61d784347F38CaA493B1E073aB321B22",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x3942722D61d784347F38CaA493B1E073aB321B22",
+			"timestamp": "2023-09-06T15:07:23.599Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateRNDRPERP": {
+			"name": "PerpsV2MarketLiquidateRNDRPERP",
+			"address": "0x70eE22558a577C9c3C7BE0A5F9Fb494c20e0545b",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x70eE22558a577C9c3C7BE0A5F9Fb494c20e0545b",
+			"timestamp": "2023-09-06T15:07:33.792Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentRNDRPERP": {
+			"name": "PerpsV2DelayedIntentRNDRPERP",
+			"address": "0xC81e43B6FB257760cb655C5B3Ea0b87d93cf01B5",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xC81e43B6FB257760cb655C5B3Ea0b87d93cf01B5",
+			"timestamp": "2023-09-06T15:07:44.316Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionRNDRPERP": {
+			"name": "PerpsV2DelayedExecutionRNDRPERP",
+			"address": "0x097b1ec678F135fa31C7D4c0D92b34940dB06251",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x097b1ec678F135fa31C7D4c0D92b34940dB06251",
+			"timestamp": "2023-09-06T15:07:55.364Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x91cc4a83d026e5171525aFCAEd020123A653c2C9",
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsRNDRPERP": {
+			"name": "PerpsV2MarketViewsRNDRPERP",
+			"address": "0xaEB7205C613c1e1aD34E077EbE86fDB9Da16cEcf",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xaEB7205C613c1e1aD34E077EbE86fDB9Da16cEcf",
+			"timestamp": "2023-09-06T15:08:05.659Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyONEPERP": {
+			"name": "PerpsV2ProxyONEPERP",
+			"address": "0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+			"timestamp": "2023-09-06T18:26:41.067Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateONEPERP": {
+			"name": "PerpsV2MarketStateONEPERP",
+			"address": "0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+			"timestamp": "2023-09-06T18:26:51.073Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x4f4e450000000000000000000000000000000000000000000000000000000000",
+				"0x734f4e4550455250000000000000000000000000000000000000000000000000",
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4"
+			]
+		},
+		"PerpsV2MarketONEPERP": {
+			"name": "PerpsV2MarketONEPERP",
+			"address": "0x66F541d5F16f2451dE9DE5098d241774a33093f4",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x66F541d5F16f2451dE9DE5098d241774a33093f4",
+			"timestamp": "2023-09-06T18:27:01.628Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateONEPERP": {
+			"name": "PerpsV2MarketLiquidateONEPERP",
+			"address": "0x9c3A582Cb712C8CDb067456b993F0234EDB185bD",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x9c3A582Cb712C8CDb067456b993F0234EDB185bD",
+			"timestamp": "2023-09-06T18:27:11.819Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentONEPERP": {
+			"name": "PerpsV2DelayedIntentONEPERP",
+			"address": "0x66f916cc0B0b26C1783974A60Cef9B0AfC382825",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x66f916cc0B0b26C1783974A60Cef9B0AfC382825",
+			"timestamp": "2023-09-06T18:27:22.316Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionONEPERP": {
+			"name": "PerpsV2DelayedExecutionONEPERP",
+			"address": "0xBe0f35e3d0ffe514969333B4d07A279D3d66A494",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xBe0f35e3d0ffe514969333B4d07A279D3d66A494",
+			"timestamp": "2023-09-06T18:27:33.020Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x86BbB4E38Ffa64F263E84A0820138c5d938BA86E",
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsONEPERP": {
+			"name": "PerpsV2MarketViewsONEPERP",
+			"address": "0xA4d53f6CBCF314f318f316ae61cDd400c974085d",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xA4d53f6CBCF314f318f316ae61cDd400c974085d",
+			"timestamp": "2023-09-06T18:27:43.222Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyPERPPERP": {
+			"name": "PerpsV2ProxyPERPPERP",
+			"address": "0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+			"timestamp": "2023-09-06T18:38:29.063Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStatePERPPERP": {
+			"name": "PerpsV2MarketStatePERPPERP",
+			"address": "0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+			"timestamp": "2023-09-06T18:38:39.176Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5045525000000000000000000000000000000000000000000000000000000000",
+				"0x7350455250504552500000000000000000000000000000000000000000000000",
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701"
+			]
+		},
+		"PerpsV2MarketPERPPERP": {
+			"name": "PerpsV2MarketPERPPERP",
+			"address": "0x6d9bDe78D5562b6BE4B6A70f4f2511fb1A8f9E10",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x6d9bDe78D5562b6BE4B6A70f4f2511fb1A8f9E10",
+			"timestamp": "2023-09-06T18:38:49.685Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidatePERPPERP": {
+			"name": "PerpsV2MarketLiquidatePERPPERP",
+			"address": "0xc765DcA9D0e77B01b2Bb74fEBae2cF89E038092B",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xc765DcA9D0e77B01b2Bb74fEBae2cF89E038092B",
+			"timestamp": "2023-09-06T18:38:59.800Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentPERPPERP": {
+			"name": "PerpsV2DelayedIntentPERPPERP",
+			"address": "0x5E51817910c53A01e7Ee90B8640a66768075bf2E",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x5E51817910c53A01e7Ee90B8640a66768075bf2E",
+			"timestamp": "2023-09-06T18:39:10.266Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionPERPPERP": {
+			"name": "PerpsV2DelayedExecutionPERPPERP",
+			"address": "0x692c746f443031559E9816b50c99165fd452982d",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x692c746f443031559E9816b50c99165fd452982d",
+			"timestamp": "2023-09-06T18:39:19.325Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xaF2E4c337B038eaFA1dE23b44C163D0008e49EaD",
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsPERPPERP": {
+			"name": "PerpsV2MarketViewsPERPPERP",
+			"address": "0x24D29234e34793476000FA068E858dE4380646E6",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x24D29234e34793476000FA068E858dE4380646E6",
+			"timestamp": "2023-09-06T18:39:29.531Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyZILPERP": {
+			"name": "PerpsV2ProxyZILPERP",
+			"address": "0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+			"timestamp": "2023-09-06T18:50:03.351Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateZILPERP": {
+			"name": "PerpsV2MarketStateZILPERP",
+			"address": "0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+			"timestamp": "2023-09-06T18:50:13.548Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5a494c0000000000000000000000000000000000000000000000000000000000",
+				"0x735a494c50455250000000000000000000000000000000000000000000000000",
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba"
+			]
+		},
+		"PerpsV2MarketZILPERP": {
+			"name": "PerpsV2MarketZILPERP",
+			"address": "0x7EA760077b84f5e9A5D8a51Bf2A49B91D7cd5aa9",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x7EA760077b84f5e9A5D8a51Bf2A49B91D7cd5aa9",
+			"timestamp": "2023-09-06T18:50:24.088Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateZILPERP": {
+			"name": "PerpsV2MarketLiquidateZILPERP",
+			"address": "0x0194e4BbD724633546D543A28125c579dfEc057c",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x0194e4BbD724633546D543A28125c579dfEc057c",
+			"timestamp": "2023-09-06T18:50:34.220Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentZILPERP": {
+			"name": "PerpsV2DelayedIntentZILPERP",
+			"address": "0x0e1A5c48f3Ae7c629155aFAbbBcd5442627c7EF6",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x0e1A5c48f3Ae7c629155aFAbbBcd5442627c7EF6",
+			"timestamp": "2023-09-06T18:50:43.000Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionZILPERP": {
+			"name": "PerpsV2DelayedExecutionZILPERP",
+			"address": "0x89698dc9ECD95337AD64FDa7dF773dA5007926A8",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x89698dc9ECD95337AD64FDa7dF773dA5007926A8",
+			"timestamp": "2023-09-06T18:50:54.338Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x01a43786C2279dC417e7901d45B917afa51ceb9a",
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsZILPERP": {
+			"name": "PerpsV2MarketViewsZILPERP",
+			"address": "0xd21F7CC02f3a9B6d059cdAd6e0C0f4db18420189",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xd21F7CC02f3a9B6d059cdAd6e0C0f4db18420189",
+			"timestamp": "2023-09-06T18:51:02.896Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyRUNEPERP": {
+			"name": "PerpsV2ProxyRUNEPERP",
+			"address": "0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+			"timestamp": "2023-09-06T19:02:15.056Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateRUNEPERP": {
+			"name": "PerpsV2MarketStateRUNEPERP",
+			"address": "0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+			"timestamp": "2023-09-06T19:02:25.285Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x52554e4500000000000000000000000000000000000000000000000000000000",
+				"0x7352554e45504552500000000000000000000000000000000000000000000000",
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7"
+			]
+		},
+		"PerpsV2MarketRUNEPERP": {
+			"name": "PerpsV2MarketRUNEPERP",
+			"address": "0x18f763fd61Efd3D9884981CC2CBd6845351e4b70",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x18f763fd61Efd3D9884981CC2CBd6845351e4b70",
+			"timestamp": "2023-09-06T19:02:35.947Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateRUNEPERP": {
+			"name": "PerpsV2MarketLiquidateRUNEPERP",
+			"address": "0xa26677434188Db65e42dd5606EE297366361cc2D",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xa26677434188Db65e42dd5606EE297366361cc2D",
+			"timestamp": "2023-09-06T19:02:45.995Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentRUNEPERP": {
+			"name": "PerpsV2DelayedIntentRUNEPERP",
+			"address": "0xDaf440cDeA843762c6D4ECFA7C2f64AED832319e",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xDaf440cDeA843762c6D4ECFA7C2f64AED832319e",
+			"timestamp": "2023-09-06T19:02:54.906Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionRUNEPERP": {
+			"name": "PerpsV2DelayedExecutionRUNEPERP",
+			"address": "0xB4D55aE3a6B3B73633F622Ef89e94E4bAD05c08F",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xB4D55aE3a6B3B73633F622Ef89e94E4bAD05c08F",
+			"timestamp": "2023-09-06T19:03:06.193Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEAf0191bCa9DD417202cEf2B18B7515ABff1E196",
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsRUNEPERP": {
+			"name": "PerpsV2MarketViewsRUNEPERP",
+			"address": "0xa9BB96d03A6ED56C14cd47a2CE75Fa6a7633aeC2",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xa9BB96d03A6ED56C14cd47a2CE75Fa6a7633aeC2",
+			"timestamp": "2023-09-06T19:03:14.842Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxySUSHIPERP": {
+			"name": "PerpsV2ProxySUSHIPERP",
+			"address": "0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+			"timestamp": "2023-09-06T19:18:12.840Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateSUSHIPERP": {
+			"name": "PerpsV2MarketStateSUSHIPERP",
+			"address": "0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+			"timestamp": "2023-09-06T19:18:22.841Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5355534849000000000000000000000000000000000000000000000000000000",
+				"0x7353555348495045525000000000000000000000000000000000000000000000",
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32"
+			]
+		},
+		"PerpsV2MarketSUSHIPERP": {
+			"name": "PerpsV2MarketSUSHIPERP",
+			"address": "0x070E7B0447e096704C54923826ac0Cb6C6472400",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x070E7B0447e096704C54923826ac0Cb6C6472400",
+			"timestamp": "2023-09-06T19:18:33.531Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateSUSHIPERP": {
+			"name": "PerpsV2MarketLiquidateSUSHIPERP",
+			"address": "0x21F660512a18dEad0664F189aF73D74373dDC45f",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x21F660512a18dEad0664F189aF73D74373dDC45f",
+			"timestamp": "2023-09-06T19:18:43.714Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentSUSHIPERP": {
+			"name": "PerpsV2DelayedIntentSUSHIPERP",
+			"address": "0xd01a18C2eDB9f411A8329eF9B2905F3Cf7D35408",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xd01a18C2eDB9f411A8329eF9B2905F3Cf7D35408",
+			"timestamp": "2023-09-06T19:18:54.238Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionSUSHIPERP": {
+			"name": "PerpsV2DelayedExecutionSUSHIPERP",
+			"address": "0xdB87f699ae4045c290033240f22C0CBe80d95724",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xdB87f699ae4045c290033240f22C0CBe80d95724",
+			"timestamp": "2023-09-06T19:19:04.940Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xdcCDa0cFBEE25B33Ff4Ccca64467E89512511bf6",
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsSUSHIPERP": {
+			"name": "PerpsV2MarketViewsSUSHIPERP",
+			"address": "0xc7a869dEEEE1aCaB2B30B6022C246194c83ed49C",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xc7a869dEEEE1aCaB2B30B6022C246194c83ed49C",
+			"timestamp": "2023-09-06T19:19:15.106Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyZECPERP": {
+			"name": "PerpsV2ProxyZECPERP",
+			"address": "0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+			"timestamp": "2023-09-07T15:12:33.263Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateZECPERP": {
+			"name": "PerpsV2MarketStateZECPERP",
+			"address": "0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+			"timestamp": "2023-09-07T15:12:43.284Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5a45430000000000000000000000000000000000000000000000000000000000",
+				"0x735a454350455250000000000000000000000000000000000000000000000000",
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6"
+			]
+		},
+		"PerpsV2MarketZECPERP": {
+			"name": "PerpsV2MarketZECPERP",
+			"address": "0x8CC84E2c8BE0B7999B65A6b2bceF4dfF1f433Ce1",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x8CC84E2c8BE0B7999B65A6b2bceF4dfF1f433Ce1",
+			"timestamp": "2023-09-07T15:12:53.705Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateZECPERP": {
+			"name": "PerpsV2MarketLiquidateZECPERP",
+			"address": "0x8649Fdb91a47281Ea1eE67b83967b0D00F79a560",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x8649Fdb91a47281Ea1eE67b83967b0D00F79a560",
+			"timestamp": "2023-09-07T15:13:03.857Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentZECPERP": {
+			"name": "PerpsV2DelayedIntentZECPERP",
+			"address": "0xD21257d00E06621b1946532a2410dB1aBa75C638",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xD21257d00E06621b1946532a2410dB1aBa75C638",
+			"timestamp": "2023-09-07T15:13:12.782Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionZECPERP": {
+			"name": "PerpsV2DelayedExecutionZECPERP",
+			"address": "0x3f9917995e1a55060B984dbeE9d7358D9eB7AC8c",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x3f9917995e1a55060B984dbeE9d7358D9eB7AC8c",
+			"timestamp": "2023-09-07T15:13:24.037Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xf8aB6B9008f2290965426d3076bC9d2EA835575e",
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsZECPERP": {
+			"name": "PerpsV2MarketViewsZECPERP",
+			"address": "0x77fB9D52099d4207108C26AB22f9D8BBF691A37A",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x77fB9D52099d4207108C26AB22f9D8BBF691A37A",
+			"timestamp": "2023-09-07T15:13:34.209Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyXTZPERP": {
+			"name": "PerpsV2ProxyXTZPERP",
+			"address": "0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+			"timestamp": "2023-09-07T15:26:30.771Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateXTZPERP": {
+			"name": "PerpsV2MarketStateXTZPERP",
+			"address": "0xaf621161755C601C1469e3487ce971f39Ae507BC",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xaf621161755C601C1469e3487ce971f39Ae507BC",
+			"timestamp": "2023-09-07T15:26:40.907Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x58545a0000000000000000000000000000000000000000000000000000000000",
+				"0x7358545a50455250000000000000000000000000000000000000000000000000",
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC"
+			]
+		},
+		"PerpsV2MarketXTZPERP": {
+			"name": "PerpsV2MarketXTZPERP",
+			"address": "0x577B7dAdF6052d8DFA3C394143a4021b433A809c",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x577B7dAdF6052d8DFA3C394143a4021b433A809c",
+			"timestamp": "2023-09-07T15:26:51.387Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateXTZPERP": {
+			"name": "PerpsV2MarketLiquidateXTZPERP",
+			"address": "0xe96097De5D8d168FC46B52874dF0A474E4A293D6",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xe96097De5D8d168FC46B52874dF0A474E4A293D6",
+			"timestamp": "2023-09-07T15:27:01.338Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentXTZPERP": {
+			"name": "PerpsV2DelayedIntentXTZPERP",
+			"address": "0xa7912822C220cda3596CAbFe9077769576E2b46E",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xa7912822C220cda3596CAbFe9077769576E2b46E",
+			"timestamp": "2023-09-07T15:27:11.782Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionXTZPERP": {
+			"name": "PerpsV2DelayedExecutionXTZPERP",
+			"address": "0x4Fb59e8dAfcd398b2ca7Fe2Af5a7405Cd0d22278",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x4Fb59e8dAfcd398b2ca7Fe2Af5a7405Cd0d22278",
+			"timestamp": "2023-09-07T15:27:22.398Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xC645A757DD81C69641e010aDD2Da894b4b7Bc921",
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsXTZPERP": {
+			"name": "PerpsV2MarketViewsXTZPERP",
+			"address": "0x95CaB224896972e69Ad626bC75D29116CE7d4521",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x95CaB224896972e69Ad626bC75D29116CE7d4521",
+			"timestamp": "2023-09-07T15:27:30.889Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xaf621161755C601C1469e3487ce971f39Ae507BC",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyUMAPERP": {
+			"name": "PerpsV2ProxyUMAPERP",
+			"address": "0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+			"timestamp": "2023-09-07T15:39:34.440Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateUMAPERP": {
+			"name": "PerpsV2MarketStateUMAPERP",
+			"address": "0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+			"timestamp": "2023-09-07T15:39:43.480Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x554d410000000000000000000000000000000000000000000000000000000000",
+				"0x73554d4150455250000000000000000000000000000000000000000000000000",
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba"
+			]
+		},
+		"PerpsV2MarketUMAPERP": {
+			"name": "PerpsV2MarketUMAPERP",
+			"address": "0xecAfBAc3221160337a3a8dcB25A955f50618feeB",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xecAfBAc3221160337a3a8dcB25A955f50618feeB",
+			"timestamp": "2023-09-07T15:39:54.014Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateUMAPERP": {
+			"name": "PerpsV2MarketLiquidateUMAPERP",
+			"address": "0x14A3F810db4E4EC74906D2538DE00a4c995f229E",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x14A3F810db4E4EC74906D2538DE00a4c995f229E",
+			"timestamp": "2023-09-07T15:40:04.107Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentUMAPERP": {
+			"name": "PerpsV2DelayedIntentUMAPERP",
+			"address": "0xD60E490fBF42a43E67F1e8d74debd7bCB5240F80",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xD60E490fBF42a43E67F1e8d74debd7bCB5240F80",
+			"timestamp": "2023-09-07T15:40:18.601Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionUMAPERP": {
+			"name": "PerpsV2DelayedExecutionUMAPERP",
+			"address": "0x581Fa71eB5b5D704d0c268EEd58e48f801338f7B",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x581Fa71eB5b5D704d0c268EEd58e48f801338f7B",
+			"timestamp": "2023-09-07T15:40:29.294Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xb815Eb8D3a9dA3EdDD926225c0FBD3A566e8C749",
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsUMAPERP": {
+			"name": "PerpsV2MarketViewsUMAPERP",
+			"address": "0x99B2b4F1C6222d97e70Cf7D0C7Cc314465Ca9dC0",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x99B2b4F1C6222d97e70Cf7D0C7Cc314465Ca9dC0",
+			"timestamp": "2023-09-07T15:40:39.410Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyENJPERP": {
+			"name": "PerpsV2ProxyENJPERP",
+			"address": "0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+			"timestamp": "2023-09-07T15:51:18.966Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateENJPERP": {
+			"name": "PerpsV2MarketStateENJPERP",
+			"address": "0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+			"timestamp": "2023-09-07T15:51:28.925Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x454e4a0000000000000000000000000000000000000000000000000000000000",
+				"0x73454e4a50455250000000000000000000000000000000000000000000000000",
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB"
+			]
+		},
+		"PerpsV2MarketENJPERP": {
+			"name": "PerpsV2MarketENJPERP",
+			"address": "0x9651De67fD8c3003a56b25dc24C73C317f00251d",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x9651De67fD8c3003a56b25dc24C73C317f00251d",
+			"timestamp": "2023-09-07T15:51:39.439Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateENJPERP": {
+			"name": "PerpsV2MarketLiquidateENJPERP",
+			"address": "0x03c0544195A86028abdD8E69239A03b7ca0bC283",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x03c0544195A86028abdD8E69239A03b7ca0bC283",
+			"timestamp": "2023-09-07T15:51:49.506Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentENJPERP": {
+			"name": "PerpsV2DelayedIntentENJPERP",
+			"address": "0xf23DF6328A8EDCFb34B9905715a32181e72964c3",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xf23DF6328A8EDCFb34B9905715a32181e72964c3",
+			"timestamp": "2023-09-07T15:51:59.905Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionENJPERP": {
+			"name": "PerpsV2DelayedExecutionENJPERP",
+			"address": "0xE7b44E0411307B637A1B3B75AF8c37d752857Ae1",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xE7b44E0411307B637A1B3B75AF8c37d752857Ae1",
+			"timestamp": "2023-09-07T15:52:09.043Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x88C8316E5CCCCE2E27e5BFcDAC99f1251246196a",
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsENJPERP": {
+			"name": "PerpsV2MarketViewsENJPERP",
+			"address": "0x04631B9297919E98334C5AbAa762C48af071b4ef",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x04631B9297919E98334C5AbAa762C48af071b4ef",
+			"timestamp": "2023-09-07T15:52:19.185Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyICPPERP": {
+			"name": "PerpsV2ProxyICPPERP",
+			"address": "0x105f7F2986A2414B4007958b836904100a53d1AD",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x105f7F2986A2414B4007958b836904100a53d1AD",
+			"timestamp": "2023-09-07T16:04:04.699Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateICPPERP": {
+			"name": "PerpsV2MarketStateICPPERP",
+			"address": "0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+			"timestamp": "2023-09-07T16:04:14.779Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x4943500000000000000000000000000000000000000000000000000000000000",
+				"0x7349435050455250000000000000000000000000000000000000000000000000",
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0"
+			]
+		},
+		"PerpsV2MarketICPPERP": {
+			"name": "PerpsV2MarketICPPERP",
+			"address": "0x7221d65B8e46a380102EBE986C01A9481e75Bd9E",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x7221d65B8e46a380102EBE986C01A9481e75Bd9E",
+			"timestamp": "2023-09-07T16:04:25.338Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x105f7F2986A2414B4007958b836904100a53d1AD",
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateICPPERP": {
+			"name": "PerpsV2MarketLiquidateICPPERP",
+			"address": "0x4F7d521a7CF8FA3b6EbF5d960907aE83E2888fC7",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x4F7d521a7CF8FA3b6EbF5d960907aE83E2888fC7",
+			"timestamp": "2023-09-07T16:04:35.506Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x105f7F2986A2414B4007958b836904100a53d1AD",
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentICPPERP": {
+			"name": "PerpsV2DelayedIntentICPPERP",
+			"address": "0xcAd243fA79De8Acb3B0336Dd9793A16D8e6A3aA5",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xcAd243fA79De8Acb3B0336Dd9793A16D8e6A3aA5",
+			"timestamp": "2023-09-07T16:04:46.014Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x105f7F2986A2414B4007958b836904100a53d1AD",
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionICPPERP": {
+			"name": "PerpsV2DelayedExecutionICPPERP",
+			"address": "0xE72f5C2B7C8E8697aFFe886497d22ad47D832085",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xE72f5C2B7C8E8697aFFe886497d22ad47D832085",
+			"timestamp": "2023-09-07T16:05:00.659Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x105f7F2986A2414B4007958b836904100a53d1AD",
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsICPPERP": {
+			"name": "PerpsV2MarketViewsICPPERP",
+			"address": "0xdd1122620688C25DF27DD405cf467cC9e5C0CC82",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xdd1122620688C25DF27DD405cf467cC9e5C0CC82",
+			"timestamp": "2023-09-07T16:05:10.957Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyXLMPERP": {
+			"name": "PerpsV2ProxyXLMPERP",
+			"address": "0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+			"timestamp": "2023-09-07T17:21:39.033Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateXLMPERP": {
+			"name": "PerpsV2MarketStateXLMPERP",
+			"address": "0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+			"timestamp": "2023-09-07T17:21:49.157Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x584c4d0000000000000000000000000000000000000000000000000000000000",
+				"0x73584c4d50455250000000000000000000000000000000000000000000000000",
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d"
+			]
+		},
+		"PerpsV2MarketXLMPERP": {
+			"name": "PerpsV2MarketXLMPERP",
+			"address": "0xff8Bf0f6f9494b44AeD91BB7868Ab94b76dCeAAD",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xff8Bf0f6f9494b44AeD91BB7868Ab94b76dCeAAD",
+			"timestamp": "2023-09-07T17:21:59.527Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateXLMPERP": {
+			"name": "PerpsV2MarketLiquidateXLMPERP",
+			"address": "0xECE9613025F970f1d56b2Ba749e1170976465088",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xECE9613025F970f1d56b2Ba749e1170976465088",
+			"timestamp": "2023-09-07T17:22:09.606Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentXLMPERP": {
+			"name": "PerpsV2DelayedIntentXLMPERP",
+			"address": "0x9576B1104c0fa29F76B3559B77e0fD0A6b450213",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x9576B1104c0fa29F76B3559B77e0fD0A6b450213",
+			"timestamp": "2023-09-07T17:22:20.031Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionXLMPERP": {
+			"name": "PerpsV2DelayedExecutionXLMPERP",
+			"address": "0x2aEF3F9E57E2695C32bEaC56d79BFe4efb55bF63",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x2aEF3F9E57E2695C32bEaC56d79BFe4efb55bF63",
+			"timestamp": "2023-09-07T17:22:29.187Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xfbbBFA96Af2980aE4014d5D5A2eF14bD79B2a299",
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsXLMPERP": {
+			"name": "PerpsV2MarketViewsXLMPERP",
+			"address": "0x0C35263A2c4ed7BB812D3B4f4A5Da1A623fB2b7B",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x0C35263A2c4ed7BB812D3B4f4A5Da1A623fB2b7B",
+			"timestamp": "2023-09-07T17:22:39.307Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2Proxy1INCHPERP": {
+			"name": "PerpsV2Proxy1INCHPERP",
+			"address": "0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+			"timestamp": "2023-09-07T17:36:34.945Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketState1INCHPERP": {
+			"name": "PerpsV2MarketState1INCHPERP",
+			"address": "0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+			"timestamp": "2023-09-07T17:36:45.116Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x31494e4348000000000000000000000000000000000000000000000000000000",
+				"0x7331494e43485045525000000000000000000000000000000000000000000000",
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70"
+			]
+		},
+		"PerpsV2Market1INCHPERP": {
+			"name": "PerpsV2Market1INCHPERP",
+			"address": "0x06bA4E6246A0C4BcBB53Ec860bE5372Fc40629ab",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x06bA4E6246A0C4BcBB53Ec860bE5372Fc40629ab",
+			"timestamp": "2023-09-07T17:36:55.636Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidate1INCHPERP": {
+			"name": "PerpsV2MarketLiquidate1INCHPERP",
+			"address": "0x08e52251d4434eadF1f2Ce01D419B6249694d9e5",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x08e52251d4434eadF1f2Ce01D419B6249694d9e5",
+			"timestamp": "2023-09-07T17:37:05.678Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntent1INCHPERP": {
+			"name": "PerpsV2DelayedIntent1INCHPERP",
+			"address": "0x6d5403B5b195F0F26aaF5e2a7FD58aB1D0Fb2F3e",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x6d5403B5b195F0F26aaF5e2a7FD58aB1D0Fb2F3e",
+			"timestamp": "2023-09-07T17:37:16.210Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecution1INCHPERP": {
+			"name": "PerpsV2DelayedExecution1INCHPERP",
+			"address": "0xDC7a51F5c32909AcD5D03d11944c4480bee1Cd47",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xDC7a51F5c32909AcD5D03d11944c4480bee1Cd47",
+			"timestamp": "2023-09-07T17:37:27.469Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd5fAaa459e5B3c118fD85Fc0fD67f56310b1618D",
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViews1INCHPERP": {
+			"name": "PerpsV2MarketViews1INCHPERP",
+			"address": "0x23D5291fEa095D8851cE3bB711a10b4982923d9a",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x23D5291fEa095D8851cE3bB711a10b4982923d9a",
+			"timestamp": "2023-09-07T17:37:37.749Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyEOSPERP": {
+			"name": "PerpsV2ProxyEOSPERP",
+			"address": "0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+			"timestamp": "2023-09-07T17:48:30.536Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateEOSPERP": {
+			"name": "PerpsV2MarketStateEOSPERP",
+			"address": "0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+			"timestamp": "2023-09-07T17:48:39.420Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x454f530000000000000000000000000000000000000000000000000000000000",
+				"0x73454f5350455250000000000000000000000000000000000000000000000000",
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B"
+			]
+		},
+		"PerpsV2MarketEOSPERP": {
+			"name": "PerpsV2MarketEOSPERP",
+			"address": "0x4F9c7cE72255CC04ca2159793a59EFE3E6F40aA5",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x4F9c7cE72255CC04ca2159793a59EFE3E6F40aA5",
+			"timestamp": "2023-09-07T17:48:49.909Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateEOSPERP": {
+			"name": "PerpsV2MarketLiquidateEOSPERP",
+			"address": "0xb997eDbe18f7e8a9904EC7E6A945f2940De5193D",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xb997eDbe18f7e8a9904EC7E6A945f2940De5193D",
+			"timestamp": "2023-09-07T17:49:00.061Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentEOSPERP": {
+			"name": "PerpsV2DelayedIntentEOSPERP",
+			"address": "0x02A26Df328E08c12ce3A5ed428b83Dc5e4c2ee67",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x02A26Df328E08c12ce3A5ed428b83Dc5e4c2ee67",
+			"timestamp": "2023-09-07T17:49:08.921Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionEOSPERP": {
+			"name": "PerpsV2DelayedExecutionEOSPERP",
+			"address": "0x15F71Cb39F39A3b30ef610a15Ce1CBE766CB069C",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x15F71Cb39F39A3b30ef610a15Ce1CBE766CB069C",
+			"timestamp": "2023-09-07T17:49:20.199Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x50a40d947726ac1373DC438e7aaDEde9b237564d",
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsEOSPERP": {
+			"name": "PerpsV2MarketViewsEOSPERP",
+			"address": "0x86508410Fd82c863920f194DA49a0835717c3673",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x86508410Fd82c863920f194DA49a0835717c3673",
+			"timestamp": "2023-09-07T17:49:28.782Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x1f53699b435326B6e264727b5504Cc28006Bed8B",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyCELOPERP": {
+			"name": "PerpsV2ProxyCELOPERP",
+			"address": "0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+			"timestamp": "2023-09-07T18:02:06.723Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateCELOPERP": {
+			"name": "PerpsV2MarketStateCELOPERP",
+			"address": "0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+			"timestamp": "2023-09-07T18:02:16.770Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x43454c4f00000000000000000000000000000000000000000000000000000000",
+				"0x7343454c4f504552500000000000000000000000000000000000000000000000",
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE"
+			]
+		},
+		"PerpsV2MarketCELOPERP": {
+			"name": "PerpsV2MarketCELOPERP",
+			"address": "0x4334DfcB85EaB5dA80b162F930B56F47Ebb156f1",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x4334DfcB85EaB5dA80b162F930B56F47Ebb156f1",
+			"timestamp": "2023-09-07T18:02:27.288Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateCELOPERP": {
+			"name": "PerpsV2MarketLiquidateCELOPERP",
+			"address": "0xf4EDc15CCf3bE5833dB3753AA91782a601F9aeda",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xf4EDc15CCf3bE5833dB3753AA91782a601F9aeda",
+			"timestamp": "2023-09-07T18:02:37.263Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentCELOPERP": {
+			"name": "PerpsV2DelayedIntentCELOPERP",
+			"address": "0x32a357AdE8497EA57446b4BF5099FA9F0918592f",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x32a357AdE8497EA57446b4BF5099FA9F0918592f",
+			"timestamp": "2023-09-07T18:02:47.683Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionCELOPERP": {
+			"name": "PerpsV2DelayedExecutionCELOPERP",
+			"address": "0x5dCA1c6c75f6410CB4020A4aB5657FEF716fCfc3",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x5dCA1c6c75f6410CB4020A4aB5657FEF716fCfc3",
+			"timestamp": "2023-09-07T18:02:57.071Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2292865b2b6C837B7406E819200CE61c1c4F8d43",
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsCELOPERP": {
+			"name": "PerpsV2MarketViewsCELOPERP",
+			"address": "0x19bd719105008C82dA4b4FD8112c9D2A97C0930c",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x19bd719105008C82dA4b4FD8112c9D2A97C0930c",
+			"timestamp": "2023-09-07T18:03:07.185Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyALGOPERP": {
+			"name": "PerpsV2ProxyALGOPERP",
+			"address": "0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+			"timestamp": "2023-09-07T18:15:10.714Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateALGOPERP": {
+			"name": "PerpsV2MarketStateALGOPERP",
+			"address": "0xd856b45d4D9671482e53E705058aF3fF09000A28",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xd856b45d4D9671482e53E705058aF3fF09000A28",
+			"timestamp": "2023-09-07T18:15:20.734Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x414c474f00000000000000000000000000000000000000000000000000000000",
+				"0x73414c474f504552500000000000000000000000000000000000000000000000",
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28"
+			]
+		},
+		"PerpsV2MarketALGOPERP": {
+			"name": "PerpsV2MarketALGOPERP",
+			"address": "0x949404d0AC66430842145204fB83c1aB9C21F35B",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x949404d0AC66430842145204fB83c1aB9C21F35B",
+			"timestamp": "2023-09-07T18:15:31.215Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateALGOPERP": {
+			"name": "PerpsV2MarketLiquidateALGOPERP",
+			"address": "0xc0929A879906AF158B63230BC7a60144F2E26839",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xc0929A879906AF158B63230BC7a60144F2E26839",
+			"timestamp": "2023-09-07T18:15:41.350Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentALGOPERP": {
+			"name": "PerpsV2DelayedIntentALGOPERP",
+			"address": "0x9bAEDd40FaE33Ce9022D39a9bd71F325E626a06e",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x9bAEDd40FaE33Ce9022D39a9bd71F325E626a06e",
+			"timestamp": "2023-09-07T18:15:51.854Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionALGOPERP": {
+			"name": "PerpsV2DelayedExecutionALGOPERP",
+			"address": "0x799654ecaF87E769C56f722C82Fbc7BBCC4f621C",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x799654ecaF87E769C56f722C82Fbc7BBCC4f621C",
+			"timestamp": "2023-09-07T18:16:00.947Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x96f2842007021a4C5f06Bcc72961701D66Ff8465",
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsALGOPERP": {
+			"name": "PerpsV2MarketViewsALGOPERP",
+			"address": "0xfd9f2393634fAe33099503b45719d8EBf1dA7744",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xfd9f2393634fAe33099503b45719d8EBf1dA7744",
+			"timestamp": "2023-09-07T18:16:11.058Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xd856b45d4D9671482e53E705058aF3fF09000A28",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyZRXPERP": {
+			"name": "PerpsV2ProxyZRXPERP",
+			"address": "0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+			"timestamp": "2023-09-07T19:49:17.035Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateZRXPERP": {
+			"name": "PerpsV2MarketStateZRXPERP",
+			"address": "0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+			"timestamp": "2023-09-07T19:49:27.047Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5a52580000000000000000000000000000000000000000000000000000000000",
+				"0x735a525850455250000000000000000000000000000000000000000000000000",
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de"
+			]
+		},
+		"PerpsV2MarketZRXPERP": {
+			"name": "PerpsV2MarketZRXPERP",
+			"address": "0x4DdD30Fff71Bd03AfFd9A6E27c7C8C0CC9731b22",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x4DdD30Fff71Bd03AfFd9A6E27c7C8C0CC9731b22",
+			"timestamp": "2023-09-07T19:49:37.526Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateZRXPERP": {
+			"name": "PerpsV2MarketLiquidateZRXPERP",
+			"address": "0x67e010545133038292D124E49D1dB6459fff82AF",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x67e010545133038292D124E49D1dB6459fff82AF",
+			"timestamp": "2023-09-07T19:49:47.709Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentZRXPERP": {
+			"name": "PerpsV2DelayedIntentZRXPERP",
+			"address": "0x58e178B0CacD1bc56a2cC408030A1f69eDc315f7",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x58e178B0CacD1bc56a2cC408030A1f69eDc315f7",
+			"timestamp": "2023-09-07T19:49:58.276Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionZRXPERP": {
+			"name": "PerpsV2DelayedExecutionZRXPERP",
+			"address": "0x08BCea94194A1D63379123073Cb254b77f7721A5",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x08BCea94194A1D63379123073Cb254b77f7721A5",
+			"timestamp": "2023-09-07T19:50:08.960Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x76BB1Edf0C55eC68f4C8C7fb3C076b811b1a9b9f",
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsZRXPERP": {
+			"name": "PerpsV2MarketViewsZRXPERP",
+			"address": "0x0ED899BDe78B8f647D8bB1A44cD2DeDFC087188C",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x0ED899BDe78B8f647D8bB1A44cD2DeDFC087188C",
+			"timestamp": "2023-09-07T19:50:19.231Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x0e4695edb83FB23E6b12AFa3660beF09610791de",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxySEIPERP": {
+			"name": "PerpsV2ProxySEIPERP",
+			"address": "0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+			"timestamp": "2023-09-07T20:01:06.604Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateSEIPERP": {
+			"name": "PerpsV2MarketStateSEIPERP",
+			"address": "0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+			"timestamp": "2023-09-07T20:01:15.426Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5345490000000000000000000000000000000000000000000000000000000000",
+				"0x7353454950455250000000000000000000000000000000000000000000000000",
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309"
+			]
+		},
+		"PerpsV2MarketSEIPERP": {
+			"name": "PerpsV2MarketSEIPERP",
+			"address": "0xd0De1Cc5849E07C03D1d7a2589a8D56D092DfEaf",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xd0De1Cc5849E07C03D1d7a2589a8D56D092DfEaf",
+			"timestamp": "2023-09-07T20:01:25.916Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateSEIPERP": {
+			"name": "PerpsV2MarketLiquidateSEIPERP",
+			"address": "0x73575B75c222bb2d6c2240E725CAa654B8ec6BAd",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x73575B75c222bb2d6c2240E725CAa654B8ec6BAd",
+			"timestamp": "2023-09-07T20:01:35.997Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentSEIPERP": {
+			"name": "PerpsV2DelayedIntentSEIPERP",
+			"address": "0x9D81F2898127f812751dc09C210D839a7DB651aa",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x9D81F2898127f812751dc09C210D839a7DB651aa",
+			"timestamp": "2023-09-07T20:01:44.882Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionSEIPERP": {
+			"name": "PerpsV2DelayedExecutionSEIPERP",
+			"address": "0xb2E9642F96A1b576ab0232ec35Cb0d7d07D1172F",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0xb2E9642F96A1b576ab0232ec35Cb0d7d07D1172F",
+			"timestamp": "2023-09-07T20:01:56.323Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x66fc48720f09Ac386608FB65ede53Bb220D0D5Bc",
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsSEIPERP": {
+			"name": "PerpsV2MarketViewsSEIPERP",
+			"address": "0x8A6EF192d45e8ea930bC7f4F0eD457f213731BBb",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x8A6EF192d45e8ea930bC7f4F0eD457f213731BBb",
+			"timestamp": "2023-09-07T20:02:04.979Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxySTETHETHPERP": {
+			"name": "PerpsV2ProxySTETHETHPERP",
+			"address": "0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+			"timestamp": "2023-09-07T20:13:16.724Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+		},
+		"PerpsV2MarketStateSTETHETHPERP": {
+			"name": "PerpsV2MarketStateSTETHETHPERP",
+			"address": "0x2EC454957C0e66266398076f066fAaC77c48d88d",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x2EC454957C0e66266398076f066fAaC77c48d88d",
+			"timestamp": "2023-09-07T20:13:26.936Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				"0x5354455448455448000000000000000000000000000000000000000000000000",
+				"0x7353544554484554485045525000000000000000000000000000000000000000",
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d"
+			]
+		},
+		"PerpsV2MarketSTETHETHPERP": {
+			"name": "PerpsV2MarketSTETHETHPERP",
+			"address": "0xEa0324cc8D9FD70b8000bafbac7E3FF7C15275eD",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xEa0324cc8D9FD70b8000bafbac7E3FF7C15275eD",
+			"timestamp": "2023-09-07T20:13:37.555Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateSTETHETHPERP": {
+			"name": "PerpsV2MarketLiquidateSTETHETHPERP",
+			"address": "0x89f16bfFd72166807A18fAba307cD21eC6143563",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x89f16bfFd72166807A18fAba307cD21eC6143563",
+			"timestamp": "2023-09-07T20:13:47.836Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentSTETHETHPERP": {
+			"name": "PerpsV2DelayedIntentSTETHETHPERP",
+			"address": "0xFF5CfDB5b9640EaEA8D23C1d72014346aE8174FD",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xFF5CfDB5b9640EaEA8D23C1d72014346aE8174FD",
+			"timestamp": "2023-09-07T20:13:56.836Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionSTETHETHPERP": {
+			"name": "PerpsV2DelayedExecutionSTETHETHPERP",
+			"address": "0x4c0f7b167e7D280D97471f5A17F4Eb214E15A440",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x4c0f7b167e7D280D97471f5A17F4Eb214E15A440",
+			"timestamp": "2023-09-07T20:14:08.348Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x08388dC122A956887c2F736Aaec4A0Ce6f0536Ce",
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsSTETHETHPERP": {
+			"name": "PerpsV2MarketViewsSTETHETHPERP",
+			"address": "0x875bBc7285d52Ca957024999315717D45ba99276",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x875bBc7285d52Ca957024999315717D45ba99276",
+			"timestamp": "2023-09-07T20:14:18.706Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
