@@ -959,7 +959,8 @@
 		{
 			"sip": 2029,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2030,
@@ -970,17 +971,20 @@
 		{
 			"sip": 2031,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2032,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2033,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1853,9 +1857,10 @@
 			"ovm": true,
 			"version": {
 				"major": 2,
-				"minor": 93
+				"minor": 94
 			},
-			"sips": [2029, 2031, 2032, 2033]
+			"sips": [2029, 2031, 2032, 2033],
+			"released": true
 		}
 	]
 }
