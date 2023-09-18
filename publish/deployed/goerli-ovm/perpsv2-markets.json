@@ -2051,7 +2051,7 @@
 		"takerFee": "0.3",
 		"takerFeeDelayedOrder": "0.3",
 		"makerFeeDelayedOrder": "0.3",
-		"takerFeeOffchainDelayedOrder": "0.00015",
+		"takerFeeOffchainDelayedOrder": "0.00020",
 		"makerFeeOffchainDelayedOrder": "0",
 		"nextPriceConfirmWindow": "2",
 		"delayedOrderConfirmWindow": "120",
@@ -2067,9 +2067,9 @@
 		"liquidationPremiumMultiplier": "1",
 		"offchainMarketKey": "ocSTETHETHPERP",
 		"liquidationBufferRatio": "0.0100",
-		"maxPD": "0.0003",
-		"maxLiquidationDelta": "0.00015",
-		"paused": true,
-		"offchainPaused": true
+		"maxPD": "0.0004",
+		"maxLiquidationDelta": "0.0002",
+		"paused": false,
+		"offchainPaused": false
 	}
 ]
