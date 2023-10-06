@@ -353,7 +353,7 @@
 		"maxLeverage": "27.5",
 		"maxMarketValue": "400000",
 		"maxFundingVelocity": "36",
-		"skewScale": "45000000",
+		"skewScale": "25000000",
 		"offchainPriceDivergence": "0.10",
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocAPEPERP",
