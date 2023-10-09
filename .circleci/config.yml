@@ -48,6 +48,7 @@ jobs:
             source ~/.bashrc
             foundryup
           fi
+          rm -rf *
           echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> ~/.bashrc
           source ~/.bashrc
       - save_cache:
