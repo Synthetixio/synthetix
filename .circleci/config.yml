@@ -39,17 +39,19 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - foundry-bin-${foundry_locked_commit}-13
+            - foundry-bin-${foundry_locked_commit}-14
       - rust/install: {}
       - run: |
           if [ ! -d ~/.foundry ]; then
-            curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
-            ./foundryup -C $foundry_locked_commit
+            curl -L https://foundry.paradigm.xyz | bash
+            echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> ~/.bashrc
+            source ~/.bashrc
+            foundryup
           fi
-          rm -rf *
-          echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+          echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> ~/.bashrc
+          source ~/.bashrc
       - save_cache:
-          key: foundry-bin-${foundry_locked_commit}-13
+          key: foundry-bin-${foundry_locked_commit}-14
           paths:
             - ~/.foundry/bin
       - checkout
