@@ -156,7 +156,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
 
         // Iterate the array of distributions sending the configured amounts
         for (uint i = 0; i < distributions.length; i++) {
-            if (distributions[i].destination != address(0) || distributions[i].amount != 0) {
+            if (distributions[i].destination != address(0) && distributions[i].amount != 0) {
                 remainder = remainder.sub(distributions[i].amount);
 
                 // Transfer the SNX
