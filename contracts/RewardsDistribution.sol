@@ -166,10 +166,11 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
                 bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
 
                 // solhint-disable avoid-low-level-calls
-                (bool success, bytes result) = distributions[i].destination.call(payload);
+                (bool success, bytes memory result) = distributions[i].destination.call(payload);
 
                 if (!success) {
                     // if the error was emitted by the destination contract, bubble
+                    uint len = result.length;
                     assembly {
                         revert(add(result, 0x20), len)
                     }
