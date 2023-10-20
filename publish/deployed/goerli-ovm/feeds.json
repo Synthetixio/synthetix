@@ -176,8 +176,7 @@
 		"feed": "0x6db19664922b194C59FE972f28CFCAD9667e5dDf"
 	},
 	"STETHETH": {
-		"fakeFeed": true,
-		"feed": "0x57241A37733983F97C4Ab06448F244A1E0Ca0ba8"
+		"feed": "0x93A0D1B1cdF50b6bC83bc89bb59fA3Aa7A93B3e3"
 	},
 	"MAV": {
 		"asset": "MAV",
