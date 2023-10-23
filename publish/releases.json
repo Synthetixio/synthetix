@@ -985,6 +985,12 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2036,
+			"layer": "base",
+			"sources": ["RewardsDistribution"],
+			"released": "base"
 		}
 	],
 	"releases": [
@@ -1860,6 +1866,15 @@
 				"minor": 94
 			},
 			"sips": [2029, 2031, 2032, 2033],
+			"released": true
+		},
+		{
+			"name": "Phecda",
+			"version": {
+				"major": 2,
+				"minor": 96
+			},
+			"sips": [2036],
 			"released": true
 		}
 	]

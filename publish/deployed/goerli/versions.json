@@ -145,8 +145,9 @@
 			},
 			"RewardsDistribution": {
 				"address": "0x882eaF70e172b8543145811c5fE169d03740ba9a",
-				"status": "current",
-				"keccak256": "0xc79e92b862775aca623f79001f3de3f19b910d892ac16293fda30c0b5f0e6dbb"
+				"status": "replaced",
+				"keccak256": "0xc79e92b862775aca623f79001f3de3f19b910d892ac16293fda30c0b5f0e6dbb",
+				"replaced_in": "v2.96.0-alpha"
 			},
 			"TokenStateSynthetix": {
 				"address": "0xe842C91A5D2BCE122d89497f171d81067255Ad0d",
@@ -722,6 +723,21 @@
 				"address": "0x203d79e75532Da8701ffb43cec3a40828Ebfc4a9",
 				"status": "current",
 				"keccak256": "0x0e1391394e3eead86ca2ee2e3ddb46150935bc9c1251cb49f1d9509b825b390f"
+			}
+		}
+	},
+	"v2.96.0-alpha": {
+		"tag": "v2.96.0-alpha",
+		"fulltag": "v2.96.0-alpha",
+		"release": "Phecda",
+		"network": "goerli",
+		"date": "2023-10-20T14:10:59-03:00",
+		"commit": "ef579ea6eb464c2dd9c02300332b8fb10e445ebd",
+		"contracts": {
+			"RewardsDistribution": {
+				"address": "0x31E1080E7eb408ff005A9108f515CfcFEa6B7584",
+				"status": "current",
+				"keccak256": "0x71b5addb5aaa4ce3ff21f68a5795b3ad75d5aa4f549fca5f0ed999a89580af0b"
 			}
 		}
 	}
