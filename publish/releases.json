@@ -989,7 +989,8 @@
 		{
 			"sip": 2036,
 			"layer": "base",
-			"sources": ["RewardsDistribution"]
+			"sources": ["RewardsDistribution"],
+			"released": "base"
 		}
 	],
 	"releases": [
@@ -1873,7 +1874,8 @@
 				"major": 2,
 				"minor": 96
 			},
-			"sips": [2036]
+			"sips": [2036],
+			"released": true
 		}
 	]
 }
