@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -22,7 +21,8 @@ contract Migration_Phecda is BaseMigration {
     // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
     AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
     // https://etherscan.io/address/0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b);
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -35,12 +35,11 @@ contract Migration_Phecda is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](2);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(rewardsdistribution_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(rewardsdistribution_i);
     }
 
     function migrate() external onlyOwner {
-
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
 
@@ -72,16 +71,17 @@ contract Migration_Phecda is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](1);
         addressresolver_importAddresses_names_0_0[0] = bytes32("RewardsDistribution");
         address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](1);
         addressresolver_importAddresses_destinations_0_1[0] = address(new_RewardsDistribution_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](3);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xd0dA9cBeA9C3852C5d63A95F9ABCC4f6eA0F9032);
