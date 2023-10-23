@@ -156,7 +156,7 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
 
         // Iterate the array of distributions sending the configured amounts
         for (uint i = 0; i < distributions.length; i++) {
-            if (distributions[i].destination != address(0) || distributions[i].amount != 0) {
+            if (distributions[i].destination != address(0) && distributions[i].amount != 0) {
                 remainder = remainder.sub(distributions[i].amount);
 
                 // Transfer the SNX
@@ -166,10 +166,14 @@ contract RewardsDistribution is Owned, IRewardsDistribution {
                 bytes memory payload = abi.encodeWithSignature("notifyRewardAmount(uint256)", distributions[i].amount);
 
                 // solhint-disable avoid-low-level-calls
-                (bool success, ) = distributions[i].destination.call(payload);
+                (bool success, bytes memory result) = distributions[i].destination.call(payload);
 
                 if (!success) {
-                    // Note: we're ignoring the return value as it will fail for contracts that do not implement RewardsDistributionRecipient.sol
+                    // if the error was emitted by the destination contract, bubble
+                    uint len = result.length;
+                    assembly {
+                        revert(add(result, 0x20), len)
+                    }
                 }
             }
         }
