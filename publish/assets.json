@@ -669,5 +669,66 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Sei"
+	},
+	"TRB": {
+		"asset": "TRB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Tellor Tributes"
+	},
+	"TIA": {
+		"asset": "TIA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celestia"
+	},
+	"IMX": {
+		"asset": "IMX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Immutable X"
+	},
+	"MEME": {
+		"asset": "MEME",
+		"category": "crypto",
+		"sign": "",
+		"description": "Memecoin"
+	},
+	"FET": {
+		"asset": "FET",
+		"category": "crypto",
+		"sign": "",
+		"description": "Fetch.ai"
+	},
+	"GRT": {
+		"asset": "GRT",
+		"category": "crypto",
+		"sign": "",
+		"description": "The Graph"
+	},
+	"PYTH": {
+		"asset": "PYTH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Pyth Network"
+	},
+	"ANKR": {
+		"asset": "ANKR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ankr Network"
+	},
+	"BONK": {
+		"asset": "BONK",
+		"category": "crypto",
+		"sign": "",
+		"description": "BONK"
+	},
+	"WSTETH": {
+		"asset": "WSTETH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Wrapped stETH"
 	}
-}
+
+}	

@@ -1876,6 +1876,16 @@
 			},
 			"sips": [2036],
 			"released": true
-		}
+		},
+		{
+			"name": "Aludra (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 97
+			},
+			"sips": [2035,2036,2037,2038,2039,2040,2041,2042],
+			"released": true
+		},
 	]
 }
