@@ -78,7 +78,9 @@ module.exports = async ({
 					'Warning: Cannot fetch logs on this network. Known limitation on Tenderly Fork - cannot search back greater than 1k blocks'
 				)
 			);
-		} else if (/eth_getLogs and eth_newFilter are limited to a 10000 blocks range/.test(err.message)) {
+		} else if (
+			/eth_getLogs and eth_newFilter are limited to a 10000 blocks range/.test(err.message)
+		) {
 			console.log(
 				yellow.bold(
 					'Warning: Cannot fetch logs on this network. Known limitation on hh fork - cannot search back greater than 1k blocks'
