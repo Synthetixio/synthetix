@@ -310,32 +310,32 @@
 	},
 	"TRB": {
 		"asset": "TRB",
-		"feed": "0x3FF5BDB2bB6E3f946d9485De6c591c93B4179ae7",
+		"feed": "0x3FF5BDB2bB6E3f946d9485De6c591c93B4179ae7"
 	},
 	"TIA": {
 		"asset": "TIA",
-		"feed": "0xD7bC56BBF8D555936cb5121f38d1d362c586776A",
+		"feed": "0xD7bC56BBF8D555936cb5121f38d1d362c586776A"
 	},
 	"IMX": {
 		"asset": "IMX",
-		"feed": "0x26Fce884555FAe5F0E4701cc976FE8D8bB111A38",
+		"feed": "0x26Fce884555FAe5F0E4701cc976FE8D8bB111A38"
 	},
 	"MEME": {
 		"asset": "MEME",
-		"feed": "0x626982b84B2759D61f313054c8CBdA18B0D65cb2",
+		"feed": "0x626982b84B2759D61f313054c8CBdA18B0D65cb2"
 	},
 	"FET": {
 		"asset": "FET",
-		"feed": "0xf37c76163b2918bB4533579D449524F8542E64AD",
+		"feed": "0xf37c76163b2918bB4533579D449524F8542E64AD"
 	},
 	"GRT": {
 		"asset": "GRT",
-		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
+		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2"
 	},
 	"PYTH": {
 		"asset": "PYTH",
 		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
-		"fakeFeed" : true
+		"fakeFeed": true
 	},
 	"ANKR": {
 		"asset": "ANKR",
@@ -344,10 +344,10 @@
 	"BONK": {
 		"asset": "BONK",
 		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
-		"fakeFeed" : true
+		"fakeFeed": true
 	},
 	"WSTETH": {
 		"asset": "WSTETH",
-		"feed": "0x698B585CbC4407e2D54aa898B2600B53C68958f7",
+		"feed": "0x698B585CbC4407e2D54aa898B2600B53C68958f7"
 	}
 }
