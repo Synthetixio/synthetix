@@ -2097,7 +2097,6 @@
 		"liquidationBufferRatio": "0.0150",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"maxLiquidationDelta": "0.0012",
 		"paused": true,
 		"offchainPaused": true
 	},
@@ -2157,7 +2156,7 @@
 		"paused": true,
 		"offchainPaused": true
 	},
-	
+
 	{
 		"marketKey": "sMEMEPERP",
 		"asset": "MEME",
@@ -2325,7 +2324,7 @@
 		"maxLiquidationDelta": "0.0012",
 		"paused": true,
 		"offchainPaused": true
-		},
+	},
 	{
 		"marketKey": "sWSTETH",
 		"asset": "WSTETHPERP",
