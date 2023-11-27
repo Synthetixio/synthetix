@@ -2097,7 +2097,6 @@
 		"liquidationBufferRatio": "0.0150",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"maxLiquidationDelta": "0.0012",
 		"paused": true,
 		"offchainPaused": true
 	},
