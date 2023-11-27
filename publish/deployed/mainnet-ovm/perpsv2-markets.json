@@ -2326,8 +2326,8 @@
 		"offchainPaused": true
 	},
 	{
-		"marketKey": "sWSTETH",
-		"asset": "WSTETHPERP",
+		"marketKey": "sWSTETHPERP",
+		"asset": "WSTETH",
 		"makerFee": "0.3",
 		"takerFee": "0.3",
 		"takerFeeDelayedOrder": "0.3",
