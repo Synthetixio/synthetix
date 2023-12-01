@@ -446,5 +446,59 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "STETHETH",
 		"feedId": "0x3af6a3098c56f58ff47cc46dee4a5b1910e5c157f7f0b665952445867470d61f"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TRB",
+		"feedId": "0xddcd037c2de8dbf2a0f6eebf1c039924baf7ebf0e7eb3b44bf421af69cc1b06d"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TIA",
+		"feedId": "0x09f7c1d7dfbb7df2b8fe3d3d87ee94a2259d212da4f30c1f0540d066dfa44723"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "IMX",
+		"feedId": "0x941320a8989414874de5aa2fc340a75d5ed91fdff1613dd55f83844d52ea63a2"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "MEME",
+		"feedId": "0xcd2cee36951a571e035db0dfad138e6ecdb06b517cc3373cd7db5d3609b7927c"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FET",
+		"feedId": "0xb98e7ae8af2d298d2651eb21ab5b8b5738212e13efb43bd0dfbce7a74ba4b5d0"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "GRT",
+		"feedId": "0x4d1f8dae0d96236fb98e8f47471a366ec3b1732b47041781934ca3a9bb2f35e7"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PYTH",
+		"feedId": "0x0bbf28e9a841a1cc788f6a361b17ca072d0ea3098a1e5df1c3922d06719579ff"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ANKR",
+		"feedId": "0x89a58e1cab821118133d6831f5018fba5b354afb78b2d18f575b3cbf69a4f652"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BONK",
+		"feedId": "0x72b021217ca3fe68922a19aaf990109cb9d84e9ad004b4d2025ad6f529314419"
 	}
 ]

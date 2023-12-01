@@ -273,7 +273,8 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "STETHETH",
 		"feedId": "0x51fa95fac7bb8a4790f5733e8b2040937e88e6d8ea8fe172cea56b204b059bc2"
-	},	{
+	},
+	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "ETC",
@@ -446,5 +447,59 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "SEI",
 		"feedId": "0x95f1aef92c74670d40f1f37ee6fb158ffd6a0f8913b07b9e61087f9b7273b11c"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TRB",
+		"feedId": "0x4371e08a384f3509d1e7510f2fff209ceb58260dfddd624a6eea4df733a97571"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "TIA",
+		"feedId": "0x30998099c161c4f04b48569485cfab66256f36006810fe787f40fbc96e263438"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "IMX",
+		"feedId": "0x7a55e2c3a5e7355b5377041a0f0be64f2a41b2a5eb70e3f0a3468b3c6da7e01f"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "MEME",
+		"feedId": "0xe46dee29c768f526c17b91a27621d53260454633f33a8a393248a69f090844ed"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "FET",
+		"feedId": "0x8c57ee5f2e58f6196e845344299618ff5752a4ded0ca0ae189f2bf7feee9408a"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "GRT",
+		"feedId": "0x178ec659c2e795d91f812a1802a84b456ccbab205ba54b3c5a07f81bf7e74157"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PYTH",
+		"feedId": "0xc615ea2ed57c4e0c70ab5cb6fd29ada8350f039e67c019159204bc22c46da3f3"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "ANKR",
+		"feedId": "0x6cd5c99c6d86df928b0562f26617ddef400818f8907391f3087965e6b786b0b3"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "BONK",
+		"feedId": "0x53377a90ac8ddbd1cad1a65dd705f12eeba0be01510777a1e25fcd03f295572d"
 	}
 ]
