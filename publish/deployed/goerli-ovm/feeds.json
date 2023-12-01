@@ -342,9 +342,5 @@
 		"asset": "BONK",
 		"feed": "0xc6cC2F2eB966E9bfc1A91f79ae1f557F2eC7201E",
 		"fakeFeed": true
-	},
-	"WSTETH": {
-		"asset": "WSTETH",
-		"feed": "0x6FF78eE0aB6216531B7DA6aA84f9eC66301389c4"
 	}
 }
