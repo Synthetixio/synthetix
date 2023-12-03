@@ -307,5 +307,43 @@
 	"SEI": {
 		"asset": "SEI",
 		"feed": "0x6f6cED6B096708C1276056fdBdb7BbDe07Ca462C"
+	},
+	"TRB": {
+		"asset": "TRB",
+		"feed": "0x3FF5BDB2bB6E3f946d9485De6c591c93B4179ae7"
+	},
+	"TIA": {
+		"asset": "TIA",
+		"feed": "0xD7bC56BBF8D555936cb5121f38d1d362c586776A"
+	},
+	"IMX": {
+		"asset": "IMX",
+		"feed": "0x26Fce884555FAe5F0E4701cc976FE8D8bB111A38"
+	},
+	"MEME": {
+		"asset": "MEME",
+		"feed": "0xC6884869673a6960486FE0f6B0E775A53521e433"
+	},
+	"FET": {
+		"asset": "FET",
+		"feed": "0xf37c76163b2918bB4533579D449524F8542E64AD"
+	},
+	"GRT": {
+		"asset": "GRT",
+		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2"
+	},
+	"PYTH": {
+		"asset": "PYTH",
+		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
+		"fakeFeed": true
+	},
+	"ANKR": {
+		"asset": "ANKR",
+		"feed": "0xaE2f8ca8d89c3E4521B918D9D5F5bB30e937d68a"
+	},
+	"BONK": {
+		"asset": "BONK",
+		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
+		"fakeFeed": true
 	}
 }

@@ -987,10 +987,45 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 2035,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
 			"sip": 2036,
 			"layer": "base",
 			"sources": ["RewardsDistribution"],
 			"released": "base"
+		},
+		{
+			"sip": 2037,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2038,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2039,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2040,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2041,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2042,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1876,6 +1911,15 @@
 			},
 			"sips": [2036],
 			"released": true
+		},
+		{
+			"name": "Aludra (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 97
+			},
+			"sips": [2035, 2037, 2039, 2040, 2041, 2042]
 		}
 	]
 }
