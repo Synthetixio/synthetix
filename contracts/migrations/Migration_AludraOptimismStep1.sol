@@ -204,11 +204,11 @@ contract Migration_AludraOptimismStep1 is BaseMigration {
         // Ensure the ExchangeRates contract has the standalone feed for GRT;
         exchangerates_i.addAggregator("GRT", 0xfa042d5F474d7A39454C594CCfE014Ea011495f2);
         // Ensure the ExchangeRates contract has the standalone feed for PYTH;
-        exchangerates_i.addAggregator("PYTH", 0xfa042d5F474d7A39454C594CCfE014Ea011495f2);
+        exchangerates_i.addAggregator("PYTH", 0x0838cFe6A97C9CE1611a6Ed17252477a3c71eBEb);
         // Ensure the ExchangeRates contract has the standalone feed for ANKR;
         exchangerates_i.addAggregator("ANKR", 0xaE2f8ca8d89c3E4521B918D9D5F5bB30e937d68a);
         // Ensure the ExchangeRates contract has the standalone feed for BONK;
-        exchangerates_i.addAggregator("BONK", 0xfa042d5F474d7A39454C594CCfE014Ea011495f2);
+        exchangerates_i.addAggregator("BONK", 0xec236454209A76a6deCdf5C1183aE2Eb5e82a829);
         // Ensure the PerpsV2ExchangeRate contract has the off-chain feed Id for TRB;
         perpsv2exchangerate_i.setOffchainPriceFeedId(
             "TRB",
