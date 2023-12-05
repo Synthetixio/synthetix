@@ -28,7 +28,9 @@
 			"timestamp": "2021-01-15T05:40:45.820Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
@@ -38,7 +40,9 @@
 			"timestamp": "2021-01-15T05:40:47.164Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"FlexibleStorage": {
 			"name": "FlexibleStorage",
@@ -48,7 +52,9 @@
 			"timestamp": "2021-01-15T05:40:50.897Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"SystemSettings": {
 			"name": "SystemSettings",
@@ -59,7 +65,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xe489e6298049c1787b4271af0fd409c655e2a735c2571aa30e694faf079f36d4",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -71,7 +77,9 @@
 			"timestamp": "2022-03-17T20:55:12.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x1755e73d6d414cc63b135a0625b82c20b5d3d640a7ae3090ff14a74cf4ac127d",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
@@ -82,7 +90,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x3bbf5797b9eb122e1f92435280f557947c130bdc38d3d547c28a25da05d55983",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -95,7 +103,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xefce6e2b1cb1743ca534352c561fd320ab61ef49fa1fc276783db163f03d4123",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -108,7 +116,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -121,8 +129,8 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
 			]
 		},
 		"ProxyFeePool": {
@@ -133,7 +141,9 @@
 			"timestamp": "2021-01-15T05:41:06.241Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"DelegateApprovalsEternalStorage": {
 			"name": "DelegateApprovalsEternalStorage",
@@ -144,7 +154,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -157,7 +167,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x02f7fB66B55e6ca476d126d96f14c5732Eeb4363"
 			]
 		},
@@ -170,7 +180,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -184,7 +194,7 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x4a16A42407AA491564643E1dfc1fd50af29794eF",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -197,7 +207,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0xf9FE3607e6d19D8dC690DD976061a91D4A0db30B"
 			]
 		},
@@ -210,7 +220,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000",
 				"0x0000000000000000000000000000000000000000",
 				"0x6330D5F08f51057F36F46d6751eCDc0c65Ef7E9e",
@@ -235,8 +245,8 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
 			]
 		},
 		"Synthetix": {
@@ -250,8 +260,8 @@
 			"constructorArgs": [
 				"0x8700dAec35aF8Ff88c16BdF0418774CB3D7599B4",
 				"0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"105492587340424709398786025",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"109075476620081690011090272",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -263,7 +273,9 @@
 			"timestamp": "2021-01-15T05:41:26.674Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"DebtCache": {
 			"name": "DebtCache",
@@ -274,7 +286,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x79a93cc304c2e8655b0ce90d5dd4353fe290d9b1335ef877a488630b801737cd",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -287,7 +299,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xca071b47559ffd14764e7a98c2e3c26d1a300460bfc035a3dde210f0efded60c",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -300,7 +312,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x24b4b6703a2eE7bA75a4Fc859B606F0bbaeef4EA"
 			]
 		},
@@ -313,7 +325,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x7cc6768ab2a26c10b1425b587d47a570d8dc7e680f6c8c434afff9af67a9e4fe",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -326,8 +338,8 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -339,7 +351,9 @@
 			"timestamp": "2021-01-15T05:41:56.647Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x06C6D063896ac733673c4474E44d9268f2402A55"]
+			"constructorArgs": [
+				"0x06C6D063896ac733673c4474E44d9268f2402A55"
+			]
 		},
 		"TokenStatesUSD": {
 			"name": "TokenStatesUSD",
@@ -350,7 +364,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -362,7 +376,9 @@
 			"timestamp": "2021-01-15T05:42:06.522Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"ProxyERC20sUSD": {
 			"name": "ProxyERC20sUSD",
@@ -386,7 +402,7 @@
 				"0x92bAc115d89cA17fd02Ed9357CEcA32842ACB4c2",
 				"Synth sUSD",
 				"sUSD",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x7355534400000000000000000000000000000000000000000000000000000000",
 				0,
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
@@ -419,7 +435,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xbf69ba068e1b977b8bcbd46a1b53b80b9db4d29335737b23ef10ee3765f14a19",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -433,7 +449,7 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0xbA10526cD8742acC73AedeF5f7Dbb2477Bf86922",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30",
 				"75000000000000000000000000",
 				"200000000000000000",
@@ -449,7 +465,9 @@
 			"timestamp": "2021-01-15T05:42:19.657Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"DappMaintenance": {
 			"name": "DappMaintenance",
@@ -459,7 +477,9 @@
 			"timestamp": "2021-01-15T05:42:21.010Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"EtherWrapper": {
 			"name": "EtherWrapper",
@@ -480,7 +500,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -492,7 +512,9 @@
 			"timestamp": "2021-07-28T17:33:44.476Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
@@ -507,7 +529,7 @@
 				"0xEc3665F7e696b0Ad0D04Ae5161b18782D48cd1fd",
 				"Synth sETH",
 				"sETH",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x7345544800000000000000000000000000000000000000000000000000000000",
 				0,
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
@@ -522,7 +544,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -534,7 +556,9 @@
 			"timestamp": "2021-07-28T17:34:21.044Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
@@ -549,7 +573,7 @@
 				"0xA9E630952522E3F110322711F424528Af894e307",
 				"Synth sBTC",
 				"sBTC",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x7342544300000000000000000000000000000000000000000000000000000000",
 				0,
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
@@ -576,7 +600,9 @@
 			"timestamp": "2021-07-28T17:34:59.812Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsLINK": {
 			"name": "SynthsLINK",
@@ -605,7 +631,9 @@
 			"timestamp": "2021-10-12T21:06:52.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x834046a0d1c1f1554f68fbec14625d6e4fd6a780a4e29d3808ed389cfa94abbe",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"CollateralUtil": {
 			"name": "CollateralUtil",
@@ -615,7 +643,9 @@
 			"timestamp": "2021-10-12T21:06:52.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x7f9b991d0e39d9d4acb97e97dd8e030d69d0c54fc98f3eb81bd0c9c08ac20e83",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"CollateralManagerState": {
 			"name": "CollateralManagerState",
@@ -626,8 +656,8 @@
 			"txn": "https://explorer.optimism.io/tx/0xc961ada3875dfdcc001f990bd9589207b2fc948e24aac9523afbf2860e21f8fa",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
 			]
 		},
 		"CollateralShort": {
@@ -639,7 +669,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xaa088cb79b36320f883bd9e802737a099b33dafcf47f5ba9fbf1d5cec1eb5d40",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x15E7D4972a3E477878A5867A47617122BE2d1fF0",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30",
 				"0x7355534400000000000000000000000000000000000000000000000000000000",
@@ -656,7 +686,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xb8b6fc36b7cb72f52654255e77079e4cde9879626145c0342c39693ec1c5e7c9",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -670,7 +700,7 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				5184000
 			]
 		},
@@ -683,7 +713,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x7849ba45a602863e4d20a0abd2d0e7d7d9ca6b5b369da56356b91f382a7e034a",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x15E7D4972a3E477878A5867A47617122BE2d1fF0",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30",
 				"0x7345544800000000000000000000000000000000000000000000000000000000",
@@ -728,7 +758,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x440843de030008aac6d5718e52c8c9928c89203293b0703faf84a41bfdbb97d4",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -753,7 +783,9 @@
 			"timestamp": "2022-02-14T20:28:32.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xb7b6b52eacf82c40e8fd76a4a8a413f4358d391c616b88772814f610634b747d",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsSOL": {
 			"name": "SynthsSOL",
@@ -795,7 +827,9 @@
 			"timestamp": "2022-02-23T23:35:31.230Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsAVAX": {
 			"name": "SynthsAVAX",
@@ -837,7 +871,9 @@
 			"timestamp": "2022-02-23T23:35:48.038Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsMATIC": {
 			"name": "SynthsMATIC",
@@ -867,7 +903,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -879,7 +915,9 @@
 			"timestamp": "2022-02-23T23:36:05.775Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"SynthsEUR": {
 			"name": "SynthsEUR",
@@ -894,7 +932,7 @@
 				"0x7afF10fc89B162c7aBf77974d190E7959cb456f5",
 				"Synth sEUR",
 				"sEUR",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x7345555200000000000000000000000000000000000000000000000000000000",
 				0,
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
@@ -918,7 +956,9 @@
 			"timestamp": "2022-03-17T20:54:56.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x9c87a560ac15ac9720820b41ce580175303897ad1817e24e6f5b30c39cd5b33a",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"OneNetAggregatorDebtRatio": {
 			"name": "OneNetAggregatorDebtRatio",
@@ -928,7 +968,9 @@
 			"timestamp": "2022-03-17T20:54:56.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xa74caca4a3ca2b47d00cb62124026fd1ebe110eaad3ad81365d15648d977b48b",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"ExchangeCircuitBreaker": {
 			"name": "ExchangeCircuitBreaker",
@@ -939,7 +981,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xe10a3ad5ce544d743c6cdb87619bf86413cec865ff82f188aca2d9e1d177e4cd",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -964,7 +1006,9 @@
 			"timestamp": "2022-03-17T21:02:28.085Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsAAVE": {
 			"name": "SynthsAAVE",
@@ -1006,7 +1050,9 @@
 			"timestamp": "2022-03-17T21:02:43.204Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"SynthsUNI": {
 			"name": "SynthsUNI",
@@ -1036,7 +1082,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xe3fe83acbc21d7acbc70b6cc7360c63f7511dc737aa821f28aa62b592f3d58f8",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1048,7 +1094,9 @@
 			"timestamp": "2022-03-17T21:03:08.000Z",
 			"txn": "https://explorer.optimism.io/tx/0x804037170846adf1906b3211bdfb8c966f04c30d7edc3cd303da26909c58078f",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"FuturesMarketSettings": {
 			"name": "FuturesMarketSettings",
@@ -1226,7 +1274,7 @@
 			"txn": "",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -1238,7 +1286,9 @@
 			"timestamp": "2022-05-10T20:18:24.536Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
 		},
 		"SynthsINR": {
 			"name": "SynthsINR",
@@ -1253,7 +1303,7 @@
 				"0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
 				"Synth sINR",
 				"sINR",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x73494e5200000000000000000000000000000000000000000000000000000000",
 				0,
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
@@ -1296,7 +1346,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x8e19a0e690e095c903e0a6146209ba792498a3dfcb9fcada97f35ea5f8439a35",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1309,7 +1359,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x83b3f428a39f34f894092cd3cdfc6a2479c9b5ccefedc5b0c735c4477632afba",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1322,7 +1372,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xec5bf9f299e1c2729b61fbf5365de960f14fd40683e78e3bbe65e63f6875e44e",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1405,7 +1455,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x98c938c24f688f84a9c958529663915c254fa0c89e61efe36b24eed32dc58f19",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x0000000000000000000000000000000000000000"
 			]
 		},
@@ -1428,7 +1478,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x4c7483866b64f9cb8fbef25cd5f1b88cbbdb107d0b28a7a1e5c9f7849630b555",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1440,7 +1490,9 @@
 			"timestamp": "2023-04-26T16:03:34.000Z",
 			"txn": "https://explorer.optimism.io/tx/0xb65cbfcc1138a04d2df792a9a33b5a84ae205d44a375f001294d8e4b4fea7f00",
 			"network": "mainnet",
-			"constructorArgs": ["0x1Cb059b7e74fD21665968C908806143E744D5F30"]
+			"constructorArgs": [
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
 		},
 		"PerpsV2MarketSettings": {
 			"name": "PerpsV2MarketSettings",
@@ -1451,7 +1503,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xf1c38f2d2225dc9cec58904405ae326dd79f6e4df816faefbb2a87d9203de8d3",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1464,7 +1516,7 @@
 			"txn": "https://explorer.optimism.io/tx/0x4e20eb2e9e5681d54deb826cf24db047bed05af65c67a25ad36101e2256a407d",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -1476,7 +1528,9 @@
 			"timestamp": "2022-12-20T15:41:21.606Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateETHPERP": {
 			"name": "PerpsV2MarketStateETHPERP",
@@ -1488,7 +1542,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x7345544800000000000000000000000000000000000000000000000000000000",
 				"0x7345544850455250000000000000000000000000000000000000000000000000",
 				"0x6aBC19F21D5Ce23abf392329Ef7B118c7b5F2AA8"
@@ -1531,7 +1587,9 @@
 			"timestamp": "2023-02-06T19:31:42.088Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateBTCPERP": {
 			"name": "PerpsV2MarketStateBTCPERP",
@@ -1543,7 +1601,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x7342544300000000000000000000000000000000000000000000000000000000",
 				"0x7342544350455250000000000000000000000000000000000000000000000000",
 				"0x68287419FcFA1c186515E99a35FF3c970B3B3C66"
@@ -1586,7 +1646,9 @@
 			"timestamp": "2023-02-06T19:45:03.997Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateLINKPERP": {
 			"name": "PerpsV2MarketStateLINKPERP",
@@ -1598,7 +1660,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4c494e4b00000000000000000000000000000000000000000000000000000000",
 				"0x734c494e4b504552500000000000000000000000000000000000000000000000",
 				"0xEed3618dd59163CC6849758F07fA9369823aa710"
@@ -1641,7 +1705,9 @@
 			"timestamp": "2023-02-06T19:58:22.094Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSOLPERP": {
 			"name": "PerpsV2MarketStateSOLPERP",
@@ -1653,7 +1719,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x534f4c0000000000000000000000000000000000000000000000000000000000",
 				"0x73534f4c50455250000000000000000000000000000000000000000000000000",
 				"0x435e6e499610B6De3510F0Cb047D3575C7bca6E1"
@@ -1696,7 +1764,9 @@
 			"timestamp": "2023-02-06T20:11:30.883Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAVAXPERP": {
 			"name": "PerpsV2MarketStateAVAXPERP",
@@ -1708,7 +1778,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4156415800000000000000000000000000000000000000000000000000000000",
 				"0x7341564158504552500000000000000000000000000000000000000000000000",
 				"0xC02AF29944301c8FbA606a7dF8ef446dc103238C"
@@ -1751,7 +1823,9 @@
 			"timestamp": "2023-02-06T20:24:40.899Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAAVEPERP": {
 			"name": "PerpsV2MarketStateAAVEPERP",
@@ -1763,7 +1837,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4141564500000000000000000000000000000000000000000000000000000000",
 				"0x7341415645504552500000000000000000000000000000000000000000000000",
 				"0x3773dfbbc894bfa9DF22855FCec1D1572eFC5e0a"
@@ -1806,7 +1882,9 @@
 			"timestamp": "2023-02-06T20:38:09.448Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateUNIPERP": {
 			"name": "PerpsV2MarketStateUNIPERP",
@@ -1818,7 +1896,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x554e490000000000000000000000000000000000000000000000000000000000",
 				"0x73554e4950455250000000000000000000000000000000000000000000000000",
 				"0x0db1B224C5203fA22CFdFA3F92519D150ad86612"
@@ -1861,7 +1941,9 @@
 			"timestamp": "2023-02-06T20:51:11.817Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateMATICPERP": {
 			"name": "PerpsV2MarketStateMATICPERP",
@@ -1873,7 +1955,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4d41544943000000000000000000000000000000000000000000000000000000",
 				"0x734d415449435045525000000000000000000000000000000000000000000000",
 				"0x82f962aF60e6627d3ea5Db5Fd7e1a57f7E1Ef2B8"
@@ -1916,7 +2000,9 @@
 			"timestamp": "2023-02-06T21:04:15.544Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAPEPERP": {
 			"name": "PerpsV2MarketStateAPEPERP",
@@ -1928,7 +2014,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4150450000000000000000000000000000000000000000000000000000000000",
 				"0x7341504550455250000000000000000000000000000000000000000000000000",
 				"0x089af032687993426A628184cb3D0610d2cda6F2"
@@ -1971,7 +2059,9 @@
 			"timestamp": "2023-02-06T21:17:32.884Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateDYDXPERP": {
 			"name": "PerpsV2MarketStateDYDXPERP",
@@ -1983,7 +2073,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4459445800000000000000000000000000000000000000000000000000000000",
 				"0x7344594458504552500000000000000000000000000000000000000000000000",
 				"0xac3F9a2753f185731324907E6802395d59Bb62a2"
@@ -2026,7 +2118,9 @@
 			"timestamp": "2023-02-06T21:30:39.010Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateBNBPERP": {
 			"name": "PerpsV2MarketStateBNBPERP",
@@ -2038,7 +2132,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x424e420000000000000000000000000000000000000000000000000000000000",
 				"0x73424e4250455250000000000000000000000000000000000000000000000000",
 				"0x3DfBB7D0770e6Eb77fBEc89C0840E9A0f29C76Ff"
@@ -2081,7 +2177,9 @@
 			"timestamp": "2023-02-06T21:44:05.127Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateOPPERP": {
 			"name": "PerpsV2MarketStateOPPERP",
@@ -2093,7 +2191,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4f50000000000000000000000000000000000000000000000000000000000000",
 				"0x734f505045525000000000000000000000000000000000000000000000000000",
 				"0xBdD0D09f73AC6f8Ef59A71baab283C12dcab06fA"
@@ -2136,7 +2236,9 @@
 			"timestamp": "2023-02-06T21:57:22.473Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateDOGEPERP": {
 			"name": "PerpsV2MarketStateDOGEPERP",
@@ -2148,7 +2250,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x444f474500000000000000000000000000000000000000000000000000000000",
 				"0x73444f4745504552500000000000000000000000000000000000000000000000",
 				"0x0A0A22189c8732cA089D6fB6709e65140a446a41"
@@ -2191,7 +2295,9 @@
 			"timestamp": "2023-02-06T22:30:40.028Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXAUPERP": {
 			"name": "PerpsV2MarketStateXAUPERP",
@@ -2203,7 +2309,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5841550000000000000000000000000000000000000000000000000000000000",
 				"0x7358415550455250000000000000000000000000000000000000000000000000",
 				"0xc564040630d6929070D85DF237FDf60F6bfE4b5F"
@@ -2246,7 +2354,9 @@
 			"timestamp": "2023-02-06T22:53:48.472Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXAGPERP": {
 			"name": "PerpsV2MarketStateXAGPERP",
@@ -2258,7 +2368,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5841470000000000000000000000000000000000000000000000000000000000",
 				"0x7358414750455250000000000000000000000000000000000000000000000000",
 				"0x28E1CE29aCdFe1E74e6fA18591E1D5481D2085a1"
@@ -2301,7 +2413,9 @@
 			"timestamp": "2023-02-06T23:06:29.437Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateEURPERP": {
 			"name": "PerpsV2MarketStateEURPERP",
@@ -2313,7 +2427,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4555520000000000000000000000000000000000000000000000000000000000",
 				"0x7345555250455250000000000000000000000000000000000000000000000000",
 				"0x4eD08210706F5b74584cC7F03b38d800DC27936B"
@@ -2356,7 +2472,9 @@
 			"timestamp": "2023-02-06T23:18:57.860Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateATOMPERP": {
 			"name": "PerpsV2MarketStateATOMPERP",
@@ -2368,7 +2486,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x41544f4d00000000000000000000000000000000000000000000000000000000",
 				"0x7341544f4d504552500000000000000000000000000000000000000000000000",
 				"0xe46Ef097d2CF6FF95Ad172d5da0E65A0dE9e2468"
@@ -2411,7 +2531,9 @@
 			"timestamp": "2023-02-06T23:41:27.761Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAXSPERP": {
 			"name": "PerpsV2MarketStateAXSPERP",
@@ -2423,7 +2545,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4158530000000000000000000000000000000000000000000000000000000000",
 				"0x7341585350455250000000000000000000000000000000000000000000000000",
 				"0xcfdC039BDB8E4b578857b759f27D6BAa2617EDD3"
@@ -2466,7 +2590,9 @@
 			"timestamp": "2023-02-06T23:53:52.903Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateFLOWPERP": {
 			"name": "PerpsV2MarketStateFLOWPERP",
@@ -2478,7 +2604,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x464c4f5700000000000000000000000000000000000000000000000000000000",
 				"0x73464c4f57504552500000000000000000000000000000000000000000000000",
 				"0xECc8A6Af92d825ACC5B871993FC83d86CCEd5a19"
@@ -2521,7 +2649,9 @@
 			"timestamp": "2023-02-07T00:06:21.050Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateFTMPERP": {
 			"name": "PerpsV2MarketStateFTMPERP",
@@ -2533,7 +2663,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x46544d0000000000000000000000000000000000000000000000000000000000",
 				"0x7346544d50455250000000000000000000000000000000000000000000000000",
 				"0x1951c6b2D9DD9A3CF10aaC5e79A7EcA0a5300BB5"
@@ -2576,7 +2708,9 @@
 			"timestamp": "2023-02-07T00:18:47.206Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateNEARPERP": {
 			"name": "PerpsV2MarketStateNEARPERP",
@@ -2588,7 +2722,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4e45415200000000000000000000000000000000000000000000000000000000",
 				"0x734e454152504552500000000000000000000000000000000000000000000000",
 				"0x779f424d3B3A617beB4a0DB1C21D5505De297a8A"
@@ -2631,7 +2767,9 @@
 			"timestamp": "2023-02-07T03:06:33.056Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAUDPERP": {
 			"name": "PerpsV2MarketStateAUDPERP",
@@ -2643,7 +2781,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4155440000000000000000000000000000000000000000000000000000000000",
 				"0x7341554450455250000000000000000000000000000000000000000000000000",
 				"0x6d62aA1535C7C33D7f6592562f091D193E180c57"
@@ -2686,7 +2826,9 @@
 			"timestamp": "2023-02-07T03:22:16.830Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateGBPPERP": {
 			"name": "PerpsV2MarketStateGBPPERP",
@@ -2698,7 +2840,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4742500000000000000000000000000000000000000000000000000000000000",
 				"0x7347425050455250000000000000000000000000000000000000000000000000",
 				"0x733a69D080B10Bc897452eF783020cdFe012974A"
@@ -2742,7 +2886,7 @@
 			"txn": "https://explorer.optimism.io/tx/0xe4cfe3ad66ba30f949a2ad09486b5c707b8fea11f7c9e955de8d948a2e404c96",
 			"network": "mainnet",
 			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		},
@@ -2754,7 +2898,9 @@
 			"timestamp": "2023-03-27T17:49:16.498Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateARBPERP": {
 			"name": "PerpsV2MarketStateARBPERP",
@@ -2766,7 +2912,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4152420000000000000000000000000000000000000000000000000000000000",
 				"0x7341524250455250000000000000000000000000000000000000000000000000",
 				"0x6393113A43A4A88b9F3D53b4b21e7feEb5d3D821"
@@ -3889,7 +4037,9 @@
 			"timestamp": "2023-05-03T16:16:09.704Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateLDOPERP": {
 			"name": "PerpsV2MarketStateLDOPERP",
@@ -3901,7 +4051,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4c444f0000000000000000000000000000000000000000000000000000000000",
 				"0x734c444f50455250000000000000000000000000000000000000000000000000",
 				"0x1d46c117E7e9A5dd242724a1952911ECe78e0831"
@@ -3989,7 +4141,9 @@
 			"timestamp": "2023-05-03T17:41:53.484Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateLTCPERP": {
 			"name": "PerpsV2MarketStateLTCPERP",
@@ -4001,7 +4155,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4c54430000000000000000000000000000000000000000000000000000000000",
 				"0x734c544350455250000000000000000000000000000000000000000000000000",
 				"0xf5826f24805c162c696b79ba31ebC6FB8003d475"
@@ -4089,7 +4245,9 @@
 			"timestamp": "2023-05-03T17:56:36.349Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateADAPERP": {
 			"name": "PerpsV2MarketStateADAPERP",
@@ -4101,7 +4259,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4144410000000000000000000000000000000000000000000000000000000000",
 				"0x7341444150455250000000000000000000000000000000000000000000000000",
 				"0xAe3D1b55CBFFc11693257FB5Dc41DE32F1E9EC7A"
@@ -4189,7 +4349,9 @@
 			"timestamp": "2023-05-03T18:11:01.212Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateFILPERP": {
 			"name": "PerpsV2MarketStateFILPERP",
@@ -4201,7 +4363,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x46494c0000000000000000000000000000000000000000000000000000000000",
 				"0x7346494c50455250000000000000000000000000000000000000000000000000",
 				"0x71FD2f49f289d75D0C1E108c97Fcb2a4c54Ab424"
@@ -4289,7 +4453,9 @@
 			"timestamp": "2023-05-03T18:25:42.275Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateGMXPERP": {
 			"name": "PerpsV2MarketStateGMXPERP",
@@ -4301,7 +4467,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x474d580000000000000000000000000000000000000000000000000000000000",
 				"0x73474d5850455250000000000000000000000000000000000000000000000000",
 				"0x9f564ffB60945DEc03fB8DdEF491465Dd9b4C9Fb"
@@ -4389,7 +4557,9 @@
 			"timestamp": "2023-05-03T18:47:32.150Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateAPTPERP": {
 			"name": "PerpsV2MarketStateAPTPERP",
@@ -4401,7 +4571,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4150540000000000000000000000000000000000000000000000000000000000",
 				"0x7341505450455250000000000000000000000000000000000000000000000000",
 				"0x91a4F7125A6F7ec14c41d39F0AC681e8e387DA1C"
@@ -4489,7 +4661,9 @@
 			"timestamp": "2023-05-03T19:01:04.633Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSHIBPERP": {
 			"name": "PerpsV2MarketStateSHIBPERP",
@@ -4501,7 +4675,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5348494200000000000000000000000000000000000000000000000000000000",
 				"0x7353484942504552500000000000000000000000000000000000000000000000",
 				"0xc2c71156d9DDe42F412e83a3E169283Cd70F3E9D"
@@ -4589,7 +4765,9 @@
 			"timestamp": "2023-05-03T19:14:40.428Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateBCHPERP": {
 			"name": "PerpsV2MarketStateBCHPERP",
@@ -4601,7 +4779,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4243480000000000000000000000000000000000000000000000000000000000",
 				"0x7342434850455250000000000000000000000000000000000000000000000000",
 				"0xa664fCA1879C9cA2E6CFeD49C3C855352016E4C5"
@@ -4689,7 +4869,9 @@
 			"timestamp": "2023-05-03T19:29:15.094Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateCRVPERP": {
 			"name": "PerpsV2MarketStateCRVPERP",
@@ -4701,7 +4883,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4352560000000000000000000000000000000000000000000000000000000000",
 				"0x7343525650455250000000000000000000000000000000000000000000000000",
 				"0x5A155c378d66d8EBa2262e744738a76d913E5945"
@@ -4789,7 +4973,9 @@
 			"timestamp": "2023-05-22T16:09:49.390Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStatePEPEPERP": {
 			"name": "PerpsV2MarketStatePEPEPERP",
@@ -4801,7 +4987,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5045504500000000000000000000000000000000000000000000000000000000",
 				"0x7350455045504552500000000000000000000000000000000000000000000000",
 				"0x2365D3e91E585c974c28a5B82d6AA266F68a44Ad"
@@ -4889,7 +5077,9 @@
 			"timestamp": "2023-05-22T16:24:07.720Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSUIPERP": {
 			"name": "PerpsV2MarketStateSUIPERP",
@@ -4901,7 +5091,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5355490000000000000000000000000000000000000000000000000000000000",
 				"0x7353554950455250000000000000000000000000000000000000000000000000",
 				"0x2cCaf0500142F8E563fF361C3b34AbEe16B6205d"
@@ -4989,7 +5181,9 @@
 			"timestamp": "2023-05-22T16:37:51.233Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateBLURPERP": {
 			"name": "PerpsV2MarketStateBLURPERP",
@@ -5001,7 +5195,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x424c555200000000000000000000000000000000000000000000000000000000",
 				"0x73424c5552504552500000000000000000000000000000000000000000000000",
 				"0x6aCC3519d10E46E5a228615c9d4B57CC0113A212"
@@ -5089,7 +5285,9 @@
 			"timestamp": "2023-05-22T19:37:13.758Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXRPPERP": {
 			"name": "PerpsV2MarketStateXRPPERP",
@@ -5101,7 +5299,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5852500000000000000000000000000000000000000000000000000000000000",
 				"0x7358525050455250000000000000000000000000000000000000000000000000",
 				"0x0Ea666319f4f0eAa7f16711f2fe7F4B159957f48"
@@ -5189,7 +5389,9 @@
 			"timestamp": "2023-05-22T19:50:53.499Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateDOTPERP": {
 			"name": "PerpsV2MarketStateDOTPERP",
@@ -5201,7 +5403,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x444f540000000000000000000000000000000000000000000000000000000000",
 				"0x73444f5450455250000000000000000000000000000000000000000000000000",
 				"0xCF33a35F0f2095ABdD0C81dbde3A1cD37bE0c5cC"
@@ -5289,7 +5493,9 @@
 			"timestamp": "2023-05-22T20:04:30.541Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateTRXPERP": {
 			"name": "PerpsV2MarketStateTRXPERP",
@@ -5301,7 +5507,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5452580000000000000000000000000000000000000000000000000000000000",
 				"0x7354525850455250000000000000000000000000000000000000000000000000",
 				"0x52cCa59bFa0228F41Ab69558F5f2EE3739323c02"
@@ -5389,7 +5597,9 @@
 			"timestamp": "2023-05-22T20:19:06.030Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateFLOKIPERP": {
 			"name": "PerpsV2MarketStateFLOKIPERP",
@@ -5401,7 +5611,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x464c4f4b49000000000000000000000000000000000000000000000000000000",
 				"0x73464c4f4b495045525000000000000000000000000000000000000000000000",
 				"0x94a1D572baE06A31C029D4C26e1fA705f54286ef"
@@ -5489,7 +5701,9 @@
 			"timestamp": "2023-05-22T20:32:58.718Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateINJPERP": {
 			"name": "PerpsV2MarketStateINJPERP",
@@ -5501,7 +5715,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x494e4a0000000000000000000000000000000000000000000000000000000000",
 				"0x73494e4a50455250000000000000000000000000000000000000000000000000",
 				"0x4C35c27fF8F0dD039B4C4F0D670f2D58f6215c9C"
@@ -5589,7 +5805,9 @@
 			"timestamp": "2023-06-14T15:07:53.548Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSTETHPERP": {
 			"name": "PerpsV2MarketStateSTETHPERP",
@@ -5601,7 +5819,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5354455448000000000000000000000000000000000000000000000000000000",
 				"0x7353544554485045525000000000000000000000000000000000000000000000",
 				"0x777A913412D576532120ac1d266d4C908e584DB2"
@@ -5689,7 +5909,9 @@
 			"timestamp": "2023-07-27T14:20:32.287Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateETHBTCPERP": {
 			"name": "PerpsV2MarketStateETHBTCPERP",
@@ -5701,7 +5923,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4554484254430000000000000000000000000000000000000000000000000000",
 				"0x7345544842544350455250000000000000000000000000000000000000000000",
 				"0xd10cd91683301c8C15eDA40F59e73d1b0BcfECDD"
@@ -5789,7 +6013,9 @@
 			"timestamp": "2023-07-27T14:31:56.467Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateETCPERP": {
 			"name": "PerpsV2MarketStateETCPERP",
@@ -5801,7 +6027,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4554430000000000000000000000000000000000000000000000000000000000",
 				"0x7345544350455250000000000000000000000000000000000000000000000000",
 				"0x04412b2aE241C602Be87Bc1114238d50d08398Fb"
@@ -5889,7 +6117,9 @@
 			"timestamp": "2023-07-27T14:43:20.746Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateCOMPPERP": {
 			"name": "PerpsV2MarketStateCOMPPERP",
@@ -5901,7 +6131,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x434f4d5000000000000000000000000000000000000000000000000000000000",
 				"0x73434f4d50504552500000000000000000000000000000000000000000000000",
 				"0xF8dBEf33111A37879f35EE15507769CA927cf9C0"
@@ -5989,7 +6221,9 @@
 			"timestamp": "2023-07-27T14:54:50.908Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXMRPERP": {
 			"name": "PerpsV2MarketStateXMRPERP",
@@ -6001,7 +6235,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x584d520000000000000000000000000000000000000000000000000000000000",
 				"0x73584d5250455250000000000000000000000000000000000000000000000000",
 				"0x3d869950817920Eda9fC9A633ab7F06B97444dd7"
@@ -6089,7 +6325,9 @@
 			"timestamp": "2023-07-27T18:08:00.369Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateMKRPERP": {
 			"name": "PerpsV2MarketStateMKRPERP",
@@ -6101,7 +6339,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4d4b520000000000000000000000000000000000000000000000000000000000",
 				"0x734d4b5250455250000000000000000000000000000000000000000000000000",
 				"0xf963a0fc0BFc38FEfE08C6062f2AD9A11AfFDEeb"
@@ -6189,7 +6429,9 @@
 			"timestamp": "2023-07-27T18:19:28.911Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateYFIPERP": {
 			"name": "PerpsV2MarketStateYFIPERP",
@@ -6201,7 +6443,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5946490000000000000000000000000000000000000000000000000000000000",
 				"0x7359464950455250000000000000000000000000000000000000000000000000",
 				"0x2107A107D1043b2c442b8de40d6696C29bD2c5b8"
@@ -6289,7 +6533,9 @@
 			"timestamp": "2023-07-27T18:30:50.629Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateMAVPERP": {
 			"name": "PerpsV2MarketStateMAVPERP",
@@ -6301,7 +6547,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4d41560000000000000000000000000000000000000000000000000000000000",
 				"0x734d415650455250000000000000000000000000000000000000000000000000",
 				"0xB241aF12256998A0051b93e02027e73CA7E5388d"
@@ -6389,7 +6637,9 @@
 			"timestamp": "2023-07-27T18:42:06.438Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateRPLPERP": {
 			"name": "PerpsV2MarketStateRPLPERP",
@@ -6401,7 +6651,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x52504c0000000000000000000000000000000000000000000000000000000000",
 				"0x7352504c50455250000000000000000000000000000000000000000000000000",
 				"0xf606E99D6F6a003623eA5764dA119BAEcB2e8C99"
@@ -6489,7 +6741,9 @@
 			"timestamp": "2023-08-02T14:22:18.479Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateWLDPERP": {
 			"name": "PerpsV2MarketStateWLDPERP",
@@ -6501,7 +6755,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x574c440000000000000000000000000000000000000000000000000000000000",
 				"0x73574c4450455250000000000000000000000000000000000000000000000000",
 				"0xd4b10C896D82B3158A9a9fcb8F6fBC5A8D833C04"
@@ -6589,7 +6845,9 @@
 			"timestamp": "2023-08-09T17:25:56.540Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateUSDTPERP": {
 			"name": "PerpsV2MarketStateUSDTPERP",
@@ -6601,7 +6859,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5553445400000000000000000000000000000000000000000000000000000000",
 				"0x7355534454504552500000000000000000000000000000000000000000000000",
 				"0xC2231D2cAdDBee015AeDddd3F0EE3874E3bd1d59"
@@ -6689,7 +6949,9 @@
 			"timestamp": "2023-09-06T14:29:06.689Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateBALPERP": {
 			"name": "PerpsV2MarketStateBALPERP",
@@ -6701,7 +6963,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x42414c0000000000000000000000000000000000000000000000000000000000",
 				"0x7342414c50455250000000000000000000000000000000000000000000000000",
 				"0x982bb9880295EcBc34a56772fEF81E964Aee4A9f"
@@ -6789,7 +7053,9 @@
 			"timestamp": "2023-09-06T14:41:38.662Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateFXSPERP": {
 			"name": "PerpsV2MarketStateFXSPERP",
@@ -6801,7 +7067,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4658530000000000000000000000000000000000000000000000000000000000",
 				"0x7346585350455250000000000000000000000000000000000000000000000000",
 				"0xd9AC5ECbB704f0bdb0a96bEBfA3B79bE829d2bC1"
@@ -6889,7 +7157,9 @@
 			"timestamp": "2023-09-06T14:53:24.644Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateKNCPERP": {
 			"name": "PerpsV2MarketStateKNCPERP",
@@ -6901,7 +7171,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4b4e430000000000000000000000000000000000000000000000000000000000",
 				"0x734b4e4350455250000000000000000000000000000000000000000000000000",
 				"0x325AF017A497953734CB7B1F51580ff9aD1122B1"
@@ -6989,7 +7261,9 @@
 			"timestamp": "2023-09-06T15:07:02.893Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateRNDRPERP": {
 			"name": "PerpsV2MarketStateRNDRPERP",
@@ -7001,7 +7275,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x524e445200000000000000000000000000000000000000000000000000000000",
 				"0x73524e4452504552500000000000000000000000000000000000000000000000",
 				"0x82DCd3e7224DDA8dF6A746d70F1Cce80df4384c2"
@@ -7089,7 +7365,9 @@
 			"timestamp": "2023-09-06T18:26:41.067Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateONEPERP": {
 			"name": "PerpsV2MarketStateONEPERP",
@@ -7101,7 +7379,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4f4e450000000000000000000000000000000000000000000000000000000000",
 				"0x734f4e4550455250000000000000000000000000000000000000000000000000",
 				"0xEdB8F5e51e5B11E73beA72600aa2De7a4A2eAFa4"
@@ -7189,7 +7469,9 @@
 			"timestamp": "2023-09-06T18:38:29.063Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStatePERPPERP": {
 			"name": "PerpsV2MarketStatePERPPERP",
@@ -7201,7 +7483,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5045525000000000000000000000000000000000000000000000000000000000",
 				"0x7350455250504552500000000000000000000000000000000000000000000000",
 				"0x6941ad5Ac604d2329f96bEA75C7b25D19Cc06701"
@@ -7289,7 +7573,9 @@
 			"timestamp": "2023-09-06T18:50:03.351Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateZILPERP": {
 			"name": "PerpsV2MarketStateZILPERP",
@@ -7301,7 +7587,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5a494c0000000000000000000000000000000000000000000000000000000000",
 				"0x735a494c50455250000000000000000000000000000000000000000000000000",
 				"0x5aCd4ABF5DDfb7F27B5940D1Aef640d6b67a2Cba"
@@ -7389,7 +7677,9 @@
 			"timestamp": "2023-09-06T19:02:15.056Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateRUNEPERP": {
 			"name": "PerpsV2MarketStateRUNEPERP",
@@ -7401,7 +7691,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x52554e4500000000000000000000000000000000000000000000000000000000",
 				"0x7352554e45504552500000000000000000000000000000000000000000000000",
 				"0x2CC4707f6aeF86cDBA05F45Da98D365a66DFD5d7"
@@ -7489,7 +7781,9 @@
 			"timestamp": "2023-09-06T19:18:12.840Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSUSHIPERP": {
 			"name": "PerpsV2MarketStateSUSHIPERP",
@@ -7501,7 +7795,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5355534849000000000000000000000000000000000000000000000000000000",
 				"0x7353555348495045525000000000000000000000000000000000000000000000",
 				"0x854A3500F1443ba99F746CA605d8FC25F0d06f32"
@@ -7589,7 +7885,9 @@
 			"timestamp": "2023-09-07T15:12:33.263Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateZECPERP": {
 			"name": "PerpsV2MarketStateZECPERP",
@@ -7601,7 +7899,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5a45430000000000000000000000000000000000000000000000000000000000",
 				"0x735a454350455250000000000000000000000000000000000000000000000000",
 				"0xe94afDEd9CB9AB143E8cCc8C7439794E8C41F1A6"
@@ -7689,7 +7989,9 @@
 			"timestamp": "2023-09-07T15:26:30.771Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXTZPERP": {
 			"name": "PerpsV2MarketStateXTZPERP",
@@ -7701,7 +8003,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x58545a0000000000000000000000000000000000000000000000000000000000",
 				"0x7358545a50455250000000000000000000000000000000000000000000000000",
 				"0xaf621161755C601C1469e3487ce971f39Ae507BC"
@@ -7789,7 +8093,9 @@
 			"timestamp": "2023-09-07T15:39:34.440Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateUMAPERP": {
 			"name": "PerpsV2MarketStateUMAPERP",
@@ -7801,7 +8107,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x554d410000000000000000000000000000000000000000000000000000000000",
 				"0x73554d4150455250000000000000000000000000000000000000000000000000",
 				"0x595f37E1b21870571eE99fbe815D6790D817C0Ba"
@@ -7889,7 +8197,9 @@
 			"timestamp": "2023-09-07T15:51:18.966Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateENJPERP": {
 			"name": "PerpsV2MarketStateENJPERP",
@@ -7901,7 +8211,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x454e4a0000000000000000000000000000000000000000000000000000000000",
 				"0x73454e4a50455250000000000000000000000000000000000000000000000000",
 				"0x8327AA139bd7eEE62730a2cB9B9A86821810d4DB"
@@ -7989,7 +8301,9 @@
 			"timestamp": "2023-09-07T16:04:04.699Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateICPPERP": {
 			"name": "PerpsV2MarketStateICPPERP",
@@ -8001,7 +8315,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x4943500000000000000000000000000000000000000000000000000000000000",
 				"0x7349435050455250000000000000000000000000000000000000000000000000",
 				"0x4bD5674a720c212FF515Dd51d4E5d304FF16B3d0"
@@ -8089,7 +8405,9 @@
 			"timestamp": "2023-09-07T17:21:39.033Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateXLMPERP": {
 			"name": "PerpsV2MarketStateXLMPERP",
@@ -8101,7 +8419,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x584c4d0000000000000000000000000000000000000000000000000000000000",
 				"0x73584c4d50455250000000000000000000000000000000000000000000000000",
 				"0xEaFa65b829b37277a14fE43de9fAda0d9e897E4d"
@@ -8189,7 +8509,9 @@
 			"timestamp": "2023-09-07T17:36:34.945Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketState1INCHPERP": {
 			"name": "PerpsV2MarketState1INCHPERP",
@@ -8201,7 +8523,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x31494e4348000000000000000000000000000000000000000000000000000000",
 				"0x7331494e43485045525000000000000000000000000000000000000000000000",
 				"0x26A035D9A2eD696EacC3816674C66A7eB73aAb70"
@@ -8289,7 +8613,9 @@
 			"timestamp": "2023-09-07T17:48:30.536Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateEOSPERP": {
 			"name": "PerpsV2MarketStateEOSPERP",
@@ -8301,7 +8627,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x454f530000000000000000000000000000000000000000000000000000000000",
 				"0x73454f5350455250000000000000000000000000000000000000000000000000",
 				"0x1f53699b435326B6e264727b5504Cc28006Bed8B"
@@ -8389,7 +8717,9 @@
 			"timestamp": "2023-09-07T18:02:06.723Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateCELOPERP": {
 			"name": "PerpsV2MarketStateCELOPERP",
@@ -8401,7 +8731,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x43454c4f00000000000000000000000000000000000000000000000000000000",
 				"0x7343454c4f504552500000000000000000000000000000000000000000000000",
 				"0xb8BC48ed3D08A3ac02D62174652369d3279705dE"
@@ -8489,7 +8821,9 @@
 			"timestamp": "2023-09-07T18:15:10.714Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateALGOPERP": {
 			"name": "PerpsV2MarketStateALGOPERP",
@@ -8501,7 +8835,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x414c474f00000000000000000000000000000000000000000000000000000000",
 				"0x73414c474f504552500000000000000000000000000000000000000000000000",
 				"0xd856b45d4D9671482e53E705058aF3fF09000A28"
@@ -8589,7 +8925,9 @@
 			"timestamp": "2023-09-07T19:49:17.035Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateZRXPERP": {
 			"name": "PerpsV2MarketStateZRXPERP",
@@ -8601,7 +8939,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5a52580000000000000000000000000000000000000000000000000000000000",
 				"0x735a525850455250000000000000000000000000000000000000000000000000",
 				"0x0e4695edb83FB23E6b12AFa3660beF09610791de"
@@ -8689,7 +9029,9 @@
 			"timestamp": "2023-09-07T20:01:06.604Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSEIPERP": {
 			"name": "PerpsV2MarketStateSEIPERP",
@@ -8701,7 +9043,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5345490000000000000000000000000000000000000000000000000000000000",
 				"0x7353454950455250000000000000000000000000000000000000000000000000",
 				"0x9F6AA1c141838DF56eF82Be286cAbd2616c8B309"
@@ -8789,7 +9133,9 @@
 			"timestamp": "2023-09-07T20:13:16.724Z",
 			"txn": "",
 			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
+			"constructorArgs": [
+				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+			]
 		},
 		"PerpsV2MarketStateSTETHETHPERP": {
 			"name": "PerpsV2MarketStateSTETHETHPERP",
@@ -8801,7 +9147,9 @@
 			"network": "mainnet",
 			"constructorArgs": [
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"],
+				[
+					"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"
+				],
 				"0x5354455448455448000000000000000000000000000000000000000000000000",
 				"0x7353544554484554485045525000000000000000000000000000000000000000",
 				"0x2EC454957C0e66266398076f066fAaC77c48d88d"
@@ -8878,6 +9226,422 @@
 			"constructorArgs": [
 				"0x2EC454957C0e66266398076f066fAaC77c48d88d",
 				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyTRBPERP": {
+			"name": "PerpsV2ProxyTRBPERP",
+			"address": "0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+			"timestamp": "2023-12-04T23:16:02.354Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
+		},
+		"PerpsV2MarketStateTRBPERP": {
+			"name": "PerpsV2MarketStateTRBPERP",
+			"address": "0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+			"timestamp": "2023-12-04T23:16:20.391Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				[
+					"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+				],
+				"0x5452420000000000000000000000000000000000000000000000000000000000",
+				"0x7354524250455250000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketTRBPERP": {
+			"name": "PerpsV2MarketTRBPERP",
+			"address": "0x2C993C071e15513419a2563766d2E7Db6A55F3C4",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x2C993C071e15513419a2563766d2E7Db6A55F3C4",
+			"timestamp": "2023-12-04T23:16:30.970Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+				"0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateTRBPERP": {
+			"name": "PerpsV2MarketLiquidateTRBPERP",
+			"address": "0xEF9cC2223931e876dfcf0642b3f2EFb6Ccef7746",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0xEF9cC2223931e876dfcf0642b3f2EFb6Ccef7746",
+			"timestamp": "2023-12-04T23:16:41.212Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+				"0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentTRBPERP": {
+			"name": "PerpsV2DelayedIntentTRBPERP",
+			"address": "0x5e24c013e8d8b60D53D77cce019263e1964ed8D1",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x5e24c013e8d8b60D53D77cce019263e1964ed8D1",
+			"timestamp": "2023-12-04T23:16:51.813Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+				"0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionTRBPERP": {
+			"name": "PerpsV2DelayedExecutionTRBPERP",
+			"address": "0x30BB2B3A49ca31e0DD9D1C330E3e9bC8d4390B33",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x30BB2B3A49ca31e0DD9D1C330E3e9bC8d4390B33",
+			"timestamp": "2023-12-04T23:17:01.003Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xbdb26bfb6A229d7f254FAf1B2c744887ec5F1f31",
+				"0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsTRBPERP": {
+			"name": "PerpsV2MarketViewsTRBPERP",
+			"address": "0x7bfa1D23Ec09cCCEF678c0175794Ef9e9dc11d18",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x7bfa1D23Ec09cCCEF678c0175794Ef9e9dc11d18",
+			"timestamp": "2023-12-04T23:17:11.121Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x4B786a8b4b7ca90f9857776b0B888cED53CFeeF0",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyTIAPERP": {
+			"name": "PerpsV2ProxyTIAPERP",
+			"address": "0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+			"timestamp": "2023-12-04T23:29:01.830Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
+		},
+		"PerpsV2MarketStateTIAPERP": {
+			"name": "PerpsV2MarketStateTIAPERP",
+			"address": "0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+			"timestamp": "2023-12-04T23:29:15.338Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				[
+					"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+				],
+				"0x5449410000000000000000000000000000000000000000000000000000000000",
+				"0x7354494150455250000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketTIAPERP": {
+			"name": "PerpsV2MarketTIAPERP",
+			"address": "0xECF9f79602bC7F8751166254639aA6605Bc5f2E8",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0xECF9f79602bC7F8751166254639aA6605Bc5f2E8",
+			"timestamp": "2023-12-04T23:29:25.806Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+				"0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateTIAPERP": {
+			"name": "PerpsV2MarketLiquidateTIAPERP",
+			"address": "0x0c705619Bbc28809419Aae00306f726A410f99fF",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x0c705619Bbc28809419Aae00306f726A410f99fF",
+			"timestamp": "2023-12-04T23:29:35.988Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+				"0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentTIAPERP": {
+			"name": "PerpsV2DelayedIntentTIAPERP",
+			"address": "0x2774b19d141019B296E880aBd5f7E39A81D3164C",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0x2774b19d141019B296E880aBd5f7E39A81D3164C",
+			"timestamp": "2023-12-04T23:29:44.890Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+				"0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionTIAPERP": {
+			"name": "PerpsV2DelayedExecutionTIAPERP",
+			"address": "0x89EF1ccB62eE764Be2f817f3fDf20598EC90fBCa",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x89EF1ccB62eE764Be2f817f3fDf20598EC90fBCa",
+			"timestamp": "2023-12-04T23:29:56.090Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x35B0ed8473e7943d31Ee1eeeAd06C8767034Ce39",
+				"0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsTIAPERP": {
+			"name": "PerpsV2MarketViewsTIAPERP",
+			"address": "0x2BB9c128C397f50AFdB82d99096EE9E5acFF166a",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x2BB9c128C397f50AFdB82d99096EE9E5acFF166a",
+			"timestamp": "2023-12-04T23:30:04.746Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x75D9ABD9B5e9724345570cFa587BA791c6B012a3",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyIMXPERP": {
+			"name": "PerpsV2ProxyIMXPERP",
+			"address": "0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+			"timestamp": "2023-12-04T23:40:39.151Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
+		},
+		"PerpsV2MarketStateIMXPERP": {
+			"name": "PerpsV2MarketStateIMXPERP",
+			"address": "0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+			"timestamp": "2023-12-04T23:40:49.099Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				[
+					"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+				],
+				"0x494d580000000000000000000000000000000000000000000000000000000000",
+				"0x73494d5850455250000000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketIMXPERP": {
+			"name": "PerpsV2MarketIMXPERP",
+			"address": "0x17711043B91ac78d4a9D9D4Eff4982Ae34718596",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x17711043B91ac78d4a9D9D4Eff4982Ae34718596",
+			"timestamp": "2023-12-04T23:40:59.739Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+				"0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateIMXPERP": {
+			"name": "PerpsV2MarketLiquidateIMXPERP",
+			"address": "0x10584F7232e992CbffFbBD981AbB37841796e5ca",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x10584F7232e992CbffFbBD981AbB37841796e5ca",
+			"timestamp": "2023-12-04T23:41:09.934Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+				"0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentIMXPERP": {
+			"name": "PerpsV2DelayedIntentIMXPERP",
+			"address": "0xbBF6444e3Ba09ae34288EFc9139A669A3359Dc95",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xbBF6444e3Ba09ae34288EFc9139A669A3359Dc95",
+			"timestamp": "2023-12-04T23:41:18.815Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+				"0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionIMXPERP": {
+			"name": "PerpsV2DelayedExecutionIMXPERP",
+			"address": "0x6DAa4Eb27a25C3727e9857FD6b0B736Ff397542e",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x6DAa4Eb27a25C3727e9857FD6b0B736Ff397542e",
+			"timestamp": "2023-12-04T23:41:29.927Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xBBd74c2c8c89D45B822e08fCe400F4DDE99e600b",
+				"0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsIMXPERP": {
+			"name": "PerpsV2MarketViewsIMXPERP",
+			"address": "0xF647dA1E37ab60A418cbd68f864b96eCAa545118",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0xF647dA1E37ab60A418cbd68f864b96eCAa545118",
+			"timestamp": "2023-12-04T23:41:38.576Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x4AfD66f7379449a73C4848B30DBeb93016346FBE",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2ProxyMEMEPERP": {
+			"name": "PerpsV2ProxyMEMEPERP",
+			"address": "0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+			"source": "ProxyPerpsV2",
+			"link": "https://explorer.optimism.io/address/0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+			"timestamp": "2023-12-04T23:52:50.591Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+			]
+		},
+		"PerpsV2MarketStateMEMEPERP": {
+			"name": "PerpsV2MarketStateMEMEPERP",
+			"address": "0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+			"source": "PerpsV2MarketState",
+			"link": "https://explorer.optimism.io/address/0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+			"timestamp": "2023-12-04T23:53:04.450Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				[
+					"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E"
+				],
+				"0x4d454d4500000000000000000000000000000000000000000000000000000000",
+				"0x734d454d45504552500000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketMEMEPERP": {
+			"name": "PerpsV2MarketMEMEPERP",
+			"address": "0x5Ee88eFE11a05afCE278df521A5086B998Cd8127",
+			"source": "PerpsV2Market",
+			"link": "https://explorer.optimism.io/address/0x5Ee88eFE11a05afCE278df521A5086B998Cd8127",
+			"timestamp": "2023-12-04T23:53:19.034Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+				"0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketLiquidateMEMEPERP": {
+			"name": "PerpsV2MarketLiquidateMEMEPERP",
+			"address": "0x9C8ab9A60467ccE650b4E59E5072d37CC51C5C0B",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://explorer.optimism.io/address/0x9C8ab9A60467ccE650b4E59E5072d37CC51C5C0B",
+			"timestamp": "2023-12-04T23:53:33.095Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+				"0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedIntentMEMEPERP": {
+			"name": "PerpsV2DelayedIntentMEMEPERP",
+			"address": "0xE0d47B8F4c0fa9BEef45544b2507c4832d0aDB06",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://explorer.optimism.io/address/0xE0d47B8F4c0fa9BEef45544b2507c4832d0aDB06",
+			"timestamp": "2023-12-04T23:53:43.533Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+				"0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2DelayedExecutionMEMEPERP": {
+			"name": "PerpsV2DelayedExecutionMEMEPERP",
+			"address": "0x2cFD760B02CC196E611CE867862C0654B1527c2C",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://explorer.optimism.io/address/0x2cFD760B02CC196E611CE867862C0654B1527c2C",
+			"timestamp": "2023-12-04T23:53:58.115Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0x48BeadAB5781aF9C4Fec27AC6c8E0F402F2Cc3D6",
+				"0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
+				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
+			]
+		},
+		"PerpsV2MarketViewsMEMEPERP": {
+			"name": "PerpsV2MarketViewsMEMEPERP",
+			"address": "0x65AC63AaF11dF18d392469eD2D8CaF8E2E40E788",
+			"source": "PerpsV2MarketViews",
+			"link": "https://explorer.optimism.io/address/0x65AC63AaF11dF18d392469eD2D8CaF8E2E40E788",
+			"timestamp": "2023-12-04T23:54:07.189Z",
+			"txn": "",
+			"network": "mainnet",
+			"constructorArgs": [
+				"0xeF35211B545B8f7EAF77F0d144A2e023d21Cb453",
+				"0xEde8a407913A874Dd7e3d5B731AFcA135D30375E",
 				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
 			]
 		}
