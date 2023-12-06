@@ -2091,6 +2091,7 @@
 		"maxMarketValue": "23000",
 		"maxFundingVelocity": "36",
 		"skewScale": "200000",
+		"offchainPriceDivergence": "0.99",
 		"liquidationPremiumMultiplier": "3",
 		"offchainMarketKey": "ocTRBPERP",
 		"liquidationBufferRatio": "0.0150",

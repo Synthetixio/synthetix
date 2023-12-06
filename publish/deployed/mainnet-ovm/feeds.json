@@ -334,8 +334,7 @@
 	},
 	"PYTH": {
 		"asset": "PYTH",
-		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
-		"fakeFeed": true
+		"feed": "0x0838cFe6A97C9CE1611a6Ed17252477a3c71eBEb"
 	},
 	"ANKR": {
 		"asset": "ANKR",
@@ -343,7 +342,6 @@
 	},
 	"BONK": {
 		"asset": "BONK",
-		"feed": "0xfa042d5F474d7A39454C594CCfE014Ea011495f2",
-		"fakeFeed": true
+		"feed": "0xec236454209A76a6deCdf5C1183aE2Eb5e82a829"
 	}
 }
