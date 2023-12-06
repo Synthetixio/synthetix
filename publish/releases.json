@@ -989,7 +989,8 @@
 		{
 			"sip": 2035,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2036,
@@ -1000,7 +1001,8 @@
 		{
 			"sip": 2037,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2038,
@@ -1010,22 +1012,26 @@
 		{
 			"sip": 2039,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2040,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2041,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		},
 		{
 			"sip": 2042,
 			"layer": "ovm",
-			"sources": []
+			"sources": [],
+			"released": "ovm"
 		}
 	],
 	"releases": [
@@ -1919,7 +1925,8 @@
 				"major": 2,
 				"minor": 97
 			},
-			"sips": [2035, 2037, 2039, 2040, 2041, 2042]
+			"sips": [2035, 2037, 2039, 2040, 2041, 2042],
+			"released": true
 		}
 	]
 }
