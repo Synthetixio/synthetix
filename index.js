@@ -40,8 +40,8 @@ const chainIdMapping = Object.entries({
 		useOvm: true,
 	},
 	11155420: {
-		network 'sepolia',
-		useOvm: true
+		network: 'sepolia',
+		useOvm: true,
 	},
 
 	'-1': {
