@@ -179,6 +179,8 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 				providerUrl = process.env.OVM_PROVIDER_URL;
 			} else if (process.env.OVM_GOERLI_PROVIDER_URL) {
 				providerUrl = process.env.OVM_GOERLI_PROVIDER_URL;
+			} else if (process.env.OVM_SEPOLIA_PROVIDER_URL) {
+				providerUrl = process.env.OVM_SEPOLIA_PROVIDER_URL;
 			}
 		} else {
 			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {

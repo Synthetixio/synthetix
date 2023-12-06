@@ -16,7 +16,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli'];
+const networks = ['local', 'mainnet', 'goerli', 'sepolia'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -39,6 +39,11 @@ const chainIdMapping = Object.entries({
 		network: 'goerli',
 		useOvm: true,
 	},
+	11155420: {
+		network 'sepolia',
+		useOvm: true
+	},
+
 	'-1': {
 		// no chain ID for this currently
 		network: 'unknown',
@@ -165,6 +170,7 @@ const defaults = {
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'goerli-ovm': '0x4200000000000000000000000000000000000006',
+		'sepolia-ovm': '0x4200000000000000000000000000000000000006',
 		// TODO: get actual goerli-ovm address
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
@@ -728,6 +734,10 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),
 		'goerli-ovm': Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
+		'sepolia-ovm': Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),
