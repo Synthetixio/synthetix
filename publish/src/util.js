@@ -114,10 +114,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const offchainFeedsFile = path.join(deploymentPath, OFFCHAIN_FEEDS_FILENAME);
 	const offchainFeeds = getOffchainFeeds({ network, deploymentPath });
 
-	console.log(
-		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
-	);
 	const deploymentFile = path.join(deploymentPath, DEPLOYMENT_FILENAME);
+	console.log(
+		gray(
+			`Loading the list of contracts already deployed for ${network.toUpperCase()} in '${deploymentFile}'...`
+		)
+	);
+
 	if (!fs.existsSync(deploymentFile)) {
 		fs.writeFileSync(deploymentFile, stringify({ targets: {}, sources: {} }));
 	}

@@ -8,6 +8,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'sepolia-ovm': require('./publish/deployed/sepolia-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
@@ -163,11 +164,15 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		// Adding zero addresses here - we don't actually support renBTC anymore.
+		sepolia: '0x0000000000000000000000000000000000000000',
+		'sepolia-ovm': '0x0000000000000000000000000000000000000000',
 		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+		sepolia: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'goerli-ovm': '0x4200000000000000000000000000000000000006',
 		'sepolia-ovm': '0x4200000000000000000000000000000000000006',
