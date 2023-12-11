@@ -15,8 +15,14 @@ const { toBytes32, wrap, networks } = require('../..');
 describe('deployments', () => {
 	networks
 		.filter(n => n !== 'local')
-		.reduce(
-			(memo, network) =>
+		.reduce((memo, network) => {
+			// `sepolia` is only supported on ovm.
+			if (network === 'sepolia') {
+				memo.concat({
+					network,
+					useOvm: true,
+				});
+			} else {
 				memo.concat(
 					{
 						network,
@@ -26,9 +32,10 @@ describe('deployments', () => {
 						network,
 						useOvm: true,
 					}
-				),
-			[]
-		)
+				);
+			}
+			return memo;
+		}, [])
 		.forEach(({ network, useOvm }) => {
 			(['goerli'].indexOf(network) > -1 ? describe.skip : describe)(
 				`${network}${useOvm ? '-ovm' : ''}`,
