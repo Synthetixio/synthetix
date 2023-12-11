@@ -155,65 +155,11 @@
 	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"FuturesMarketSettings": {
-		"deploy": true
-	},
-	"FuturesMarketData": {
-		"deploy": true
-	},
 	"OneNetAggregatorIssuedSynths": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
 		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": true
-	},
-	"FuturesMarketETH": {
-		"deploy": true
-	},
-	"FuturesMarketLINK": {
-		"deploy": true
-	},
-	"FuturesMarketSOL": {
-		"deploy": true
-	},
-	"FuturesMarketAVAX": {
-		"deploy": true
-	},
-	"FuturesMarketAAVE": {
-		"deploy": true
-	},
-	"FuturesMarketUNI": {
-		"deploy": true
-	},
-	"FuturesMarketMATIC": {
-		"deploy": true
-	},
-	"FuturesMarketXAU": {
-		"deploy": true
-	},
-	"FuturesMarketXAG": {
-		"deploy": true
-	},
-	"FuturesMarketEUR": {
-		"deploy": true
-	},
-	"FuturesMarketAPE": {
-		"deploy": true
-	},
-	"FuturesMarketDYDX": {
-		"deploy": true
-	},
-	"FuturesMarketBNB": {
-		"deploy": true
-	},
-	"FuturesMarketXMR": {
-		"deploy": true
-	},
-	"FuturesMarketDOGE": {
-		"deploy": true
 	},
 	"Liquidator": {
 		"deploy": false
