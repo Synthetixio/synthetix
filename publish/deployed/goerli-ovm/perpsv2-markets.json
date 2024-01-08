@@ -1553,7 +1553,7 @@
 		"minDelayTimeDelta": "60",
 		"maxDelayTimeDelta": "6000",
 		"offchainDelayedOrderMinAge": "2",
-		"offchainDelayedOrderMaxAsRNDRPERPge": "60",
+		"offchainDelayedOrderMaxAge": "60",
 		"maxLeverage": "27.5",
 		"maxMarketValue": "263200",
 		"maxFundingVelocity": "36",
