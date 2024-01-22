@@ -343,5 +343,13 @@
 	"BONK": {
 		"asset": "BONK",
 		"feed": "0xec236454209A76a6deCdf5C1183aE2Eb5e82a829"
+	},
+	"JTO": {
+		"asset": "JTO",
+		"feed": "0xFC3b7bd4368b2919f67E437f8c6Ca42C7FD55dd5"
+	},
+	"ORDI": {
+		"asset": "ORDI",
+		"feed": "0x30795BeACc0f43920EF1288dB6676B5e205AE288"
 	}
 }
