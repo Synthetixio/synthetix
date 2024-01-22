@@ -1036,14 +1036,12 @@
 		{
 			"sip": 2044,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		},
 		{
 			"sip": 2045,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1947,8 +1945,7 @@
 				"major": 2,
 				"minor": 98
 			},
-			"sips": [2044, 2045],
-			"released": true
+			"sips": [2044, 2045]
 		}
 	]
 }
