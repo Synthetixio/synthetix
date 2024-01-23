@@ -729,6 +729,17 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Wrapped stETH"
+	},
+	"JTO": {
+		"asset": "JTO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Jito"
+	},
+	"ORDI": {
+		"asset": "ORDI",
+		"category": "crypto",
+		"sign": "",
+		"description": "ORDI"
 	}
-
-}	
+}

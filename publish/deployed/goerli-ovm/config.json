@@ -2125,5 +2125,47 @@
 	},
 	"PerpsV2MarketViewsBONKPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsJTOPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionORDIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsORDIPERP": {
+		"deploy": false
 	}
 }

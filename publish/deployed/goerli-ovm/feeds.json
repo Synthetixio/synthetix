@@ -342,5 +342,15 @@
 		"asset": "BONK",
 		"feed": "0xc6cC2F2eB966E9bfc1A91f79ae1f557F2eC7201E",
 		"fakeFeed": true
+	},
+	"JTO": {
+		"asset": "JTO",
+		"feed": "0x9755f74E6a1a39C0b082Bf56Df8fb6B154368334",
+		"fakeFeed": true
+	},
+	"ORDI": {
+		"asset": "ORDI",
+		"feed": "0x025600F206C83854D33209Adceb23840f2963700",
+		"fakeFeed": true
 	}
 }
