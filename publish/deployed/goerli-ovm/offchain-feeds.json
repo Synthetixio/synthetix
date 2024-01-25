@@ -505,13 +505,13 @@
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
-		"asset": "ORDI",
-		"feedId": "0x2b4c2ab4993d0472b73b29f6598cb716d2be452389a9964f8db6cbec1bea3899"
+		"asset": "JTO",
+		"feedId": "0x1126fc5add7272eca2c168bf6393b1f82376a749db15ee63791b843f39867592"
 	},
 	{
 		"kind": "pyth",
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
-		"asset": "JITO",
-		"feedId": "0x1126fc5add7272eca2c168bf6393b1f82376a749db15ee63791b843f39867592"
+		"asset": "ORDI",
+		"feedId": "0x2b4c2ab4993d0472b73b29f6598cb716d2be452389a9964f8db6cbec1bea3899"
 	}
 ]
