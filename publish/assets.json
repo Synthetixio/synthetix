@@ -429,12 +429,6 @@
 		"sign": "",
 		"description": "dYdX"
 	},
-	"INR": {
-		"asset": "INR",
-		"category": "forex",
-		"sign": "₹",
-		"description": "Indian Rupee"
-	},
 	"AXS": {
 		"asset": "AXS",
 		"category": "crypto",
