@@ -30,7 +30,7 @@ task('node', 'Run a node')
 					: process.env.PROVIDER_URL.replace('network', networkHostReplace);
 			}
 
-			console.log(yellow(`Forking ${network}...`));
+			console.log(yellow(`Forking ${network}... ${taskArguments.fork}`));
 		}
 
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {

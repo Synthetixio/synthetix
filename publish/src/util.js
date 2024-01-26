@@ -165,9 +165,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 };
 
 const getExplorerLinkPrefix = ({ network, useOvm }) => {
-	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
-		useOvm ? 'explorer.optimism' : 'etherscan'
-	}.io`;
+	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${useOvm ? network === 'sepolia' ? 'optimism.etherscan' : 'explorer.optimism' : 'etherscan'
+		}.io`;
 };
 
 const loadConnections = ({ network, useFork, useOvm }) => {
@@ -197,9 +196,8 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
-		useOvm ? '-optimistic' : ''
-	}.etherscan.io/api`;
+	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${useOvm ? '-optimistic' : ''
+		}.etherscan.io/api`;
 
 	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
@@ -291,7 +289,7 @@ const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerG
 	let feeData = {};
 	try {
 		feeData = await provider.getFeeData();
-	} catch (_) {} // network does not support the `getFeeData` rpc call
+	} catch (_) { } // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
 		gasOptions.type = 2;
 		if (maxFeePerGas)

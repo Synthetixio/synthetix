@@ -1,53 +1,54 @@
 'use strict';
 
 const { gray } = require('chalk');
+const { toBytes32 } = require('../../../..');
 // const {
 // 	constants: { ZERO_ADDRESS },
 // } = require('../../../..');
 
 module.exports = async ({ addressOf, deployer, runStep }) => {
-	console.log(gray(`\n------ CONFIGURE REWARD ESCROW V2 (MIGRATION) [SKIPPED] ------\n`));
+	console.log(gray(`\n------ CONFIGURE REWARD ESCROW V2 (MIGRATION) [SKIPPED PARTIALLY] ------\n`));
 
-	// const {
-	// 	// AddressResolver,
-	// 	RewardEscrowV2,
-	// 	RewardsDistribution,
-	// 	// Synthetix,
-	// 	RewardEscrowV2Storage,
-	// 	RewardEscrowV2Frozen,
-	// } = deployer.deployedContracts;
+	const {
+		AddressResolver,
+		// 	RewardEscrowV2,
+		// 	RewardsDistribution,
+		// 	// Synthetix,
+		RewardEscrowV2Storage,
+		RewardEscrowV2Frozen,
+	} = deployer.deployedContracts;
 
-	// // SIP-252 rewards escrow migration
-	// // get either previous address, or newly deployed address (for integration tests)
-	// const frozenOrPreviousEscrow =
-	// 	RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
+	// SIP-252 rewards escrow migration
+	// get either previous address, or newly deployed address (for integration tests)
+	const frozenOrPreviousEscrow =
+		RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
 
-	// // close account merging on previous contract
-	// // this breaks account merging
-	// await runStep({
-	// 	contract: 'RewardEscrowV2Frozen',
-	// 	target: frozenOrPreviousEscrow,
-	// 	read: 'accountMergingDuration',
-	// 	expected: input => input === '0',
-	// 	write: 'setAccountMergingDuration',
-	// 	writeArg: 0,
-	// 	comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
-	// });
+	// close account merging on previous contract
+	// this breaks account merging
+	await runStep({
+		contract: 'RewardEscrowV2Frozen',
+		target: frozenOrPreviousEscrow,
+		read: 'accountMergingDuration',
+		expected: input => input === '0',
+		write: 'setAccountMergingDuration',
+		writeArg: 0,
+		comment: 'Ensure that RewardEscrowV2Frozen account merging is closed',
+	});
 
-	// // set frozen address entry for migrating balances
-	// // this breaks creating entries (since SNX cannot be transferred)
-	// // note that FeePool will still be able to create entries on the old contract up to the point
-	// // its resolver cache is rebuilt (if this is not done atomcally in a migration contract)
-	// await runStep({
-	// 	contract: 'AddressResolver',
-	// 	target: AddressResolver,
-	// 	read: 'getAddress',
-	// 	readArg: [toBytes32('RewardEscrowV2Frozen')],
-	// 	expected: input => input === addressOf(frozenOrPreviousEscrow),
-	// 	write: 'importAddresses',
-	// 	writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(frozenOrPreviousEscrow)]],
-	// 	comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
-	// });
+	// set frozen address entry for migrating balances
+	// this breaks creating entries (since SNX cannot be transferred)
+	// note that FeePool will still be able to create entries on the old contract up to the point
+	// its resolver cache is rebuilt (if this is not done atomcally in a migration contract)
+	await runStep({
+		contract: 'AddressResolver',
+		target: AddressResolver,
+		read: 'getAddress',
+		readArg: [toBytes32('RewardEscrowV2Frozen')],
+		expected: input => input === addressOf(frozenOrPreviousEscrow),
+		write: 'importAddresses',
+		writeArg: [[toBytes32('RewardEscrowV2Frozen')], [addressOf(frozenOrPreviousEscrow)]],
+		comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
+	});
 
 	// // move SNX balances if needed
 	// // this breaks vesting
@@ -77,7 +78,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	// 	comment: 'Ensure that RewardEscrowV2 contract is allowed to write to RewardEscrowV2Storage',
 	// });
 
-	// // set the fallback (frozne) for storage contract
+	// // set the fallback (frozen) for storage contract
 	// // this can only happen once, as this contract is immutable
 	// // This step is performed last because beyond this point any new entries on previous contract will be ignored
 	// // Note: added to RewardEscrowV2Storage to non-upgradable.json after the Aspidiske release.
