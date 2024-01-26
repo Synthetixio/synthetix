@@ -14,7 +14,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		// 	RewardEscrowV2,
 		// 	RewardsDistribution,
 		// 	// Synthetix,
-		RewardEscrowV2Storage,
+		// RewardEscrowV2Storage,
 		RewardEscrowV2Frozen,
 	} = deployer.deployedContracts;
 
