@@ -31,7 +31,7 @@ const {
 } = require('../../../.');
 
 const DEFAULTS = {
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	network: 'goerli',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
@@ -91,9 +91,9 @@ const deployShortingRewards = async ({
 	if (missingDeployments.length > 0) {
 		throw Error(
 			`Cannot use existing contracts for deployment as addresses not found for the following contracts on ${network}:\n` +
-				missingDeployments.join(', ') +
-				'\n' +
-				gray(`Used: ${deploymentFile} as source`)
+			missingDeployments.join(', ') +
+			'\n' +
+			gray(`Used: ${deploymentFile} as source`)
 		);
 	}
 
@@ -163,8 +163,8 @@ const deployShortingRewards = async ({
 						', '
 					)}\n`
 				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
+				gray('-'.repeat(50)) +
+				'\nDo you want to continue? (y/n) '
 			);
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
@@ -217,12 +217,11 @@ const deployShortingRewards = async ({
 				await confirmAction(
 					yellow(
 						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`${shortingRewardNameFixed}'s reward token is ${rewardsToken} ${
-								rewardsToken === rewardsTokenAddress ? '' : `(${rewardsTokenAddress})`
-							}\n`
+						`${shortingRewardNameFixed}'s reward token is ${rewardsToken} ${rewardsToken === rewardsTokenAddress ? '' : `(${rewardsTokenAddress})`
+						}\n`
 					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
+					gray('-'.repeat(50)) +
+					'\nDo you want to continue? (y/n) '
 				);
 			} catch (err) {
 				console.log(gray('Operation cancelled'));

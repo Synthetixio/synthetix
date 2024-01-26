@@ -24,7 +24,7 @@ const { getContract } = require('../command-utils/contract');
 const { safeInitializer } = require('../command-utils/safe-initializer');
 
 const DEFAULTS = {
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	gasLimit: 2e5, // 200,000
 };
 
@@ -177,11 +177,10 @@ const owner = async ({
 			} else {
 				await confirmAction(
 					message +
-						cyan(
-							`\nPlease type "y" to ${
-								safeBatchSubmitter ? 'stage' : 'submit'
-							} transaction, or enter "n" to cancel and resume this later? (y/n) `
-						)
+					cyan(
+						`\nPlease type "y" to ${safeBatchSubmitter ? 'stage' : 'submit'
+						} transaction, or enter "n" to cancel and resume this later? (y/n) `
+					)
 				);
 			}
 		} catch (err) {

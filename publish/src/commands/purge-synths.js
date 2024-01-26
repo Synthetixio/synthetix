@@ -23,7 +23,7 @@ const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'goerli',
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	batchSize: 15,
 };
 
@@ -224,8 +224,8 @@ const purgeSynths = async ({
 			console.log(
 				yellow(
 					`⚠⚠⚠ WARNING: totalSupply is not 0 after purge of ${currencyKey}. It is ${totalSupply}. ` +
-						`Were there 100 or 1000 holders noted above? If so then we have likely hit the tokenHolder ` +
-						`API limit; another purge is required for this synth.`
+					`Were there 100 or 1000 holders noted above? If so then we have likely hit the tokenHolder ` +
+					`API limit; another purge is required for this synth.`
 				)
 			);
 		}

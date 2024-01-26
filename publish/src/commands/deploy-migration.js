@@ -30,7 +30,7 @@ const {
 } = require('../../..');
 
 const DEFAULTS = {
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	network: 'goerli',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
@@ -124,8 +124,8 @@ const deployMigration = async ({
 				yellow(
 					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\nMigration_${releaseName}\n`
 				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
+				gray('-'.repeat(50)) +
+				'\nDo you want to continue? (y/n) '
 			);
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
@@ -323,9 +323,9 @@ async function verifyContract({
 	const libArgs =
 		linkedLibraryName && linkedLibraryAddress
 			? {
-					libraryname1: linkedLibraryName,
-					libraryaddress1: linkedLibraryAddress,
-			  }
+				libraryname1: linkedLibraryName,
+				libraryaddress1: linkedLibraryAddress,
+			}
 			: {};
 
 	await axios.post(
