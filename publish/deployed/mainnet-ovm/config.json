@@ -224,15 +224,6 @@
 	"FuturesMarketDYDX": {
 		"deploy": false
 	},
-	"TokenStatesINR": {
-		"deploy": false
-	},
-	"ProxysINR": {
-		"deploy": false
-	},
-	"SynthsINR": {
-		"deploy": false
-	},
 	"Liquidator": {
 		"deploy": false
 	},

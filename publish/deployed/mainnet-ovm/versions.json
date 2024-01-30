@@ -1143,12 +1143,12 @@
 			},
 			"TokenStatesINR": {
 				"address": "0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
 			},
 			"ProxysINR": {
 				"address": "0xa3A538EA5D5838dC32dde15946ccD74bDd5652fF",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
 			},
 			"SynthsINR": {
@@ -1345,7 +1345,7 @@
 			},
 			"SynthsINR": {
 				"address": "0x34c2360ffe5D21542f76e991FFD104f281D4B3fb",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
 			}
 		}
