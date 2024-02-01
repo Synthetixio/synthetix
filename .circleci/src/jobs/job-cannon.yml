@@ -6,6 +6,24 @@ steps:
       keys:
         - foundry-bin-latest-${foundry_cache_version}
   - rust/install: {}
+  - run:
+      name: "Run IPFS"
+      working_directory: ~/
+      environment:
+        SHELL: /bin/bash
+      command: |-
+        wget https://dist.ipfs.io/go-ipfs/v0.9.0/go-ipfs_v0.9.0_linux-amd64.tar.gz
+        tar -xvzf go-ipfs_v0.9.0_linux-amd64.tar.gz
+        sudo bash go-ipfs/install.sh
+        ipfs init
+        ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8087
+        ipfs daemon
+      background: true
+  - cmd-wait-for-port:
+      port: 5001
+  - run:
+      command: |-
+        ipfs --version
   - run: 
         name: "Install Foundry"
         working_directory: ~/
