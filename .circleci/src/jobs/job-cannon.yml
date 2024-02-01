@@ -17,6 +17,11 @@ steps:
         sudo bash go-ipfs/install.sh
         ipfs init
         ipfs daemon
+      background: true
+  - cmd-wait-for-port:
+      port: 5001
+  - run:
+      command: |-
         ipfs --version
   - run: 
         name: "Install Foundry"
