@@ -18,10 +18,5 @@
 		"name": "sEUR",
 		"asset": "EUR",
 		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sINR",
-		"asset": "INR",
-		"subclass": "MultiCollateralSynth"
 	}
 ]

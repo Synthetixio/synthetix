@@ -1217,48 +1217,6 @@
 				"0x7345555200000000000000000000000000000000000000000000000000000000"
 			]
 		},
-		"TokenStatesINR": {
-			"name": "TokenStatesINR",
-			"address": "0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
-			"source": "TokenState",
-			"link": "https://explorer.optimism.io/address/0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
-			"timestamp": "2022-05-10T20:17:20.117Z",
-			"txn": "",
-			"network": "mainnet",
-			"constructorArgs": [
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x0000000000000000000000000000000000000000"
-			]
-		},
-		"ProxysINR": {
-			"name": "ProxysINR",
-			"address": "0xa3A538EA5D5838dC32dde15946ccD74bDd5652fF",
-			"source": "ProxyERC20",
-			"link": "https://explorer.optimism.io/address/0xa3A538EA5D5838dC32dde15946ccD74bDd5652fF",
-			"timestamp": "2022-05-10T20:18:24.536Z",
-			"txn": "",
-			"network": "mainnet",
-			"constructorArgs": ["0x6d4a64C57612841c2C6745dB2a4E4db34F002D20"]
-		},
-		"SynthsINR": {
-			"name": "SynthsINR",
-			"address": "0x34c2360ffe5D21542f76e991FFD104f281D4B3fb",
-			"source": "MultiCollateralSynth",
-			"link": "https://explorer.optimism.io/address/0x34c2360ffe5D21542f76e991FFD104f281D4B3fb",
-			"timestamp": "2022-06-09T19:48:00.039Z",
-			"txn": "",
-			"network": "mainnet",
-			"constructorArgs": [
-				"0xa3A538EA5D5838dC32dde15946ccD74bDd5652fF",
-				"0xfE33ae95A9f0DA8A845aF33516EDc240DCD711d6",
-				"Synth sINR",
-				"sINR",
-				"0x6d4a64C57612841c2C6745dB2a4E4db34F002D20",
-				"0x73494e5200000000000000000000000000000000000000000000000000000000",
-				0,
-				"0x1Cb059b7e74fD21665968C908806143E744D5F30"
-			]
-		},
 		"FuturesMarketAPE": {
 			"name": "FuturesMarketAPE",
 			"address": "0xFe00395ec846240dc693e92AB2Dd720F94765Aa3",
