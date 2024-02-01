@@ -92,6 +92,9 @@ module.exports = async ({ addressOf, compiled, deployer, network, runStep, useOv
 				SynthsUNI: '0xcF2E165D2359E3C4dFF1E10eC40dBB5a745223A9',
 				SynthsAVAX: '0x368A5126fF8e659004b6f9C9F723E15632e2B428',
 				SynthsSOL: '0x04B50a5992Ea2281E14d43494d656698EA9C24dD',
+
+				// Synths deprecated during Markeb (v2.98.2)
+				SynthsINR: '0x34c2360ffe5D21542f76e991FFD104f281D4B3fb',
 			};
 		}
 

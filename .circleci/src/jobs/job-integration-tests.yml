@@ -8,18 +8,46 @@ steps:
   # get foundry
   - restore_cache:
       keys:
-        - foundry-bin-${foundry_locked_commit}-12
+        - foundry-bin-latest-${foundry_cache_version}
   - rust/install: {}
-  - run: |
-      if [ ! -d ~/.foundry ]; then
-        curl -O https://raw.githubusercontent.com/foundry-rs/foundry/master/foundryup/foundryup && chmod +x ./foundryup
-        ./foundryup -C $foundry_locked_commit
-      fi
-      rm -rf *
-      echo 'export PATH="$PATH:$HOME/.foundry/bin"' >> $BASH_ENV
+  - run:
+      name: "Run IPFS"
+      working_directory: ~/
+      environment:
+        SHELL: /bin/bash
+      command: |-
+        wget https://dist.ipfs.io/go-ipfs/v0.9.0/go-ipfs_v0.9.0_linux-amd64.tar.gz
+        tar -xvzf go-ipfs_v0.9.0_linux-amd64.tar.gz
+        sudo bash go-ipfs/install.sh
+        ipfs init
+        ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8087
+        ipfs daemon
+      background: true
+  - cmd-wait-for-port:
+      port: 5001
+  - run:
+      command: |-
+        ipfs --version
+  - run: 
+        name: "Install Foundry"
+        working_directory: ~/
+        environment:
+          SHELL: /bin/bash
+        command: |-
+            export PATH="$PATH:$HOME/.foundry/bin"
+            echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
+
+            if command -v anvil; then
+              echo "Anvil already installed"
+              anvil --version
+            else
+              curl -L https://foundry.paradigm.xyz | bash
+              foundryup
+            fi
+            rm -rf *
 
   - save_cache:
-      key: foundry-bin-${foundry_locked_commit}-12
+      key: foundry-bin-latest-${foundry_cache_version}
       paths:
         - ~/.foundry/bin
 

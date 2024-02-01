@@ -220,7 +220,10 @@ const deployPerpsV2Markets = async ({
 		// writeArg: [toBytes32('Futures'), fakeAccountToReplace, true, true],
 	});
 
+	const numberOfMarkets = perpsv2Markets.length;
+	let currentMarketIndex = 0;
 	for (const marketConfig of perpsv2Markets) {
+		currentMarketIndex++;
 		if (specificMarkets && !specificMarkets.includes(marketConfig.marketKey)) {
 			console.log(
 				yellow(
@@ -231,7 +234,9 @@ const deployPerpsV2Markets = async ({
 		}
 
 		console.log(
-			gray(`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey}`)
+			gray(
+				`attempting to deploy market for ${marketConfig.asset} - ${marketConfig.marketKey} [${currentMarketIndex}/${numberOfMarkets}]`
+			)
 		);
 
 		const baseAsset = marketConfig.asset;

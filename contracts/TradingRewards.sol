@@ -4,6 +4,7 @@ pragma solidity ^0.5.16;
 import "./Pausable.sol";
 import "./MixinResolver.sol";
 import "./Owned.sol";
+import "./RewardsDistributionRecipient.sol";
 
 // External dependencies.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
@@ -17,7 +18,7 @@ import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IExchanger.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/tradingrewards
-contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, MixinResolver {
+contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, MixinResolver, RewardsDistributionRecipient {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using SafeERC20 for IERC20;
@@ -255,6 +256,8 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
         emit AssignedRewardTokensRecovered(recoverAddress, amount, periodID);
     }
+
+    function notifyRewardAmount(uint256 reward) external {}
 
     function _validateRecoverAddress(address recoverAddress) internal view {
         if (recoverAddress == address(0) || recoverAddress == address(this)) {
