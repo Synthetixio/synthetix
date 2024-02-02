@@ -26,7 +26,7 @@ const { performTransactionalStep } = require('../command-utils/transact');
 const DEFAULTS = {
 	network: 'goerli',
 	gasLimit: 3e5,
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 };
 
 const removeSynths = async ({
