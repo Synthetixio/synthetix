@@ -28,7 +28,7 @@ const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 };
 
 const replaceSynths = async ({

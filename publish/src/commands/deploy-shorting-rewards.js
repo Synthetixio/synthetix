@@ -31,7 +31,7 @@ const {
 } = require('../../../.');
 
 const DEFAULTS = {
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	network: 'goerli',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
