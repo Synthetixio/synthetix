@@ -114,10 +114,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const offchainFeedsFile = path.join(deploymentPath, OFFCHAIN_FEEDS_FILENAME);
 	const offchainFeeds = getOffchainFeeds({ network, deploymentPath });
 
-	console.log(
-		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
-	);
 	const deploymentFile = path.join(deploymentPath, DEPLOYMENT_FILENAME);
+	console.log(
+		gray(
+			`Loading the list of contracts already deployed for ${network.toUpperCase()} in '${deploymentFile}'...`
+		)
+	);
+
 	if (!fs.existsSync(deploymentFile)) {
 		fs.writeFileSync(deploymentFile, stringify({ targets: {}, sources: {} }));
 	}
@@ -163,7 +166,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 
 const getExplorerLinkPrefix = ({ network, useOvm }) => {
 	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
-		useOvm ? 'explorer.optimism' : 'etherscan'
+		useOvm ? (network === 'sepolia' ? 'optimism.etherscan' : 'explorer.optimism') : 'etherscan'
 	}.io`;
 };
 
@@ -179,6 +182,8 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 				providerUrl = process.env.OVM_PROVIDER_URL;
 			} else if (process.env.OVM_GOERLI_PROVIDER_URL) {
 				providerUrl = process.env.OVM_GOERLI_PROVIDER_URL;
+			} else if (process.env.OVM_SEPOLIA_PROVIDER_URL) {
+				providerUrl = process.env.OVM_SEPOLIA_PROVIDER_URL;
 			}
 		} else {
 			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
