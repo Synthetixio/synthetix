@@ -16,7 +16,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		RewardEscrowV2Storage,
 		RewardEscrowV2Frozen,
 		LiquidatorRewards,
-		DebtMigrator,
+		DebtMigratorOnOptimism,
 	} = deployer.deployedContracts;
 
 	// SIP-252 rewards escrow migration
@@ -110,11 +110,11 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 			contract: 'RewardEscrowV2',
 			target: RewardEscrowV2,
 			read: 'permittedEscrowCreators',
-			readArg: addressOf(DebtMigrator),
+			readArg: addressOf(DebtMigratorOnOptimism),
 			expected: input => input,
 			write: 'setPermittedEscrowCreator',
-			writeArg: [addressOf(DebtMigrator), true],
-			comment: 'Allow escrow entry creation by DebtMigrator',
+			writeArg: [addressOf(DebtMigratorOnOptimism), true],
+			comment: 'Allow escrow entry creation by DebtMigratorOnOptimism',
 		});
 	}
 
