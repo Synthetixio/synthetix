@@ -155,64 +155,10 @@
 	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"FuturesMarketSettings": {
-		"deploy": false
-	},
-	"FuturesMarketData": {
-		"deploy": false
-	},
 	"OneNetAggregatorIssuedSynths": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
-		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": false
-	},
-	"FuturesMarketETH": {
-		"deploy": false
-	},
-	"FuturesMarketLINK": {
-		"deploy": false
-	},
-	"FuturesMarketSOL": {
-		"deploy": false
-	},
-	"FuturesMarketAVAX": {
-		"deploy": false
-	},
-	"FuturesMarketAAVE": {
-		"deploy": false
-	},
-	"FuturesMarketUNI": {
-		"deploy": false
-	},
-	"FuturesMarketMATIC": {
-		"deploy": false
-	},
-	"FuturesMarketXAU": {
-		"deploy": false
-	},
-	"FuturesMarketXAG": {
-		"deploy": false
-	},
-	"FuturesMarketEUR": {
-		"deploy": false
-	},
-	"FuturesMarketAPE": {
-		"deploy": false
-	},
-	"FuturesMarketDYDX": {
-		"deploy": false
-	},
-	"FuturesMarketBNB": {
-		"deploy": false
-	},
-	"FuturesMarketXMR": {
-		"deploy": false
-	},
-	"FuturesMarketDOGE": {
 		"deploy": false
 	},
 	"Liquidator": {
@@ -242,24 +188,6 @@
 	"PerpsV2ExchangeRate": {
 		"deploy": false
 	},
-	"PerpsV2ProxyBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderBTCPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderBTCPERP": {
-		"deploy": false
-	},
 	"PerpsV2ProxyETHPERP": {
 		"deploy": false
 	},
@@ -267,585 +195,6 @@
 		"deploy": false
 	},
 	"PerpsV2MarketETHPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsETHPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderETHPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderETHPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxySOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2ProxyGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketStateGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketViewsGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedOrderGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2OffchainDelayedOrderGBPPERP": {
-		"deploy": false
-	},
-	"DebtMigratorOnOptimism": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionAVAXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionAAVEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionLINKPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionSOLPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionUNIPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionMATICPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionAPEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionDYDXPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionBNBPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionOPPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionDOGEPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionXAUPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionXAGPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionEURPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionATOMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionAXSPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionFLOWPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionFTMPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionNEARPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionAUDPERP": {
-		"deploy": false
-	},
-	"PerpsV2MarketLiquidateGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedIntentGBPPERP": {
-		"deploy": false
-	},
-	"PerpsV2DelayedExecutionGBPPERP": {
 		"deploy": false
 	},
 	"PerpsV2MarketLiquidateETHPERP": {
@@ -857,6 +206,18 @@
 	"PerpsV2DelayedExecutionETHPERP": {
 		"deploy": false
 	},
+	"PerpsV2MarketViewsETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketBTCPERP": {
+		"deploy": false
+	},
 	"PerpsV2MarketLiquidateBTCPERP": {
 		"deploy": false
 	},
@@ -864,6 +225,177 @@
 		"deploy": false
 	},
 	"PerpsV2DelayedExecutionBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBTCPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBNBPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsLINKPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxySOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsSOLPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsMATICPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsDOGEPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsFTMPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsATOMPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAVAXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsAVAXPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyARBPERP": {
@@ -885,6 +417,279 @@
 		"deploy": false
 	},
 	"PerpsV2MarketViewsARBPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsOPPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsAPEPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsNEARPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsAXSPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsUNIPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsDYDXPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsAAVEPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsFLOWPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsAUDPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsGBPPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsXAUPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsXAGPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionEURPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsEURPERP": {
 		"deploy": false
 	},
 	"PerpsV2ProxyLTCPERP": {

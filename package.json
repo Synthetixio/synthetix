@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.93.1",
+	"version": "2.98.2",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -56,6 +56,7 @@
 		"publish/deployed/mainnet-ovm/*",
 		"publish/deployed/goerli/*",
 		"publish/deployed/goerli-ovm/*",
+		"publish/deployed/sepolia-ovm/*",
 		"publish/deployed/local-ovm/*"
 	],
 	"bin": {

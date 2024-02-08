@@ -99,7 +99,7 @@
 		"asset": "KNC",
 		"category": "crypto",
 		"sign": "",
-		"description": "Kyber Network"
+		"description": "Kyber Network Crystal"
 	},
 	"AAVE": {
 		"asset": "AAVE",
@@ -129,7 +129,7 @@
 		"asset": "ZRX",
 		"category": "crypto",
 		"sign": "",
-		"description": "0x"
+		"description": "0x Protocol"
 	},
 	"REP": {
 		"asset": "REP",
@@ -312,7 +312,7 @@
 		"asset": "SUSHI",
 		"category": "crypto",
 		"sign": "",
-		"description": "SushiSwap"
+		"description": "Sushi Token"
 	},
 	"1INCH": {
 		"asset": "1INCH",
@@ -324,7 +324,7 @@
 		"asset": "RUNE",
 		"category": "crypto",
 		"sign": "",
-		"description": "THORChain"
+		"description": "RUNE Token"
 	},
 	"AAPL": {
 		"asset": "AAPL",
@@ -428,12 +428,6 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "dYdX"
-	},
-	"INR": {
-		"asset": "INR",
-		"category": "forex",
-		"sign": "₹",
-		"description": "Indian Rupee"
 	},
 	"AXS": {
 		"asset": "AXS",
@@ -555,6 +549,12 @@
 		"sign": "",
 		"description": "Lido Staked ETH"
 	},
+	"STETHETH": {
+		"asset": "STETHETH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Lido Staked ETH against ETH"
+	},
 	"ETHBTC": {
 		"asset": "ETHBTC",
 		"category": "crypto",
@@ -590,5 +590,150 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Tether USD"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Frax Share"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Render"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Harmony"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Perpetual Protocol"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zilliqa"
+	},
+
+	"ZEC": {
+		"asset": "ZEC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Zcash"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Enjin Coin"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Internet Computer Protocol"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Stellar"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celo"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Algorand"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Sei"
+	},
+	"TRB": {
+		"asset": "TRB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Tellor Tributes"
+	},
+	"TIA": {
+		"asset": "TIA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celestia"
+	},
+	"IMX": {
+		"asset": "IMX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Immutable X"
+	},
+	"MEME": {
+		"asset": "MEME",
+		"category": "crypto",
+		"sign": "",
+		"description": "Memecoin"
+	},
+	"FET": {
+		"asset": "FET",
+		"category": "crypto",
+		"sign": "",
+		"description": "Fetch.ai"
+	},
+	"GRT": {
+		"asset": "GRT",
+		"category": "crypto",
+		"sign": "",
+		"description": "The Graph"
+	},
+	"PYTH": {
+		"asset": "PYTH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Pyth Network"
+	},
+	"ANKR": {
+		"asset": "ANKR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ankr Network"
+	},
+	"BONK": {
+		"asset": "BONK",
+		"category": "crypto",
+		"sign": "",
+		"description": "BONK"
+	},
+	"WSTETH": {
+		"asset": "WSTETH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Wrapped stETH"
+	},
+	"JTO": {
+		"asset": "JTO",
+		"category": "crypto",
+		"sign": "",
+		"description": "Jito"
+	},
+	"ORDI": {
+		"asset": "ORDI",
+		"category": "crypto",
+		"sign": "",
+		"description": "ORDI"
 	}
 }

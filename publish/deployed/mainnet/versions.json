@@ -4748,5 +4748,20 @@
 				"keccak256": "0x0e1391394e3eead86ca2ee2e3ddb46150935bc9c1251cb49f1d9509b825b390f"
 			}
 		}
+	},
+	"v2.96.1": {
+		"tag": "v2.96.1",
+		"fulltag": "v2.96.1",
+		"release": "Phecda",
+		"network": "mainnet",
+		"date": "2023-10-23T14:33:10-03:00",
+		"commit": "85d61a215cb6ef04fa04c9e5a0240fb6a6e4d011",
+		"contracts": {
+			"RewardsDistribution": {
+				"address": "0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b",
+				"status": "current",
+				"keccak256": "0x71b5addb5aaa4ce3ff21f68a5795b3ad75d5aa4f549fca5f0ed999a89580af0b"
+			}
+		}
 	}
 }

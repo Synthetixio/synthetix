@@ -1,0 +1,345 @@
+{
+	"SNX": {
+		"asset": "SNX",
+		"feed": "0xb20aF977bd6EF35a907875Ca1Dd0a9A35795808b"
+	},
+	"ETH": {
+		"asset": "ETH",
+		"feed": "0x61Ec26aA57019C486B10502285c5A3D4A4750AD7"
+	},
+	"BTC": {
+		"asset": "BTC",
+		"feed": "0x3015aa11f5c2D4Bd0f891E708C8927961b38cE7D"
+	},
+	"LINK": {
+		"asset": "LINK",
+		"feed": "0x53f91dA33120F44893CB896b12a83551DEDb31c6"
+	},
+	"SOL": {
+		"asset": "SOL",
+		"feed": "0x1859870530e628083BdF8a788Af7EFa3D0b2E679"
+	},
+	"AVAX": {
+		"asset": "AVAX",
+		"feed": "0xcacB7778Cba5C5526E6EBbA0A1aE74B4c310084B"
+	},
+	"MATIC": {
+		"asset": "MATIC",
+		"feed": "0x4075ee28a62C1Ba550ad960a4132bF362beF2bAD"
+	},
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x828eda6b1B7266AD4d04Eb18468B965fc70940bd"
+	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0xAc6DB6d5538Cd07f58afee9dA736ce192119017B"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x7FcCDFD85f11BaFa09702DB78DcDE33feFb6a7AB"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0xa6932B792e4b4FfA1e78e63671f42d0aff02eD73"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x231eEe8c370512c48713c79966a969AC7c3E3bAd"
+	},
+	"APE": {
+		"asset": "APE",
+		"feed": "0x961AD289351459A45fC90884eF3AB0278ea95DDE"
+	},
+	"DYDX": {
+		"asset": "DYDX",
+		"feed": "0x71dA5ED5a45A46879E63e75086cFB3eCF8c2866f"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"feed": "0x6e16840307DfC4C80e5081375DBA1887E610964b"
+	},
+	"OP": {
+		"asset": "OP",
+		"feed": "0x8907a105E562C9F3d7F2ed46539Ae36D87a15590"
+	},
+	"XMR": {
+		"asset": "XMR",
+		"feed": "0x689cc6C8249A42395C77A102c8107bCB4C268E04"
+	},
+	"DOGE": {
+		"asset": "DOGE",
+		"feed": "0x074cad6FB4e86b591Fb2d33369C17855194B2A17"
+	},
+	"ATOM": {
+		"asset": "ATOM",
+		"feed": "0xa2b3137BeBe6f817fcb34e96339d04cbC5229B2c"
+	},
+	"AXS": {
+		"asset": "AXS",
+		"feed": "0xAE487e3A989595EF6E3820116Fc7782e3c19262D"
+	},
+	"FLOW": {
+		"asset": "FLOW",
+		"feed": "0x8491546567946b508BdaE9B57eaC3ce9d420AFaF"
+	},
+	"FTM": {
+		"asset": "FTM",
+		"feed": "0x3c6828ecFc4c2471715BEaB59866007842400Fc1"
+	},
+	"NEAR": {
+		"asset": "NEAR",
+		"feed": "0x722A880509fc71cD72d5B883d52f93A0B48e1160"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"feed": "0x9AD8e9Fb2b2E6a25c1E89250Ff61945d68477977"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"feed": "0xbC1d7d0fb258164ad94B26D6718F256Aa85e1CaF"
+	},
+	"ARB": {
+		"asset": "ARB",
+		"feed": "0xfe43Eb2649F3bcce80443F9E43C793146148C141"
+	},
+	"APT": {
+		"asset": "APT",
+		"feed": "0x2f98e732173FCb089adD1F464168775566b916D8"
+	},
+	"LDO": {
+		"asset": "LDO",
+		"feed": "0xaEA07F107c193dF8F24a905814eF9F0Df4932F91"
+	},
+	"ADA": {
+		"asset": "ADA",
+		"feed": "0xf3138B59cAcbA1a4d7d24fA7b184c20B3941433e"
+	},
+	"GMX": {
+		"asset": "GMX",
+		"feed": "0x132d853e7b4104aC6E3cA64549f863b2704E0610"
+	},
+	"FIL": {
+		"asset": "FIL",
+		"feed": "0xE72C02ceC671a79b8d0e957982D5070EbC03004c"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"feed": "0x743244f6446Cc31cEf29223169A263778C61Dd6B"
+	},
+	"BCH": {
+		"asset": "BCH",
+		"feed": "0xFF3DF81491FB3660594dea4b0e87771aaBd14b9A"
+	},
+	"SHIB": {
+		"asset": "SHIB",
+		"feed": "0x8172a614EA39e67b2ec298EFDDd25313A6380438"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"feed": "0x4335C9f9751537bAC04350d3e722B19495cB461F"
+	},
+	"PEPE": {
+		"asset": "PEPE",
+		"feed": "0x46e0D4f746611b253496A13853A8cE6593E4B93F"
+	},
+	"SUI": {
+		"asset": "SUI",
+		"feed": "0xAE8E786EE12C85F39F1FCcfb253399Ad5c577CD7"
+	},
+	"BLUR": {
+		"asset": "BLUR",
+		"feed": "0xbbb30F5463Dc552308D5e8EDb9E74Da21B10EeA4"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"feed": "0xD1e3BC2a4549B1499B2AbAc7c83E5De1a89Bd4b5"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x80a09B8436260832A4E72d5C8BA5A4E75777D5E2"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"feed": "0xdAeE45A0e2Efa666C3A9E926D422d05A0782f25b"
+	},
+	"FLOKI": {
+		"asset": "FLOKI",
+		"feed": "0x09EF099e688d1398d89c65D01b9d8F6Be770b385"
+	},
+	"INJ": {
+		"asset": "INJ",
+		"feed": "0x63BA2868403E95B43062bE100980140Bfe6f2a0d"
+	},
+	"STETH": {
+		"asset": "STETH",
+		"feed": "0x0fFC5253bb7383b2E55D00E2fBed334Bec4AD1Bc"
+	},
+	"STETHETH": {
+		"feed": "0x119784b4b2A1D536db6C43E932675A1dA37E8EEE"
+	},
+	"MAV": {
+		"asset": "MAV",
+		"feed": "0x677CffEB46D8cAD20bb981329798Fdc6FE9d3e18"
+	},
+	"ETHBTC": {
+		"asset": "ETHBTC",
+		"feed": "0x0D41087ab4b10889312cc70A2582788270811c07"
+	},
+	"ETC": {
+		"asset": "ETC",
+		"feed": "0xad83e7e17dc7B12FC6cAA0eD580Ea99Cf31A1d4F"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"feed": "0x42573b281e4DfbC59A8a04285C86daB0aB105c0d"
+	},
+	"MKR": {
+		"asset": "MKR",
+		"feed": "0x46A7b2AfAFb21f6053FE448aF0bf9c0b3EbF8572"
+	},
+	"RPL": {
+		"asset": "RPL",
+		"feed": "0x13D452dCb9f623ebDFb4D616aAcA2137e52d27D5"
+	},
+	"COMP": {
+		"asset": "COMP",
+		"feed": "0x5d7cBD8E1c76631829501240817d390122CDefF2"
+	},
+	"WLD": {
+		"asset": "WLD",
+		"feed": "0xC3D7ba4234995543188278E51837F1C27b89E331"
+	},
+	"USDT": {
+		"asset": "USDT",
+		"feed": "0xF83696ca1b8a266163bE252bE2B94702D4929392"
+	},
+	"BAL": {
+		"asset": "BAL",
+		"feed": "0x902Be1A15cf92e4b59ae756bA869Da531A267937"
+	},
+	"FXS": {
+		"asset": "FXS",
+		"feed": "0x42c31Da519004b214CBaE0795893A996c9334B10"
+	},
+	"KNC": {
+		"asset": "KNC",
+		"feed": "0xC223acb1b3fF8AE6640C5d7F484eF2FBA6EBC5A1"
+	},
+	"RNDR": {
+		"asset": "RNDR",
+		"feed": "0x29d592F6BE8b0f0345259C0BB0388f1eA7ccF5df"
+	},
+	"ONE": {
+		"asset": "ONE",
+		"feed": "0xa43B130499833f6fdF350bF583183182ea8281a6"
+	},
+	"PERP": {
+		"asset": "PERP",
+		"feed": "0x371c691c3eA68DEDb55A5A4e69A2aB908bcdd7A8"
+	},
+	"ZIL": {
+		"asset": "ZIL",
+		"feed": "0xf82f57907Fa162642F36206E1D3851c9a6a3c3A2"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"feed": "0x8E7932B3a85459fd10644c6dE93D25f66408B0BD"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"feed": "0xf3076292dDF20826d235Ac1dBdB52De6c28001CF"
+	},
+	"ZEC": {
+		"asset": "ZEC",
+		"feed": "0xdf440bFaEC26F2A97e52A0357f38CFf8E3228276"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"feed": "0x082f3422c0eCFB35f4bfe47E65FBD49BFBa4d84C"
+	},
+	"UMA": {
+		"asset": "UMA",
+		"feed": "0x50E58ef0990D78A1ef0AE5b0F412FA112e6c1B5a"
+	},
+	"ENJ": {
+		"asset": "ENJ",
+		"feed": "0x9DE1D2b82dD644083274e4435afF33087cf10ddc"
+	},
+	"ICP": {
+		"asset": "ICP",
+		"feed": "0x85466DdfB68E1923dB491bbf8De761119778b85d"
+	},
+	"XLM": {
+		"asset": "XLM",
+		"feed": "0x92e9F5Ac0a6Da7dbb0a81fb9F4d1becF5efdA191"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"feed": "0xd94522a6feF7779f672f4C88eb672da9222f2eAc"
+	},
+	"EOS": {
+		"asset": "EOS",
+		"feed": "0x79E861612c81895bcbE6a2aD36EC7C6eb1421142"
+	},
+	"CELO": {
+		"asset": "CELO",
+		"feed": "0x520e5B5369f902D54EA2cd4407E50a6135560fe0"
+	},
+	"ALGO": {
+		"asset": "ALGO",
+		"feed": "0xccAE8A015754a64f379550146360bDbAEc757D77"
+	},
+	"ZRX": {
+		"asset": "ZRX",
+		"feed": "0x0cab02E0aed06Fa189d989Bf4C2c8FBA41afee65"
+	},
+	"SEI": {
+		"asset": "SEI",
+		"feed": "0xFA1b7946bd5B900Ff7a2dEdF7c291780C038edeB"
+	},
+	"TRB": {
+		"asset": "TRB",
+		"feed": "0xa1b9e37225432BCebDce700A2d464fd8e65A74b9"
+	},
+	"TIA": {
+		"asset": "TIA",
+		"feed": "0x48b82B693c973ea059C1F6CCEc3C26C387b77D31"
+	},
+	"IMX": {
+		"asset": "IMX",
+		"feed": "0xCE2DfB4A671564c9658b1ED10F26D85d0746B810"
+	},
+	"MEME": {
+		"asset": "MEME",
+		"feed": "0xdA8a47071f64d3103a41Cbfc07ABd53B64B66610"
+	},
+	"FET": {
+		"asset": "FET",
+		"feed": "0x444c4e38761C929Adf1E33b177dD198d8e441f3c"
+	},
+	"GRT": {
+		"asset": "GRT",
+		"feed": "0x6A4dD69C492A1187E271B6aa3E393f577385CE56"
+	},
+	"ANKR": {
+		"asset": "ANKR",
+		"feed": "0x280eE98Cb396513DB0aBa22318d9B6F8AbbAa6D8"
+	},
+	"PYTH": {
+		"asset": "PYTH",
+		"feed": "0xBf494AF93dF9c92732C3E62d675DE6d504F2e86f"
+	},
+	"BONK": {
+		"asset": "BONK",
+		"feed": "0x8650A2ED1D874990a5A585640E461ACe89b9bFeD"
+	},
+	"JTO": {
+		"asset": "JTO",
+		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472"
+	},
+	"ORDI": {
+		"asset": "ORDI",
+		"feed": "0x854F28917357e2357dD027448D20BB55857B74e8"
+	}
+}

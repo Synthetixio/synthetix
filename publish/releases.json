@@ -957,7 +957,90 @@
 			"released": "ovm"
 		},
 		{
+			"sip": 2029,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
 			"sip": 2030,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2031,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2032,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2033,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2035,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2036,
+			"layer": "base",
+			"sources": ["RewardsDistribution"],
+			"released": "base"
+		},
+		{
+			"sip": 2037,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2038,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2039,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2040,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2041,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2042,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2044,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2045,
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
@@ -1826,6 +1909,45 @@
 				"minor": 93
 			},
 			"sips": [2030],
+			"released": true
+		},
+		{
+			"name": "Sabik (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 94
+			},
+			"sips": [2029, 2031, 2032, 2033],
+			"released": true
+		},
+		{
+			"name": "Phecda",
+			"version": {
+				"major": 2,
+				"minor": 96
+			},
+			"sips": [2036],
+			"released": true
+		},
+		{
+			"name": "Aludra (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 97
+			},
+			"sips": [2035, 2037, 2039, 2040, 2041, 2042],
+			"released": true
+		},
+		{
+			"name": "Markeb (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 98
+			},
+			"sips": [2044, 2045],
 			"released": true
 		}
 	]

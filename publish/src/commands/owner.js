@@ -24,7 +24,7 @@ const { getContract } = require('../command-utils/contract');
 const { safeInitializer } = require('../command-utils/safe-initializer');
 
 const DEFAULTS = {
-	priorityGasPrice: '1',
+	priorityGasPrice: '0.0001',
 	gasLimit: 2e5, // 200,000
 };
 
