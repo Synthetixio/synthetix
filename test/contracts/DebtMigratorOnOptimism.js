@@ -153,6 +153,12 @@ contract('DebtMigratorOnOptimism', accounts => {
 			debtShareBalanceBefore = await synthetixDebtShare.balanceOf(user);
 		});
 
+		before('set permitted escrow creator', async () => {
+			await rewardEscrowV2.setPermittedEscrowCreator(debtMigratorOnOptimism.address, true, {
+				from: owner,
+			});
+		});
+
 		it('succeeds', async () => {
 			migrationFinalizedTx = await debtMigratorOnOptimism.finalizeDebtMigration(
 				user,
