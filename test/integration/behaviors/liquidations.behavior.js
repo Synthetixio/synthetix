@@ -47,7 +47,8 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		before('set permitted escrow creator', async () => {
-			await RewardEscrowV2.setPermittedEscrowCreator(LiquidatorRewards.address, true);
+			if (RewardEscrowV2.setPermittedEscrowCreator)
+				await RewardEscrowV2.setPermittedEscrowCreator(LiquidatorRewards.address, true);
 		});
 
 		before('ensure liquidatedUser has SNX', async () => {
