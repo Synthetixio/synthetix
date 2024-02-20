@@ -47,7 +47,7 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		before('set permitted escrow creator', async () => {
-			if (RewardEscrowV2.setPermittedEscrowCreator)
+			if (!ctx.fork)
 				await RewardEscrowV2.setPermittedEscrowCreator(LiquidatorRewards.address, true);
 		});
 
@@ -418,7 +418,8 @@ function itCanLiquidate({ ctx }) {
 				liquidateReward = await Liquidator.liquidateReward();
 
 				await Synthetix.connect(owner).approve(RewardEscrowV2.address, ethers.constants.MaxUint256);
-				await RewardEscrowV2.setPermittedEscrowCreator(await owner.getAddress(), true);
+				if (!ctx.fork)
+					await RewardEscrowV2.setPermittedEscrowCreator(await owner.getAddress(), true);
 
 				// 100 entries is a somewhat realistic estimate for an account which as been escrowing for a while and
 				// hasnt claimed
