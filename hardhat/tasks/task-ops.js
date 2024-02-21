@@ -152,10 +152,10 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 	console.log(gray('  get dependencies'));
 
 	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
-	const yarnOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.sync('sh', ['-c', `yarn `], yarnOpts);
+	const pnpmOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
+	execa.sync('sh', ['-c', `pnpm `], pnpmOpts);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `yarn build `], yarnOpts);
+	execa.sync('sh', ['-c', `pnpm build `], pnpmOpts);
 }
 
 function _buildOps({ opsPath }) {
