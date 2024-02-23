@@ -2350,8 +2350,8 @@
 		"liquidationBufferRatio": "0.0150",
 		"maxPD": "0.0024",
 		"maxLiquidationDelta": "0.0012",
-		"paused": false,
-		"offchainPaused": false
+		"paused": true,
+		"offchainPaused": true
 	},
 	{
 		"marketKey": "sORDIPERP",
