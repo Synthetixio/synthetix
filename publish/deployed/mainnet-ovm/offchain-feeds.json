@@ -524,5 +524,17 @@
 		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
 		"asset": "JUP",
 		"feedId": "0x0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "PENDLE",
+		"feedId": "0x9a4df90b25497f66b1afb012467e316e801ca3d839456db028892fe8c70c8016"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+		"asset": "STRK",
+		"feedId": "0x6a182399ff70ccf3e06024898942028204125a819e519a335ffa4579e66cd870"
 	}
 ]

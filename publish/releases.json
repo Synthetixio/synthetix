@@ -1056,6 +1056,18 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2054,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2056,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
 		}	
 	],
 	"releases": [
@@ -1969,7 +1981,7 @@
 				"major": 2,
 				"minor": 99
 			},
-			"sips": [2052, 2053],
+			"sips": [2052, 2053, 2054, 2056],
 			"released": false
 		}
 	]

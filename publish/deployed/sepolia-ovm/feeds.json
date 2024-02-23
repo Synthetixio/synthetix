@@ -351,5 +351,15 @@
 		"asset": "JUP",
 		"feed": "0x854F28917357e2357dD027448D20BB55857B74e8",
 		"fakefeed": true
+	},
+	"PENDLE": {
+		"asset": "PENDLE",
+		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472",
+		"fakefeed": true
+	},
+	"STRK": {
+		"asset": "STRK",
+		"feed": "0x854F28917357e2357dD027448D20BB55857B74e8",
+		"fakefeed": true
 	}
 }
