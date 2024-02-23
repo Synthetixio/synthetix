@@ -2481,7 +2481,7 @@
 		"offchainDelayedOrderMinAge": "2",
 		"offchainDelayedOrderMaxAge": "60",
 		"maxLeverage": "27.5",
-		"maxMarketValue": "500000",
+		"maxMarketValue": "250000",
 		"maxFundingVelocity": "36",
 		"skewScale": "2500000",
 		"offchainPriceDivergence": "0.10",
