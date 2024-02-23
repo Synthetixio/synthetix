@@ -1048,27 +1048,23 @@
 		{
 			"sip": 2052,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		},
 		{
 			"sip": 2053,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		},
 		{
 			"sip": 2054,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
+			"sources": []
 		},
 		{
 			"sip": 2056,
 			"layer": "ovm",
-			"sources": [],
-			"released": "ovm"
-		}	
+			"sources": []
+		}
 	],
 	"releases": [
 		{
@@ -1981,8 +1977,7 @@
 				"major": 2,
 				"minor": 99
 			},
-			"sips": [2052, 2053, 2054, 2056],
-			"released": false
+			"sips": [2052, 2053, 2054, 2056]
 		}
 	]
 }
