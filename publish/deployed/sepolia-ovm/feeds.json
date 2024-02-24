@@ -344,8 +344,7 @@
 	},
 	"CVX": {
 		"asset": "CVX",
-		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472",
-		"fakefeed": true
+		"feed": "0xB677bfBc9B09a3469695f40477d05bc9BcB15F50"
 	},
 	"JUP": {
 		"asset": "JUP",
