@@ -51110,6 +51110,422 @@
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
 				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
 			]
+		},
+		"PerpsV2ProxyJUPPERP": {
+			"name": "PerpsV2ProxyJUPPERP",
+			"address": "0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+			"timestamp": "2024-02-23T23:48:30.470Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+			]
+		},
+		"PerpsV2MarketStateJUPPERP": {
+			"name": "PerpsV2MarketStateJUPPERP",
+			"address": "0xdb828a46226a555463993E78eAb127eC2b596A73",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xdb828a46226a555463993E78eAb127eC2b596A73",
+			"timestamp": "2024-02-23T23:48:37.971Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				[
+					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+				],
+				"0x4a55500000000000000000000000000000000000000000000000000000000000",
+				"0x734a555050455250000000000000000000000000000000000000000000000000",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73"
+			]
+		},
+		"PerpsV2MarketJUPPERP": {
+			"name": "PerpsV2MarketJUPPERP",
+			"address": "0x0fD941c61d75331A51d80F9323DE51B87C778a46",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x0fD941c61d75331A51d80F9323DE51B87C778a46",
+			"timestamp": "2024-02-23T23:48:49.336Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateJUPPERP": {
+			"name": "PerpsV2MarketLiquidateJUPPERP",
+			"address": "0xA9146CDE055C436Ce6066B1BC5187231A3Be4C40",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xA9146CDE055C436Ce6066B1BC5187231A3Be4C40",
+			"timestamp": "2024-02-23T23:49:00.830Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentJUPPERP": {
+			"name": "PerpsV2DelayedIntentJUPPERP",
+			"address": "0x12EF6d12fB264AB1a83E46c661e8a2d6A726b0CD",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x12EF6d12fB264AB1a83E46c661e8a2d6A726b0CD",
+			"timestamp": "2024-02-23T23:49:12.598Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionJUPPERP": {
+			"name": "PerpsV2DelayedExecutionJUPPERP",
+			"address": "0xbceBF972B24aCb21c42dE2c7F4b3EAB3bc084B6c",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xbceBF972B24aCb21c42dE2c7F4b3EAB3bc084B6c",
+			"timestamp": "2024-02-23T23:49:24.279Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsJUPPERP": {
+			"name": "PerpsV2MarketViewsJUPPERP",
+			"address": "0xF93c98Fd66a710b39ee2D982CB82fDFb3EC29EBd",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xF93c98Fd66a710b39ee2D982CB82fDFb3EC29EBd",
+			"timestamp": "2024-02-23T23:49:35.979Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxyCVXPERP": {
+			"name": "PerpsV2ProxyCVXPERP",
+			"address": "0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+			"timestamp": "2024-02-24T00:03:36.572Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+			]
+		},
+		"PerpsV2MarketStateCVXPERP": {
+			"name": "PerpsV2MarketStateCVXPERP",
+			"address": "0xdA1FC750517AD0E23c8971AB7195109be2824343",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xdA1FC750517AD0E23c8971AB7195109be2824343",
+			"timestamp": "2024-02-24T00:03:44.154Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				[
+					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+				],
+				"0x4356580000000000000000000000000000000000000000000000000000000000",
+				"0x7343565850455250000000000000000000000000000000000000000000000000",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343"
+			]
+		},
+		"PerpsV2MarketCVXPERP": {
+			"name": "PerpsV2MarketCVXPERP",
+			"address": "0xA7A53a6804707Ac0f76a4F7731D4AF219216293f",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xA7A53a6804707Ac0f76a4F7731D4AF219216293f",
+			"timestamp": "2024-02-24T00:03:55.927Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateCVXPERP": {
+			"name": "PerpsV2MarketLiquidateCVXPERP",
+			"address": "0xDD0CF256A68E9c70b0e3707809C25c662ced7BfC",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xDD0CF256A68E9c70b0e3707809C25c662ced7BfC",
+			"timestamp": "2024-02-24T00:04:07.068Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentCVXPERP": {
+			"name": "PerpsV2DelayedIntentCVXPERP",
+			"address": "0x701455F6a0B25Ff08f56F2460fA6DB44115eA257",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x701455F6a0B25Ff08f56F2460fA6DB44115eA257",
+			"timestamp": "2024-02-24T00:04:18.810Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionCVXPERP": {
+			"name": "PerpsV2DelayedExecutionCVXPERP",
+			"address": "0x6cAFBb6E8fCCc61dab588e87192e249a7549dfE3",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x6cAFBb6E8fCCc61dab588e87192e249a7549dfE3",
+			"timestamp": "2024-02-24T00:04:30.653Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsCVXPERP": {
+			"name": "PerpsV2MarketViewsCVXPERP",
+			"address": "0x62239fC4EFa332C1602350fed2B160E2d598809e",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x62239fC4EFa332C1602350fed2B160E2d598809e",
+			"timestamp": "2024-02-24T00:04:42.425Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxySTRKPERP": {
+			"name": "PerpsV2ProxySTRKPERP",
+			"address": "0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+			"timestamp": "2024-02-24T00:18:34.683Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+			]
+		},
+		"PerpsV2MarketStateSTRKPERP": {
+			"name": "PerpsV2MarketStateSTRKPERP",
+			"address": "0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+			"timestamp": "2024-02-24T00:18:46.674Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				[
+					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+				],
+				"0x5354524b00000000000000000000000000000000000000000000000000000000",
+				"0x735354524b504552500000000000000000000000000000000000000000000000",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C"
+			]
+		},
+		"PerpsV2MarketSTRKPERP": {
+			"name": "PerpsV2MarketSTRKPERP",
+			"address": "0xDB5192d67b511E41e3b9A729f184D0Da41b0FF08",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xDB5192d67b511E41e3b9A729f184D0Da41b0FF08",
+			"timestamp": "2024-02-24T00:18:58.247Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateSTRKPERP": {
+			"name": "PerpsV2MarketLiquidateSTRKPERP",
+			"address": "0x97A5CD251F1165cc9EC86D9CbB375936d389Af6a",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x97A5CD251F1165cc9EC86D9CbB375936d389Af6a",
+			"timestamp": "2024-02-24T00:19:05.647Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentSTRKPERP": {
+			"name": "PerpsV2DelayedIntentSTRKPERP",
+			"address": "0x12aC51Fce6B855FB44A51994E1283dd70c290BaF",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x12aC51Fce6B855FB44A51994E1283dd70c290BaF",
+			"timestamp": "2024-02-24T00:19:17.084Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionSTRKPERP": {
+			"name": "PerpsV2DelayedExecutionSTRKPERP",
+			"address": "0xC5C56dbC9e3D764b0ff819C13AFBa431Cd2A5912",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xC5C56dbC9e3D764b0ff819C13AFBa431Cd2A5912",
+			"timestamp": "2024-02-24T00:19:28.669Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsSTRKPERP": {
+			"name": "PerpsV2MarketViewsSTRKPERP",
+			"address": "0xa42A15AafD7505062CF3dF8ef143F779254a943b",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xa42A15AafD7505062CF3dF8ef143F779254a943b",
+			"timestamp": "2024-02-24T00:19:40.295Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxyPENDLEPERP": {
+			"name": "PerpsV2ProxyPENDLEPERP",
+			"address": "0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+			"timestamp": "2024-02-24T00:34:07.221Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+			]
+		},
+		"PerpsV2MarketStatePENDLEPERP": {
+			"name": "PerpsV2MarketStatePENDLEPERP",
+			"address": "0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+			"timestamp": "2024-02-24T00:34:18.084Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				[
+					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
+				],
+				"0x50454e444c450000000000000000000000000000000000000000000000000000",
+				"0x7350454e444c4550455250000000000000000000000000000000000000000000",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627"
+			]
+		},
+		"PerpsV2MarketPENDLEPERP": {
+			"name": "PerpsV2MarketPENDLEPERP",
+			"address": "0x3f36541b9fE7cff23e165670519FcA94c27919ab",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x3f36541b9fE7cff23e165670519FcA94c27919ab",
+			"timestamp": "2024-02-24T00:34:29.149Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidatePENDLEPERP": {
+			"name": "PerpsV2MarketLiquidatePENDLEPERP",
+			"address": "0x76f76175342943740F423ad8f0bb664202882016",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x76f76175342943740F423ad8f0bb664202882016",
+			"timestamp": "2024-02-24T00:34:36.212Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentPENDLEPERP": {
+			"name": "PerpsV2DelayedIntentPENDLEPERP",
+			"address": "0x43275BeDC11A16F440007BAc68F9CB5b559c07d3",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x43275BeDC11A16F440007BAc68F9CB5b559c07d3",
+			"timestamp": "2024-02-24T00:34:47.210Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionPENDLEPERP": {
+			"name": "PerpsV2DelayedExecutionPENDLEPERP",
+			"address": "0xb1C5b15E7832D860a9Ecc72eF020C0DdC0889e47",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xb1C5b15E7832D860a9Ecc72eF020C0DdC0889e47",
+			"timestamp": "2024-02-24T00:34:58.631Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsPENDLEPERP": {
+			"name": "PerpsV2MarketViewsPENDLEPERP",
+			"address": "0xC26e4f89b625E2b1BEF4365A3C7B1E0A996DC0a4",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xC26e4f89b625E2b1BEF4365A3C7B1E0A996DC0a4",
+			"timestamp": "2024-02-24T00:35:09.474Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
 		}
 	}
 }
