@@ -118,14 +118,16 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		});
 	}
 
-	await runStep({
-		contract: 'RewardEscrowV2',
-		target: RewardEscrowV2,
-		read: 'permittedEscrowCreators',
-		readArg: addressOf(LiquidatorRewards),
-		expected: input => input,
-		write: 'setPermittedEscrowCreator',
-		writeArg: [addressOf(LiquidatorRewards), true],
-		comment: 'Allow escrow entry creation by LiquidatorRewards',
-	});
+	if (RewardEscrowV2.permittedEscrowCreators) {
+		await runStep({
+			contract: 'RewardEscrowV2',
+			target: RewardEscrowV2,
+			read: 'permittedEscrowCreators',
+			readArg: addressOf(LiquidatorRewards),
+			expected: input => input,
+			write: 'setPermittedEscrowCreator',
+			writeArg: [addressOf(LiquidatorRewards), true],
+			comment: 'Allow escrow entry creation by LiquidatorRewards',
+		});
+	}
 };
