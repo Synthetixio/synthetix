@@ -28,6 +28,13 @@ steps:
   - run:
       command: |-
         ipfs --version
+  - run:
+      name: "Install pnpm"
+      working_directory: ~/
+      environment:
+        SHELL: /bin/bash
+      command: |-
+          wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
   - run: 
         name: "Install Foundry"
         working_directory: ~/
