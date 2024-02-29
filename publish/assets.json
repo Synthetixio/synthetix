@@ -735,5 +735,29 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "ORDI"
+	},
+	"CVX": {
+		"asset": "CVX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Convex Finance"
+	},
+	"PENDLE": {
+		"asset": "PENDLE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Pendle"
+	},
+	"STRK": {
+		"asset": "STRK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Starknet"
+	},
+	"JUP": {
+		"asset": "JUP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Jupiter"
 	}
 }
