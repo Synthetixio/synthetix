@@ -60,22 +60,22 @@ jobs:
       - run:
           command: |-
             ipfs --version
-      - run:
-          name: "Install Foundry"
-          working_directory: ~/
-          environment:
-            SHELL: /bin/bash
-          command: |-
-            export PATH="$PATH:$HOME/.foundry/bin"
-            echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
-            if command -v anvil; then
-              echo "Anvil already installed"
-              anvil --version
-            else
-              curl -L https://foundry.paradigm.xyz | bash
-              foundryup
-            fi
-            rm -rf *
+      - run: 
+            name: "Install Foundry"
+            working_directory: ~/
+            environment:
+              SHELL: /bin/bash
+            command: |-
+                export PATH="$PATH:$HOME/.foundry/bin"
+                echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
+                if command -v anvil; then
+                  echo "Anvil already installed"
+                  anvil --version
+                else
+                  curl -L https://foundry.paradigm.xyz | bash
+                  foundryup
+                fi
+                rm -rf *
       - save_cache:
           key: foundry-bin-latest-${foundry_cache_version}
           paths:
@@ -179,22 +179,22 @@ jobs:
       - run:
           command: |-
             ipfs --version
-      - run:
-          name: "Install Foundry"
-          working_directory: ~/
-          environment:
-            SHELL: /bin/bash
-          command: |-
-            export PATH="$PATH:$HOME/.foundry/bin"
-            echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
-            if command -v anvil; then
-              echo "Anvil already installed"
-              anvil --version
-            else
-              curl -L https://foundry.paradigm.xyz | bash
-              foundryup
-            fi
-            rm -rf *
+      - run: 
+            name: "Install Foundry"
+            working_directory: ~/
+            environment:
+              SHELL: /bin/bash
+            command: |-
+                export PATH="$PATH:$HOME/.foundry/bin"
+                echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
+                if command -v anvil; then
+                  echo "Anvil already installed"
+                  anvil --version
+                else
+                  curl -L https://foundry.paradigm.xyz | bash
+                  foundryup
+                fi
+                rm -rf *
       - save_cache:
           key: foundry-bin-latest-${foundry_cache_version}
           paths:
@@ -206,8 +206,8 @@ jobs:
           keys:
             - v6-optimism-build-{{ checksum "package-lock.json" }}
       - node/install:
-        install-yarn: true
-        node-version: "18.19"
+          install-yarn: true
+          node-version: "18.19"
       - run:
           name: Build docker containers if necessary
           command: |
@@ -354,22 +354,22 @@ jobs:
           keys:
             - foundry-bin-latest-${foundry_cache_version}
       - rust/install: {}
-      - run:
-          name: "Install Foundry"
-          working_directory: ~/
-          environment:
-            SHELL: /bin/bash
-          command: |-
-            export PATH="$PATH:$HOME/.foundry/bin"
-            echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
-            if command -v anvil; then
-              echo "Anvil already installed"
-              anvil --version
-            else
-              curl -L https://foundry.paradigm.xyz | bash
-              foundryup
-            fi
-            rm -rf *
+      - run: 
+            name: "Install Foundry"
+            working_directory: ~/
+            environment:
+              SHELL: /bin/bash
+            command: |-
+                export PATH="$PATH:$HOME/.foundry/bin"
+                echo 'export PATH=$PATH:$HOME/.foundry/bin' >> $BASH_ENV
+                if command -v anvil; then
+                  echo "Anvil already installed"
+                  anvil --version
+                else
+                  curl -L https://foundry.paradigm.xyz | bash
+                  foundryup
+                fi
+                rm -rf *
       - save_cache:
           key: foundry-bin-latest-${foundry_cache_version}
           paths:
