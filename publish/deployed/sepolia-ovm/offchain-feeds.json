@@ -512,5 +512,29 @@
 		"oracle": "0x0708325268dF9F66270F1401206434524814508b",
 		"asset": "ORDI",
 		"feedId": "0x193c739db502aadcef37c2589738b1e37bdb257d58cf1ab3c7ebc8e6df4e3ec0"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0x0708325268dF9F66270F1401206434524814508b",
+		"asset": "CVX",
+		"feedId": "0x6aac625e125ada0d2a6b98316493256ca733a5808cd34ccef79b0e28c64d1e76"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0x0708325268dF9F66270F1401206434524814508b",
+		"asset": "JUP",
+		"feedId": "0x0a0408d619e9380abad35060f9192039ed5042fa6f82301d0e48bb52be830996"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0x0708325268dF9F66270F1401206434524814508b",
+		"asset": "PENDLE",
+		"feedId": "0x9a4df90b25497f66b1afb012467e316e801ca3d839456db028892fe8c70c8016"
+	},
+	{
+		"kind": "pyth",
+		"oracle": "0x0708325268dF9F66270F1401206434524814508b",
+		"asset": "STRK",
+		"feedId": "0x6a182399ff70ccf3e06024898942028204125a819e519a335ffa4579e66cd870"
 	}
 ]

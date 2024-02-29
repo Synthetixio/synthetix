@@ -92,6 +92,7 @@ jobs:
             - build
             - cannon
             - publish/deployed
+    resource_class: large
   job-fork-tests-ovm:
     working_directory: ~/repo
     docker:
