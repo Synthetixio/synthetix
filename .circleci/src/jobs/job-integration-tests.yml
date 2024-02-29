@@ -35,6 +35,7 @@ steps:
         SHELL: /bin/bash
       command: |-
           wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
+          source /home/circleci/.bashrc
   - run: 
         name: "Install Foundry"
         working_directory: ~/
