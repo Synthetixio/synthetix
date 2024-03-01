@@ -153,9 +153,9 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 
 	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
 	const pnpmOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.commandSync('pnpm install', pnpmOpts);
+	execa.sync('sh', ['-c', 'pnpm install'], pnpmOpts);
 	console.log(gray('  build'));
-	execa.commandSync('pnpm build', pnpmOpts);
+	execa.sync('sh', ['-c', 'pnpm build'], pnpmOpts);
 }
 
 function _buildOps({ opsPath }) {
