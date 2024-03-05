@@ -9,6 +9,7 @@ const OPS_PROCESSES = [
 	{ service: 'deployer', image: 'ethereumoptimism/deployer' },
 	{ service: 'dtl', image: 'ethereumoptimism/data-transport-layer' },
 	{ service: 'l1_chain', image: 'ethereumoptimism/hardhat' },
+	{ service: 'l2geth', image: 'ethereumoptimism/l2geth' },
 	{ service: 'relayer', image: 'ethereumoptimism/message-relayer' },
 ];
 
@@ -87,7 +88,6 @@ task('ops', 'Run Optimism chain')
 				_build({ opsPath, opsCommit, opsBranch });
 				_buildOps({ opsPath });
 			}
-
 			await _start({ opsPath, opsDetached });
 		}
 	});
@@ -153,9 +153,9 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 
 	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
 	const yarnOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.commandSync('sh', ['-c', `yarn `], yarnOpts);
+	execa.sync('sh', ['-c', `yarn `], yarnOpts);
 	console.log(gray('  build'));
-	execa.commandSync('sh', ['-c', `yarn build `], yarnOpts);
+	execa.sync('sh', ['-c', `yarn build `], yarnOpts);
 }
 
 function _buildOps({ opsPath }) {
@@ -168,8 +168,6 @@ function _buildOps({ opsPath }) {
 
 async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
-	// Pull the Docker image before starting
-	execa.sync('sh', ['-c', `docker pull ethereumoptimism/l2geth`]);
 	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
 		stdio: 'inherit',
 	});
