@@ -15,28 +15,16 @@ const OPS_PROCESSES = [
 
 task('ops', 'Run Optimism chain')
 	.addFlag('fresh', 'Clean up docker and get a fresh clone of the optimism repository')
-	.addFlag('build', 'Get the right commit and builds the repository')
-	.addFlag('buildOps', 'Build fresh docker images for the chain')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
 	.addFlag('detached', 'Detach the chain from the console')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', './optimism')
-	.addOptionalParam('optimismBranch', 'Branch to checkout', 'develop')
-	.addOptionalParam(
-		'optimismCommit',
-		'Commit to checkout',
-		'f707883038d527cbf1e9f8ea513fe33255deadbc'
-	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
 
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
-		const opsBranch = taskArguments.optimismBranch;
-		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
 
-		console.log(gray('optimism branch:', opsBranch));
-		console.log(gray('optimism commit:', opsCommit));
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
@@ -55,24 +43,6 @@ task('ops', 'Run Optimism chain')
 			_fresh({ opsPath });
 		}
 
-		if (taskArguments.build || (taskArguments.fresh && taskArguments.start)) {
-			console.log(yellow('building'));
-			if (!fs.existsSync(opsPath)) {
-				_fresh({ opsPath });
-			}
-
-			_build({ opsPath, opsCommit, opsBranch });
-		}
-
-		if (taskArguments.buildOps || (taskArguments.fresh && taskArguments.start)) {
-			console.log(yellow('building ops'));
-			if (!fs.existsSync(opsPath)) {
-				_fresh({ opsPath });
-				_build({ opsPath, opsCommit, opsBranch });
-			}
-			_buildOps({ opsPath });
-		}
-
 		if (taskArguments.start) {
 			console.log(yellow('starting'));
 			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
@@ -82,11 +52,6 @@ task('ops', 'Run Optimism chain')
 
 			if (!fs.existsSync(opsPath)) {
 				_fresh({ opsPath });
-				_build({ opsPath, opsCommit, opsBranch });
-				_buildOps({ opsPath });
-			} else if (!_imagesExist()) {
-				_build({ opsPath, opsCommit, opsBranch });
-				_buildOps({ opsPath });
 			}
 			await _start({ opsPath, opsDetached });
 		}
@@ -119,19 +84,6 @@ function _isRunning({ opsPath }) {
 	return result;
 }
 
-function _imagesExist() {
-	console.log(gray('  check if images exists'));
-	let result = true;
-
-	OPS_PROCESSES.forEach(item => {
-		const imageId = execa.sync('sh', ['-c', `docker image ls ${item.image} -q`]);
-		if (imageId.stdout === '') {
-			result = false;
-		}
-	});
-	return result;
-}
-
 function _fresh({ opsPath }) {
 	console.log(gray('  clone fresh repository into', opsPath));
 	execa.sync('sh', ['-c', 'rm -drf ' + opsPath]);
@@ -141,33 +93,14 @@ function _fresh({ opsPath }) {
 	]);
 }
 
-function _build({ opsPath, opsCommit, opsBranch }) {
-	console.log(gray('  checkout commit:', opsCommit));
-	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsBranch} `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin ${opsBranch} `]);
-	if (opsCommit) {
-		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
-	}
-	console.log(gray('  get dependencies'));
-
-	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
-	const yarnOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.sync('sh', ['-c', `yarn `], yarnOpts);
-	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `yarn build `], yarnOpts);
-}
-
-function _buildOps({ opsPath }) {
-	console.log(gray('  build ops images'));
-	execa.sync('sh', [
-		'-c',
-		`cd ${opsPath}/ops && export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build`,
-	]);
-}
-
 async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
+	execa.sync('sh', ['-c', `cd ${opsPath} && gcloud auth configure-docker us-docker.pkg.dev `]);
+	execa.sync('sh', [
+		'-c',
+		`cd ${opsPath} && docker pull \
+    us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc`,
+	]);
 	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
 		stdio: 'inherit',
 	});
