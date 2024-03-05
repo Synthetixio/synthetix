@@ -358,7 +358,7 @@ function itCanTrade({ ctx }) {
 
 			before('market and conditions', async () => {
 				allMarketsAddresses = await FuturesMarketManager['allMarkets(bool)'](true); // only fetch proxied
-				// Removed because it was causing a revert on forked networks potentially due to result size lenght
+				// Removed because it was causing a revert on forked networks potentially due to result size length
 				// allSummaries = await PerpsV2MarketData.callStatic.allProxiedMarketSummaries();
 
 				if (allMarketsAddresses.length === 0) {
