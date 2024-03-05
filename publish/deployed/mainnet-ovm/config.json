@@ -2053,5 +2053,89 @@
 	},
 	"PerpsV2MarketViewsORDIPERP": {
 		"deploy": false
+	},
+	"PerpsV2ProxyJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsJUPPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsCVXPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxySTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsSTRKPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyPENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStatePENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketPENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidatePENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentPENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionPENDLEPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsPENDLEPERP": {
+		"deploy": false
 	}
 }

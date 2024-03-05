@@ -42602,9 +42602,7 @@
 			"timestamp": "2023-12-08T04:46:06.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xf0935a6cefbc1bbf825f8036ff1a7521ff939113a17a0bdc1c964189cb976814",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
@@ -42614,9 +42612,7 @@
 			"timestamp": "2023-12-08T04:46:14.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xc87e39e281d71b7b7cdf4eda7fe9cd1173da2315ea5bc6a3f7502af2602c08d8",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"OneNetAggregatorIssuedSynths": {
 			"name": "OneNetAggregatorIssuedSynths",
@@ -42626,9 +42622,7 @@
 			"timestamp": "2023-12-08T04:46:22.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x6c5ea80d6d2a8cf62335cb9e0938e87af792bd4d6393b7a7e5b599fbe2ce7891",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"OneNetAggregatorDebtRatio": {
 			"name": "OneNetAggregatorDebtRatio",
@@ -42638,9 +42632,7 @@
 			"timestamp": "2023-12-08T04:46:30.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x466b8d5ca6b6d3d1eb8389644ace416e825d47adcfe4a8ae6d2780776bb4846f",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"FlexibleStorage": {
 			"name": "FlexibleStorage",
@@ -42650,9 +42642,7 @@
 			"timestamp": "2023-12-08T04:46:40.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x3ed4e1bc44f440dd06d1bf466ea417153ae01383c8ed6755a32e075ea2c75faa",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"SystemSettings": {
 			"name": "SystemSettings",
@@ -42675,9 +42665,7 @@
 			"timestamp": "2023-12-08T04:47:00.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x25bd49f22ebeeaa5dd36741c7c5c0b281d767117d56b55af6c2ac6cf16a6f3d9",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
@@ -42713,9 +42701,7 @@
 			"timestamp": "2023-12-08T04:47:28.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xee5372535e9866ccc38fdb365e49a7d50749c5640bd3bfe6a35f521233ec89e1",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"Synthetix": {
 			"name": "Synthetix",
@@ -42793,9 +42779,7 @@
 			"timestamp": "2023-12-08T04:48:26.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xf080de96e3df6b79617666a6d9aa984ba75710e4163585131dadaa0669306ab3",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"DelegateApprovalsEternalStorage": {
 			"name": "DelegateApprovalsEternalStorage",
@@ -43005,9 +42989,7 @@
 			"timestamp": "2023-12-08T04:51:02.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x799fde8a70ae90dd6e99f50a04e5a3aa6e0338b89fca5eeaf98833fcf56219b0",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0xfcD8a3C86272CAb1E409117ee369dc3a79683418"
-			]
+			"constructorArgs": ["0xfcD8a3C86272CAb1E409117ee369dc3a79683418"]
 		},
 		"SynthetixBridgeToBase": {
 			"name": "SynthetixBridgeToBase",
@@ -43057,9 +43039,7 @@
 			"timestamp": "2023-12-08T04:51:40.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x912caffdf8f0e611291c6e4d0b55f56766b5353e9fe93cf2b480d47bf9829f20",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"WrapperFactory": {
 			"name": "WrapperFactory",
@@ -43108,9 +43088,7 @@
 			"timestamp": "2023-12-08T04:52:19.990Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
@@ -43152,9 +43130,7 @@
 			"timestamp": "2023-12-08T04:52:47.714Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
@@ -43196,9 +43172,7 @@
 			"timestamp": "2023-12-08T04:53:16.836Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"SynthsBTC": {
 			"name": "SynthsBTC",
@@ -43237,9 +43211,7 @@
 			"timestamp": "2023-12-08T04:53:44.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x7cd5ea3c6685354031178170ffec9b5fc1c99a2dc2324ab33a3c8d53104c1bf7",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"CollateralManagerState": {
 			"name": "CollateralManagerState",
@@ -43327,9 +43299,7 @@
 			"timestamp": "2023-12-08T04:54:44.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0x147e6db23bfaeff4ca2499bebdc6921ca659a2d56a9e486dba9e06df05bb711a",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"PerpsV2MarketSettings": {
 			"name": "PerpsV2MarketSettings",
@@ -43365,9 +43335,7 @@
 			"timestamp": "2023-12-08T04:57:08.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xca9e168c8c1178091fb47e9a1aba5318ad3580bf8e0fec98e6d01cc171d6d729",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
-			]
+			"constructorArgs": ["0x529C553eF2d0370279DC8AbF19702B98b166D252"]
 		},
 		"DappMaintenance": {
 			"name": "DappMaintenance",
@@ -43377,9 +43345,7 @@
 			"timestamp": "2023-12-08T04:57:16.000Z",
 			"txn": "https://sepolia-explorer.optimism.io/tx/0xae050220ba76f72f152ad4765712cf1950261d1d6c53698f92e8b92a324290a9",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2ProxyETHPERP": {
 			"name": "PerpsV2ProxyETHPERP",
@@ -43389,9 +43355,7 @@
 			"timestamp": "2024-01-26T19:11:09.603Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateETHPERP": {
 			"name": "PerpsV2MarketStateETHPERP",
@@ -43403,9 +43367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x7345544800000000000000000000000000000000000000000000000000000000",
 				"0x7345544850455250000000000000000000000000000000000000000000000000",
 				"0x43f5DF3AF588eB36028c26BeC54DBC054953B467"
@@ -43493,9 +43455,7 @@
 			"timestamp": "2024-01-26T19:28:24.054Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBTCPERP": {
 			"name": "PerpsV2MarketStateBTCPERP",
@@ -43507,9 +43467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x7342544300000000000000000000000000000000000000000000000000000000",
 				"0x7342544350455250000000000000000000000000000000000000000000000000",
 				"0x1781D6a7bBa67e280c3E1064CF89b8fD37B4E61b"
@@ -43597,9 +43555,7 @@
 			"timestamp": "2024-01-26T19:45:51.391Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBNBPERP": {
 			"name": "PerpsV2MarketStateBNBPERP",
@@ -43611,9 +43567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x424e420000000000000000000000000000000000000000000000000000000000",
 				"0x73424e4250455250000000000000000000000000000000000000000000000000",
 				"0x8BAEB830c492177323596cbd1fEcA77Ff1E45ac0"
@@ -43701,9 +43655,7 @@
 			"timestamp": "2024-01-26T20:03:33.425Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateLINKPERP": {
 			"name": "PerpsV2MarketStateLINKPERP",
@@ -43715,9 +43667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4c494e4b00000000000000000000000000000000000000000000000000000000",
 				"0x734c494e4b504552500000000000000000000000000000000000000000000000",
 				"0xCE82360bbB39d86c8Eb34bFae5369944F1B49aB9"
@@ -43805,9 +43755,7 @@
 			"timestamp": "2024-01-26T20:21:54.312Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSOLPERP": {
 			"name": "PerpsV2MarketStateSOLPERP",
@@ -43819,9 +43767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x534f4c0000000000000000000000000000000000000000000000000000000000",
 				"0x73534f4c50455250000000000000000000000000000000000000000000000000",
 				"0x9C562c040BcD99d6c4B223A83169e9c29ecf960B"
@@ -43909,9 +43855,7 @@
 			"timestamp": "2024-01-26T20:42:39.362Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateMATICPERP": {
 			"name": "PerpsV2MarketStateMATICPERP",
@@ -43923,9 +43867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4d41544943000000000000000000000000000000000000000000000000000000",
 				"0x734d415449435045525000000000000000000000000000000000000000000000",
 				"0xf4020A929d3cafD9985EBbB7fCdeA5E3DDC04892"
@@ -44013,9 +43955,7 @@
 			"timestamp": "2024-01-26T21:00:40.659Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateDOGEPERP": {
 			"name": "PerpsV2MarketStateDOGEPERP",
@@ -44027,9 +43967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x444f474500000000000000000000000000000000000000000000000000000000",
 				"0x73444f4745504552500000000000000000000000000000000000000000000000",
 				"0x2500FDEc2C6bAb607De9E1935C9A4c5fBCe171F7"
@@ -44117,9 +44055,7 @@
 			"timestamp": "2024-01-26T22:16:28.143Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFTMPERP": {
 			"name": "PerpsV2MarketStateFTMPERP",
@@ -44131,9 +44067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x46544d0000000000000000000000000000000000000000000000000000000000",
 				"0x7346544d50455250000000000000000000000000000000000000000000000000",
 				"0xf160B3173a14Cd7464E1CBe5fbAEB4c90da3Ad39"
@@ -44221,9 +44155,7 @@
 			"timestamp": "2024-01-26T23:10:57.435Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateATOMPERP": {
 			"name": "PerpsV2MarketStateATOMPERP",
@@ -44235,9 +44167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x41544f4d00000000000000000000000000000000000000000000000000000000",
 				"0x7341544f4d504552500000000000000000000000000000000000000000000000",
 				"0x5fDa66Ed855EA186ed6719F866775079E8957334"
@@ -44325,9 +44255,7 @@
 			"timestamp": "2024-01-26T23:29:05.828Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAVAXPERP": {
 			"name": "PerpsV2MarketStateAVAXPERP",
@@ -44339,9 +44267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4156415800000000000000000000000000000000000000000000000000000000",
 				"0x7341564158504552500000000000000000000000000000000000000000000000",
 				"0x8960d18CfF0414FD419ab9d16d2f6a276e2e1589"
@@ -44429,9 +44355,7 @@
 			"timestamp": "2024-01-26T23:47:13.519Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateARBPERP": {
 			"name": "PerpsV2MarketStateARBPERP",
@@ -44443,9 +44367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4152420000000000000000000000000000000000000000000000000000000000",
 				"0x7341524250455250000000000000000000000000000000000000000000000000",
 				"0xe468E2014363ba6ADe2D7EF0124134D14e8f7Af0"
@@ -44533,9 +44455,7 @@
 			"timestamp": "2024-01-27T00:05:34.426Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateOPPERP": {
 			"name": "PerpsV2MarketStateOPPERP",
@@ -44547,9 +44467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4f50000000000000000000000000000000000000000000000000000000000000",
 				"0x734f505045525000000000000000000000000000000000000000000000000000",
 				"0x2Dbdb1941D4B02e4D8ad02A82E376eaEfC4573A5"
@@ -44637,9 +44555,7 @@
 			"timestamp": "2024-01-27T00:22:51.760Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAPEPERP": {
 			"name": "PerpsV2MarketStateAPEPERP",
@@ -44651,9 +44567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4150450000000000000000000000000000000000000000000000000000000000",
 				"0x7341504550455250000000000000000000000000000000000000000000000000",
 				"0xD21624ca16F9C57f2ceF3d046eB7D7cAf5f54cB4"
@@ -44741,9 +44655,7 @@
 			"timestamp": "2024-01-27T00:40:25.676Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateNEARPERP": {
 			"name": "PerpsV2MarketStateNEARPERP",
@@ -44755,9 +44667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4e45415200000000000000000000000000000000000000000000000000000000",
 				"0x734e454152504552500000000000000000000000000000000000000000000000",
 				"0xA1bda9CA49cE373102A9Ef1a9Db0798eeF87AdCa"
@@ -44845,9 +44755,7 @@
 			"timestamp": "2024-01-27T00:58:39.237Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAXSPERP": {
 			"name": "PerpsV2MarketStateAXSPERP",
@@ -44859,9 +44767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4158530000000000000000000000000000000000000000000000000000000000",
 				"0x7341585350455250000000000000000000000000000000000000000000000000",
 				"0x18755fd7a3E6fDA69ebF9ce8b43C809fe3d3eC59"
@@ -44949,9 +44855,7 @@
 			"timestamp": "2024-01-27T01:16:59.452Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateUNIPERP": {
 			"name": "PerpsV2MarketStateUNIPERP",
@@ -44963,9 +44867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x554e490000000000000000000000000000000000000000000000000000000000",
 				"0x73554e4950455250000000000000000000000000000000000000000000000000",
 				"0x475b7637040E5C0260e8c90440C4688e2349c07e"
@@ -45053,9 +44955,7 @@
 			"timestamp": "2024-01-27T01:34:40.774Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateDYDXPERP": {
 			"name": "PerpsV2MarketStateDYDXPERP",
@@ -45067,9 +44967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4459445800000000000000000000000000000000000000000000000000000000",
 				"0x7344594458504552500000000000000000000000000000000000000000000000",
 				"0xA3c7570E39e116d371B54f7Fb9B0A2d0CA972C81"
@@ -45157,9 +45055,7 @@
 			"timestamp": "2024-01-27T01:52:59.339Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAAVEPERP": {
 			"name": "PerpsV2MarketStateAAVEPERP",
@@ -45171,9 +45067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4141564500000000000000000000000000000000000000000000000000000000",
 				"0x7341415645504552500000000000000000000000000000000000000000000000",
 				"0x5982cd52a23E4a36362fDBD0f741dd17c8a494b7"
@@ -45261,9 +45155,7 @@
 			"timestamp": "2024-01-27T02:10:47.510Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFLOWPERP": {
 			"name": "PerpsV2MarketStateFLOWPERP",
@@ -45275,9 +45167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x464c4f5700000000000000000000000000000000000000000000000000000000",
 				"0x73464c4f57504552500000000000000000000000000000000000000000000000",
 				"0x0634fd9bc1d00F8a5b4DB661F4af1A299611d7D3"
@@ -45365,9 +45255,7 @@
 			"timestamp": "2024-01-27T02:28:31.472Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAUDPERP": {
 			"name": "PerpsV2MarketStateAUDPERP",
@@ -45379,9 +45267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4155440000000000000000000000000000000000000000000000000000000000",
 				"0x7341554450455250000000000000000000000000000000000000000000000000",
 				"0xbA59D241dEE2146b1Be366C70B54ED638a168530"
@@ -45469,9 +45355,7 @@
 			"timestamp": "2024-01-27T02:45:44.227Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateGBPPERP": {
 			"name": "PerpsV2MarketStateGBPPERP",
@@ -45483,9 +45367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4742500000000000000000000000000000000000000000000000000000000000",
 				"0x7347425050455250000000000000000000000000000000000000000000000000",
 				"0x15E8BeA9C75EDa0F64eE63468d86A8F50625553c"
@@ -45573,9 +45455,7 @@
 			"timestamp": "2024-01-27T03:03:28.379Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXAUPERP": {
 			"name": "PerpsV2MarketStateXAUPERP",
@@ -45587,9 +45467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5841550000000000000000000000000000000000000000000000000000000000",
 				"0x7358415550455250000000000000000000000000000000000000000000000000",
 				"0x92424427291C2EB68af3CE67EA67ca42EcB438c5"
@@ -45677,9 +45555,7 @@
 			"timestamp": "2024-01-27T03:21:14.157Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXAGPERP": {
 			"name": "PerpsV2MarketStateXAGPERP",
@@ -45691,9 +45567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5841470000000000000000000000000000000000000000000000000000000000",
 				"0x7358414750455250000000000000000000000000000000000000000000000000",
 				"0x2385286c401800204BcDD6BF2e5B3eBd71E1440d"
@@ -45781,9 +45655,7 @@
 			"timestamp": "2024-01-27T03:39:14.883Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateEURPERP": {
 			"name": "PerpsV2MarketStateEURPERP",
@@ -45795,9 +45667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4555520000000000000000000000000000000000000000000000000000000000",
 				"0x7345555250455250000000000000000000000000000000000000000000000000",
 				"0xC70acc95C8b816433d3650E2b8E0c0B40e2Cfd0E"
@@ -45885,9 +45755,7 @@
 			"timestamp": "2024-01-27T04:12:42.932Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateLTCPERP": {
 			"name": "PerpsV2MarketStateLTCPERP",
@@ -45899,9 +45767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4c54430000000000000000000000000000000000000000000000000000000000",
 				"0x734c544350455250000000000000000000000000000000000000000000000000",
 				"0xAE55c944509DBd7958A632c7054D70fF90C7C118"
@@ -45989,9 +45855,7 @@
 			"timestamp": "2024-01-27T04:30:01.573Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateADAPERP": {
 			"name": "PerpsV2MarketStateADAPERP",
@@ -46003,9 +45867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4144410000000000000000000000000000000000000000000000000000000000",
 				"0x7341444150455250000000000000000000000000000000000000000000000000",
 				"0x1F6996e58c0De9c7e94aBa4681957803Ee25ee1f"
@@ -46093,9 +45955,7 @@
 			"timestamp": "2024-01-27T04:47:49.372Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateAPTPERP": {
 			"name": "PerpsV2MarketStateAPTPERP",
@@ -46107,9 +45967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4150540000000000000000000000000000000000000000000000000000000000",
 				"0x7341505450455250000000000000000000000000000000000000000000000000",
 				"0xbCfeFE75a5bDEd6e6739e9EcD956fABeEFBA183B"
@@ -46197,9 +46055,7 @@
 			"timestamp": "2024-01-27T05:06:00.921Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFILPERP": {
 			"name": "PerpsV2MarketStateFILPERP",
@@ -46211,9 +46067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x46494c0000000000000000000000000000000000000000000000000000000000",
 				"0x7346494c50455250000000000000000000000000000000000000000000000000",
 				"0x7f59b9Bd22Dc1df6C52969119F13A179eFAC51eC"
@@ -46301,9 +46155,7 @@
 			"timestamp": "2024-01-27T12:55:35.242Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSHIBPERP": {
 			"name": "PerpsV2MarketStateSHIBPERP",
@@ -46315,9 +46167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5348494200000000000000000000000000000000000000000000000000000000",
 				"0x7353484942504552500000000000000000000000000000000000000000000000",
 				"0x4926222EDDa82965Aa08080f281928f8cba5922A"
@@ -46405,9 +46255,7 @@
 			"timestamp": "2024-01-27T13:12:47.685Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateLDOPERP": {
 			"name": "PerpsV2MarketStateLDOPERP",
@@ -46419,9 +46267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4c444f0000000000000000000000000000000000000000000000000000000000",
 				"0x734c444f50455250000000000000000000000000000000000000000000000000",
 				"0xe5c5506A7c76FA56dcc3d6D4025361BF2E799883"
@@ -46509,9 +46355,7 @@
 			"timestamp": "2024-01-27T13:34:24.651Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBCHPERP": {
 			"name": "PerpsV2MarketStateBCHPERP",
@@ -46523,9 +46367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4243480000000000000000000000000000000000000000000000000000000000",
 				"0x7342434850455250000000000000000000000000000000000000000000000000",
 				"0xcf3bBd69015eea9e3FF20E708ce13087Ebb27416"
@@ -46613,9 +46455,7 @@
 			"timestamp": "2024-01-27T13:51:27.936Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateCRVPERP": {
 			"name": "PerpsV2MarketStateCRVPERP",
@@ -46627,9 +46467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4352560000000000000000000000000000000000000000000000000000000000",
 				"0x7343525650455250000000000000000000000000000000000000000000000000",
 				"0x9C25375eC7eC02e9d4005f4d1AfD102bc6E0e5Cd"
@@ -46717,9 +46555,7 @@
 			"timestamp": "2024-01-27T14:10:19.214Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateGMXPERP": {
 			"name": "PerpsV2MarketStateGMXPERP",
@@ -46731,9 +46567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x474d580000000000000000000000000000000000000000000000000000000000",
 				"0x73474d5850455250000000000000000000000000000000000000000000000000",
 				"0x13B0D3d8De76cD9f8C2c768f8FA17eF68E719847"
@@ -46821,9 +46655,7 @@
 			"timestamp": "2024-01-27T16:13:04.258Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStatePEPEPERP": {
 			"name": "PerpsV2MarketStatePEPEPERP",
@@ -46835,9 +46667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5045504500000000000000000000000000000000000000000000000000000000",
 				"0x7350455045504552500000000000000000000000000000000000000000000000",
 				"0xFbE4FFA5e1844A4A2121086623125C99B2A322b9"
@@ -46925,9 +46755,7 @@
 			"timestamp": "2024-01-27T21:25:47.121Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSUIPERP": {
 			"name": "PerpsV2MarketStateSUIPERP",
@@ -46939,9 +46767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5355490000000000000000000000000000000000000000000000000000000000",
 				"0x7353554950455250000000000000000000000000000000000000000000000000",
 				"0xab507bdf251AD73665a4846475D8Fa7B6c463c44"
@@ -47029,9 +46855,7 @@
 			"timestamp": "2024-01-27T21:42:26.888Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBLURPERP": {
 			"name": "PerpsV2MarketStateBLURPERP",
@@ -47043,9 +46867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x424c555200000000000000000000000000000000000000000000000000000000",
 				"0x73424c5552504552500000000000000000000000000000000000000000000000",
 				"0x1634fa451d660fF74F85aCcc9b2C82E7af431C24"
@@ -47133,9 +46955,7 @@
 			"timestamp": "2024-01-27T21:59:08.110Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXRPPERP": {
 			"name": "PerpsV2MarketStateXRPPERP",
@@ -47147,9 +46967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5852500000000000000000000000000000000000000000000000000000000000",
 				"0x7358525050455250000000000000000000000000000000000000000000000000",
 				"0x11eA85beadeAE65aCCd341400A5d6d5aa2CD8D09"
@@ -47237,9 +47055,7 @@
 			"timestamp": "2024-01-27T22:15:49.192Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateDOTPERP": {
 			"name": "PerpsV2MarketStateDOTPERP",
@@ -47251,9 +47067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x444f540000000000000000000000000000000000000000000000000000000000",
 				"0x73444f5450455250000000000000000000000000000000000000000000000000",
 				"0x907b6C505089eE3c1C9fF408fEA08803b3aFd023"
@@ -47341,9 +47155,7 @@
 			"timestamp": "2024-01-27T22:33:27.662Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateTRXPERP": {
 			"name": "PerpsV2MarketStateTRXPERP",
@@ -47355,9 +47167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5452580000000000000000000000000000000000000000000000000000000000",
 				"0x7354525850455250000000000000000000000000000000000000000000000000",
 				"0x2CB6843d468848898c9fF2204F7eCEF1d53D08b7"
@@ -47445,9 +47255,7 @@
 			"timestamp": "2024-01-27T22:49:54.378Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFLOKIPERP": {
 			"name": "PerpsV2MarketStateFLOKIPERP",
@@ -47459,9 +47267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x464c4f4b49000000000000000000000000000000000000000000000000000000",
 				"0x73464c4f4b495045525000000000000000000000000000000000000000000000",
 				"0x5AD5500BDeF91437c0503DFD575fE326AEe512FA"
@@ -47549,9 +47355,7 @@
 			"timestamp": "2024-01-27T23:06:17.783Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateINJPERP": {
 			"name": "PerpsV2MarketStateINJPERP",
@@ -47563,9 +47367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x494e4a0000000000000000000000000000000000000000000000000000000000",
 				"0x73494e4a50455250000000000000000000000000000000000000000000000000",
 				"0xF905cAc2cbd7B8628aC547F397B91b1FC90210B0"
@@ -47653,9 +47455,7 @@
 			"timestamp": "2024-01-27T23:22:56.821Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSTETHPERP": {
 			"name": "PerpsV2MarketStateSTETHPERP",
@@ -47667,9 +47467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5354455448000000000000000000000000000000000000000000000000000000",
 				"0x7353544554485045525000000000000000000000000000000000000000000000",
 				"0xB48e1F6dE254d37f26079D66dbc547011d73189f"
@@ -47757,9 +47555,7 @@
 			"timestamp": "2024-01-27T23:40:06.108Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateETHBTCPERP": {
 			"name": "PerpsV2MarketStateETHBTCPERP",
@@ -47771,9 +47567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4554484254430000000000000000000000000000000000000000000000000000",
 				"0x7345544842544350455250000000000000000000000000000000000000000000",
 				"0x3B89Ef25BDDcA74b92e560857C41f45aaee3E323"
@@ -47861,9 +47655,7 @@
 			"timestamp": "2024-01-27T23:57:27.009Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateETCPERP": {
 			"name": "PerpsV2MarketStateETCPERP",
@@ -47875,9 +47667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4554430000000000000000000000000000000000000000000000000000000000",
 				"0x7345544350455250000000000000000000000000000000000000000000000000",
 				"0xc85D9ACd99E9216Ba2fcef58f5355776aCF2252b"
@@ -47965,9 +47755,7 @@
 			"timestamp": "2024-01-28T00:14:54.725Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateCOMPPERP": {
 			"name": "PerpsV2MarketStateCOMPPERP",
@@ -47979,9 +47767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x434f4d5000000000000000000000000000000000000000000000000000000000",
 				"0x73434f4d50504552500000000000000000000000000000000000000000000000",
 				"0x070A7545b3e8E2da4FB80a376eedA1903d3A4F47"
@@ -48069,9 +47855,7 @@
 			"timestamp": "2024-01-28T00:31:23.574Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateMKRPERP": {
 			"name": "PerpsV2MarketStateMKRPERP",
@@ -48083,9 +47867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4d4b520000000000000000000000000000000000000000000000000000000000",
 				"0x734d4b5250455250000000000000000000000000000000000000000000000000",
 				"0x3328C0E28BEA582bE033D8c0d6B7e314F1c8a27a"
@@ -48173,9 +47955,7 @@
 			"timestamp": "2024-01-28T00:47:59.355Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXMRPERP": {
 			"name": "PerpsV2MarketStateXMRPERP",
@@ -48187,9 +47967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x584d520000000000000000000000000000000000000000000000000000000000",
 				"0x73584d5250455250000000000000000000000000000000000000000000000000",
 				"0x329Dc1b08530e1C83e05150E3Ff0D66F4DC49d56"
@@ -48277,9 +48055,7 @@
 			"timestamp": "2024-01-28T01:05:50.648Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateYFIPERP": {
 			"name": "PerpsV2MarketStateYFIPERP",
@@ -48291,9 +48067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5946490000000000000000000000000000000000000000000000000000000000",
 				"0x7359464950455250000000000000000000000000000000000000000000000000",
 				"0xF7491a37eEfE32cD93964962b21Ff0638e02e4c2"
@@ -48381,9 +48155,7 @@
 			"timestamp": "2024-01-28T01:22:07.463Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateMAVPERP": {
 			"name": "PerpsV2MarketStateMAVPERP",
@@ -48395,9 +48167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4d41560000000000000000000000000000000000000000000000000000000000",
 				"0x734d415650455250000000000000000000000000000000000000000000000000",
 				"0xBDE276b0a817F37B41700cf89Eb2bAce7f739249"
@@ -48485,9 +48255,7 @@
 			"timestamp": "2024-01-28T01:39:05.488Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateRPLPERP": {
 			"name": "PerpsV2MarketStateRPLPERP",
@@ -48499,9 +48267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x52504c0000000000000000000000000000000000000000000000000000000000",
 				"0x7352504c50455250000000000000000000000000000000000000000000000000",
 				"0x87DE8ee830a90D665AdD22Bdd668aFCde78577bA"
@@ -48589,9 +48355,7 @@
 			"timestamp": "2024-01-28T01:56:34.183Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateWLDPERP": {
 			"name": "PerpsV2MarketStateWLDPERP",
@@ -48603,9 +48367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x574c440000000000000000000000000000000000000000000000000000000000",
 				"0x73574c4450455250000000000000000000000000000000000000000000000000",
 				"0x6af8Ceb40b07F3a7262F71d2b4A72c410Cc647A7"
@@ -48693,9 +48455,7 @@
 			"timestamp": "2024-01-28T02:13:41.865Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateUSDTPERP": {
 			"name": "PerpsV2MarketStateUSDTPERP",
@@ -48707,9 +48467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5553445400000000000000000000000000000000000000000000000000000000",
 				"0x7355534454504552500000000000000000000000000000000000000000000000",
 				"0x924992a9A2D2032294AE64f4d5774A748CE08ca1"
@@ -48797,9 +48555,7 @@
 			"timestamp": "2024-01-28T02:29:55.149Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBALPERP": {
 			"name": "PerpsV2MarketStateBALPERP",
@@ -48811,9 +48567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x42414c0000000000000000000000000000000000000000000000000000000000",
 				"0x7342414c50455250000000000000000000000000000000000000000000000000",
 				"0x7a74802d0B062364bFd59D28286f82308Bc84864"
@@ -48901,9 +48655,7 @@
 			"timestamp": "2024-01-28T02:47:35.822Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFXSPERP": {
 			"name": "PerpsV2MarketStateFXSPERP",
@@ -48915,9 +48667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4658530000000000000000000000000000000000000000000000000000000000",
 				"0x7346585350455250000000000000000000000000000000000000000000000000",
 				"0x7cF146C291ea9bb79322225b91003142E5260995"
@@ -49005,9 +48755,7 @@
 			"timestamp": "2024-01-28T03:04:53.216Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateKNCPERP": {
 			"name": "PerpsV2MarketStateKNCPERP",
@@ -49019,9 +48767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4b4e430000000000000000000000000000000000000000000000000000000000",
 				"0x734b4e4350455250000000000000000000000000000000000000000000000000",
 				"0x05847D5C5e44Db9A6683E0a73A752792c0f35CfF"
@@ -49109,9 +48855,7 @@
 			"timestamp": "2024-01-28T03:21:21.927Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateRNDRPERP": {
 			"name": "PerpsV2MarketStateRNDRPERP",
@@ -49123,9 +48867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x524e445200000000000000000000000000000000000000000000000000000000",
 				"0x73524e4452504552500000000000000000000000000000000000000000000000",
 				"0xfd7b4c21bcBcF4Ea40A03D0bf3a5aDe06b56Ec68"
@@ -49213,9 +48955,7 @@
 			"timestamp": "2024-01-28T03:38:07.508Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateONEPERP": {
 			"name": "PerpsV2MarketStateONEPERP",
@@ -49227,9 +48967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4f4e450000000000000000000000000000000000000000000000000000000000",
 				"0x734f4e4550455250000000000000000000000000000000000000000000000000",
 				"0xD441bE35D36deE567Cc53626A3E072Cf38adC811"
@@ -49317,9 +49055,7 @@
 			"timestamp": "2024-01-28T03:54:47.297Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStatePERPPERP": {
 			"name": "PerpsV2MarketStatePERPPERP",
@@ -49331,9 +49067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5045525000000000000000000000000000000000000000000000000000000000",
 				"0x7350455250504552500000000000000000000000000000000000000000000000",
 				"0xe97C378C14bba40024EAa0FE81E99DFE3f7d5bD0"
@@ -49421,9 +49155,7 @@
 			"timestamp": "2024-01-28T04:11:37.539Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateZILPERP": {
 			"name": "PerpsV2MarketStateZILPERP",
@@ -49435,9 +49167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5a494c0000000000000000000000000000000000000000000000000000000000",
 				"0x735a494c50455250000000000000000000000000000000000000000000000000",
 				"0xA502E56412B4Ce5123a40d201552A87cAf199fEA"
@@ -49525,9 +49255,7 @@
 			"timestamp": "2024-01-28T04:28:02.861Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateRUNEPERP": {
 			"name": "PerpsV2MarketStateRUNEPERP",
@@ -49539,9 +49267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x52554e4500000000000000000000000000000000000000000000000000000000",
 				"0x7352554e45504552500000000000000000000000000000000000000000000000",
 				"0x5190F12dEe482f8e58759Cc6d0522dfD15b18131"
@@ -49629,9 +49355,7 @@
 			"timestamp": "2024-01-28T04:45:05.403Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSUSHIPERP": {
 			"name": "PerpsV2MarketStateSUSHIPERP",
@@ -49643,9 +49367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5355534849000000000000000000000000000000000000000000000000000000",
 				"0x7353555348495045525000000000000000000000000000000000000000000000",
 				"0x5fC6c426930f6ab9E97bd1036BDc793CeF4551C5"
@@ -49733,9 +49455,7 @@
 			"timestamp": "2024-01-28T05:01:47.962Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateZECPERP": {
 			"name": "PerpsV2MarketStateZECPERP",
@@ -49747,9 +49467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5a45430000000000000000000000000000000000000000000000000000000000",
 				"0x735a454350455250000000000000000000000000000000000000000000000000",
 				"0x386Fe29CDFE9239aCE9400CC92B955cFF91F3a44"
@@ -49837,9 +49555,7 @@
 			"timestamp": "2024-01-28T05:18:53.580Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXTZPERP": {
 			"name": "PerpsV2MarketStateXTZPERP",
@@ -49851,9 +49567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x58545a0000000000000000000000000000000000000000000000000000000000",
 				"0x7358545a50455250000000000000000000000000000000000000000000000000",
 				"0x1A7a4475e2245e6e2adAeBB5831c341920aF3374"
@@ -49941,9 +49655,7 @@
 			"timestamp": "2024-01-28T05:35:33.806Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateUMAPERP": {
 			"name": "PerpsV2MarketStateUMAPERP",
@@ -49955,9 +49667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x554d410000000000000000000000000000000000000000000000000000000000",
 				"0x73554d4150455250000000000000000000000000000000000000000000000000",
 				"0xE200157c076Ae9a1C875f9AE0B0a8e3ae27A4936"
@@ -50045,9 +49755,7 @@
 			"timestamp": "2024-01-28T05:51:53.299Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateENJPERP": {
 			"name": "PerpsV2MarketStateENJPERP",
@@ -50059,9 +49767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x454e4a0000000000000000000000000000000000000000000000000000000000",
 				"0x73454e4a50455250000000000000000000000000000000000000000000000000",
 				"0x16aAd97B7640ba747EdC1bD5aB0fF3D8eC932006"
@@ -50149,9 +49855,7 @@
 			"timestamp": "2024-01-28T06:09:06.175Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateICPPERP": {
 			"name": "PerpsV2MarketStateICPPERP",
@@ -50163,9 +49867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4943500000000000000000000000000000000000000000000000000000000000",
 				"0x7349435050455250000000000000000000000000000000000000000000000000",
 				"0x3B7BcefeF061E8723c93de1343E76E53dbDd0414"
@@ -50253,9 +49955,7 @@
 			"timestamp": "2024-01-28T06:25:47.472Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateXLMPERP": {
 			"name": "PerpsV2MarketStateXLMPERP",
@@ -50267,9 +49967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x584c4d0000000000000000000000000000000000000000000000000000000000",
 				"0x73584c4d50455250000000000000000000000000000000000000000000000000",
 				"0x0d33c7019f534002d1637a71aE9baD8F6D4E97c9"
@@ -50357,9 +50055,7 @@
 			"timestamp": "2024-01-28T06:42:10.177Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketState1INCHPERP": {
 			"name": "PerpsV2MarketState1INCHPERP",
@@ -50371,9 +50067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x31494e4348000000000000000000000000000000000000000000000000000000",
 				"0x7331494e43485045525000000000000000000000000000000000000000000000",
 				"0x7a1A217D5cF0ff084c3053bdd123D425bADb6488"
@@ -50461,9 +50155,7 @@
 			"timestamp": "2024-01-28T06:58:17.814Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateEOSPERP": {
 			"name": "PerpsV2MarketStateEOSPERP",
@@ -50475,9 +50167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x454f530000000000000000000000000000000000000000000000000000000000",
 				"0x73454f5350455250000000000000000000000000000000000000000000000000",
 				"0x39940dbF59044dA28d84809768bF9166491d6A08"
@@ -50565,9 +50255,7 @@
 			"timestamp": "2024-01-28T07:14:53.222Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateCELOPERP": {
 			"name": "PerpsV2MarketStateCELOPERP",
@@ -50579,9 +50267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x43454c4f00000000000000000000000000000000000000000000000000000000",
 				"0x7343454c4f504552500000000000000000000000000000000000000000000000",
 				"0xBD5DF3772dd240b5e0495020FF091f5785D37514"
@@ -50669,9 +50355,7 @@
 			"timestamp": "2024-01-28T07:30:51.319Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateALGOPERP": {
 			"name": "PerpsV2MarketStateALGOPERP",
@@ -50683,9 +50367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x414c474f00000000000000000000000000000000000000000000000000000000",
 				"0x73414c474f504552500000000000000000000000000000000000000000000000",
 				"0x931f4EC3c9632883d93585258FEee9b6F6C0eC89"
@@ -50773,9 +50455,7 @@
 			"timestamp": "2024-01-28T07:47:31.282Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateZRXPERP": {
 			"name": "PerpsV2MarketStateZRXPERP",
@@ -50787,9 +50467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5a52580000000000000000000000000000000000000000000000000000000000",
 				"0x735a525850455250000000000000000000000000000000000000000000000000",
 				"0x68b6974A4c151C466c0c3656b965F9948947515e"
@@ -50877,9 +50555,7 @@
 			"timestamp": "2024-01-28T08:04:26.441Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSEIPERP": {
 			"name": "PerpsV2MarketStateSEIPERP",
@@ -50891,9 +50567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5345490000000000000000000000000000000000000000000000000000000000",
 				"0x7353454950455250000000000000000000000000000000000000000000000000",
 				"0x86771CAc78a8Ce62CBCFAD639dFdeB9443856fAb"
@@ -50981,9 +50655,7 @@
 			"timestamp": "2024-01-28T08:21:38.255Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateSTETHETHPERP": {
 			"name": "PerpsV2MarketStateSTETHETHPERP",
@@ -50995,9 +50667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5354455448455448000000000000000000000000000000000000000000000000",
 				"0x7353544554484554485045525000000000000000000000000000000000000000",
 				"0xd712bEf33Cd46cee9d79934d602b21B147Cd9E54"
@@ -51085,9 +50755,7 @@
 			"timestamp": "2024-01-28T08:39:11.837Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateTRBPERP": {
 			"name": "PerpsV2MarketStateTRBPERP",
@@ -51099,9 +50767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5452420000000000000000000000000000000000000000000000000000000000",
 				"0x7354524250455250000000000000000000000000000000000000000000000000",
 				"0x3d05f17FF19f05eC8b32B6f7Dd468c05b95d1680"
@@ -51189,9 +50855,7 @@
 			"timestamp": "2024-01-28T08:55:23.184Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateTIAPERP": {
 			"name": "PerpsV2MarketStateTIAPERP",
@@ -51203,9 +50867,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5449410000000000000000000000000000000000000000000000000000000000",
 				"0x7354494150455250000000000000000000000000000000000000000000000000",
 				"0x577EAE5044950ec9A6753dd6Bc2360bbe75169b7"
@@ -51293,9 +50955,7 @@
 			"timestamp": "2024-01-28T09:12:35.753Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateIMXPERP": {
 			"name": "PerpsV2MarketStateIMXPERP",
@@ -51307,9 +50967,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x494d580000000000000000000000000000000000000000000000000000000000",
 				"0x73494d5850455250000000000000000000000000000000000000000000000000",
 				"0x25C61140ef8597410205e3580A9dDEd1b40dA6F0"
@@ -51397,9 +51055,7 @@
 			"timestamp": "2024-01-28T09:29:35.443Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateMEMEPERP": {
 			"name": "PerpsV2MarketStateMEMEPERP",
@@ -51411,9 +51067,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4d454d4500000000000000000000000000000000000000000000000000000000",
 				"0x734d454d45504552500000000000000000000000000000000000000000000000",
 				"0xd677d059444a476c268141200cf7d802be50cAd5"
@@ -51501,9 +51155,7 @@
 			"timestamp": "2024-01-28T09:47:16.137Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateFETPERP": {
 			"name": "PerpsV2MarketStateFETPERP",
@@ -51515,9 +51167,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4645540000000000000000000000000000000000000000000000000000000000",
 				"0x7346455450455250000000000000000000000000000000000000000000000000",
 				"0x99C436Df9F3EAaEb5c7BB4ee627a696e9691D7B0"
@@ -51605,9 +51255,7 @@
 			"timestamp": "2024-01-28T10:04:13.448Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateGRTPERP": {
 			"name": "PerpsV2MarketStateGRTPERP",
@@ -51619,9 +51267,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4752540000000000000000000000000000000000000000000000000000000000",
 				"0x7347525450455250000000000000000000000000000000000000000000000000",
 				"0x3dB8F853842320940C46D0D54A00fD8C8EF83810"
@@ -51709,9 +51355,7 @@
 			"timestamp": "2024-01-28T10:21:42.421Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStatePYTHPERP": {
 			"name": "PerpsV2MarketStatePYTHPERP",
@@ -51723,9 +51367,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x5059544800000000000000000000000000000000000000000000000000000000",
 				"0x7350595448504552500000000000000000000000000000000000000000000000",
 				"0x928Da45B61eaBD477D5B28119C5c1Cf84Ee404E0"
@@ -51813,9 +51455,7 @@
 			"timestamp": "2024-01-28T10:39:16.392Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateANKRPERP": {
 			"name": "PerpsV2MarketStateANKRPERP",
@@ -51827,9 +51467,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x414e4b5200000000000000000000000000000000000000000000000000000000",
 				"0x73414e4b52504552500000000000000000000000000000000000000000000000",
 				"0x647A15Cba7F859F1192aDEEb2C36b6Ab39Ce071C"
@@ -51917,9 +51555,7 @@
 			"timestamp": "2024-01-28T10:56:20.200Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateBONKPERP": {
 			"name": "PerpsV2MarketStateBONKPERP",
@@ -51931,9 +51567,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x424f4e4b00000000000000000000000000000000000000000000000000000000",
 				"0x73424f4e4b504552500000000000000000000000000000000000000000000000",
 				"0x5e3578813AFFd46603bcE71220D0C89E03246d5C"
@@ -52021,9 +51655,7 @@
 			"timestamp": "2024-01-28T11:14:02.691Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateJTOPERP": {
 			"name": "PerpsV2MarketStateJTOPERP",
@@ -52035,9 +51667,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4a544f0000000000000000000000000000000000000000000000000000000000",
 				"0x734a544f50455250000000000000000000000000000000000000000000000000",
 				"0xD139D7cF6A5D6D46Bd92Da0e81B1509abEE2fB96"
@@ -52125,9 +51755,7 @@
 			"timestamp": "2024-01-28T11:32:38.480Z",
 			"txn": "",
 			"network": "sepolia",
-			"constructorArgs": [
-				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-			]
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
 		},
 		"PerpsV2MarketStateORDIPERP": {
 			"name": "PerpsV2MarketStateORDIPERP",
@@ -52139,9 +51767,7 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				[
-					"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
-				],
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
 				"0x4f52444900000000000000000000000000000000000000000000000000000000",
 				"0x734f524449504552500000000000000000000000000000000000000000000000",
 				"0x980BcaAc4D8FCA954580f3B1E0Ca0344c9b57677"
@@ -52230,6 +51856,409 @@
 			"txn": "",
 			"network": "sepolia",
 			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x4a55500000000000000000000000000000000000000000000000000000000000",
+				"0x734a555050455250000000000000000000000000000000000000000000000000",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73"
+			]
+		},
+		"PerpsV2ProxyJUPPERP": {
+			"name": "PerpsV2ProxyJUPPERP",
+			"address": "0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+			"timestamp": "2024-02-23T23:48:30.470Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
+		},
+		"PerpsV2MarketStateJUPPERP": {
+			"name": "PerpsV2MarketStateJUPPERP",
+			"address": "0xdb828a46226a555463993E78eAb127eC2b596A73",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xdb828a46226a555463993E78eAb127eC2b596A73",
+			"timestamp": "2024-02-23T23:48:37.971Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x4a55500000000000000000000000000000000000000000000000000000000000",
+				"0x734a555050455250000000000000000000000000000000000000000000000000",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73"
+			]
+		},
+		"PerpsV2MarketJUPPERP": {
+			"name": "PerpsV2MarketJUPPERP",
+			"address": "0x0fD941c61d75331A51d80F9323DE51B87C778a46",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x0fD941c61d75331A51d80F9323DE51B87C778a46",
+			"timestamp": "2024-02-23T23:48:49.336Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateJUPPERP": {
+			"name": "PerpsV2MarketLiquidateJUPPERP",
+			"address": "0xA9146CDE055C436Ce6066B1BC5187231A3Be4C40",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xA9146CDE055C436Ce6066B1BC5187231A3Be4C40",
+			"timestamp": "2024-02-23T23:49:00.830Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentJUPPERP": {
+			"name": "PerpsV2DelayedIntentJUPPERP",
+			"address": "0x12EF6d12fB264AB1a83E46c661e8a2d6A726b0CD",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x12EF6d12fB264AB1a83E46c661e8a2d6A726b0CD",
+			"timestamp": "2024-02-23T23:49:12.598Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionJUPPERP": {
+			"name": "PerpsV2DelayedExecutionJUPPERP",
+			"address": "0xbceBF972B24aCb21c42dE2c7F4b3EAB3bc084B6c",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xbceBF972B24aCb21c42dE2c7F4b3EAB3bc084B6c",
+			"timestamp": "2024-02-23T23:49:24.279Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x198B5Add9227cb54C9Ac06b9D6Fd1d085d4800c1",
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsJUPPERP": {
+			"name": "PerpsV2MarketViewsJUPPERP",
+			"address": "0xF93c98Fd66a710b39ee2D982CB82fDFb3EC29EBd",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xF93c98Fd66a710b39ee2D982CB82fDFb3EC29EBd",
+			"timestamp": "2024-02-23T23:49:35.979Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xdb828a46226a555463993E78eAb127eC2b596A73",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxyCVXPERP": {
+			"name": "PerpsV2ProxyCVXPERP",
+			"address": "0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+			"timestamp": "2024-02-24T00:03:36.572Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
+		},
+		"PerpsV2MarketStateCVXPERP": {
+			"name": "PerpsV2MarketStateCVXPERP",
+			"address": "0xdA1FC750517AD0E23c8971AB7195109be2824343",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xdA1FC750517AD0E23c8971AB7195109be2824343",
+			"timestamp": "2024-02-24T00:03:44.154Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x4356580000000000000000000000000000000000000000000000000000000000",
+				"0x7343565850455250000000000000000000000000000000000000000000000000",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343"
+			]
+		},
+		"PerpsV2MarketCVXPERP": {
+			"name": "PerpsV2MarketCVXPERP",
+			"address": "0xA7A53a6804707Ac0f76a4F7731D4AF219216293f",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xA7A53a6804707Ac0f76a4F7731D4AF219216293f",
+			"timestamp": "2024-02-24T00:03:55.927Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateCVXPERP": {
+			"name": "PerpsV2MarketLiquidateCVXPERP",
+			"address": "0xDD0CF256A68E9c70b0e3707809C25c662ced7BfC",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xDD0CF256A68E9c70b0e3707809C25c662ced7BfC",
+			"timestamp": "2024-02-24T00:04:07.068Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentCVXPERP": {
+			"name": "PerpsV2DelayedIntentCVXPERP",
+			"address": "0x701455F6a0B25Ff08f56F2460fA6DB44115eA257",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x701455F6a0B25Ff08f56F2460fA6DB44115eA257",
+			"timestamp": "2024-02-24T00:04:18.810Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionCVXPERP": {
+			"name": "PerpsV2DelayedExecutionCVXPERP",
+			"address": "0x6cAFBb6E8fCCc61dab588e87192e249a7549dfE3",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x6cAFBb6E8fCCc61dab588e87192e249a7549dfE3",
+			"timestamp": "2024-02-24T00:04:30.653Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xCf92Cfc3a62376f470dDB1b49bf3f4e44E44de8d",
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsCVXPERP": {
+			"name": "PerpsV2MarketViewsCVXPERP",
+			"address": "0x62239fC4EFa332C1602350fed2B160E2d598809e",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x62239fC4EFa332C1602350fed2B160E2d598809e",
+			"timestamp": "2024-02-24T00:04:42.425Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xdA1FC750517AD0E23c8971AB7195109be2824343",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxySTRKPERP": {
+			"name": "PerpsV2ProxySTRKPERP",
+			"address": "0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+			"timestamp": "2024-02-24T00:18:34.683Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
+		},
+		"PerpsV2MarketStateSTRKPERP": {
+			"name": "PerpsV2MarketStateSTRKPERP",
+			"address": "0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+			"timestamp": "2024-02-24T00:18:46.674Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x5354524b00000000000000000000000000000000000000000000000000000000",
+				"0x735354524b504552500000000000000000000000000000000000000000000000",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C"
+			]
+		},
+		"PerpsV2MarketSTRKPERP": {
+			"name": "PerpsV2MarketSTRKPERP",
+			"address": "0xDB5192d67b511E41e3b9A729f184D0Da41b0FF08",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xDB5192d67b511E41e3b9A729f184D0Da41b0FF08",
+			"timestamp": "2024-02-24T00:18:58.247Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidateSTRKPERP": {
+			"name": "PerpsV2MarketLiquidateSTRKPERP",
+			"address": "0x97A5CD251F1165cc9EC86D9CbB375936d389Af6a",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x97A5CD251F1165cc9EC86D9CbB375936d389Af6a",
+			"timestamp": "2024-02-24T00:19:05.647Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentSTRKPERP": {
+			"name": "PerpsV2DelayedIntentSTRKPERP",
+			"address": "0x12aC51Fce6B855FB44A51994E1283dd70c290BaF",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x12aC51Fce6B855FB44A51994E1283dd70c290BaF",
+			"timestamp": "2024-02-24T00:19:17.084Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionSTRKPERP": {
+			"name": "PerpsV2DelayedExecutionSTRKPERP",
+			"address": "0xC5C56dbC9e3D764b0ff819C13AFBa431Cd2A5912",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xC5C56dbC9e3D764b0ff819C13AFBa431Cd2A5912",
+			"timestamp": "2024-02-24T00:19:28.669Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x7fC41d736b6F7DBA95e1eCc5321d9f147bd1F220",
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsSTRKPERP": {
+			"name": "PerpsV2MarketViewsSTRKPERP",
+			"address": "0xa42A15AafD7505062CF3dF8ef143F779254a943b",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xa42A15AafD7505062CF3dF8ef143F779254a943b",
+			"timestamp": "2024-02-24T00:19:40.295Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0xFee64657674Ae9c4a53734881092fFfdB5b7697C",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2ProxyPENDLEPERP": {
+			"name": "PerpsV2ProxyPENDLEPERP",
+			"address": "0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+			"source": "ProxyPerpsV2",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+			"timestamp": "2024-02-24T00:34:07.221Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": ["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"]
+		},
+		"PerpsV2MarketStatePENDLEPERP": {
+			"name": "PerpsV2MarketStatePENDLEPERP",
+			"address": "0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+			"source": "PerpsV2MarketState",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+			"timestamp": "2024-02-24T00:34:18.084Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				["0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"],
+				"0x50454e444c450000000000000000000000000000000000000000000000000000",
+				"0x7350454e444c4550455250000000000000000000000000000000000000000000",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627"
+			]
+		},
+		"PerpsV2MarketPENDLEPERP": {
+			"name": "PerpsV2MarketPENDLEPERP",
+			"address": "0x3f36541b9fE7cff23e165670519FcA94c27919ab",
+			"source": "PerpsV2Market",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x3f36541b9fE7cff23e165670519FcA94c27919ab",
+			"timestamp": "2024-02-24T00:34:29.149Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketLiquidatePENDLEPERP": {
+			"name": "PerpsV2MarketLiquidatePENDLEPERP",
+			"address": "0x76f76175342943740F423ad8f0bb664202882016",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x76f76175342943740F423ad8f0bb664202882016",
+			"timestamp": "2024-02-24T00:34:36.212Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedIntentPENDLEPERP": {
+			"name": "PerpsV2DelayedIntentPENDLEPERP",
+			"address": "0x43275BeDC11A16F440007BAc68F9CB5b559c07d3",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://sepolia-optimism.etherscan.io/address/0x43275BeDC11A16F440007BAc68F9CB5b559c07d3",
+			"timestamp": "2024-02-24T00:34:47.210Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2DelayedExecutionPENDLEPERP": {
+			"name": "PerpsV2DelayedExecutionPENDLEPERP",
+			"address": "0xb1C5b15E7832D860a9Ecc72eF020C0DdC0889e47",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xb1C5b15E7832D860a9Ecc72eF020C0DdC0889e47",
+			"timestamp": "2024-02-24T00:34:58.631Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x3359638732A98Cc5D598abD35d382Dd919Db0E04",
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
+				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
+				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
+			]
+		},
+		"PerpsV2MarketViewsPENDLEPERP": {
+			"name": "PerpsV2MarketViewsPENDLEPERP",
+			"address": "0xC26e4f89b625E2b1BEF4365A3C7B1E0A996DC0a4",
+			"source": "PerpsV2MarketViews",
+			"link": "https://sepolia-optimism.etherscan.io/address/0xC26e4f89b625E2b1BEF4365A3C7B1E0A996DC0a4",
+			"timestamp": "2024-02-24T00:35:09.474Z",
+			"txn": "",
+			"network": "sepolia",
+			"constructorArgs": [
+				"0x2997Bcd284dFE0D5aBFF0958d2202e417E9A1627",
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
 				"0x529C553eF2d0370279DC8AbF19702B98b166D252"
 			]

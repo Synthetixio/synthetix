@@ -449,34 +449,28 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return success;
     }
 
-    /**
-     * @notice allows for migration from v2x to v3 when an account has pending escrow entries
-     */
-    function revokeAllEscrow(address account) external systemActive {
-        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
-        require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
-        rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
-    }
-
     function migrateAccountBalances(address account)
         external
         systemActive
         returns (uint totalEscrowRevoked, uint totalLiquidBalance)
     {
         address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
-        require(msg.sender == debtMigratorOnEthereum, "Only L1 DebtMigrator");
+        require(
+            msg.sender == debtMigratorOnEthereum || msg.sender == resolver.getAddress(CONTRACT_V3_LEGACYMARKET),
+            "Only L1 DebtMigrator or LegacyMarket"
+        );
 
         // get their liquid SNX balance and transfer it to the migrator contract
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
-            bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
+            bool succeeded = _transferByProxy(account, msg.sender, totalLiquidBalance);
             require(succeeded, "snx transfer failed");
         }
 
         // get their escrowed SNX balance and revoke it all
         totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
         if (totalEscrowRevoked > 0) {
-            rewardEscrowV2().revokeFrom(account, debtMigratorOnEthereum, totalEscrowRevoked, 0);
+            rewardEscrowV2().revokeFrom(account, msg.sender, totalEscrowRevoked, 0);
         }
     }
 
