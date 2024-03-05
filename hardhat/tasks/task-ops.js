@@ -14,7 +14,6 @@ const OPS_PROCESSES = [
 ];
 
 task('ops', 'Run Optimism chain')
-	.addFlag('fresh', 'Clean up docker and get a fresh clone of the optimism repository')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
 	.addFlag('detached', 'Detach the chain from the console')
@@ -35,14 +34,6 @@ task('ops', 'Run Optimism chain')
 			return;
 		}
 
-		if (taskArguments.fresh) {
-			console.log(yellow('clearing and getting a fresh clone'));
-			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
-				_stop({ opsPath });
-			}
-			_fresh({ opsPath });
-		}
-
 		if (taskArguments.start) {
 			console.log(yellow('starting'));
 			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
@@ -50,9 +41,6 @@ task('ops', 'Run Optimism chain')
 				return;
 			}
 
-			if (!fs.existsSync(opsPath)) {
-				_fresh({ opsPath });
-			}
 			await _start({ opsPath, opsDetached });
 		}
 	});
@@ -84,15 +72,6 @@ function _isRunning({ opsPath }) {
 	return result;
 }
 
-function _fresh({ opsPath }) {
-	console.log(gray('  clone fresh repository into', opsPath));
-	execa.sync('sh', ['-c', 'rm -drf ' + opsPath]);
-	execa.sync('sh', [
-		'-c',
-		'git clone https://github.com/ethereum-optimism/optimism.git ' + opsPath,
-	]);
-}
-
 async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
 	execa.sync('sh', [
@@ -100,9 +79,17 @@ async function _start({ opsPath, opsDetached }) {
 		`cd ${opsPath} && docker pull \
     us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc`,
 	]);
-	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
-		stdio: 'inherit',
-	});
+	spawn(
+		'sh',
+		[
+			'-c',
+			`cd ${opsPath} && docker run -d --name op-node us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc
+	`,
+		],
+		{
+			stdio: 'inherit',
+		}
+	);
 	await new Promise(() => {}); // Keeps the process open
 }
 
