@@ -13,10 +13,5 @@
 		"name": "sBTC",
 		"asset": "BTC",
 		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sEUR",
-		"asset": "EUR",
-		"subclass": "MultiCollateralSynth"
 	}
 ]

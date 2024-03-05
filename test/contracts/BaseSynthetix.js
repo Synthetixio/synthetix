@@ -119,7 +119,6 @@ contract('BaseSynthetix', async accounts => {
 				'mint',
 				'mintSecondary',
 				'mintSecondaryRewards',
-				'revokeAllEscrow',
 				'settle',
 				'transfer',
 				'transferFrom',
@@ -617,6 +616,7 @@ contract('BaseSynthetix', async accounts => {
 			beforeEach(async () => {
 				// give the account some balance to test with
 				await baseSynthetixProxy.transfer(account3, toUnit('200'), { from: owner });
+				await rewardEscrowV2.setPermittedEscrowCreator(owner, true, { from: owner });
 				await rewardEscrowV2.createEscrowEntry(account3, toUnit('100'), 1, { from: owner });
 
 				assert.bnEqual(await baseSynthetixImpl.collateral(account3), toUnit('300'));
@@ -640,20 +640,6 @@ contract('BaseSynthetix', async accounts => {
 
 				// collateral balance should be zero after migration
 				assert.bnEqual(await baseSynthetixImpl.collateral(account3), toUnit('0'));
-			});
-		});
-
-		// SIP-299
-		describe('revokeAllEscrow', () => {
-			it('restricted to legacy market', async () => {
-				await addressResolver.importAddresses(['LegacyMarket'].map(toBytes32), [account2], {
-					from: owner,
-				});
-				await rewardEscrowV2.createEscrowEntry(account1, toUnit('100'), 1, { from: owner });
-				await assert.revert(
-					baseSynthetixImpl.revokeAllEscrow(account1, { from: owner }),
-					'Only LegacyMarket can revoke escrow'
-				);
 			});
 		});
 
