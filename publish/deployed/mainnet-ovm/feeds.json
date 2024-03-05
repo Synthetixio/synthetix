@@ -347,5 +347,21 @@
 	"ORDI": {
 		"asset": "ORDI",
 		"feed": "0x30795BeACc0f43920EF1288dB6676B5e205AE288"
+	},
+	"CVX": {
+		"asset": "CVX",
+		"feed": "0x955b05dD4573dDFAfB47cb78db16B1Fa127E6e71"
+	},
+	"JUP": {
+		"asset": "JUP",
+		"feed": "0x5eb9F7baCd59C886fBD9aa2C0a891223482a1ed4"
+	},
+	"PENDLE": {
+		"asset": "PENDLE",
+		"feed": "0x58F23F80bF389DB1af9e3aA8c59679806749A8a4"
+	},
+	"STRK": {
+		"asset": "STRK",
+		"feed": "0x8814dEC83E2862A3792A0D6aDFC48CF76Add1890"
 	}
 }

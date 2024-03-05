@@ -1044,6 +1044,26 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2052,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2053,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2054,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 2056,
+			"layer": "ovm",
+			"sources": []
 		}
 	],
 	"releases": [
@@ -1949,6 +1969,15 @@
 			},
 			"sips": [2044, 2045],
 			"released": true
+		},
+		{
+			"name": "Markab (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 99
+			},
+			"sips": [2052, 2053, 2054, 2056]
 		}
 	]
 }
