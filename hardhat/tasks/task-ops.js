@@ -40,7 +40,7 @@ task('ops', 'Run Optimism chain')
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
-			console.log(yellow('stoping'));
+			console.log(yellow('stopping'));
 			if (fs.existsSync(opsPath)) {
 				_stop({ opsPath });
 			}
@@ -153,9 +153,9 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 
 	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
 	const pnpmOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.sync('sh', ['-c', 'pnpm install'], pnpmOpts);
+	execa.sync('sh', ['-c', `pnpm install `], pnpmOpts);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', 'pnpm build'], pnpmOpts);
+	execa.sync('sh', ['-c', `pnpm run build `], pnpmOpts);
 }
 
 function _buildOps({ opsPath }) {
