@@ -25,7 +25,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'cb20306b4203ba86d2ac6d4f200727c29bd9b1f7'
+		'f1631a5f7ddb6eb4a342bfbd7d46233a43412f9b'
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
@@ -40,7 +40,7 @@ task('ops', 'Run Optimism chain')
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
-			console.log(yellow('stopping'));
+			console.log(yellow('stoping'));
 			if (fs.existsSync(opsPath)) {
 				_stop({ opsPath });
 			}
@@ -152,10 +152,10 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 	console.log(gray('  get dependencies'));
 
 	// needed options for execa.sync https://github.com/sindresorhus/execa/issues/473
-	const pnpmOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
-	execa.sync('sh', ['-c', `pnpm install `], pnpmOpts);
+	const yarnOpts = { stdout: 'inherit', stderr: 'inherit', shell: true, cwd: opsPath };
+	execa.sync('sh', ['-c', `yarn `], yarnOpts);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `pnpm run build `], pnpmOpts);
+	execa.sync('sh', ['-c', `yarn build `], yarnOpts);
 }
 
 function _buildOps({ opsPath }) {

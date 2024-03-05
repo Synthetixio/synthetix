@@ -3,7 +3,6 @@
 version: 2.1
 orbs:
   rust: circleci/rust@1.6.0
-  node: circleci/node@5.2.0
 commands:
   {{> commands}}
 jobs:
