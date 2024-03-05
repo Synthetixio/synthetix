@@ -9,29 +9,47 @@ const OPS_PROCESSES = [
 	{ service: 'deployer', image: 'ethereumoptimism/deployer' },
 	{ service: 'dtl', image: 'ethereumoptimism/data-transport-layer' },
 	{ service: 'l1_chain', image: 'ethereumoptimism/hardhat' },
-	{ service: 'l2geth', image: 'ethereumoptimism/l2geth' },
 	{ service: 'relayer', image: 'ethereumoptimism/message-relayer' },
 ];
 
 task('ops', 'Run Optimism chain')
+	.addFlag('fresh', 'Clean up docker and get a fresh clone of the optimism repository')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
 	.addFlag('detached', 'Detach the chain from the console')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', './optimism')
+	.addOptionalParam('optimismBranch', 'Branch to checkout', 'master')
+	.addOptionalParam(
+		'optimismCommit',
+		'Commit to checkout',
+		'f1631a5f7ddb6eb4a342bfbd7d46233a43412f9b'
+	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
 
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
+		const opsBranch = taskArguments.optimismBranch;
+		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
 
+		console.log(gray('optimism branch:', opsBranch));
+		console.log(gray('optimism commit:', opsCommit));
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
-			console.log(yellow('stoping'));
+			console.log(yellow('stopping'));
 			if (fs.existsSync(opsPath)) {
 				_stop({ opsPath });
 			}
 			return;
+		}
+
+		if (taskArguments.fresh) {
+			console.log(yellow('clearing and getting a fresh clone'));
+			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
+				_stop({ opsPath });
+			}
+			_fresh({ opsPath });
 		}
 
 		if (taskArguments.start) {
@@ -39,6 +57,10 @@ task('ops', 'Run Optimism chain')
 			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
 				console.log(yellow('already running'));
 				return;
+			}
+
+			if (!fs.existsSync(opsPath)) {
+				_fresh({ opsPath });
 			}
 
 			await _start({ opsPath, opsDetached });
@@ -72,24 +94,22 @@ function _isRunning({ opsPath }) {
 	return result;
 }
 
-async function _start({ opsPath, opsDetached }) {
-	console.log(gray('  start ops'));
+function _fresh({ opsPath }) {
+	console.log(gray('  clone fresh repository into', opsPath));
+	execa.sync('sh', ['-c', 'rm -drf ' + opsPath]);
 	execa.sync('sh', [
 		'-c',
-		`cd ${opsPath} && docker pull \
-    us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc`,
+		'git clone https://github.com/ethereum-optimism/optimism.git ' + opsPath,
 	]);
-	spawn(
-		'sh',
-		[
-			'-c',
-			`cd ${opsPath} && docker run -d --name op-node -p 9545:8545 us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc
-	`,
-		],
-		{
-			stdio: 'inherit',
-		}
-	);
+}
+
+async function _start({ opsPath, opsDetached }) {
+	console.log(gray('  start ops'));
+	// Pull the Docker image before starting
+	execa.sync('sh', ['-c', `docker pull ethereumoptimism/l2geth`]);
+	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
+		stdio: 'inherit',
+	});
 	await new Promise(() => {}); // Keeps the process open
 }
 
