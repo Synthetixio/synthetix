@@ -24,6 +24,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* Mapping of nominated address to recieve account merging */
     mapping(address => address) public nominatedReceiver;
+    mapping(address => bool) public permittedEscrowCreators;
 
     /* Max escrow duration */
     uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
@@ -307,6 +308,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         synthetixERC20().transfer(transferTo, amount);
     }
 
+    function setPermittedEscrowCreator(address creator, bool permitted) external onlyOwner {
+        permittedEscrowCreators[creator] = permitted;
+    }
+
     /**
      * @notice Create an escrow entry to lock SNX for a given duration in seconds
      * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
@@ -318,6 +323,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint256 duration
     ) external {
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
+        require(permittedEscrowCreators[msg.sender], "Only permitted escrow creators can create escrow entries");
 
         /* Transfer SNX from msg.sender */
         require(synthetixERC20().transferFrom(msg.sender, address(this), deposit), "token transfer failed");

@@ -11,6 +11,7 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 	getDecodedLogs,
 	decodedEventEqual,
+	onlyGivenAddressCanInvoke,
 } = require('../contracts/helpers');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
@@ -125,6 +126,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			from: owner,
 		});
 		// update the resolver for baseRewardEscrowV2
+		console.log(baseRewardEscrowV2.address, resolver.address);
 		await baseRewardEscrowV2.rebuildCache({ from: owner });
 	});
 
@@ -145,6 +147,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'burnForMigration',
 				'importVestingEntries',
 				'createEscrowEntry',
+				'setPermittedEscrowCreator',
 				'vest',
 				'revokeFrom',
 			],
@@ -309,6 +312,27 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 
+	describe('setPermissionedCreator', () => {
+		it('only allows owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseRewardEscrowV2.setPermissionedEscrowCreator,
+				args: [account1, true],
+				accounts,
+				reason: 'Only permitted escrow creators',
+			});
+		});
+
+		describe('succesful call', () => {
+			before('set', async () => {
+				await baseRewardEscrowV2.setPermissionedEscrowCreator(owner, true, { from: owner });
+			});
+
+			it('marks as permissioned', async () => {
+				assert.isTrue(await baseRewardEscrowV2.permissionedEscrowCreators(owner));
+			});
+		});
+	});
+
 	describe('Creating a new escrow entry by approval', async () => {
 		let duration, entryID;
 		beforeEach(async () => {
@@ -322,6 +346,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 			mocks['Synthetix'].balanceOf.returns(parseEther('10'));
 
 			duration = 1 * YEAR;
+
+			await baseRewardEscrowV2.setPermissionedEscrowCreator(owner, true, { from: owner });
 		});
 		assertWithFallback('should revert if escrow duration is greater than max_duration', async e => {
 			const maxDuration = await baseRewardEscrowV2.max_duration();
