@@ -95,7 +95,6 @@ function _fresh({ opsPath }) {
 
 async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
-	execa.sync('sh', ['-c', `cd ${opsPath} && gcloud auth configure-docker us-docker.pkg.dev `]);
 	execa.sync('sh', [
 		'-c',
 		`cd ${opsPath} && docker pull \
