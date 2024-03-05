@@ -83,7 +83,7 @@ async function _start({ opsPath, opsDetached }) {
 		'sh',
 		[
 			'-c',
-			`cd ${opsPath} && docker run -d --name op-node us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc
+			`cd ${opsPath} && docker run -d --name op-node -p 9545:8545 us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:f707883038d527cbf1e9f8ea513fe33255deadbc
 	`,
 		],
 		{
