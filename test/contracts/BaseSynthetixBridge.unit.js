@@ -91,7 +91,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 			beforeEach(async () => {
 				instance = await artifacts
-					.require('SynthetixBridgeToBase') // have to use a sub-contract becuase `BaseSynthetixBridge` is abstract
+					.require('SynthetixBridgeToBase') // have to use a sub-contract because `BaseSynthetixBridge` is abstract
 					.new(owner, resolver.address);
 
 				await instance.rebuildCache();

@@ -91,7 +91,7 @@ contract('OneNetAggregators', async accounts => {
 				await aggregatorDebtRatio.setOverrideTimestamp(1000);
 			});
 
-			it('changes timestmap returned by the oracle', async () => {
+			it('changes timestamp returned by the oracle', async () => {
 				assert.bnEqual((await aggregatorDebtRatio.getRoundData(1234))[2], 1000);
 			});
 		});

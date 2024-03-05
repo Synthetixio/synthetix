@@ -137,7 +137,7 @@ contract('FlexibleStorage', accounts => {
 						});
 						assert.eventEqual(txn, `ValueSet${type}`, [contractA, recordB, values[0]]);
 					});
-					it('and setting mulitple entries emits multiple events', async () => {
+					it('and setting multiple entries emits multiple events', async () => {
 						const txn = await storage[`set${type}Values`](
 							contractA,
 							[recordA, recordB],
