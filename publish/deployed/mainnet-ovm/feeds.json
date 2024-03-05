@@ -362,7 +362,6 @@
 	},
 	"STRK": {
 		"asset": "STRK",
-		"feed": "0x58F23F80bF389DB1af9e3aA8c59679806749A8a4",
-		"fakeFeed": true
+		"feed": "0x8814dEC83E2862A3792A0D6aDFC48CF76Add1890"
 	}
 }
