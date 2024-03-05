@@ -79,6 +79,7 @@ steps:
       background: true
       command: |
         docker --version
+        node --version
         npx hardhat ops --start
   - cmd-wait-for-port:
       port: 8545
