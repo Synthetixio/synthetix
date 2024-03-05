@@ -22,6 +22,7 @@ contract('LiquidatorRewards', accounts => {
 		circuitBreaker,
 		exchangeRates,
 		liquidatorRewards,
+		rewardEscrowV2,
 		synths,
 		synthetix,
 		synthetixProxy,
@@ -68,6 +69,7 @@ contract('LiquidatorRewards', accounts => {
 			DebtCache: debtCache,
 			ExchangeRates: exchangeRates,
 			LiquidatorRewards: liquidatorRewards,
+			RewardEscrowV2: rewardEscrowV2,
 			Synthetix: synthetix,
 			ProxyERC20Synthetix: synthetixProxy,
 			SynthetixDebtShare: synthetixDebtShare,
@@ -96,6 +98,11 @@ contract('LiquidatorRewards', accounts => {
 		synthetix = await artifacts.require('Synthetix').at(synthetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
+
+		// set permitted escrow creators
+		await rewardEscrowV2.setPermittedEscrowCreator(liquidatorRewards.address, true, {
+			from: owner,
+		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
