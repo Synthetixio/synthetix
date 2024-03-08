@@ -294,11 +294,10 @@ const assignGasOptions = async ({ tx, provider, gasLimit, maxFeePerGas, maxPrior
 	} catch (_) {} // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
 		gasOptions.type = 2;
-		if (gasLimit) gasOptions.gasLimit = parseUnits(gasLimit.toString() || '8000000', 'wei');
-		if (maxFeePerGas)
-			gasOptions.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
-		if (maxPriorityFeePerGas)
-			gasOptions.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
+		//if (gasLimit) gasOptions.gasLimit = parseUnits(gasLimit.toString() || '8000000', 'wei');
+		// if (maxFeePerGas) gasOptions.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '10', 'gwei');
+		// if (maxPriorityFeePerGas)
+		// 	gasOptions.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
 	}
 
 	return Object.assign(gasOptions, tx);

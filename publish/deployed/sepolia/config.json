@@ -1,0 +1,212 @@
+{
+	"AddressResolver": {
+		"deploy": false
+	},
+	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
+	"DebtCache": {
+		"deploy": true
+	},
+	"DelegateApprovals": {
+		"deploy": true
+	},
+	"DelegateApprovalsEternalStorage": {
+		"deploy": true
+	},
+	"Depot": {
+		"deploy": true
+	},
+	"EscrowChecker": {
+		"deploy": true
+	},
+	"ExchangeRates": {
+		"deploy": true
+	},
+	"Exchanger": {
+		"deploy": true
+	},
+	"ExchangeState": {
+		"deploy": true
+	},
+	"FeePool": {
+		"deploy": true
+	},
+	"FeePoolState": {
+		"deploy": true
+	},
+	"FeePoolEternalStorage": {
+		"deploy": true
+	},
+	"Issuer": {
+		"deploy": true
+	},
+	"RewardEscrow": {
+		"deploy": true
+	},
+	"RewardsDistribution": {
+		"deploy": true
+	},
+	"SupplySchedule": {
+		"deploy": true
+	},
+	"Synthetix": {
+		"deploy": true
+	},
+	"SynthetixEscrow": {
+		"deploy": true
+	},
+	"SynthetixState": {
+		"deploy": true
+	},
+	"SystemStatus": {
+		"deploy": true
+	},
+	"SynthUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
+		"deploy": true
+	},
+	"SynthsUSD": {
+		"deploy": true
+	},
+	"ProxyFeePool": {
+		"deploy": true
+	},
+	"ProxySynthetix": {
+		"deploy": true
+	},
+	"ProxysUSD": {
+		"deploy": true
+	},
+	"SafeDecimalMath": {
+		"deploy": false
+	},
+	"Math": {
+		"deploy": false
+	},
+	"TokenStateSynthetix": {
+		"deploy": true
+	},
+	"TokenStatesUSD": {
+		"deploy": true
+	},
+	"TokenStatesETH": {
+		"deploy": true
+	},
+	"ProxysETH": {
+		"deploy": true
+	},
+	"SynthsETH": {
+		"deploy": true
+	},
+	"FlexibleStorage": {
+		"deploy": true
+	},
+	"SystemSettings": {
+		"deploy": true
+	},
+	"TradingRewards": {
+		"deploy": true
+	},
+	"CollateralErc20": {
+		"deploy": true
+	},
+	"CollateralEth": {
+		"deploy": true
+	},
+	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
+	},
+	"CollateralUtil": {
+		"deploy": true
+	},
+	"RewardEscrowV2": {
+		"deploy": true
+	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": true
+	},
+	"VirtualSynthMastercopy": {
+		"deploy": true
+	},
+	"SynthetixBridgeEscrow": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"NativeEtherWrapper": {
+		"deploy": true
+	},
+	"WrapperFactory": {
+		"deploy": true
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": true
+	},
+	"SynthRedeemer": {
+		"deploy": true
+	},
+	"SystemSettingsLib": {
+		"deploy": false
+	},
+	"SynthetixDebtShare": {
+		"deploy": true
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": true
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
+	"OneNetAggregatorIssuedSynths": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": true
+	},
+	"LiquidatorRewards": {
+		"deploy": true
+	},
+	"OneNetAggregatorsDEFI": {
+		"deploy": true
+	},
+	"TokenStatesBTC": {
+		"deploy": true
+	},
+	"ProxysBTC": {
+		"deploy": true
+	},
+	"SynthsBTC": {
+		"deploy": true
+	},
+	"CircuitBreaker": {
+		"deploy": true
+	},
+	"RewardEscrowV2Storage": {
+		"deploy": true
+	},
+	"DirectIntegrationManager": {
+		"deploy": true
+	},
+	"ExchangeSettlementLib": {
+		"deploy": false
+	},
+	"DebtMigratorOnEthereum": {
+		"deploy": true
+	}
+}

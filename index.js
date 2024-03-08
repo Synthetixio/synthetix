@@ -7,6 +7,7 @@ const abiDecoder = require('abi-decoder');
 const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
+	sepolia: require('./publish/deployed/sepolia'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'sepolia-ovm': require('./publish/deployed/sepolia-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
@@ -39,6 +40,9 @@ const chainIdMapping = Object.entries({
 	420: {
 		network: 'goerli',
 		useOvm: true,
+	},
+	11155111: {
+		network: 'sepolia',
 	},
 	11155420: {
 		network: 'sepolia',
@@ -739,6 +743,10 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),
 		'goerli-ovm': Object.assign({}, base, {
+			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
+		sepolia: Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),

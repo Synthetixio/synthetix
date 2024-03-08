@@ -86,6 +86,13 @@ module.exports = {
 			chainId: 420,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
+		sepolia: {
+			url:
+				process.env.PROVIDER_URL?.replace('network', 'sepolia') ||
+				'https://ethereum-sepolia-rpc.publicnode.com',
+			chainId: 11155111,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+		},
 		'sepolia-ovm': {
 			url: process.env.OVM_SEPOLIA_PROVIDER_URL || 'https://sepolia.optimism.io/',
 			chainId: 11155420,
