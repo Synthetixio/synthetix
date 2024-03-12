@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -34,9 +33,11 @@ contract Migration_Aljanah is BaseMigration {
     // https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F
     RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
     // https://etherscan.io/address/0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b);
     // https://etherscan.io/address/0x182738BD9eE9810BC11f1c81b07Ec6F3691110BB
-    RewardEscrowV2Storage public constant rewardescrowv2storage_i = RewardEscrowV2Storage(0x182738BD9eE9810BC11f1c81b07Ec6F3691110BB);
+    RewardEscrowV2Storage public constant rewardescrowv2storage_i =
+        RewardEscrowV2Storage(0x182738BD9eE9810BC11f1c81b07Ec6F3691110BB);
     // https://etherscan.io/address/0xFAd53Cc9480634563E8ec71E8e693Ffd07981d38
     RewardEscrowV2 public constant rewardescrowv2_i = RewardEscrowV2(0xFAd53Cc9480634563E8ec71E8e693Ffd07981d38);
     // https://etherscan.io/address/0xAc86855865CbF31c8f9FBB68C749AD5Bd72802e3
@@ -59,19 +60,18 @@ contract Migration_Aljanah is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](9);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(proxysynthetix_i);
-        contracts[2]= address(tokenstatesynthetix_i);
-        contracts[3]= address(rewardescrow_i);
-        contracts[4]= address(rewardsdistribution_i);
-        contracts[5]= address(rewardescrowv2storage_i);
-        contracts[6]= address(rewardescrowv2_i);
-        contracts[7]= address(frozenrewardescrowv2_i);
-        contracts[8]= address(synthetix_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(proxysynthetix_i);
+        contracts[2] = address(tokenstatesynthetix_i);
+        contracts[3] = address(rewardescrow_i);
+        contracts[4] = address(rewardsdistribution_i);
+        contracts[5] = address(rewardescrowv2storage_i);
+        contracts[6] = address(rewardescrowv2_i);
+        contracts[7] = address(frozenrewardescrowv2_i);
+        contracts[8] = address(synthetix_i);
     }
 
     function migrate() external onlyOwner {
-
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
 
@@ -117,7 +117,6 @@ contract Migration_Aljanah is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](3);
         addressresolver_importAddresses_names_0_0[0] = bytes32("Synthetix");
@@ -127,10 +126,12 @@ contract Migration_Aljanah is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[0] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_0_1[1] = address(new_RewardEscrowV2_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_RewardEscrowV2Frozen_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](11);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_RewardEscrowV2_contract);

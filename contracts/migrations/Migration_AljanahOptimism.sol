@@ -1,4 +1,3 @@
-
 pragma solidity ^0.5.16;
 
 import "../BaseMigration.sol";
@@ -31,16 +30,19 @@ contract Migration_AljanahOptimism is BaseMigration {
     // https://explorer.optimism.io/address/0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE
     TokenState public constant tokenstatesynthetix_i = TokenState(0xB9c6CA25452E7f6D0D3340CE1e9B573421afc2eE);
     // https://explorer.optimism.io/address/0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e
-    RewardsDistribution public constant rewardsdistribution_i = RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
+    RewardsDistribution public constant rewardsdistribution_i =
+        RewardsDistribution(0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e);
     // https://explorer.optimism.io/address/0x0c2ED9B23BAF9C5f486e175D406728d3bE46d2A6
-    RewardEscrowV2Storage public constant rewardescrowv2storage_i = RewardEscrowV2Storage(0x0c2ED9B23BAF9C5f486e175D406728d3bE46d2A6);
+    RewardEscrowV2Storage public constant rewardescrowv2storage_i =
+        RewardEscrowV2Storage(0x0c2ED9B23BAF9C5f486e175D406728d3bE46d2A6);
     // https://explorer.optimism.io/address/0x5Fc9B8d2B7766f061bD84a41255fD1A76Fd1FAa2
-    ImportableRewardEscrowV2 public constant rewardescrowv2_i = ImportableRewardEscrowV2(0x5Fc9B8d2B7766f061bD84a41255fD1A76Fd1FAa2);
+    ImportableRewardEscrowV2 public constant rewardescrowv2_i =
+        ImportableRewardEscrowV2(0x5Fc9B8d2B7766f061bD84a41255fD1A76Fd1FAa2);
     // https://explorer.optimism.io/address/0x6330D5F08f51057F36F46d6751eCDc0c65Ef7E9e
-    ImportableRewardEscrowV2 public constant frozenrewardescrowv2_i = ImportableRewardEscrowV2(0x6330D5F08f51057F36F46d6751eCDc0c65Ef7E9e);
+    ImportableRewardEscrowV2 public constant frozenrewardescrowv2_i =
+        ImportableRewardEscrowV2(0x6330D5F08f51057F36F46d6751eCDc0c65Ef7E9e);
     // https://explorer.optimism.io/address/0x5A41F634958dB9183e9d0d1Cd8Dee439B6ABb3BF
     MintableSynthetix public constant synthetix_i = MintableSynthetix(0x5A41F634958dB9183e9d0d1Cd8Dee439B6ABb3BF);
-    
 
     // ----------------------------------
     // NEW CONTRACTS DEPLOYED TO BE ADDED
@@ -57,18 +59,17 @@ contract Migration_AljanahOptimism is BaseMigration {
 
     function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
         contracts = new address[](8);
-        contracts[0]= address(addressresolver_i);
-        contracts[1]= address(proxysynthetix_i);
-        contracts[2]= address(tokenstatesynthetix_i);
-        contracts[3]= address(rewardsdistribution_i);
-        contracts[4]= address(rewardescrowv2storage_i);
-        contracts[5]= address(rewardescrowv2_i);
-        contracts[6]= address(frozenrewardescrowv2_i);
-        contracts[7]= address(synthetix_i);
+        contracts[0] = address(addressresolver_i);
+        contracts[1] = address(proxysynthetix_i);
+        contracts[2] = address(tokenstatesynthetix_i);
+        contracts[3] = address(rewardsdistribution_i);
+        contracts[4] = address(rewardescrowv2storage_i);
+        contracts[5] = address(rewardescrowv2_i);
+        contracts[6] = address(frozenrewardescrowv2_i);
+        contracts[7] = address(synthetix_i);
     }
 
     function migrate() external onlyOwner {
-
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         acceptAll();
 
@@ -114,7 +115,6 @@ contract Migration_AljanahOptimism is BaseMigration {
         }
     }
 
-    
     function addressresolver_importAddresses_0() internal {
         bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](3);
         addressresolver_importAddresses_names_0_0[0] = bytes32("RewardEscrowV2");
@@ -124,10 +124,12 @@ contract Migration_AljanahOptimism is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[0] = address(new_RewardEscrowV2_contract);
         addressresolver_importAddresses_destinations_0_1[1] = address(new_Synthetix_contract);
         addressresolver_importAddresses_destinations_0_1[2] = address(new_RewardEscrowV2Frozen_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_names_0_0, addressresolver_importAddresses_destinations_0_1);
+        addressresolver_i.importAddresses(
+            addressresolver_importAddresses_names_0_0,
+            addressresolver_importAddresses_destinations_0_1
+        );
     }
 
-    
     function addressresolver_rebuildCaches_1() internal {
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](11);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(new_Synthetix_contract);
