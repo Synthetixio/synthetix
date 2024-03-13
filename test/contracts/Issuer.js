@@ -412,7 +412,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
 
-							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
+							// and since we are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
@@ -491,7 +491,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await sUSDContract.issue(account3, toUnit('10'));
 							await sUSDContract.issue(account1, toUnit('1'));
 
-							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
+							// and since we are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
@@ -527,7 +527,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 							await sETHContract.issue(account1, toUnit('1')); // 100 sUSD worth
 
-							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
+							// and since we are bypassing the usual issuance flow here, we must cache the debt snapshot
 							assert.bnEqual(await synthetix.totalIssuedSynths(sUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
