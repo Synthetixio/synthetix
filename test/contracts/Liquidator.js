@@ -106,6 +106,11 @@ contract('Liquidator', accounts => {
 		// remove burn lock to allow burning
 		await systemSettings.setMinimumStakeTime(0, { from: owner });
 
+		// set permitted escrow creators
+		await rewardEscrowV2.setPermittedEscrowCreator(owner, true, {
+			from: owner,
+		});
+
 		// approve creating escrow entries from owner
 		await synthetix.approve(rewardEscrowV2.address, ethers.constants.MaxUint256, { from: owner });
 

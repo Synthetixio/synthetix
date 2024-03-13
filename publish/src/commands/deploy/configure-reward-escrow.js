@@ -15,6 +15,8 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		// Synthetix,
 		RewardEscrowV2Storage,
 		RewardEscrowV2Frozen,
+		LiquidatorRewards,
+		DebtMigratorOnOptimism,
 	} = deployer.deployedContracts;
 
 	// SIP-252 rewards escrow migration
@@ -102,4 +104,30 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		writeArg: addressOf(RewardEscrowV2),
 		comment: 'Ensure the RewardsDistribution can read the RewardEscrowV2 address',
 	});
+
+	if (DebtMigratorOnOptimism) {
+		await runStep({
+			contract: 'RewardEscrowV2',
+			target: RewardEscrowV2,
+			read: 'permittedEscrowCreators',
+			readArg: addressOf(DebtMigratorOnOptimism),
+			expected: input => input,
+			write: 'setPermittedEscrowCreator',
+			writeArg: [addressOf(DebtMigratorOnOptimism), true],
+			comment: 'Allow escrow entry creation by DebtMigratorOnOptimism',
+		});
+	}
+
+	if (RewardEscrowV2.permittedEscrowCreators) {
+		await runStep({
+			contract: 'RewardEscrowV2',
+			target: RewardEscrowV2,
+			read: 'permittedEscrowCreators',
+			readArg: addressOf(LiquidatorRewards),
+			expected: input => input,
+			write: 'setPermittedEscrowCreator',
+			writeArg: [addressOf(LiquidatorRewards), true],
+			comment: 'Allow escrow entry creation by LiquidatorRewards',
+		});
+	}
 };

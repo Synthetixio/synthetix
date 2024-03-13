@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.99.1",
+	"version": "2.100.0",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -87,7 +87,7 @@
 		"@uniswap/token-lists": "^1.0.0-beta.11",
 		"ajv": "^6.12.4",
 		"async": "^3.2.3",
-		"axios": "^0.21.2",
+		"axios": "^0.28.0",
 		"bn.js": "^4.11.8",
 		"chai": "^4.3.7",
 		"chalk": "^2.4.2",

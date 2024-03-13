@@ -47,6 +47,8 @@ describe('depositAndMigrateEscrow() integration tests (L1, L2)', () => {
 		before('create and append escrow entries', async () => {
 			user = ctx.l1.users.owner;
 
+			await RewardEscrowV2.connect(user).setPermittedEscrowCreator(user.address, true);
+
 			escrowEntriesData = await appendEscrows({
 				ctx: ctx.l1,
 				user,

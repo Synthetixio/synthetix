@@ -191,7 +191,7 @@ contract('ProxyPerpsV2', async accounts => {
 			assert.equal(targetRoute.isView, route.isView);
 		});
 
-		it('gets the nil target selector for an unkown target', async () => {
+		it('gets the nil target selector for an unknown target', async () => {
 			// Add 1st selector
 			route = sampleRoutes[0];
 
