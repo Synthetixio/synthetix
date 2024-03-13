@@ -89,13 +89,15 @@
 			},
 			"RewardEscrowV2Storage": {
 				"address": "0xFab8F34e42f59F2Eb3bb68c2Eb8039D5ea35d1eE",
-				"status": "current",
-				"keccak256": "0x4d370d01e7b6e8e332136b79a25e335672857603431ed00559f78a591292a831"
+				"status": "replaced",
+				"keccak256": "0x4d370d01e7b6e8e332136b79a25e335672857603431ed00559f78a591292a831",
+				"replaced_in": "v2.100.0"
 			},
 			"RewardEscrowV2": {
 				"address": "0xBd2117D4D53F9cedbdA10E216b2b857366b674ad",
-				"status": "current",
-				"keccak256": "0xdebe9442e61b1bdba7c66a8ed2f2e9796d6f9f82cf1fc5d09dfcca0700137347"
+				"status": "replaced",
+				"keccak256": "0xdebe9442e61b1bdba7c66a8ed2f2e9796d6f9f82cf1fc5d09dfcca0700137347",
+				"replaced_in": "v2.100.0"
 			},
 			"SynthetixEscrow": {
 				"address": "0xfcD8a3C86272CAb1E409117ee369dc3a79683418",
@@ -3461,6 +3463,31 @@
 				"address": "0xC26e4f89b625E2b1BEF4365A3C7B1E0A996DC0a4",
 				"status": "current",
 				"keccak256": "0x802114d7a8bc20ac2c520f4c2d4f1b23399a428e2c848112da31bcc5bfa5ecf8"
+			}
+		}
+	},
+	"v2.100.0": {
+		"tag": "v2.100.0",
+		"fulltag": "v2.100.0",
+		"release": "Aljanah",
+		"network": "sepolia",
+		"date": "2024-03-13T10:02:07-04:00",
+		"commit": "88273b6ab821a32ac393c67e5c8411d20ca57cd2",
+		"contracts": {
+			"RewardEscrowV2Storage": {
+				"address": "0x315293F2D0f32E0971A002fccA318b2ce6E4038F",
+				"status": "current",
+				"keccak256": "0x0b672940ca953424b3d2a730f667cdbd42062b0c1a9d00bf176cebd21a8c0dcf"
+			},
+			"RewardEscrowV2": {
+				"address": "0x3Bb663E5988753B9b3f52E280548DC9072082973",
+				"status": "current",
+				"keccak256": "0xcc860d0720a09fbaa4d10d458645050e143fe4dc9d460af383e99db1e25ce7fe"
+			},
+			"RewardEscrowV2Frozen": {
+				"address": "0xbfd66fa5668612afDdAAf48F818665F0b34128C6",
+				"status": "current",
+				"keccak256": "0x96ef196130a29ca6e6e47d321f52d4c9984283a8cdc2a183f4228f24659cda06"
 			}
 		}
 	}

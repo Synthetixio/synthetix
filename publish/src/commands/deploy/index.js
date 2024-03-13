@@ -53,6 +53,7 @@ const systemAndParameterCheck = require('./system-and-parameter-check');
 // const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
+	gasLimit: '8000000',
 	priorityGasPrice: '0.0001',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
 	network: 'goerli',
@@ -66,6 +67,7 @@ const deploy = async ({
 	deploymentPath,
 	dryRun = false,
 	freshDeploy,
+	gasLimit = DEFAULTS.gasLimit,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	generateSolidity = false,
@@ -197,6 +199,7 @@ const deploy = async ({
 		configFile,
 		deployment,
 		deploymentFile,
+		gasLimit,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
 		network,
@@ -589,6 +592,7 @@ module.exports = {
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
 			)
+			.option('--gas-limit <value>', 'Maximum amount of gas to be used', DEFAULTS.gasLimit)
 			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
 			.option(
 				'--max-priority-fee-per-gas <value>',

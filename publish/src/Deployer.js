@@ -22,6 +22,7 @@ class Deployer {
 		deployment,
 		deploymentFile,
 		dryRun,
+		gasLimit,
 		gasPrice,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
@@ -40,6 +41,7 @@ class Deployer {
 		this.deployment = deployment;
 		this.deploymentFile = deploymentFile;
 		this.dryRun = dryRun;
+		this.gasLimit = gasLimit;
 		this.gasPrice = gasPrice;
 		this.maxFeePerGas = maxFeePerGas;
 		this.maxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -139,6 +141,7 @@ class Deployer {
 		const params = await assignGasOptions({
 			tx: {},
 			provider: this.provider,
+			gasLimit: this.gasLimit,
 			maxFeePerGas: this.maxFeePerGas,
 			maxPriorityFeePerGas: this.maxPriorityFeePerGas,
 		});
