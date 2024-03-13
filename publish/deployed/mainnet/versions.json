@@ -4589,8 +4589,9 @@
 			},
 			"RewardEscrowV2": {
 				"address": "0xAc86855865CbF31c8f9FBB68C749AD5Bd72802e3",
-				"status": "current",
-				"keccak256": "0x3d38255a60ff43faeff6ac6a330213f7bdc77882cfc71ce3fa26f6f93418f5cc"
+				"status": "replaced",
+				"keccak256": "0x3d38255a60ff43faeff6ac6a330213f7bdc77882cfc71ce3fa26f6f93418f5cc",
+				"replaced_in": "v2.100.0"
 			},
 			"Liquidator": {
 				"address": "0x05e661738E3A3C6F254d9c29a40Dad0Ec357ea85",
@@ -4719,8 +4720,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0xd0dA9cBeA9C3852C5d63A95F9ABCC4f6eA0F9032",
-				"status": "current",
-				"keccak256": "0xfb54a46c4b98896c043ae676b3925f939533f43203c14f2662f7b0e042b0ac55"
+				"status": "replaced",
+				"keccak256": "0xfb54a46c4b98896c043ae676b3925f939533f43203c14f2662f7b0e042b0ac55",
+				"replaced_in": "v2.100.0"
 			},
 			"Issuer": {
 				"address": "0xca68a3D663483515a9D434E854AB59A41b3A523c",
@@ -4761,6 +4763,26 @@
 				"address": "0x94433f0DA8B5bfb473Ea8cd7ad10D9c8aef4aB7b",
 				"status": "current",
 				"keccak256": "0x71b5addb5aaa4ce3ff21f68a5795b3ad75d5aa4f549fca5f0ed999a89580af0b"
+			}
+		}
+	},
+	"v2.100.0": {
+		"tag": "v2.100.0",
+		"fulltag": "v2.100.0",
+		"release": "Aljanah",
+		"network": "mainnet",
+		"date": "2024-03-13T10:02:07-04:00",
+		"commit": "88273b6ab821a32ac393c67e5c8411d20ca57cd2",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xd711709eFc452152B7ad11DbD01ed4B69c9421B3",
+				"status": "current",
+				"keccak256": "0xa4adacf15426be1f1af675a149af5c8d6deec9f8d3ee1dab54b105d3c25c55f3"
+			},
+			"RewardEscrowV2": {
+				"address": "0xFAd53Cc9480634563E8ec71E8e693Ffd07981d38",
+				"status": "current",
+				"keccak256": "0xa22aaba9eeb27e9180b7590c1fb535ec5802a1d86fa9799d126ac176a11ecfc9"
 			}
 		}
 	}
