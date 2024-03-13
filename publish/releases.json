@@ -845,8 +845,7 @@
 		{
 			"sip": 299,
 			"layer": "both",
-			"sources": ["Synthetix", "Liquidator"],
-			"released": "both"
+			"sources": ["RewardEscrowV2", "Synthetix", "Liquidator"]
 		},
 		{
 			"sip": 2000,
@@ -1983,6 +1982,23 @@
 			},
 			"sips": [2052, 2053, 2054, 2056],
 			"released": true
+		},
+		{
+			"name": "Aljanah",
+			"version": {
+				"major": 2,
+				"minor": 100
+			},
+			"sips": [299]
+		},
+		{
+			"name": "Aljanah (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 100
+			},
+			"sips": [299]
 		}
 	]
 }
