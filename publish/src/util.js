@@ -284,7 +284,7 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	}
 };
 
-const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerGas }) => {
+const assignGasOptions = async ({ tx, provider, gasLimit, maxFeePerGas, maxPriorityFeePerGas }) => {
 	// only add EIP-1559 options if the network supports EIP-1559
 	const gasOptions = {};
 
@@ -294,6 +294,7 @@ const assignGasOptions = async ({ tx, provider, maxFeePerGas, maxPriorityFeePerG
 	} catch (_) {} // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
 		gasOptions.type = 2;
+		if (gasLimit) gasOptions.gasLimit = parseUnits(gasLimit.toString() || '8000000', 'wei');
 		if (maxFeePerGas)
 			gasOptions.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
 		if (maxPriorityFeePerGas)

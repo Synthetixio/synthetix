@@ -169,7 +169,6 @@ const deployMigration = async ({
 		signer
 	);
 
-	// TODO: hardcode the contract address to avoid re-deploying when re-running it
 	const deployedContract = await migrationContract.deploy();
 	await deployedContract.deployTransaction.wait();
 	console.log(green(`\nSuccessfully deployed: ${deployedContract.address}\n`));

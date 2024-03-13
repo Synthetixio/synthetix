@@ -132,8 +132,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 			let newEntryId;
 
 			before('set owner as permitted escrow creator', async () => {
-				if (!ctx.fork)
-					await RewardEscrowV2.connect(owner).setPermittedEscrowCreator(owner.address, true);
+				await RewardEscrowV2.connect(owner).setPermittedEscrowCreator(owner.address, true);
 			});
 
 			it('can createEscrowEntry', async () => {
