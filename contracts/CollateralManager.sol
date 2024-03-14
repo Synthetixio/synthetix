@@ -403,7 +403,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
         for (uint i = 0; i < synthNamesInResolver.length; i++) {
             if (_synths.contains(synthNamesInResolver[i])) {
-                // Remove it from the the address set lib.
+                // Remove it from the address set lib.
                 _synths.remove(synthNamesInResolver[i]);
                 _currencyKeys.remove(synthKeys[i]);
                 delete synthsByKey[synthKeys[i]];
@@ -462,7 +462,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
         for (uint i = 0; i < synths.length; i++) {
             if (_shortableSynths.contains(synths[i])) {
-                // Remove it from the the address set lib.
+                // Remove it from the address set lib.
                 _shortableSynths.remove(synths[i]);
 
                 bytes32 synthKey = _synth(synths[i]).currencyKey();
