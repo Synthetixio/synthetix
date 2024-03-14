@@ -5,7 +5,7 @@ version = "<%= package.version %>"
 # overrides the deployed contracts used by the deployer
 # not to be confused with the cannon network
 [setting.network]
-defaultValue = "goerli"
+defaultValue = "sepolia"
 
 [run.synthetix]
 exec = "./publish/cannon.js"

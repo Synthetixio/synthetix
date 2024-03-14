@@ -491,7 +491,7 @@ module.exports = {
 			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
 			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'sepolia')
 			.option('-s, --skip-acceptance', 'Skip ownership acceptance checks.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('--is-test', 'Is a test deployment (on a forked network as it were mainnet).')

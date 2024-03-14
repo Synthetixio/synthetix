@@ -76,16 +76,6 @@ module.exports = {
 			chainId: 10,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		goerli: {
-			url: process.env.PROVIDER_URL?.replace('network', 'goerli') || 'http://localhost:8545',
-			chainId: 5,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-		},
-		'goerli-ovm': {
-			url: process.env.OVM_GOERLI_PROVIDER_URL || 'https://goerli.optimism.io/',
-			chainId: 420,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-		},
 		sepolia: {
 			url:
 				process.env.PROVIDER_URL?.replace('network', 'sepolia') ||
@@ -96,11 +86,6 @@ module.exports = {
 		'sepolia-ovm': {
 			url: process.env.OVM_SEPOLIA_PROVIDER_URL || 'https://sepolia.optimism.io/',
 			chainId: 11155420,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-		},
-		rinkeby: {
-			url: process.env.PROVIDER_URL?.replace('network', 'rinkeby') || '',
-			chainId: 4,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		local: {
@@ -125,7 +110,7 @@ module.exports = {
 	},
 	etherscan: {
 		apiKey: {
-			goerli: process.env.ETHERSCAN_KEY,
+			sepolia: process.env.ETHERSCAN_KEY,
 		},
 	},
 	cannon: {

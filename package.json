@@ -54,8 +54,7 @@
 		"publish/*.json",
 		"publish/deployed/mainnet/*",
 		"publish/deployed/mainnet-ovm/*",
-		"publish/deployed/goerli/*",
-		"publish/deployed/goerli-ovm/*",
+		"publish/deployed/sepolia/*",
 		"publish/deployed/sepolia-ovm/*",
 		"publish/deployed/local-ovm/*"
 	],
