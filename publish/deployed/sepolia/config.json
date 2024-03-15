@@ -6,79 +6,79 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": true
+		"deploy": false
 	},
 	"DelegateApprovals": {
-		"deploy": true
+		"deploy": false
 	},
 	"DelegateApprovalsEternalStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"Depot": {
-		"deploy": true
+		"deploy": false
 	},
 	"EscrowChecker": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeState": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolEternalStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardEscrow": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardsDistribution": {
-		"deploy": true
+		"deploy": false
 	},
 	"SupplySchedule": {
-		"deploy": true
+		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixState": {
-		"deploy": true
+		"deploy": false
 	},
 	"SystemStatus": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthUtil": {
-		"deploy": true
+		"deploy": false
 	},
 	"DappMaintenance": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyFeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxySynthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"SafeDecimalMath": {
 		"deploy": false
@@ -87,88 +87,88 @@
 		"deploy": false
 	},
 	"TokenStateSynthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"FlexibleStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": true
+		"deploy": false
 	},
 	"TradingRewards": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralErc20": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralEth": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralManager": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralManagerState": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralShort": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralUtil": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardEscrowV2": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixBridgeToOptimism": {
-		"deploy": true
+		"deploy": false
 	},
 	"VirtualSynthMastercopy": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixBridgeEscrow": {
-		"deploy": true
+		"deploy": false
 	},
 	"EtherWrapper": {
-		"deploy": true
+		"deploy": false
 	},
 	"NativeEtherWrapper": {
-		"deploy": true
+		"deploy": false
 	},
 	"WrapperFactory": {
-		"deploy": true
+		"deploy": false
 	},
 	"OwnerRelayOnEthereum": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthRedeemer": {
-		"deploy": true
+		"deploy": false
 	},
 	"SystemSettingsLib": {
 		"deploy": false
 	},
 	"SynthetixDebtShare": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeCircuitBreaker": {
-		"deploy": true
+		"deploy": false
 	},
 	"SignedSafeDecimalMath": {
 		"deploy": false
 	},
 	"FuturesMarketManager": {
-		"deploy": true
+		"deploy": false
 	},
 	"OneNetAggregatorIssuedSynths": {
 		"deploy": false
@@ -177,36 +177,33 @@
 		"deploy": false
 	},
 	"Liquidator": {
-		"deploy": true
+		"deploy": false
 	},
 	"LiquidatorRewards": {
-		"deploy": true
-	},
-	"OneNetAggregatorsDEFI": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"CircuitBreaker": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardEscrowV2Storage": {
-		"deploy": true
+		"deploy": false
 	},
 	"DirectIntegrationManager": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeSettlementLib": {
 		"deploy": false
 	},
 	"DebtMigratorOnEthereum": {
-		"deploy": true
+		"deploy": false
 	}
 }

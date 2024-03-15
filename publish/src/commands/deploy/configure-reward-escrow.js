@@ -14,15 +14,15 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 		RewardsDistribution,
 		// Synthetix,
 		RewardEscrowV2Storage,
-		RewardEscrowV2Frozen,
+		// RewardEscrowV2Frozen,
 		LiquidatorRewards,
 		DebtMigratorOnOptimism,
 	} = deployer.deployedContracts;
 
 	// SIP-252 rewards escrow migration
 	// get either previous address, or newly deployed address (for integration tests)
-	const frozenOrPreviousEscrow =
-		RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
+	// const frozenOrPreviousEscrow =
+	// 	RewardEscrowV2Frozen || (await deployer.getExistingContract({ contract: 'RewardEscrowV2' }));
 
 	// // close account merging on previous contract
 	// // this breaks account merging
@@ -83,16 +83,16 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	// this can only happen once, as this contract is immutable
 	// This step is performed last because beyond this point any new entries on previous contract will be ignored
 	// Note: added to RewardEscrowV2Storage to non-upgradable.json after the Aspidiske release.
-	await runStep({
-		contract: 'RewardEscrowV2Storage',
-		target: RewardEscrowV2Storage,
-		read: 'fallbackRewardEscrow',
-		expected: input => input !== ZERO_ADDRESS, // only configure if not configured
-		write: 'setFallbackRewardEscrow',
-		writeArg: addressOf(frozenOrPreviousEscrow),
-		comment:
-			'Ensure that RewardEscrowV2Storage contract is initialized with address of RewardEscrowV2Frozen',
-	});
+	// await runStep({
+	// 	contract: 'RewardEscrowV2Storage',
+	// 	target: RewardEscrowV2Storage,
+	// 	read: 'fallbackRewardEscrow',
+	// 	expected: input => input !== ZERO_ADDRESS, // only configure if not configured
+	// 	write: 'setFallbackRewardEscrow',
+	// 	writeArg: addressOf(frozenOrPreviousEscrow),
+	// 	comment:
+	// 		'Ensure that RewardEscrowV2Storage contract is initialized with address of RewardEscrowV2Frozen',
+	// });
 
 	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
 	await runStep({
