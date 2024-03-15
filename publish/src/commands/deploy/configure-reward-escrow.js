@@ -1,9 +1,9 @@
 'use strict';
 
 const { gray } = require('chalk');
-const {
-	constants: { ZERO_ADDRESS },
-} = require('../../../..');
+// const {
+// 	constants: { ZERO_ADDRESS },
+// } = require('../../../..');
 
 module.exports = async ({ addressOf, deployer, runStep }) => {
 	console.log(gray(`\n------ CONFIGURE REWARD ESCROW V2 (MIGRATION) ------\n`));
