@@ -64,7 +64,7 @@ async function deploy(runtime, networkVariant) {
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
 	// get the signer that we want to have for the deployer
-	let signer = await runtime.getDefaultSigner({});
+	const cannonSigner = await runtime.getDefaultSigner({});
 	try {
 		// if cannon can give us the signer for the owner address, we should use that
 		const ownerAddress = synthetix.getUsers({ network, useOvm, user: 'owner' }).address;
@@ -74,13 +74,16 @@ async function deploy(runtime, networkVariant) {
 		console.log(err);
 	}
 
+	const provider = new hre.ethers.providers.Web3Provider(runtime.provider);
+	const signer = provider.getSigner(cannonSigner.address);
+
 	await deployInstance({
 		addNewSynths: true,
 		buildPath,
 		useOvm,
 		network,
 		freshDeploy: networkVariant.startsWith('local'),
-		provider: runtime.provider,
+		provider,
 		signer,
 	});
 
