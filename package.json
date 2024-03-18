@@ -107,7 +107,7 @@
 		"execa": "^4.1.0",
 		"fs-extra": "^9.0.1",
 		"hardhat": "^2.12.7",
-		"hardhat-cannon": "^2.1.2",
+		"hardhat-cannon": "^2.11.20",
 		"hardhat-gas-reporter": "^1.0.9",
 		"hardhat-interact": "^0.2.3",
 		"husky": "^4.3.0",
