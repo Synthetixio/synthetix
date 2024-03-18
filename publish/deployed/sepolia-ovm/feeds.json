@@ -344,22 +344,18 @@
 	},
 	"CVX": {
 		"asset": "CVX",
-		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472",
-		"fakefeed": true
+		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472"
 	},
 	"JUP": {
 		"asset": "JUP",
-		"feed": "0x854F28917357e2357dD027448D20BB55857B74e8",
-		"fakefeed": true
+		"feed": "0xD3de9e2aa19C5c719d182eFc850A12250A6E2cA3"
 	},
 	"PENDLE": {
 		"asset": "PENDLE",
-		"feed": "0x01170919FCaf142C91F65EB78fa023462E9E6472",
-		"fakefeed": true
+		"feed": "0x465CA63aB4C55Efd6088D2c1B013A8441D8f5f2e"
 	},
 	"STRK": {
 		"asset": "STRK",
-		"feed": "0x854F28917357e2357dD027448D20BB55857B74e8",
-		"fakefeed": true
+		"feed": "0xb41A140653440FE14721ba72831F6C054F7D1634"
 	}
 }
