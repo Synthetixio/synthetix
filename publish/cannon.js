@@ -64,11 +64,11 @@ async function deploy(runtime, networkVariant) {
 	const buildPath = path.join(__dirname, '..', synthetix.constants.BUILD_FOLDER);
 
 	// get the signer that we want to have for the deployer
-	const cannonSigner = await runtime.getDefaultSigner({});
+	let cannonSigner = await runtime.getDefaultSigner({});
 	try {
 		// if cannon can give us the signer for the owner address, we should use that
 		const ownerAddress = synthetix.getUsers({ network, useOvm, user: 'owner' }).address;
-		signer = await runtime.getSigner(ownerAddress);
+		cannonSigner = await runtime.getSigner(ownerAddress);
 	} catch (err) {
 		// otherwise we want to use the cannon default signer, which is set above
 		console.log(err);
