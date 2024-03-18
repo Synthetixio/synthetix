@@ -109,7 +109,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 				it('reverts on call to migrateAccountEscrowBalances', async () => {
 					// fork has an old contract so should fail at the first modifier
-					const revertMsg = ctx.fork ? 'during setup' : `Only the contract owner`;
+					const revertMsg = `Only the contract owner`;
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
 						revertMsg
