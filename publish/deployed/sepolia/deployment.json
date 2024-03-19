@@ -500,8 +500,8 @@
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
-				0,
-				0
+				"0",
+				"0"
 			]
 		},
 		"EscrowChecker": {
