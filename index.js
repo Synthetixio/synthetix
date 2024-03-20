@@ -6,8 +6,7 @@ const abiDecoder = require('abi-decoder');
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
 	mainnet: require('./publish/deployed/mainnet'),
-	goerli: require('./publish/deployed/goerli'),
-	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	sepolia: require('./publish/deployed/sepolia'),
 	'sepolia-ovm': require('./publish/deployed/sepolia-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
@@ -17,14 +16,11 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli', 'sepolia'];
+const networks = ['local', 'mainnet', 'sepolia'];
 
 const chainIdMapping = Object.entries({
 	1: {
 		network: 'mainnet',
-	},
-	5: {
-		network: 'goerli',
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -36,9 +32,8 @@ const chainIdMapping = Object.entries({
 		network: 'mainnet',
 		useOvm: true,
 	},
-	420: {
-		network: 'goerli',
-		useOvm: true,
+	11155111: {
+		network: 'sepolia',
 	},
 	11155420: {
 		network: 'sepolia',
@@ -163,20 +158,16 @@ const defaults = {
 
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
-		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
 		// Adding zero addresses here - we don't actually support renBTC anymore.
+		'mainnet-ovm': '0x0000000000000000000000000000000000000000',
 		sepolia: '0x0000000000000000000000000000000000000000',
 		'sepolia-ovm': '0x0000000000000000000000000000000000000000',
-		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		sepolia: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
-		'goerli-ovm': '0x4200000000000000000000000000000000000006',
 		'sepolia-ovm': '0x4200000000000000000000000000000000000006',
-		// TODO: get actual goerli-ovm address
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
@@ -734,11 +725,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			owner: '0x6d4a64C57612841c2C6745dB2a4E4db34F002D20',
 			deployer: '0xEde8a407913A874Dd7e3d5B731AFcA135D30375E',
 		}),
-		goerli: Object.assign({}, base, {
-			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
-			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
-		}),
-		'goerli-ovm': Object.assign({}, base, {
+		sepolia: Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),

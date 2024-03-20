@@ -182,9 +182,6 @@
 	"LiquidatorRewards": {
 		"deploy": false
 	},
-	"OneNetAggregatorsDEFI": {
-		"deploy": false
-	},
 	"TokenStatesBTC": {
 		"deploy": false
 	},
