@@ -453,10 +453,10 @@ module.exports = {
 		program
 			.command('connect-bridge')
 			.description('Configures the bridge between an L1-L2 instance pair.')
-			.option('--l1-network <value>', 'The name of the target L1 network', 'goerli')
-			.option('--l2-network <value>', 'The name of the target L2 network', 'goerli')
+			.option('--l1-network <value>', 'The name of the target L1 network', 'sepolia')
+			.option('--l2-network <value>', 'The name of the target L2 network', 'sepolia')
 			.option('--l1-provider-url <value>', 'The L1 provider to use', undefined)
-			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://goerli.optimism.io')
+			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://sepolia.optimism.io')
 			.option('--l1-deployment-path <value>', 'The path of the L1 deployment to target')
 			.option('--l2-deployment-path <value>', 'The path of the L2 deployment to target')
 			.option('--l1-private-key <value>', 'Optional private key for signing L1 transactions')

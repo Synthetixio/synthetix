@@ -14,7 +14,7 @@ const {
 const { loadAndCheckRequiredSources } = require('../util');
 
 const DEFAULTS = {
-	network: 'goerli',
+	network: 'sepolia',
 };
 
 const { stringify } = require('../util');

@@ -371,7 +371,7 @@ module.exports = {
 				false
 			)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 350e3)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'goerli')
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'sepolia')
 			.option(
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'

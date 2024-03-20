@@ -31,7 +31,7 @@ const {
 
 const DEFAULTS = {
 	priorityGasPrice: '0.0001',
-	network: 'goerli',
+	network: 'sepolia',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 	rewardsToDeploy: [],
 };
