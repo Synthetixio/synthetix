@@ -535,7 +535,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         difference = latestCumulative.sub(entryRate);
         index = newIndex;
 
-        // 5. Update rates with the lastest cumulative rate. This also updates the time.
+        // 5. Update rates with the latest cumulative rate. This also updates the time.
         isShort ? updateShortRates(currency, latestCumulative) : updateBorrowRates(latestCumulative);
     }
 
