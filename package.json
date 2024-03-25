@@ -143,7 +143,7 @@
 		"openzeppelin-solidity": "^4.8.1",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
-		"web3-utils": "^1.2.2"
+		"web3-utils": "^4.2.1"
 	},
 	"overrides": {
 		"flat": "5.0.2"
