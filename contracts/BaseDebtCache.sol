@@ -138,10 +138,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
-    function _issuedSynthValues(
-        bytes32[] memory currencyKeys,
-        uint[] memory rates
-    ) internal view returns (uint[] memory values) {
+    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
+        internal
+        view
+        returns (uint[] memory values)
+    {
         uint numValues = currencyKeys.length;
         values = new uint[](numValues);
         ISynth[] memory synths = issuer().getSynths(currencyKeys);
@@ -157,9 +158,16 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return (values);
     }
 
-    function _currentSynthDebts(
-        bytes32[] memory currencyKeys
-    ) internal view returns (uint[] memory snxIssuedDebts, uint _futuresDebt, uint _excludedDebt, bool anyRateIsInvalid) {
+    function _currentSynthDebts(bytes32[] memory currencyKeys)
+        internal
+        view
+        returns (
+            uint[] memory snxIssuedDebts,
+            uint _futuresDebt,
+            uint _excludedDebt,
+            bool anyRateIsInvalid
+        )
+    {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
@@ -168,9 +176,16 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
-    function currentSynthDebts(
-        bytes32[] calldata currencyKeys
-    ) external view returns (uint[] memory debtValues, uint futuresDebt, uint excludedDebt, bool anyRateIsInvalid) {
+    function currentSynthDebts(bytes32[] calldata currencyKeys)
+        external
+        view
+        returns (
+            uint[] memory debtValues,
+            uint futuresDebt,
+            uint excludedDebt,
+            bool anyRateIsInvalid
+        )
+    {
         return _currentSynthDebts(currencyKeys);
     }
 
@@ -295,7 +310,16 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _currentDebt();
     }
 
-    function cacheInfo() external view returns (uint debt, uint timestamp, bool isInvalid, bool isStale) {
+    function cacheInfo()
+        external
+        view
+        returns (
+            uint debt,
+            uint timestamp,
+            bool isInvalid,
+            bool isStale
+        )
+    {
         uint time = _cacheTimestamp;
         return (_cachedDebt, time, _cacheInvalid, _cacheStale(time));
     }
