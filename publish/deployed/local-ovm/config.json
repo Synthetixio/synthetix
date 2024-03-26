@@ -236,6 +236,9 @@
 	"SynthRedeemer": {
 		"deploy": true
 	},
+	"DynamicSynthRedeemer": {
+		"deploy": true
+	},
 	"OneNetAggregatorIssuedSynths": {
 		"deploy": true
 	},
