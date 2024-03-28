@@ -4,9 +4,9 @@ import "./IERC20.sol";
 
 interface IDynamicSynthRedeemer {
     // Rate applied to chainlink price for redemptions
-    function discountRate() external view returns (uint);
+    function getDiscountRate() external view returns (uint);
 
-    function redeem(IERC20 synthProxy) external;
+    function redeem(IERC20 synthProxy, bytes32 currencyKey) external;
 
     function redeemAll(IERC20[] calldata synthProxies, bytes32[] calldata currencyKeys) external;
 

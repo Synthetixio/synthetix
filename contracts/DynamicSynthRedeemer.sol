@@ -16,17 +16,17 @@ import "./interfaces/IExchangeRates.sol";
 contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     using SafeDecimalMath for uint;
 
-    // Rate applied to chainlink price for redemptions
-    uint private _discountRate;
-
     bytes32 public constant CONTRACT_NAME = "DynamicSynthRedeemer";
 
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
+    // Rate applied to chainlink price for redemptions
+    uint public discountRate;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
-        _discountRate = SafeDecimalMath.unit();
+        discountRate = SafeDecimalMath.unit();
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -48,14 +48,14 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function discountRate() external view returns (uint) {
-        return _discountRate;
+    function getDiscountRate() external view returns (uint) {
+        return discountRate;
     }
 
     function setDiscountRate(uint newRate) external onlyOwner {
         require(newRate >= 0, "Invalid rate");
-        _discountRate = newRate;
-        emit DiscountRateUpdated(_discountRate);
+        discountRate = newRate;
+        emit DiscountRateUpdated(discountRate);
     }
 
     function redeemAll(IERC20[] calldata synthProxies, bytes32[] calldata currencyKeys) external {
@@ -84,7 +84,7 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         uint amountOfSynth,
         bytes32 currencyKey
     ) internal {
-        uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(_discountRate);
+        uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(discountRate);
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
         issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
