@@ -93,13 +93,21 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferFrom(address from, address to, uint value) public onlyProxyOrInternal returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint value
+    ) public onlyProxyOrInternal returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
     }
 
-    function transferFromAndSettle(address from, address to, uint value) public onlyProxyOrInternal returns (bool) {
+    function transferFromAndSettle(
+        address from,
+        address to,
+        uint value
+    ) public onlyProxyOrInternal returns (bool) {
         // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
@@ -232,7 +240,11 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _internalTransferFrom(address from, address to, uint value) internal returns (bool) {
+    function _internalTransferFrom(
+        address from,
+        address to,
+        uint value
+    ) internal returns (bool) {
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
