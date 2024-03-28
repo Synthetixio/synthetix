@@ -205,9 +205,15 @@ contract('Synth', async accounts => {
 				);
 			});
 
-			it('transfer does not revert from a whitelisted contract', async () => {
+			it('transfer does not revert from whitelisted contracts', async () => {
 				// set owner as SynthRedeemer
 				await addressResolver.importAddresses(['SynthRedeemer'].map(toBytes32), [owner], {
+					from: owner,
+				});
+				await sUSDImpl.transfer(account1, amount, { from: owner });
+
+				// set owner as DynamicSynthRedeemer
+				await addressResolver.importAddresses(['DynamicSynthRedeemer'].map(toBytes32), [owner], {
 					from: owner,
 				});
 				await sUSDImpl.transfer(account1, amount, { from: owner });
