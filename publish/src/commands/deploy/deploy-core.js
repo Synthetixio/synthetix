@@ -333,7 +333,7 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'DynamicSynthRedeemer',
 		deps: ['AddressResolver'],
-		args: [addressOf(readProxyForResolver)],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
