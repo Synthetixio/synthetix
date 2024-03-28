@@ -93,21 +93,13 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return super._internalTransfer(messageSender, to, value);
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint value
-    ) public onlyProxyOrInternal returns (bool) {
+    function transferFrom(address from, address to, uint value) public onlyProxyOrInternal returns (bool) {
         _ensureCanTransfer(from, value);
 
         return _internalTransferFrom(from, to, value);
     }
 
-    function transferFromAndSettle(
-        address from,
-        address to,
-        uint value
-    ) public onlyProxyOrInternal returns (bool) {
+    function transferFromAndSettle(address from, address to, uint value) public onlyProxyOrInternal returns (bool) {
         // Exchanger.settle() ensures synth is active
         (, , uint numEntriesSettled) = exchanger().settle(from, currencyKey);
 
@@ -240,11 +232,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _internalTransferFrom(
-        address from,
-        address to,
-        uint value
-    ) internal returns (bool) {
+    function _internalTransferFrom(address from, address to, uint value) internal returns (bool) {
         // Skip allowance update in case of infinite allowance
         if (tokenState.allowance(from, messageSender) != uint(-1)) {
             // Reduce the allowance by the amount we're transferring.
@@ -270,7 +258,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         _;
     }
 
-    modifier onlyProxyOrInternal {
+    modifier onlyProxyOrInternal() {
         _onlyProxyOrInternal();
         _;
     }
@@ -291,11 +279,12 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /// which isn't supported due to SIP-238 for other callers
     function _isInternalTransferCaller(address caller) internal view returns (bool) {
         // These entries are not required or cached in order to allow them to not exist (==address(0))
-        // e.g. due to not being available on L2 or at some future point in time.
+        // e.g. due to not being available on L2 or at some future point time.
         return
             // ordered to reduce gas for more frequent calls
             caller == resolver.getAddress("CollateralShort") ||
             // not used frequently
+            caller == resolver.getAddress("DynamicSynthRedeemer") ||
             caller == resolver.getAddress("SynthRedeemer") ||
             caller == resolver.getAddress("WrapperFactory") || // transfer not used by users
             // legacy
