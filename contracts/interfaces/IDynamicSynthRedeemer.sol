@@ -10,5 +10,9 @@ interface IDynamicSynthRedeemer {
 
     function redeemAll(IERC20[] calldata synthProxies, bytes32[] calldata currencyKeys) external;
 
-    function redeemPartial(IERC20 synthProxy, uint amountOfSynth, bytes32 currencyKey) external;
+    function redeemPartial(
+        IERC20 synthProxy,
+        uint amountOfSynth,
+        bytes32 currencyKey
+    ) external;
 }

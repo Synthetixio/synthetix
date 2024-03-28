@@ -68,14 +68,22 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         _redeem(synthProxy, synthProxy.balanceOf(msg.sender), currencyKey);
     }
 
-    function redeemPartial(IERC20 synthProxy, uint amountOfSynth, bytes32 currencyKey) external {
+    function redeemPartial(
+        IERC20 synthProxy,
+        uint amountOfSynth,
+        bytes32 currencyKey
+    ) external {
         // technically this check isn't necessary - Synth.burn would fail due to safe sub,
         // but this is a useful error message to the user
         require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
         _redeem(synthProxy, amountOfSynth, currencyKey);
     }
 
-    function _redeem(IERC20 synthProxy, uint amountOfSynth, bytes32 currencyKey) internal {
+    function _redeem(
+        IERC20 synthProxy,
+        uint amountOfSynth,
+        bytes32 currencyKey
+    ) internal {
         uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(_discountRate);
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
