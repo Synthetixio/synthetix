@@ -25,7 +25,7 @@ module.exports = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: 6.0e6,
+				gasLimit: 12.0e6,
 				contract: 'DebtCache',
 				target: DebtCache,
 				write: 'takeDebtSnapshot',
