@@ -1072,7 +1072,7 @@
 		{
 			"sip": 2059,
 			"layer": "both",
-			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer", "Synths.*"]
+			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer"]
 		}
 	],
 	"releases": [

@@ -270,7 +270,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         _;
     }
 
-    modifier onlyProxyOrInternal() {
+    modifier onlyProxyOrInternal {
         _onlyProxyOrInternal();
         _;
     }
@@ -291,12 +291,11 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /// which isn't supported due to SIP-238 for other callers
     function _isInternalTransferCaller(address caller) internal view returns (bool) {
         // These entries are not required or cached in order to allow them to not exist (==address(0))
-        // e.g. due to not being available on L2 or at some future point time.
+        // e.g. due to not being available on L2 or at some future point in time.
         return
             // ordered to reduce gas for more frequent calls
             caller == resolver.getAddress("CollateralShort") ||
             // not used frequently
-            caller == resolver.getAddress("DynamicSynthRedeemer") ||
             caller == resolver.getAddress("SynthRedeemer") ||
             caller == resolver.getAddress("WrapperFactory") || // transfer not used by users
             // legacy
