@@ -397,7 +397,7 @@ const setupContract = async ({
 		],
 		WETH: [],
 		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
-		DynamicSynthRedeemer: [tryGetAddressOf('AddressResolver')],
+		DynamicSynthRedeemer: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
@@ -1239,12 +1239,12 @@ const setupAllContracts = async ({
 		{
 			contract: 'DynamicSynthRedeemer',
 			mocks: ['Issuer'],
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'ExchangeRates'],
 		},
 		{
 			contract: 'DebtCache',
 			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
-			deps: ['ExchangeRates', 'SystemStatus'],
+			deps: ['ExchangeRates', 'SystemStatus', 'DynamicSynthRedeemer'],
 		},
 		{
 			contract: 'Issuer',
