@@ -6,13 +6,9 @@ interface IDynamicSynthRedeemer {
     // Rate applied to chainlink price for redemptions
     function getDiscountRate() external view returns (uint);
 
-    function redeem(IERC20 synthProxy, bytes32 currencyKey) external;
+    function redeem(address synthProxy) external;
 
-    function redeemAll(IERC20[] calldata synthProxies, bytes32[] calldata currencyKeys) external;
+    function redeemAll(address[] calldata synthProxies) external;
 
-    function redeemPartial(
-        IERC20 synthProxy,
-        uint amountOfSynth,
-        bytes32 currencyKey
-    ) external;
+    function redeemPartial(address synthProxy, uint amountOfSynth) external;
 }

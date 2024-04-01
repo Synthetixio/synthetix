@@ -11,6 +11,11 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/ISynth.sol";
+
+interface IProxy {
+    function target() external view returns (address);
+}
 
 contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     using SafeDecimalMath for uint;
@@ -47,37 +52,30 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     }
 
     function setDiscountRate(uint _newRate) external onlyOwner {
-        require(_newRate >= 0, "Invalid rate");
+        require(_newRate >= 0 && _newRate <= SafeDecimalMath.unit(), "Invalid rate");
         discountRate = _newRate;
         emit DiscountRateUpdated(_newRate);
     }
 
-    function redeemAll(IERC20[] calldata synthProxies, bytes32[] calldata currencyKeys) external {
+    function redeemAll(address[] calldata synthProxies) external {
         for (uint i = 0; i < synthProxies.length; i++) {
-            _redeem(synthProxies[i], synthProxies[i].balanceOf(msg.sender), currencyKeys[i]);
+            _redeem(synthProxies[i], IERC20(synthProxies[i]).balanceOf(msg.sender));
         }
     }
 
-    function redeem(IERC20 synthProxy, bytes32 currencyKey) external {
-        _redeem(synthProxy, synthProxy.balanceOf(msg.sender), currencyKey);
+    function redeem(address synthProxy) external {
+        _redeem(synthProxy, IERC20(synthProxy).balanceOf(msg.sender));
     }
 
-    function redeemPartial(
-        IERC20 synthProxy,
-        uint amountOfSynth,
-        bytes32 currencyKey
-    ) external {
+    function redeemPartial(address synthProxy, uint amountOfSynth) external {
         // technically this check isn't necessary - Synth.burn would fail due to safe sub,
         // but this is a useful error message to the user
-        require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
-        _redeem(synthProxy, amountOfSynth, currencyKey);
+        require(IERC20(synthProxy).balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
+        _redeem(synthProxy, amountOfSynth);
     }
 
-    function _redeem(
-        IERC20 synthProxy,
-        uint amountOfSynth,
-        bytes32 currencyKey
-    ) internal {
+    function _redeem(address synthProxy, uint amountOfSynth) internal {
+        bytes32 currencyKey = ISynth(IProxy(synthProxy).target()).currencyKey();
         // Discount rate applied to chainlink price for dynamic redemptions
         uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(discountRate);
         require(rateToRedeem > 0, "Synth not redeemable");
