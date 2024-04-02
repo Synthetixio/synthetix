@@ -152,7 +152,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
             uint value = supply.multiplyDecimalRound(rates[i]);
-            values[i] = value.multiplyDecimalRound(dynamicSynthRedeemer().getDiscountRate());
+            uint multiplier =
+                (synths[i].currencyKey() != sUSD) ? dynamicSynthRedeemer().getDiscountRate() : SafeDecimalMath.unit();
+            values[i] = value.multiplyDecimalRound(multiplier);
         }
 
         return (values);
