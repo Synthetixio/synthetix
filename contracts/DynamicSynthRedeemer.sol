@@ -23,6 +23,7 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     bytes32 public constant CONTRACT_NAME = "DynamicSynthRedeemer";
 
     uint public discountRate;
+    bool public redemptionActive;
 
     bytes32 internal constant sUSD = "sUSD";
 
@@ -32,6 +33,8 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         discountRate = SafeDecimalMath.unit();
     }
+
+    /* ========== RESOLVER CONFIG ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);
@@ -47,27 +50,29 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
+    function redeemingActive() internal view {
+        require(redemptionActive, "Redemption deactivated");
+    }
+
+    /* ========== VIEWS ========== */
+
     function getDiscountRate() external view returns (uint) {
         return discountRate;
     }
 
-    function setDiscountRate(uint _newRate) external onlyOwner {
-        require(_newRate >= 0 && _newRate <= SafeDecimalMath.unit(), "Invalid rate");
-        discountRate = _newRate;
-        emit DiscountRateUpdated(_newRate);
-    }
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function redeemAll(address[] calldata synthProxies) external {
+    function redeemAll(address[] calldata synthProxies) external requireRedemptionActive {
         for (uint i = 0; i < synthProxies.length; i++) {
             _redeem(synthProxies[i], IERC20(synthProxies[i]).balanceOf(msg.sender));
         }
     }
 
-    function redeem(address synthProxy) external {
+    function redeem(address synthProxy) external requireRedemptionActive {
         _redeem(synthProxy, IERC20(synthProxy).balanceOf(msg.sender));
     }
 
-    function redeemPartial(address synthProxy, uint amountOfSynth) external {
+    function redeemPartial(address synthProxy, uint amountOfSynth) external requireRedemptionActive {
         // technically this check isn't necessary - Synth.burn would fail due to safe sub,
         // but this is a useful error message to the user
         require(IERC20(synthProxy).balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
@@ -76,6 +81,7 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
 
     function _redeem(address synthProxy, uint amountOfSynth) internal {
         bytes32 currencyKey = ISynth(IProxy(synthProxy).target()).currencyKey();
+        require(currencyKey != sUSD, "Cannot redeem sUSD");
         // Discount rate applied to chainlink price for dynamic redemptions
         uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(discountRate);
         require(rateToRedeem > 0, "Synth not redeemable");
@@ -86,6 +92,37 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
 
+    /* ========== MODIFIERS ========== */
+
+    modifier requireRedemptionActive() {
+        redeemingActive();
+        _;
+    }
+
+    /* ========== RESTRICTED FUNCTIONS ========== */
+
+    function setDiscountRate(uint _newRate) external onlyOwner {
+        require(_newRate >= 0 && _newRate <= SafeDecimalMath.unit(), "Invalid rate");
+        discountRate = _newRate;
+        emit DiscountRateUpdated(_newRate);
+    }
+
+    function suspendRedemption() external onlyOwner {
+        require(redemptionActive, "Redemption suspended");
+        redemptionActive = false;
+        emit RedemptionSuspended();
+    }
+
+    function resumeRedemption() external onlyOwner {
+        require(!redemptionActive, "Redemption not suspended");
+        redemptionActive = true;
+        emit RedemptionResumed();
+    }
+
+    /* ========== EVENTS ========== */
+
+    event RedemptionSuspended();
+    event RedemptionResumed();
     event DiscountRateUpdated(uint discountRate);
     event SynthRedeemed(address synth, address account, uint amountOfSynth, uint amountInsUSD);
 }
