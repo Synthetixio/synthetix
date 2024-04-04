@@ -1039,7 +1039,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Only SynthRedeemer");
+        require(
+            msg.sender == address(synthRedeemer()) || msg.sender == resolver.getAddress(CONTRACT_DYNAMICSYNTHREDEEMER),
+            "Only SynthRedeemer"
+        );
     }
 
     modifier onlySynthRedeemer() {
