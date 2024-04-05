@@ -2015,6 +2015,14 @@
 				"minor": 101
 			},
 			"sips": [2059]
+		},
+		{
+			"name": "Acrab (Optimism)",
+			"version": {
+				"major": 2,
+				"minor": 101
+			},
+			"sips": [2059]
 		}
 	]
 }

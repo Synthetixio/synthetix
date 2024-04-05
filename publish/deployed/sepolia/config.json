@@ -205,5 +205,8 @@
 	},
 	"DebtMigratorOnEthereum": {
 		"deploy": false
+	},
+	"DynamicSynthRedeemer": {
+		"deploy": false
 	}
 }
