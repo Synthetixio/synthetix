@@ -913,8 +913,8 @@
 			"address": "0x2F4DD03F463111a581B2a0F89d1EB7E197200B59",
 			"source": "DynamicSynthRedeemer",
 			"link": "https://sepolia.etherscan.io/address/0x2F4DD03F463111a581B2a0F89d1EB7E197200B59",
-			"timestamp": "2024-04-05T20:01:01.346Z",
-			"txn": "",
+			"timestamp": "2024-04-05T20:01:00.000Z",
+			"txn": "https://sepolia.etherscan.io/tx/0x19bfff992ec0c45089347b96cc5846a1e1d3b6bed5698ea9c069d257f4e27c76",
 			"network": "sepolia",
 			"constructorArgs": [
 				"0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9",
