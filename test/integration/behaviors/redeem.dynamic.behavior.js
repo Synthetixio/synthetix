@@ -1,53 +1,59 @@
 const ethers = require('ethers');
-const { assert } = require('../../contracts/common');
 const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../../../index');
+	utils: { parseEther },
+} = ethers;
+const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
 
 function itCanRedeem({ ctx }) {
-	describe('redemption of deprecated synths', () => {
+	describe('dynamic redemption of synths', () => {
+		const UNIT = parseEther('1');
+
 		let owner;
 		let someUser;
-		let Synthetix, Issuer, SynthToRedeem, SynthsUSD, SynthToRedeemProxy, SynthRedeemer;
-		let totalDebtBeforeRemoval;
-		let synth;
+		let DynamicSynthRedeemer,
+			DebtCache,
+			SynthsUSD,
+			SynthToRedeem1,
+			SynthToRedeemProxy1,
+			SynthToRedeem2,
+			SynthToRedeemProxy2;
+		let totalDebtBeforeRedemption;
+		let synth1, synth2;
 
 		before('target contracts and users', () => {
-			// sETH and sBTC can't be removed because the debt may be too large for removeSynth to not underflow
-			// during debt update, so sETHBTC is used here
-			synth = 'sETHBTC';
-
+			synth1 = 'sETH';
+			synth2 = 'sETHBTC';
 			({
-				Synthetix,
-				Issuer,
-				[`Synth${synth}`]: SynthToRedeem,
-				[`Proxy${synth}`]: SynthToRedeemProxy,
+				DynamicSynthRedeemer,
+				DebtCache,
 				SynthsUSD,
-				SynthRedeemer,
+				[`Synth${synth1}`]: SynthToRedeem1,
+				[`Proxy${synth1}`]: SynthToRedeemProxy1,
+				[`Synth${synth2}`]: SynthToRedeem2,
+				[`Proxy${synth2}`]: SynthToRedeemProxy2,
 			} = ctx.contracts);
 
 			({ owner, someUser } = ctx.users);
 		});
 
-		before('ensure the user has sUSD', async () => {
+		before('ensure the user has sETH', async () => {
 			await ensureBalance({
 				ctx,
-				symbol: 'sUSD',
+				symbol: synth1,
 				user: someUser,
-				balance: ethers.utils.parseEther('100'),
+				balance: parseEther('100'),
 			});
 		});
 
-		before(`ensure the user has some of the target synth`, async () => {
+		before('ensure the user has sETHBTC', async () => {
 			await ensureBalance({
 				ctx,
-				symbol: synth,
+				symbol: synth2,
 				user: someUser,
-				balance: ethers.utils.parseEther('100'),
+				balance: parseEther('500'),
 			});
 		});
 
@@ -60,45 +66,65 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('record total system debt', async () => {
-			totalDebtBeforeRemoval = await Issuer.totalIssuedSynths(toBytes32('sUSD'), true);
+			totalDebtBeforeRedemption = (await DebtCache.currentDebt()).debt;
 		});
 
-		describe(`deprecating the synth`, () => {
-			before(`when the owner removes the synth`, async () => {
-				Issuer = Issuer.connect(owner);
-				// note: this sets the synth as redeemed and cannot be undone without
-				// redeploying locally or restarting a fork
-				const tx = await Issuer.removeSynth(toBytes32(synth));
+		describe('redeeming the synth', () => {
+			before('when the owner activates redemption', async () => {
+				DynamicSynthRedeemer = DynamicSynthRedeemer.connect(owner);
+				const tx = await DynamicSynthRedeemer.resumeRedemption();
 				await tx.wait();
 			});
 
-			it('then the total system debt is unchanged', async () => {
-				assert.bnEqual(
-					await Issuer.totalIssuedSynths(toBytes32('sUSD'), true),
-					totalDebtBeforeRemoval
-				);
+			it('and the discount rate is set to 1', async () => {
+				assert.bnEqual(await DynamicSynthRedeemer.getDiscountRate(), UNIT);
 			});
-			it(`and the synth is removed from the system`, async () => {
-				assert.equal(await Synthetix.synths(toBytes32(synth)), ZERO_ADDRESS);
-			});
+
 			describe('user redemption', () => {
+				let txn;
 				let sUSDBeforeRedemption;
 				before(async () => {
 					sUSDBeforeRedemption = await SynthsUSD.balanceOf(someUser.address);
 				});
 
-				before(`when the user redeems their synth`, async () => {
-					SynthRedeemer = SynthRedeemer.connect(someUser);
-					const tx = await SynthRedeemer.redeem(SynthToRedeemProxy.address);
-					await tx.wait();
+				before('when the user redeems all of their synths', async () => {
+					const synthProxies = [SynthToRedeemProxy1.address, SynthToRedeemProxy2.address];
+
+					DynamicSynthRedeemer = DynamicSynthRedeemer.connect(someUser);
+					txn = await DynamicSynthRedeemer.redeemAll(synthProxies);
+					await txn.wait();
 				});
 
-				it(`then the user has no more synth`, async () => {
-					assert.equal(await SynthToRedeem.balanceOf(someUser.address), '0');
+				it('then the total system debt is unchanged', async () => {
+					assert.bnEqual((await DebtCache.currentDebt()).debt, totalDebtBeforeRedemption);
+				});
+				it('then the user has no more synths', async () => {
+					assert.equal(await SynthToRedeem1.balanceOf(someUser.address), '0');
+					assert.equal(await SynthToRedeem2.balanceOf(someUser.address), '0');
 				});
 
 				it('and they have more sUSD again', async () => {
 					assert.bnGt(await SynthsUSD.balanceOf(someUser.address), sUSDBeforeRedemption);
+				});
+
+				it('emits SynthRedeemed events', async () => {
+					const { events } = await txn.wait();
+					const synthRedeemedEvents = events.filter(l => l.event === 'SynthRedeemed');
+
+					const expectedAmount = parseEther('990');
+					const synthProxies = [SynthToRedeemProxy1.address, SynthToRedeemProxy2.address];
+
+					synthRedeemedEvents.forEach((event, index) => {
+						const synth = event.args.synth;
+						const account = event.args.account;
+						const amountOfSynth = event.args.amountOfSynth;
+						const amountInsUSD = event.args.amountInsUSD;
+
+						assert.equal(synth, synthProxies[index]);
+						assert.equal(account, someUser.address);
+						assert.bnEqual(amountOfSynth, expectedAmount);
+						assert.bnEqual(amountInsUSD, expectedAmount);
+					});
 				});
 			});
 		});

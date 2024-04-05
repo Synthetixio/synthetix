@@ -82,13 +82,16 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     function _redeem(address synthProxy, uint amountOfSynth) internal {
         bytes32 currencyKey = ISynth(IProxy(synthProxy).target()).currencyKey();
         require(currencyKey != sUSD, "Cannot redeem sUSD");
+
         // Discount rate applied to chainlink price for dynamic redemptions
         uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(discountRate);
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
+
         issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
-        uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
+        uint amountInsUSD = amountOfSynth.multiplyDecimalRound(rateToRedeem);
         issuer().issueSynthsWithoutDebt(sUSD, msg.sender, amountInsUSD);
+
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
 
