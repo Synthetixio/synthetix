@@ -73,6 +73,7 @@ contract('Synth', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // required for issuer._collateral() to read collateral
+				'DynamicSynthRedeemer', // required for debt snapshot
 			],
 		}));
 

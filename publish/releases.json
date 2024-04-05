@@ -1068,6 +1068,11 @@
 			"layer": "ovm",
 			"sources": [],
 			"released": "ovm"
+		},
+		{
+			"sip": 2059,
+			"layer": "both",
+			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer"]
 		}
 	],
 	"releases": [
@@ -2002,6 +2007,14 @@
 			},
 			"sips": [299],
 			"released": true
+		},
+		{
+			"name": "Acrab",
+			"version": {
+				"major": 2,
+				"minor": 101
+			},
+			"sips": [2059]
 		}
 	]
 }
