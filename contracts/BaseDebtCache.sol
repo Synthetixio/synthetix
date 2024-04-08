@@ -19,6 +19,7 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IDynamicSynthRedeemer.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -49,6 +50,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 private constant CONTRACT_WRAPPER_FACTORY = "WrapperFactory";
+    bytes32 private constant CONTRACT_DYNAMICSYNTHREDEEMER = "DynamicSynthRedeemer";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -56,7 +58,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](8);
+        bytes32[] memory newAddresses = new bytes32[](9);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -65,6 +67,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[5] = CONTRACT_WRAPPER_FACTORY;
         newAddresses[6] = CONTRACT_ETHER_WRAPPER;
         newAddresses[7] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[8] = CONTRACT_DYNAMICSYNTHREDEEMER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -98,6 +101,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function wrapperFactory() internal view returns (IWrapperFactory) {
         return IWrapperFactory(requireAndGetAddress(CONTRACT_WRAPPER_FACTORY));
+    }
+
+    function dynamicSynthRedeemer() internal view returns (IDynamicSynthRedeemer) {
+        return IDynamicSynthRedeemer(requireAndGetAddress(CONTRACT_DYNAMICSYNTHREDEEMER));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -139,12 +146,15 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         uint numValues = currencyKeys.length;
         values = new uint[](numValues);
         ISynth[] memory synths = issuer().getSynths(currencyKeys);
+        uint discountRate = dynamicSynthRedeemer().getDiscountRate();
 
         for (uint i = 0; i < numValues; i++) {
             address synthAddress = address(synths[i]);
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
-            values[i] = supply.multiplyDecimalRound(rates[i]);
+            uint value = supply.multiplyDecimalRound(rates[i]);
+            uint multiplier = (synths[i].currencyKey() != sUSD) ? discountRate : SafeDecimalMath.unit();
+            values[i] = value.multiplyDecimalRound(multiplier);
         }
 
         return (values);

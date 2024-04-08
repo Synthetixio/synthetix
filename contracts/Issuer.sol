@@ -87,6 +87,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_DYNAMICSYNTHREDEEMER = "DynamicSynthRedeemer";
     bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGETOOPTIMISM = "SynthetixBridgeToOptimism";
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGETOBASE = "SynthetixBridgeToBase";
@@ -101,7 +102,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](15);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -114,8 +115,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[9] = CONTRACT_LIQUIDATOR_REWARDS;
         newAddresses[10] = CONTRACT_DEBTCACHE;
         newAddresses[11] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
-        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
+        newAddresses[12] = CONTRACT_DYNAMICSYNTHREDEEMER;
+        newAddresses[13] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[14] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -649,20 +651,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    /**
-     * Function used to migrate balances from the CollateralShort contract
-     * @param short The address of the CollateralShort contract to be upgraded
-     * @param amount The amount of sUSD collateral to be burnt
-     */
-    function upgradeCollateralShort(address short, uint amount) external onlyOwner {
-        require(short == resolver.getAddress("CollateralShortLegacy"), "wrong address");
-        require(amount > 0, "cannot burn 0 synths");
-
-        exchanger().settle(short, sUSD);
-
-        synths[sUSD].burn(short, amount);
-    }
-
     function issueSynths(address from, uint amount) external onlySynthetix {
         require(amount > 0, "cannot issue 0 synths");
 
@@ -1034,7 +1022,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
         address feePool = resolver.getAddress(CONTRACT_FEEPOOL);
-        require(msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool, "only trusted minters");
+        address dynamicSynthRedeemer = resolver.getAddress(CONTRACT_DYNAMICSYNTHREDEEMER);
+        require(
+            msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool || msg.sender == dynamicSynthRedeemer,
+            "only trusted minters"
+        );
         _;
     }
 
@@ -1047,7 +1039,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Only SynthRedeemer");
+        require(
+            msg.sender == address(synthRedeemer()) || msg.sender == resolver.getAddress(CONTRACT_DYNAMICSYNTHREDEEMER),
+            "Only SynthRedeemer"
+        );
     }
 
     modifier onlySynthRedeemer() {
