@@ -6,6 +6,7 @@ const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
+const { toBytes32 } = require('../../..');
 
 function itCanRedeem({ ctx }) {
 	describe('dynamic redemption of synths', () => {
@@ -88,10 +89,10 @@ function itCanRedeem({ ctx }) {
 				});
 
 				before('when the user redeems all of their synths', async () => {
-					const synthProxies = [SynthToRedeemProxy1.address, SynthToRedeemProxy2.address];
+					const currencyKeys = [toBytes32(synth1), toBytes32(synth2)];
 
 					DynamicSynthRedeemer = DynamicSynthRedeemer.connect(someUser);
-					txn = await DynamicSynthRedeemer.redeemAll(synthProxies);
+					txn = await DynamicSynthRedeemer.redeemAll(currencyKeys);
 					await txn.wait();
 				});
 
