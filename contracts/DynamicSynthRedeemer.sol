@@ -91,11 +91,11 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
 
-        issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
+        issuer().burnForRedemption(synthProxy, msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimalRound(rateToRedeem);
         issuer().issueSynthsWithoutDebt(sUSD, msg.sender, amountInsUSD);
 
-        emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
+        emit SynthRedeemed(synthProxy, msg.sender, amountOfSynth, amountInsUSD);
     }
 
     /* ========== MODIFIERS ========== */
