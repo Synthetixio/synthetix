@@ -80,7 +80,10 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     }
 
     function _redeem(address synthProxy, uint amountOfSynth) internal {
-        bytes32 currencyKey = ISynth(IProxy(synthProxy).target()).currencyKey();
+        address synthTarget = IProxy(synthProxy).target();
+        require(issuer().synthsByAddress(synthTarget) != bytes32(0), "Invalid synth");
+
+        bytes32 currencyKey = ISynth(synthTarget).currencyKey();
         require(currencyKey != sUSD, "Cannot redeem sUSD");
 
         // Discount rate applied to chainlink price for dynamic redemptions
