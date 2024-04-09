@@ -15,9 +15,9 @@ const { setupAllContracts } = require('../contracts/setup');
 const { toBytes32 } = require('../..');
 
 contract('DynamicSynthRedeemer', async accounts => {
-	const synths = ['sUSD', 'sBTC', 'sETH', 'ETH', 'SNX'];
-	const [sBTC, sETH, ETH] = ['sBTC', 'sETH', 'ETH'].map(toBytes32);
-	const [priceBTC, priceETH] = ['70000', '3500'].map(toUnit);
+	const synths = ['sUSD', 'sBTC', 'sETH', 'ETH', 'SNX', 'sLINK'];
+	const [sBTC, sETH, ETH, SNX, sLINK] = ['sBTC', 'sETH', 'ETH', 'SNX', 'sLINK'].map(toBytes32);
+	const [priceBTC, priceETH, priceSNX, priceLINK] = ['70000', '3500', '2192', '100'].map(toUnit);
 
 	const [, owner, , , account1] = accounts;
 
@@ -30,6 +30,7 @@ contract('DynamicSynthRedeemer', async accounts => {
 		proxysBTC,
 		proxysETH,
 		proxysUSD,
+		proxysLINK,
 		proxySynthetix,
 		synthetix,
 		systemSettings,
@@ -45,6 +46,7 @@ contract('DynamicSynthRedeemer', async accounts => {
 			ProxyERC20sBTC: proxysBTC,
 			ProxyERC20sETH: proxysETH,
 			ProxyERC20sUSD: proxysUSD,
+			ProxyERC20sLINK: proxysLINK,
 			ProxyERC20Synthetix: proxySynthetix,
 			Synthetix: synthetix,
 			SystemSettings: systemSettings,
@@ -75,12 +77,12 @@ contract('DynamicSynthRedeemer', async accounts => {
 		synthetix = await artifacts.require('Synthetix').at(proxySynthetix.address);
 
 		// setup aggregators
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH, ETH, SNX, sLINK]);
 		await updateAggregatorRates(
 			exchangeRates,
 			null,
-			[sBTC, sETH, ETH],
-			[priceBTC, priceETH, priceETH]
+			[sBTC, sETH, ETH, SNX, sLINK],
+			[priceBTC, priceETH, priceETH, priceSNX, priceLINK]
 		);
 
 		// deploy an eth wrapper
@@ -100,6 +102,10 @@ contract('DynamicSynthRedeemer', async accounts => {
 		await systemSettings.setWrapperMaxTokenAmount(etherWrapperAddress, toUnit('5000'), {
 			from: owner,
 		});
+
+		// get some sUSD
+		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+		await synthetix.issueMaxSynths({ from: account1 });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -248,12 +254,23 @@ contract('DynamicSynthRedeemer', async accounts => {
 
 	describe('redemption', () => {
 		const redeemAmount = toUnit('100.0');
+		const exchangeAmount = toUnit('10.0');
+		let sBTCBalance, sETHBalance, sUSDBalance, sLINKBalance;
 
 		beforeEach(async () => {
 			// first wrap ETH using wrapper to get sETH
 			await weth.deposit({ from: account1, value: redeemAmount });
 			await weth.approve(etherWrapper.address, redeemAmount, { from: account1 });
 			await etherWrapper.mint(redeemAmount, { from: account1 });
+
+			// exchange for some sBTC
+			await synthetix.exchange(sETH, exchangeAmount, sBTC, { from: account1 });
+
+			// record balances
+			sBTCBalance = await proxysBTC.balanceOf(account1);
+			sETHBalance = await proxysETH.balanceOf(account1);
+			sUSDBalance = await proxysUSD.balanceOf(account1);
+			sLINKBalance = await proxysLINK.balanceOf(account1);
 		});
 
 		beforeEach(async () => {
@@ -283,7 +300,7 @@ contract('DynamicSynthRedeemer', async accounts => {
 
 			it('reverts when user has no balance', async () => {
 				await assert.revert(
-					instance.redeem(proxysBTC.address, {
+					instance.redeem(proxysLINK.address, {
 						from: account1,
 					}),
 					'No balance of synth to redeem'
@@ -291,6 +308,7 @@ contract('DynamicSynthRedeemer', async accounts => {
 			});
 
 			it('reverts when user attempts to redeem sUSD', async () => {
+				assert.bnGt(await proxysUSD.balanceOf(account1), 0);
 				await assert.revert(
 					instance.redeem(proxysUSD.address, {
 						from: account1,
@@ -317,13 +335,14 @@ contract('DynamicSynthRedeemer', async accounts => {
 						assert.eventEqual(txn, 'SynthRedeemed', {
 							synth: proxysETH.address,
 							account: account1,
-							amountOfSynth: redeemAmount,
-							amountInsUSD: toUnit('350000'), // 100 sETH redeemed at price of $3500 is 350,000 sUSD
+							amountOfSynth: redeemAmount.sub(exchangeAmount),
+							amountInsUSD: toUnit('315000'), // 90 sETH redeemed at price of $3500 is 315,000 sUSD
 						});
 					});
 				});
 			});
 		});
+
 		describe('redeemAll()', () => {
 			it('reverts when redemption is suspended', async () => {
 				await instance.suspendRedemption({ from: owner });
@@ -353,29 +372,19 @@ contract('DynamicSynthRedeemer', async accounts => {
 
 			describe('when redemption is active', () => {
 				describe('when redeemAll is called by the user for both synths', () => {
-					let sBTCBalance, sETHBalance;
-					beforeEach(async () => {
-						sBTCBalance = await proxysBTC.balanceOf(account1);
-						sETHBalance = await proxysETH.balanceOf(account1);
-					});
 					it('reverts when user only has a balance of one synth', async () => {
-						assert.bnEqual(sBTCBalance, 0);
-						assert.bnEqual(sETHBalance, redeemAmount);
+						assert.bnGt(sBTCBalance, 0);
+						assert.bnEqual(sLINKBalance, 0);
 						await assert.revert(
-							instance.redeemAll([proxysBTC.address, proxysETH.address], {
+							instance.redeemAll([proxysBTC.address, proxysLINK.address], {
 								from: account1,
 							}),
 							'No balance of synth to redeem'
 						);
 					});
 					describe('when user has balances for both synths', () => {
-						const exchangeAmount = toUnit('10');
-						const expectedAmountBTC = toUnit('0.5');
-
 						let txn;
 						beforeEach(async () => {
-							await synthetix.exchange(sETH, exchangeAmount, sBTC, { from: account1 });
-
 							txn = await instance.redeemAll([proxysBTC.address, proxysETH.address], {
 								from: account1,
 							});
@@ -384,22 +393,25 @@ contract('DynamicSynthRedeemer', async accounts => {
 						it('transfers the correct amount of sUSD to the user', async () => {
 							assert.bnEqual(await proxysBTC.balanceOf(account1), 0);
 							assert.bnEqual(await proxysETH.balanceOf(account1), 0);
-							assert.bnEqual(await proxysUSD.balanceOf(account1), toUnit('350000'));
+							assert.bnEqual(
+								await proxysUSD.balanceOf(account1),
+								sUSDBalance.add(toUnit('350000')) // 350k sUSD = (90 sETH * 3500) + (0.5 sBTC * 70000)
+							);
 						});
 
 						it('emits a SynthRedeemed event for each synth', async () => {
 							assert.eventEqual(txn.logs[0], 'SynthRedeemed', {
 								synth: proxysBTC.address,
 								account: account1,
-								amountOfSynth: expectedAmountBTC,
-								amountInsUSD: multiplyDecimal(expectedAmountBTC, priceBTC),
+								amountOfSynth: sBTCBalance,
+								amountInsUSD: multiplyDecimal(sBTCBalance, priceBTC),
 							});
 
 							assert.eventEqual(txn.logs[1], 'SynthRedeemed', {
 								synth: proxysETH.address,
 								account: account1,
-								amountOfSynth: sETHBalance.sub(exchangeAmount),
-								amountInsUSD: multiplyDecimal(sETHBalance.sub(exchangeAmount), priceETH),
+								amountOfSynth: sETHBalance,
+								amountInsUSD: multiplyDecimal(sETHBalance, priceETH),
 							});
 						});
 					});
@@ -421,14 +433,13 @@ contract('DynamicSynthRedeemer', async accounts => {
 
 			describe('when redemption is active', () => {
 				describe('when redeemPartial is called by the user', () => {
-					let sETHBalance;
 					beforeEach(async () => {
 						sETHBalance = await proxysETH.balanceOf(account1);
 					});
 					it('reverts when user does not have enough balance', async () => {
-						assert.bnEqual(sETHBalance, redeemAmount);
+						assert.bnEqual(sETHBalance, redeemAmount.sub(exchangeAmount));
 						await assert.revert(
-							instance.redeemPartial(proxysETH.address, redeemAmount.add(partialAmount), {
+							instance.redeemPartial(proxysETH.address, redeemAmount, {
 								from: account1,
 							}),
 							'Insufficient balance'
@@ -442,9 +453,18 @@ contract('DynamicSynthRedeemer', async accounts => {
 							});
 						});
 
-						it('transfers the correct amount of sUSD to the user', async () => {
-							assert.bnEqual(await proxysETH.balanceOf(account1), redeemAmount.sub(partialAmount));
-							assert.bnEqual(await proxysUSD.balanceOf(account1), toUnit('87500'));
+						it('burns the correct amount of target synth from the user', async () => {
+							assert.bnEqual(
+								await proxysETH.balanceOf(account1),
+								redeemAmount.sub(partialAmount).sub(exchangeAmount)
+							);
+						});
+
+						it('issues the correct amount of sUSD to the user', async () => {
+							assert.bnEqual(
+								await proxysUSD.balanceOf(account1),
+								sUSDBalance.add(toUnit('87500')) // 87.5k sUSD = (25 sETH * 3500)
+							);
 						});
 
 						it('emits a SynthRedeemed event with the partial amount', async () => {
