@@ -45,7 +45,17 @@ contract('Issuer (via Synthetix)', async accounts => {
 	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, account1, account2, account3, account6, synthetixBridgeToOptimism] = accounts;
+	const [
+		,
+		owner,
+		account1,
+		account2,
+		account3,
+		account6,
+		account7,
+		synthetixBridgeToOptimism,
+		dynamicSynthRedeemer,
+	] = accounts;
 
 	let synthetix,
 		synthetixProxy,
@@ -129,8 +139,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 		// mocks for bridge
 		await addressResolver.importAddresses(
-			['SynthetixBridgeToOptimism'].map(toBytes32),
-			[synthetixBridgeToOptimism],
+			['SynthetixBridgeToOptimism', 'DynamicSynthRedeemer'].map(toBytes32),
+			[synthetixBridgeToOptimism, dynamicSynthRedeemer],
 			{ from: owner }
 		);
 
@@ -184,6 +194,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'burnSynthsToTargetOnBehalf',
 				'issueSynthsWithoutDebt',
 				'burnSynthsWithoutDebt',
+				'burnAndIssueSynthsWithoutDebtCache',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
@@ -224,6 +235,17 @@ contract('Issuer (via Synthetix)', async accounts => {
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
 				reason: 'only trusted minters',
+			});
+		});
+
+		it('burnAndIssueSynthsWithoutDebtCache() cannot be invoked directly by a user', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: issuer.burnAndIssueSynthsWithoutDebtCache,
+				args: [account7, sETH, toUnit(1), toUnit(100)],
+				// full functionality of this method requires issuing synths,
+				// so just test that its blocked here and don't include the trusted addr
+				accounts: [owner, account1],
+				reason: 'Only SynthRedeemer',
 			});
 		});
 
@@ -1336,6 +1358,53 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						it('maintains debt cache', async () => {
 							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt.add(toUnit(10000)));
+						});
+					});
+				});
+
+				describe('burnAndIssueSynthsWithoutDebtCache', () => {
+					describe('successfully invoked', () => {
+						let beforeCachedDebt;
+
+						beforeEach(async () => {
+							// set the exchange fees and waiting period to 0 to effectively ignore both
+							await setExchangeWaitingPeriod({ owner, systemSettings, secs: 0 });
+							await setExchangeFeeRateForSynths({
+								owner,
+								systemSettings,
+								synthKeys,
+								exchangeFeeRates: synthKeys.map(() => 0),
+							});
+						});
+
+						beforeEach(async () => {
+							await sUSDContract.issue(account7, toUnit(1000));
+							await synthetix.exchange(sUSD, toUnit(200), sETH, { from: account7 });
+						});
+
+						beforeEach(async () => {
+							beforeCachedDebt = await debtCache.cachedDebt();
+							await issuer.burnAndIssueSynthsWithoutDebtCache(
+								account7,
+								sETH,
+								toUnit('0.5'),
+								toUnit(200),
+								{
+									from: dynamicSynthRedeemer,
+								}
+							);
+						});
+
+						it('burns target synths', async () => {
+							assert.bnEqual(await sETHContract.balanceOf(account7), toUnit('0.5'));
+						});
+
+						it('issues the correct amount of sUSD', async () => {
+							assert.bnEqual(await sUSDContract.balanceOf(account7), toUnit(1000));
+						});
+
+						it('debt cache remains unaffected', async () => {
+							assert.bnEqual(await debtCache.cachedDebt(), beforeCachedDebt);
 						});
 					});
 				});
@@ -2851,7 +2920,15 @@ contract('Issuer (via Synthetix)', async accounts => {
 					await onlyGivenAddressCanInvoke({
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
-						accounts,
+						accounts: [
+							owner,
+							account1,
+							account2,
+							account3,
+							account6,
+							account7,
+							synthetixBridgeToOptimism,
+						],
 						reason: 'Only SynthRedeemer',
 					});
 				});

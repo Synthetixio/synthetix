@@ -101,9 +101,8 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         uint rateToRedeem = rate.multiplyDecimalRound(discountRate);
         require(rateToRedeem > 0 && !invalid, "Synth not redeemable");
 
-        _issuer().burnForRedemption(synthProxy, msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimalRound(rateToRedeem);
-        _issuer().issueSynthsWithoutDebt(sUSD, msg.sender, amountInsUSD);
+        _issuer().burnAndIssueSynthsWithoutDebtCache(msg.sender, currencyKey, amountOfSynth, amountInsUSD);
 
         emit SynthRedeemed(synthProxy, msg.sender, amountOfSynth, amountInsUSD);
     }

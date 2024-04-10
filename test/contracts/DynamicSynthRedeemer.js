@@ -105,6 +105,11 @@ contract('DynamicSynthRedeemer', async accounts => {
 			from: owner,
 		});
 
+		// set waiting period to 0
+		await systemSettings.setWaitingPeriodSecs(0, {
+			from: owner,
+		});
+
 		// get some sUSD
 		await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 		await synthetix.issueMaxSynths({ from: account1 });
