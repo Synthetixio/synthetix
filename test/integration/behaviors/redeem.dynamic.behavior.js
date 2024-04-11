@@ -6,6 +6,7 @@ const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
+const { toBytes32 } = require('../../..');
 
 function itCanRedeem({ ctx }) {
 	describe('dynamic redemption of synths', () => {
@@ -15,12 +16,13 @@ function itCanRedeem({ ctx }) {
 		let someUser;
 		let DynamicSynthRedeemer,
 			DebtCache,
+			Issuer,
 			SynthsUSD,
 			SynthToRedeem1,
 			SynthToRedeemProxy1,
 			SynthToRedeem2,
 			SynthToRedeemProxy2;
-		let totalDebtBeforeRedemption;
+		let totalDebtBeforeRedemption, totalIssuedSynthsBeforeRedemption;
 		let synth1, synth2;
 
 		before('target contracts and users', () => {
@@ -29,6 +31,7 @@ function itCanRedeem({ ctx }) {
 			({
 				DynamicSynthRedeemer,
 				DebtCache,
+				Issuer,
 				SynthsUSD,
 				[`Synth${synth1}`]: SynthToRedeem1,
 				[`Proxy${synth1}`]: SynthToRedeemProxy1,
@@ -67,6 +70,7 @@ function itCanRedeem({ ctx }) {
 
 		before('record total system debt', async () => {
 			totalDebtBeforeRedemption = (await DebtCache.currentDebt()).debt;
+			totalIssuedSynthsBeforeRedemption = await Issuer.totalIssuedSynths(toBytes32('sUSD'), true);
 		});
 
 		describe('redeeming the synth', () => {
@@ -88,15 +92,19 @@ function itCanRedeem({ ctx }) {
 				});
 
 				before('when the user redeems all of their synths', async () => {
-					const synthProxies = [SynthToRedeemProxy1.address, SynthToRedeemProxy2.address];
+					const currencyKeys = [toBytes32(synth1), toBytes32(synth2)];
 
 					DynamicSynthRedeemer = DynamicSynthRedeemer.connect(someUser);
-					txn = await DynamicSynthRedeemer.redeemAll(synthProxies);
+					txn = await DynamicSynthRedeemer.redeemAll(currencyKeys);
 					await txn.wait();
 				});
 
 				it('then the total system debt is unchanged', async () => {
 					assert.bnEqual((await DebtCache.currentDebt()).debt, totalDebtBeforeRedemption);
+					assert.bnEqual(
+						await Issuer.totalIssuedSynths(toBytes32('sUSD'), true),
+						totalIssuedSynthsBeforeRedemption
+					);
 				});
 				it('then the user has no more synths', async () => {
 					assert.equal(await SynthToRedeem1.balanceOf(someUser.address), '0');

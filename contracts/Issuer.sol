@@ -636,6 +636,32 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     /**
+     * SIP-2059: Dynamic Redemption
+     * Function used to burn spot synths and issue the equivalent in sUSD at chainlink price * discount rate
+     * @param account The address of the account that is redeeming
+     * @param currencyKey The synth to be redeemed
+     * @param amountOfSynth The amount of redeeming synth to burn
+     * @param amountInsUSD The amount of sUSD to issue
+     */
+    function burnAndIssueSynthsWithoutDebtCache(
+        address account,
+        bytes32 currencyKey,
+        uint amountOfSynth,
+        uint amountInsUSD
+    ) external onlySynthRedeemer {
+        exchanger().settle(account, currencyKey);
+
+        // Burn their redeemed synths
+        synths[currencyKey].burn(account, amountOfSynth);
+
+        // record issue timestamp
+        _setLastIssueEvent(account);
+
+        // Issuer their sUSD equivalent
+        synths[sUSD].issue(account, amountInsUSD);
+    }
+
+    /**
      * SIP-237: Debt Migration
      * Function used for the one-way migration of all debt and liquid + escrowed SNX from L1 -> L2
      * @param account The address of the account that is being migrated
@@ -1022,11 +1048,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         address bridgeL1 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOOPTIMISM);
         address bridgeL2 = resolver.getAddress(CONTRACT_SYNTHETIXBRIDGETOBASE);
         address feePool = resolver.getAddress(CONTRACT_FEEPOOL);
-        address dynamicSynthRedeemer = resolver.getAddress(CONTRACT_DYNAMICSYNTHREDEEMER);
-        require(
-            msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool || msg.sender == dynamicSynthRedeemer,
-            "only trusted minters"
-        );
+        require(msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool, "only trusted minters");
         _;
     }
 
