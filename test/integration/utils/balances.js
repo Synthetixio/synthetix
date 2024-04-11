@@ -107,7 +107,11 @@ async function _getSNX({ ctx, user, amount }) {
 
 async function _getSNXForOwner({ ctx, amount }) {
 	if (!ctx.useOvm) {
-		throw new Error('There is no more SNX!');
+		if (ctx.fork) {
+			await _getSNXForOwnerOnL1ByHackTransfer({ ctx, amount });
+		} else {
+			throw new Error('There is no more SNX!');
+		}
 	} else {
 		if (ctx.l1) {
 			await _getSNXForOwnerOnL2ByDepositing({ ctx: ctx.l1, amount });
@@ -119,6 +123,35 @@ async function _getSNXForOwner({ ctx, amount }) {
 
 async function _getSNXForOwnerOnL2ByDepositing({ ctx, amount }) {
 	await deposit({ ctx, from: ctx.users.owner, to: ctx.users.owner, amount });
+}
+
+async function _getSNXForOwnerOnL1ByHackTransfer({ ctx, amount }) {
+	const owner = ctx.users.owner;
+
+	let { Synthetix, AddressResolver } = ctx.contracts;
+
+	const bridgeName = toBytes32('SynthetixBridgeToOptimism');
+	const bridgeAddress = await AddressResolver.getAddress(bridgeName);
+
+	const bridgeEscrowName = toBytes32('SynthetixBridgeEscrow');
+	const bridgeEscrowAddress = await AddressResolver.getAddress(bridgeEscrowName);
+
+	let tx;
+
+	AddressResolver = AddressResolver.connect(owner);
+	tx = await AddressResolver.importAddresses([bridgeName], [owner.address]);
+	await tx.wait();
+	tx = await AddressResolver.rebuildCaches([Synthetix.address]);
+	await tx.wait();
+
+	Synthetix = Synthetix.connect(owner);
+	tx = await Synthetix.transferFrom(bridgeEscrowAddress, owner.address, amount);
+	await tx.wait();
+
+	tx = await AddressResolver.importAddresses([bridgeName], [bridgeAddress]);
+	await tx.wait();
+	tx = await AddressResolver.rebuildCaches([Synthetix.address]);
+	await tx.wait();
 }
 
 async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {

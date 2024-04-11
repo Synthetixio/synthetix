@@ -47,7 +47,7 @@ function itCanRedeem({ ctx }) {
 				ctx,
 				symbol: synth1,
 				user: someUser,
-				balance: parseEther('100'),
+				balance: parseEther('1'),
 			});
 		});
 
@@ -56,7 +56,7 @@ function itCanRedeem({ ctx }) {
 				ctx,
 				symbol: synth2,
 				user: someUser,
-				balance: parseEther('500'),
+				balance: parseEther('100'),
 			});
 		});
 
