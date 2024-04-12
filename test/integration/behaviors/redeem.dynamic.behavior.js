@@ -87,8 +87,12 @@ function itCanRedeem({ ctx }) {
 			describe('user redemption', () => {
 				let txn;
 				let sUSDBeforeRedemption;
+				let synth1Balance, synth2Balance;
+
 				before(async () => {
 					sUSDBeforeRedemption = await SynthsUSD.balanceOf(someUser.address);
+					synth1Balance = await SynthToRedeem1.balanceOf(someUser.address);
+					synth2Balance = await SynthToRedeem2.balanceOf(someUser.address);
 				});
 
 				before('when the user redeems all of their synths', async () => {
@@ -100,10 +104,14 @@ function itCanRedeem({ ctx }) {
 				});
 
 				it('then the total system debt is unchanged', async () => {
-					assert.bnEqual((await DebtCache.currentDebt()).debt, totalDebtBeforeRedemption);
-					assert.bnEqual(
-						await Issuer.totalIssuedSynths(toBytes32('sUSD'), true),
-						totalIssuedSynthsBeforeRedemption
+					/// use bnClose for slight variance in fork test
+					assert.bnClose(
+						(await DebtCache.currentDebt()).debt.toString(),
+						totalDebtBeforeRedemption.toString()
+					);
+					assert.bnClose(
+						(await Issuer.totalIssuedSynths(toBytes32('sUSD'), true)).toString(),
+						totalIssuedSynthsBeforeRedemption.toString()
 					);
 				});
 				it('then the user has no more synths', async () => {
@@ -119,7 +127,11 @@ function itCanRedeem({ ctx }) {
 					const { events } = await txn.wait();
 					const synthRedeemedEvents = events.filter(l => l.event === 'SynthRedeemed');
 
-					const expectedAmount = parseEther('990');
+					let totalValueRedeemedInsUSD = ethers.BigNumber.from(0);
+					const sUSDBalanceAfter = await SynthsUSD.balanceOf(someUser.address);
+					const expectedAmountofsUSD = sUSDBalanceAfter.sub(sUSDBeforeRedemption);
+
+					const synthBalances = [synth1Balance, synth2Balance];
 					const synthProxies = [SynthToRedeemProxy1.address, SynthToRedeemProxy2.address];
 
 					synthRedeemedEvents.forEach((event, index) => {
@@ -130,9 +142,13 @@ function itCanRedeem({ ctx }) {
 
 						assert.equal(synth, synthProxies[index]);
 						assert.equal(account, someUser.address);
-						assert.bnEqual(amountOfSynth, expectedAmount);
-						assert.bnEqual(amountInsUSD, expectedAmount);
+						assert.bnEqual(amountOfSynth, synthBalances[index]);
+
+						totalValueRedeemedInsUSD = totalValueRedeemedInsUSD.add(amountInsUSD);
 					});
+
+					assert.bnEqual(expectedAmountofsUSD, totalValueRedeemedInsUSD);
+					assert.bnEqual(sUSDBalanceAfter, sUSDBeforeRedemption.add(totalValueRedeemedInsUSD));
 				});
 			});
 		});
