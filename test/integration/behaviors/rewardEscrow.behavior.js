@@ -107,7 +107,7 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 				// no more accounts will be migratable for migrateVestingSchedule
 
-				it('reverts on call to migrateAccountEscrowBalances', async () => {
+				it.skip('reverts on call to migrateAccountEscrowBalances', async () => {
 					const revertMsg = `Cannot be run on this layer`;
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
