@@ -164,8 +164,9 @@
 			},
 			"DebtCache": {
 				"address": "0xaE72eC510fCfC106fd6E80378Bf7d9998003E442",
-				"status": "current",
-				"keccak256": "0x3a7f73a9d4bb6f3378ec9a39e9d7bcd5d415e121bc78464935cb843b14b2da58"
+				"status": "replaced",
+				"keccak256": "0x3a7f73a9d4bb6f3378ec9a39e9d7bcd5d415e121bc78464935cb843b14b2da58",
+				"replaced_in": "v2.101.1-alpha"
 			},
 			"Exchanger": {
 				"address": "0x55d1dbdD814fEB50b4CdFD554f370cdA954eB4d7",
@@ -194,8 +195,9 @@
 			},
 			"Issuer": {
 				"address": "0x4219578EeF38cFa3686900c282d312B9d2ddB65D",
-				"status": "current",
-				"keccak256": "0xfc54304dfc0802ab72b8a40ee58923bee2f6b1964c0a176521aa678f3ec4f532"
+				"status": "replaced",
+				"keccak256": "0xfc54304dfc0802ab72b8a40ee58923bee2f6b1964c0a176521aa678f3ec4f532",
+				"replaced_in": "v2.101.1-alpha"
 			},
 			"TradingRewards": {
 				"address": "0x515022fad52B0050323510562c82f63d1FaDE389",
@@ -351,6 +353,31 @@
 				"address": "0x045ba2D58f16d39a91db70C1027080cde6f4E56f",
 				"status": "current",
 				"keccak256": "0x75b1789f9a37b2f96d126780cddea6ae669f7868be9f319937be69aad74e37a0"
+			}
+		}
+	},
+	"v2.101.1-alpha": {
+		"tag": "v2.101.1-alpha",
+		"fulltag": "v2.101.1-alpha",
+		"release": "Acrab",
+		"network": "sepolia",
+		"date": "2024-04-16T12:01:13-04:00",
+		"commit": "37b4de71651fc33d65fa6c7e9a67071252356848",
+		"contracts": {
+			"DebtCache": {
+				"address": "0xE4E52c1C82B4e7D169Dd97d9CFD8a07F13b333cD",
+				"status": "current",
+				"keccak256": "0x42b9897bff8cc807d7aa849bf0c68ae8b06a4f8979308a09db7efc3344236a46"
+			},
+			"Issuer": {
+				"address": "0xB70cf272E555091C970Fb3027cF7C4cfAd2D2650",
+				"status": "current",
+				"keccak256": "0x122394906d88b596f09642fb03cdb2d4b798a65cf4280cecbccc0279ba67b3a2"
+			},
+			"DynamicSynthRedeemer": {
+				"address": "0x2e11a3638F12A37263b1B4226b61412f6BBB277c",
+				"status": "current",
+				"keccak256": "0xc9560e9672c3dff5c5bea2a78274b3e808bd6cdf338cc4091df5a59c58990f6e"
 			}
 		}
 	}
