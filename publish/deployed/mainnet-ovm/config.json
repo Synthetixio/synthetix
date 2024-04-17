@@ -2137,5 +2137,8 @@
 	},
 	"PerpsV2MarketViewsPENDLEPERP": {
 		"deploy": false
+	},
+	"DynamicSynthRedeemer": {
+		"deploy": false
 	}
 }
