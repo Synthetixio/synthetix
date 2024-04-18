@@ -58,6 +58,7 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
+		dynamicSynthRedeemer,
 		// Futures market
 		futuresMarketManager,
 		wrapperFactory,
@@ -260,6 +261,7 @@ contract('DebtCache', async accounts => {
 			SynthsEUR: sEURContract,
 			FeePool: feePool,
 			DebtCache: debtCache,
+			DynamicSynthRedeemer: dynamicSynthRedeemer,
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
@@ -284,6 +286,7 @@ contract('DebtCache', async accounts => {
 				'Issuer',
 				'LiquidatorRewards',
 				'DebtCache',
+				'DynamicSynthRedeemer', // necessary for checking discountRate changes
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
@@ -461,6 +464,39 @@ contract('DebtCache', async accounts => {
 
 				assert.isFalse(result[3]);
 			});
+
+			describe('when discountRate is updated', () => {
+				const discountRate = toUnit('0.5');
+
+				beforeEach(async () => {
+					await dynamicSynthRedeemer.setDiscountRate(discountRate, { from: owner });
+				});
+
+				it('Live debt is reported accurately', async () => {
+					// The synth debt has not yet been cached.
+					assert.bnEqual((await debtCache.cacheInfo()).debt, toUnit(0));
+
+					// Current synth debts:
+					// 100 sUSD + ((2 sETH * $100) + (100 sAUD * $0.50) + (100 sEUR * $2) * discountRate)
+					// $100 + (($200 + $50 + $200) * discountRate)
+					// $100 + ($450 * discountRate) = $325 total issued synths
+					const result = await debtCache.currentDebt();
+					assert.bnEqual(result[0], toUnit(325));
+					assert.isFalse(result[1]);
+				});
+
+				it('Live debt is reported accurately for individual currencies', async () => {
+					const result = await debtCache.currentSynthDebts([sUSD, sEUR, sAUD, sETH]);
+					const debts = result[0];
+
+					assert.bnEqual(debts[0], toUnit(100)); // sUSD is not affected by discountRate
+					assert.bnEqual(debts[1], multiplyDecimalRound(toUnit(200), discountRate));
+					assert.bnEqual(debts[2], multiplyDecimalRound(toUnit(50), discountRate));
+					assert.bnEqual(debts[3], multiplyDecimalRound(toUnit(200), discountRate));
+
+					assert.isFalse(result[3]);
+				});
+			});
 		});
 
 		describe('takeDebtSnapshot()', () => {
@@ -570,6 +606,7 @@ contract('DebtCache', async accounts => {
 					// issue some debt to sanity check it's being updated
 					sUSDContract.issue(account1, toUnit(100), { from: owner });
 					await debtCache.takeDebtSnapshot();
+					await debtCache.updateCachedSynthDebts([sUSD]);
 
 					// debt calc works
 					assert.bnEqual((await debtCache.currentDebt())[0], initialDebt.add(toUnit(100)));
@@ -752,6 +789,65 @@ contract('DebtCache', async accounts => {
 					'Synthetix is suspended'
 				);
 				await debtCache.updateCachedSynthDebts([sAUD, sEUR], { from: owner });
+			});
+
+			describe('when discountRate is updated', async () => {
+				const discountRate = toUnit('0.5');
+
+				beforeEach(async () => {
+					await dynamicSynthRedeemer.setDiscountRate(discountRate, { from: owner });
+				});
+
+				it('allows resynchronisation of subsets of synths', async () => {
+					await debtCache.takeDebtSnapshot();
+
+					await updateAggregatorRates(
+						exchangeRates,
+						circuitBreaker,
+						[sAUD, sEUR, sETH],
+						['1', '3', '200'].map(toUnit)
+					);
+
+					const expectedDebts = (await debtCache.currentSynthDebts([sAUD, sEUR, sETH]))[0];
+
+					// First try a single currency, ensuring that the others have not been altered.
+					await debtCache.updateCachedSynthDebts([sAUD]);
+					// Updated synth debts:
+					// 100 sUSD + ((2 sETH * $100) + (100 sAUD * $1) + (100 sEUR * $2) * discountRate)
+					// $100 + (($200 + $100 + $200) * discountRate)
+					// $100 + ($500 * discountRate) = $350 total issued synths
+					assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(350));
+					let debts = await debtCache.cachedSynthDebts([sAUD, sEUR, sETH]);
+
+					assert.bnEqual(debts[0], expectedDebts[0]);
+					assert.bnEqual(debts[1], multiplyDecimalRound(toUnit(200), discountRate));
+					assert.bnEqual(debts[2], multiplyDecimalRound(toUnit(200), discountRate));
+
+					// Then a subset
+					await debtCache.updateCachedSynthDebts([sEUR, sETH]);
+					// Updated synth debts:
+					// 100 sUSD + ((2 sETH * $200) + (100 sAUD * $1) + (100 sEUR * $3) * discountRate)
+					// $100 + (($400 + $100 + $300) * discountRate)
+					// $100 + ($800 * discountRate) = $500 total issued synths
+					assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), toUnit(500));
+					debts = await debtCache.cachedSynthDebts([sEUR, sETH]);
+					assert.bnEqual(debts[0], expectedDebts[1]);
+					assert.bnEqual(debts[1], expectedDebts[2]);
+				});
+
+				it('properly emits events', async () => {
+					await debtCache.takeDebtSnapshot();
+
+					await updateAggregatorRates(
+						exchangeRates,
+						circuitBreaker,
+						[sAUD, sEUR, sETH],
+						['1', '3', '200'].map(toUnit)
+					);
+
+					const tx = await debtCache.updateCachedSynthDebts([sAUD]);
+					assert.eventEqual(tx.logs[0], 'DebtCacheUpdated', [toUnit(350)]);
+				});
 			});
 		});
 

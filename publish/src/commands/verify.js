@@ -23,7 +23,7 @@ const {
 const CONTRACT_OVERRIDES = require('../contract-overrides');
 const { optimizerRuns } = require('./build').DEFAULTS;
 
-const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
+const verify = async ({ buildPath, deploymentPath, network, useOvm, contractToVerify }) => {
 	// Note: require this here as silent error is detected on require that impacts pretty-error
 	const solc = require('solc');
 
@@ -59,6 +59,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 	const etherscanKey = useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY;
 
 	for (const name of Object.keys(config)) {
+		if (name !== contractToVerify) continue;
 		const { address } = deployment.targets[name];
 		// Check if this contract already has been verified.
 
@@ -275,6 +276,7 @@ module.exports = {
 				'Path to a folder hosting compiled files from the "build" step in this script',
 				path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 			)
+			.option('-c, --contract-to-verify <value>', 'Single contract to verify')
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
