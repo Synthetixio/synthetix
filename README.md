@@ -179,7 +179,7 @@ snx.getPathToNetwork({ network: 'mainnet' });
 //'.../Synthetixio/synthetix/publish/deployed/mainnet'
 
 // retrieve an object detailing the contract ABI and bytecode
-snx.getSource({ network: 'goerli', contract: 'Proxy' });
+snx.getSource({ network: 'sepolia', contract: 'Proxy' });
 /*
 {
   bytecode: '0..0',
@@ -198,20 +198,20 @@ snx.getSuspensionReasons();
 */
 
 // retrieve the array of synths used
-snx.getSynths({ network: 'goerli' }).map(({ name }) => name);
+snx.getSynths({ network: 'sepolia' }).map(({ name }) => name);
 // ['sUSD', 'sEUR', ...]
 
 // retrieve an object detailing the contract deployed to the given network.
-snx.getTarget({ network: 'goerli', contract: 'ProxySynthetix' });
+snx.getTarget({ network: 'sepolia', contract: 'ProxySynthetix' });
 /*
 {
 	name: 'ProxySynthetix',
   address: '0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
   source: 'Proxy',
-  link: 'https://goerli.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
+  link: 'https://sepolia.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337',
   timestamp: '2019-03-06T23:05:43.914Z',
   txn: '',
-	network: 'goerli'
+	network: 'sepolia'
 }
 */
 
@@ -238,7 +238,7 @@ snx.getVersions();
    { tag: 'v2.21.12-107',
      fulltag: 'v2.21.12-107',
      release: 'Hadar',
-     network: 'goerli',
+     network: 'sepolia',
      date: '2020-05-08T12:52:06-04:00',
      commit: '19997724bc7eaceb902c523a6742e0bd74fc75cb',
 		 contracts: { ReadProxyAddressResolver: [Object] }
@@ -247,7 +247,7 @@ snx.getVersions();
 */
 
 snx.networks;
-// [ 'local', 'goerli', 'mainnet' ]
+// [ 'local', 'sepolia', 'mainnet' ]
 
 snx.toBytes32('sUSD');
 // '0x7355534400000000000000000000000000000000000000000000000000000000'
@@ -279,9 +279,9 @@ $ npx synthetix bytes32 sUSD
 0x7355534400000000000000000000000000000000000000000000000000000000
 
 $ npx synthetix networks
-[ 'local', 'goerli', 'mainnet' ]
+[ 'local', 'sepolia', 'mainnet' ]
 
-$ npx synthetix source --network goerli --contract Proxy
+$ npx synthetix source --network sepolia --contract Proxy
 {
   "bytecode": "0..0",
   "abi": [ ... ]
@@ -290,17 +290,17 @@ $ npx synthetix source --network goerli --contract Proxy
 $ npx synthetix suspension-reason --code 2
 Market Closure
 
-$ npx synthetix synths --network goerli --key name
+$ npx synthetix synths --network sepolia --key name
 ["sUSD", "sEUR", ... ]
 
-$ npx synthetix target --network goerli --contract ProxySynthetix
+$ npx synthetix target --network sepolia --contract ProxySynthetix
 {
   "name": "ProxySynthetix",
   "address": "0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
   "source": "Proxy",
-  "link": "https://goerli.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
+  "link": "https://sepolia.etherscan.io/address/0x322A3346bf24363f451164d96A5b5cd5A7F4c337",
   "timestamp": "2019-03-06T23:05:43.914Z",
-  "network": "goerli"
+  "network": "sepolia"
 }
 
 $ npx synthetix users --network mainnet --user oracle

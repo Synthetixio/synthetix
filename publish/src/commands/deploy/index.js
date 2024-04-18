@@ -56,7 +56,7 @@ const DEFAULTS = {
 	gasLimit: '8000000',
 	priorityGasPrice: '0.0001',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
-	network: 'goerli',
+	network: 'sepolia',
 	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
 };
 
@@ -635,7 +635,7 @@ module.exports = {
 			)
 			.option(
 				'-q, --manage-nonces',
-				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in Goerli. Not to be confused with --manage-nonsense.)',
+				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in sepolia. Not to be confused with --manage-nonsense.)',
 				false
 			)
 			.option(

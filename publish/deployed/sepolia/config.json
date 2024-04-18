@@ -182,9 +182,6 @@
 	"LiquidatorRewards": {
 		"deploy": false
 	},
-	"OneNetAggregatorsDEFI": {
-		"deploy": false
-	},
 	"TokenStatesBTC": {
 		"deploy": false
 	},
@@ -207,6 +204,9 @@
 		"deploy": false
 	},
 	"DebtMigratorOnEthereum": {
+		"deploy": false
+	},
+	"DynamicSynthRedeemer": {
 		"deploy": false
 	}
 }

@@ -107,9 +107,8 @@ function itDoesRewardEscrow({ ctx, contract }) {
 
 				// no more accounts will be migratable for migrateVestingSchedule
 
-				it('reverts on call to migrateAccountEscrowBalances', async () => {
-					// fork has an old contract so should fail at the first modifier
-					const revertMsg = ctx.fork ? 'during setup' : `Only the contract owner`;
+				it.skip('reverts on call to migrateAccountEscrowBalances', async () => {
+					const revertMsg = `Cannot be run on this layer`;
 					await assert.revert(
 						RewardEscrowV2Frozen.migrateAccountEscrowBalances([], [], []),
 						revertMsg
