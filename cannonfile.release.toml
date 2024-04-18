@@ -12,3 +12,4 @@ exec = "./publish/cannon.js"
 func = "deploy"
 args = ["<%= settings.network %>"]
 modified = ["contracts", "publish/src", "publish/deployed/local"]
+outputs = []
