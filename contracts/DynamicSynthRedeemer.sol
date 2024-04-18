@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritence
 import "./Owned.sol";
+import "./Proxyable.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IDynamicSynthRedeemer.sol";
 
@@ -11,11 +12,6 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynth.sol";
-
-interface IProxy {
-    function target() external view returns (address);
-}
 
 contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
     using SafeDecimalMath for uint;
@@ -42,63 +38,79 @@ contract DynamicSynthRedeemer is Owned, IDynamicSynthRedeemer, MixinResolver {
         addresses[1] = CONTRACT_EXRATES;
     }
 
-    function issuer() internal view returns (IIssuer) {
+    /* ========== INTERNAL VIEWS ========== */
+
+    function _issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
-    function exchangeRates() internal view returns (IExchangeRates) {
+    function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function redeemingActive() internal view {
+    function _redeemingActive() internal view {
         require(redemptionActive, "Redemption deactivated");
     }
 
-    /* ========== VIEWS ========== */
+    /* ========== EXTERNAL VIEWS ========== */
 
     function getDiscountRate() external view returns (uint) {
         return discountRate;
     }
 
+    /* ========== INTERNAL HELPERS ========== */
+
+    function _proxyAddressForKey(bytes32 currencyKey) internal returns (address) {
+        address synth = address(_issuer().synths(currencyKey));
+        require(synth != address(0), "Invalid synth");
+        return address(Proxyable(synth).proxy());
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function redeemAll(address[] calldata synthProxies) external requireRedemptionActive {
-        for (uint i = 0; i < synthProxies.length; i++) {
-            _redeem(synthProxies[i], IERC20(synthProxies[i]).balanceOf(msg.sender));
+    function redeemAll(bytes32[] calldata currencyKeys) external requireRedemptionActive {
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            address synthProxy = _proxyAddressForKey(currencyKeys[i]);
+            _redeem(synthProxy, currencyKeys[i], IERC20(synthProxy).balanceOf(msg.sender));
         }
     }
 
-    function redeem(address synthProxy) external requireRedemptionActive {
-        _redeem(synthProxy, IERC20(synthProxy).balanceOf(msg.sender));
+    function redeem(bytes32 currencyKey) external requireRedemptionActive {
+        address synthProxy = _proxyAddressForKey(currencyKey);
+        _redeem(synthProxy, currencyKey, IERC20(synthProxy).balanceOf(msg.sender));
     }
 
-    function redeemPartial(address synthProxy, uint amountOfSynth) external requireRedemptionActive {
+    function redeemPartial(bytes32 currencyKey, uint amountOfSynth) external requireRedemptionActive {
+        address synthProxy = _proxyAddressForKey(currencyKey);
         // technically this check isn't necessary - Synth.burn would fail due to safe sub,
         // but this is a useful error message to the user
         require(IERC20(synthProxy).balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
-        _redeem(synthProxy, amountOfSynth);
+        _redeem(synthProxy, currencyKey, amountOfSynth);
     }
 
-    function _redeem(address synthProxy, uint amountOfSynth) internal {
-        bytes32 currencyKey = ISynth(IProxy(synthProxy).target()).currencyKey();
+    function _redeem(
+        address synthProxy,
+        bytes32 currencyKey,
+        uint amountOfSynth
+    ) internal {
+        require(amountOfSynth > 0, "No balance of synth to redeem");
         require(currencyKey != sUSD, "Cannot redeem sUSD");
 
         // Discount rate applied to chainlink price for dynamic redemptions
-        uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey).multiplyDecimalRound(discountRate);
-        require(rateToRedeem > 0, "Synth not redeemable");
-        require(amountOfSynth > 0, "No balance of synth to redeem");
+        (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(currencyKey);
+        uint rateToRedeem = rate.multiplyDecimalRound(discountRate);
+        require(rateToRedeem > 0 && !invalid, "Synth not redeemable");
 
-        issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimalRound(rateToRedeem);
-        issuer().issueSynthsWithoutDebt(sUSD, msg.sender, amountInsUSD);
+        _issuer().burnAndIssueSynthsWithoutDebtCache(msg.sender, currencyKey, amountOfSynth, amountInsUSD);
 
-        emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
+        emit SynthRedeemed(synthProxy, msg.sender, amountOfSynth, amountInsUSD);
     }
 
     /* ========== MODIFIERS ========== */
 
     modifier requireRedemptionActive() {
-        redeemingActive();
+        _redeemingActive();
         _;
     }
 

@@ -1072,7 +1072,8 @@
 		{
 			"sip": 2059,
 			"layer": "both",
-			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer"]
+			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -2014,7 +2015,17 @@
 				"major": 2,
 				"minor": 101
 			},
-			"sips": [2059]
+			"sips": [2059],
+			"released": true
+		},
+		{
+			"name": "Acrab (Optimism)",
+			"version": {
+				"major": 2,
+				"minor": 101
+			},
+			"sips": [2059],
+			"released": true
 		}
 	]
 }

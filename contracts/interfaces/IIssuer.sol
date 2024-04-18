@@ -131,5 +131,12 @@ interface IIssuer {
         uint amount
     ) external returns (bool rateInvalid);
 
+    function burnAndIssueSynthsWithoutDebtCache(
+        address account,
+        bytes32 currencyKey,
+        uint amountOfSynth,
+        uint amountInsUSD
+    ) external;
+
     function modifyDebtSharesForMigration(address account, uint amount) external;
 }
