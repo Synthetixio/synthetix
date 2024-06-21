@@ -39,7 +39,7 @@ contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2Frozen, LimitedSetup(
     /* An account's total vested reward synthetix. */
     mapping(address => uint256) public totalVestedAccountBalance;
 
-    /* Mapping of nominated address to recieve account merging */
+    /* Mapping of nominated address to receive account merging */
     mapping(address => address) public nominatedReceiver;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
