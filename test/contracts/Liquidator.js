@@ -318,6 +318,9 @@ contract('Liquidator', accounts => {
 					'Must liquidate using V3'
 				);
 			});
+			it('when liquidateSelf() is invoked, it reverts with must liquidate using V3', async () => {
+				await assert.revert(synthetix.liquidateSelf({ from: alice }), 'Must liquidate using V3');
+			});
 		});
 		describe('protected methods', () => {
 			describe('only internal contracts can call', () => {
