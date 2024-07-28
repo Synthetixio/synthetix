@@ -401,7 +401,7 @@ module.exports = async ({
 	});
 
 	const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
-	// If deploying to OVM avoid ivoking setAggregatorWarningFlags for now.
+	// If deploying to OVM avoid invoking setAggregatorWarningFlags for now.
 	if (aggregatorWarningFlags && !useOvm) {
 		await runStep({
 			contract: 'SystemSettings',

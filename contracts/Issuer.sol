@@ -846,7 +846,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint rewardsSum
     ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
-        // and it is the only SNX that can potentially be transfered if unstaked.
+        // and it is the only SNX that can potentially be transferred if unstaked.
         uint transferable = _snxBalanceOf(account);
         if (redeemTarget.add(rewardsSum) <= transferable) {
             // transferable is enough

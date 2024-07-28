@@ -61,7 +61,7 @@ describe(`Etherscan on ${network}`, () => {
 				const removeSignaturesAndVariableNames = entry => {
 					delete entry.signature;
 					// Some contracts, such as ProxyERC20 were deployed with different function
-					// input names than currently in the code, so reomve these from the check
+					// input names than currently in the code, so remove these from the check
 					// specifically balanceOf(address owner) was changed to balanceOf(address account)
 					(entry.inputs || []).forEach(input => {
 						delete input.name;

@@ -55,7 +55,7 @@ contract ProxyPerpsV2 is Owned {
             // Accepting a for loop since implementations for a market is going to be a very limited number (initially only 2)
             for (uint idx = 0; idx < _routedTargets.length; idx++) {
                 if (_routedTargets[idx] == implementation) {
-                    // remove it by bringing the last one to that position and poping the latest item (if it's the latest one will do an unecessary write)
+                    // remove it by bringing the last one to that position and poping the latest item (if it's the latest one will do an unnecessary write)
                     _routedTargets[idx] = _routedTargets[_routedTargets.length - 1];
                     _routedTargets.pop();
                     break;

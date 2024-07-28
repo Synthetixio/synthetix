@@ -458,7 +458,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     /// Uses the exchanger to get the dynamic fee (SIP-184) for trading from sUSD to baseAsset
     /// this assumes dynamic fee is symmetric in direction of trade.
     /// @dev this is a pretty expensive action in terms of execution gas as it queries a lot
-    ///   of past rates from oracle. Shoudn't be much of an issue on a rollup though.
+    ///   of past rates from oracle. Shouldn't be much of an issue on a rollup though.
     function _dynamicFeeRate() internal view returns (uint feeRate, bool tooVolatile) {
         return _exchanger().dynamicFeeRateForExchange(sUSD, baseAsset);
     }
