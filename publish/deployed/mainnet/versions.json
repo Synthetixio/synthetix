@@ -4778,8 +4778,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0xd711709eFc452152B7ad11DbD01ed4B69c9421B3",
-				"status": "current",
-				"keccak256": "0xa4adacf15426be1f1af675a149af5c8d6deec9f8d3ee1dab54b105d3c25c55f3"
+				"status": "replaced",
+				"keccak256": "0xa4adacf15426be1f1af675a149af5c8d6deec9f8d3ee1dab54b105d3c25c55f3",
+				"replaced_in": "v2.101.3"
 			},
 			"RewardEscrowV2": {
 				"address": "0xFAd53Cc9480634563E8ec71E8e693Ffd07981d38",
@@ -4810,6 +4811,21 @@
 				"address": "0x38c8A4d93757D3D2E0110Cfb5f18B9cC293e0fdA",
 				"status": "current",
 				"keccak256": "0xc9560e9672c3dff5c5bea2a78274b3e808bd6cdf338cc4091df5a59c58990f6e"
+			}
+		}
+	},
+	"v2.101.3": {
+		"tag": "v2.101.3",
+		"fulltag": "v2.101.3",
+		"release": "Acrab",
+		"network": "mainnet",
+		"date": "2024-08-26T10:37:17-04:00",
+		"commit": "b888832c963a9fbfe92d50ada2a2452d161fe5c6",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xc5f0b4194455e0C175ab68C501400e46C7203504",
+				"status": "current",
+				"keccak256": "0xf5af266ffe444334cd8903b556e23be15b0644f532a083013f03af8d92d9dbfd"
 			}
 		}
 	}

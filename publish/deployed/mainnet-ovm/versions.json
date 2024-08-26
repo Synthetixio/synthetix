@@ -5921,8 +5921,9 @@
 			},
 			"Synthetix": {
 				"address": "0x5A41F634958dB9183e9d0d1Cd8Dee439B6ABb3BF",
-				"status": "current",
-				"keccak256": "0xc74c72f453dbf6b9fa32ba686c5f45b62f906b77beba50e2e5b21606a483e38d"
+				"status": "replaced",
+				"keccak256": "0xc74c72f453dbf6b9fa32ba686c5f45b62f906b77beba50e2e5b21606a483e38d",
+				"replaced_in": "v2.101.3"
 			}
 		}
 	},
@@ -5948,6 +5949,21 @@
 				"address": "0x64EA298C622c628C8b4C596c1e4403eb5AFcFff7",
 				"status": "current",
 				"keccak256": "0xc9560e9672c3dff5c5bea2a78274b3e808bd6cdf338cc4091df5a59c58990f6e"
+			}
+		}
+	},
+	"v2.101.3": {
+		"tag": "v2.101.3",
+		"fulltag": "v2.101.3",
+		"release": "Acrab",
+		"network": "mainnet",
+		"date": "2024-08-26T10:37:17-04:00",
+		"commit": "b888832c963a9fbfe92d50ada2a2452d161fe5c6",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x3f2A1F997Ef089798d19473D96be484Aeb3E4ECf",
+				"status": "current",
+				"keccak256": "0x9023d9e36b889055353a27eb9c00ac211202574ac8569730d9e3577f3f2c3727"
 			}
 		}
 	}
