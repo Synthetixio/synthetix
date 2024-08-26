@@ -425,6 +425,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
+        require(resolver.getAddress(CONTRACT_V3_LEGACYMARKET) == address(0), "Must liquidate using V3");
+
         // must store liquidated account address because below functions may attempt to transfer SNX which changes messageSender
         address liquidatedAccount = messageSender;
 
