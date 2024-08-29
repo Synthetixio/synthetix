@@ -315,7 +315,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     /**
      * @notice Create an escrow entry to lock SNX for a given duration in seconds
      * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
-     to spend the the amount being escrowed.
+     to spend the amount being escrowed.
      */
     function createEscrowEntry(
         address beneficiary,
