@@ -6,7 +6,7 @@ interface ICollateralLoan {
     struct Loan {
         // ID for the loan
         uint id;
-        //  Acccount that created the loan
+        //  Account that created the loan
         address payable account;
         //  Amount of collateral deposited
         uint collateral;
