@@ -26,7 +26,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    uint internal _cachedDebt;
+    int internal _cachedDebt;
     mapping(bytes32 => uint) internal _cachedSynthDebt;
     mapping(bytes32 => uint) internal _excludedIssuedDebt;
     uint internal _cacheTimestamp;
@@ -111,7 +111,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return getDebtSnapshotStaleTime();
     }
 
-    function cachedDebt() external view returns (uint) {
+    function cachedDebt() external view returns (int) {
         return _cachedDebt;
     }
 
@@ -316,7 +316,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         external
         view
         returns (
-            uint debt,
+            int debt,
             uint timestamp,
             bool isInvalid,
             bool isStale

@@ -41,10 +41,10 @@ contract DebtCache is BaseDebtCache {
 
         // Subtract out the excluded non-SNX backed debt from our total
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        uint newDebt = snxCollateralDebt.floorsub(excludedDebt);
-        _cachedDebt = newDebt;
+        uint newDebt = snxCollateralDebt - excludedDebt;
+        _cachedDebt = int(newDebt);
         _cacheTimestamp = block.timestamp;
-        emit DebtCacheUpdated(newDebt);
+        emit DebtCacheUpdated(int(newDebt));
         emit DebtCacheSnapshotTaken(block.timestamp);
 
         // (in)validate the cache if necessary
@@ -87,11 +87,10 @@ contract DebtCache is BaseDebtCache {
         uint delta = SafeDecimalMath.abs(amount);
         if (amount > 0) {
             _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].add(delta);
-            _cachedDebt = _cachedDebt.add(delta);
         } else {
             _cachedSynthDebt[sUSD] = _cachedSynthDebt[sUSD].sub(delta);
-            _cachedDebt = _cachedDebt.sub(delta);
         }
+        _cachedDebt = _cachedDebt + amount;
 
         emit DebtCacheUpdated(_cachedDebt);
     }
@@ -131,10 +130,10 @@ contract DebtCache is BaseDebtCache {
 
         // Apply the debt update.
         if (cachedSum != currentSum) {
-            uint debt = _cachedDebt;
+            int debt = _cachedDebt;
             // apply the delta between the cachedSum and currentSum
             // add currentSum before sub cachedSum to prevent overflow as cachedSum > debt for large amount of excluded debt
-            debt = debt.add(currentSum).sub(cachedSum);
+            debt = debt + int(currentSum) - int(cachedSum);
             _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }
@@ -147,7 +146,7 @@ contract DebtCache is BaseDebtCache {
 
     /* ========== EVENTS ========== */
 
-    event DebtCacheUpdated(uint cachedDebt);
+    event DebtCacheUpdated(int cachedDebt);
     event DebtCacheSnapshotTaken(uint timestamp);
     event DebtCacheValidityChanged(bool indexed isInvalid);
 }

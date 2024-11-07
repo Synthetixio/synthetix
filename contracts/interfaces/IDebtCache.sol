@@ -5,7 +5,7 @@ import "./IIssuer.sol";
 interface IDebtCache {
     // Views
 
-    function cachedDebt() external view returns (uint);
+    function cachedDebt() external view returns (int);
 
     function cachedSynthDebt(bytes32 currencyKey) external view returns (uint);
 
@@ -37,7 +37,7 @@ interface IDebtCache {
         external
         view
         returns (
-            uint debt,
+            int debt,
             uint timestamp,
             bool isInvalid,
             bool isStale
