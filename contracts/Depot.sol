@@ -443,7 +443,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         // gas for fullfilling multiple small synth deposits
         if (amount < minimumDepositAmount) {
             // We cant fail/revert the transaction or send the synths back in a reentrant call.
-            // So we will keep your synths balance seperate from the FIFO queue so you can withdraw them
+            // So we will keep your synths balance separate from the FIFO queue so you can withdraw them
             smallDeposits[msg.sender] = smallDeposits[msg.sender].add(amount);
 
             emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
