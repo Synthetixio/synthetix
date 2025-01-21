@@ -134,8 +134,8 @@
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocSOLPERP",
 		"liquidationBufferRatio": "0.0100",
-		"maxPD": "0.001602",
-		"maxLiquidationDelta": "0.000801",
+		"maxPD": "0.0020",
+		"maxLiquidationDelta": "0.001",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -190,8 +190,8 @@
 		"liquidationPremiumMultiplier": "1.5625",
 		"offchainMarketKey": "ocDOGEPERP",
 		"liquidationBufferRatio": "0.0100",
-		"maxPD": "0.001602",
-		"maxLiquidationDelta": "0.000801",
+		"maxPD": "0.0020",
+		"maxLiquidationDelta": "0.0010",
 		"paused": false,
 		"offchainPaused": false
 	},
@@ -946,8 +946,8 @@
 		"liquidationPremiumMultiplier": "3",
 		"offchainMarketKey": "ocPEPEPERP",
 		"liquidationBufferRatio": "0.0125",
-		"maxPD": "0.002002",
-		"maxLiquidationDelta": "0.001001",
+		"maxPD": "0.0024",
+		"maxLiquidationDelta": "0.0012",
 		"paused": false,
 		"offchainPaused": false
 	},
