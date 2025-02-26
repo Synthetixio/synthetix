@@ -345,6 +345,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
         if (_issuer == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)) {
+            // `uint(-1)` is uint max in older solidity versions
             return (uint(-1), false);
         }
         // What is the value of their SNX balance in sUSD
