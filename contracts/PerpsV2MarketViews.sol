@@ -238,11 +238,10 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
      * @return fee in sUSD decimal, and invalid boolean flag for invalid rates or dynamic fee that is
      * too high due to recent volatility.
      */
-    function orderFee(int sizeDelta, IPerpsV2MarketBaseTypes.OrderType orderType)
-        external
-        view
-        returns (uint fee, bool invalid)
-    {
+    function orderFee(
+        int sizeDelta,
+        IPerpsV2MarketBaseTypes.OrderType orderType
+    ) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice();
         (uint dynamicFeeRate, bool tooVolatile) = _dynamicFeeRate();
 
@@ -252,16 +251,15 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         }
 
         uint fillPrice = _fillPrice(sizeDelta, price);
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                oraclePrice: price,
-                fillPrice: fillPrice,
-                desiredFillPrice: fillPrice,
-                makerFee: makerFee,
-                takerFee: takerFee,
-                trackingCode: bytes32(0)
-            });
+        TradeParams memory params = TradeParams({
+            sizeDelta: sizeDelta,
+            oraclePrice: price,
+            fillPrice: fillPrice,
+            desiredFillPrice: fillPrice,
+            makerFee: makerFee,
+            takerFee: takerFee,
+            trackingCode: bytes32(0)
+        });
         return (_orderFee(params, dynamicFeeRate), isInvalid || tooVolatile);
     }
 
@@ -280,18 +278,7 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         uint tradePrice,
         IPerpsV2MarketBaseTypes.OrderType orderType,
         address sender
-    )
-        external
-        view
-        returns (
-            uint margin,
-            int size,
-            uint price,
-            uint liqPrice,
-            uint fee,
-            Status status
-        )
-    {
+    ) external view returns (uint margin, int size, uint price, uint liqPrice, uint fee, Status status) {
         uint makerFee;
         uint takerFee;
 
@@ -309,16 +296,15 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
             }
         }
 
-        TradeParams memory params =
-            TradeParams({
-                sizeDelta: sizeDelta,
-                oraclePrice: tradePrice,
-                desiredFillPrice: tradePrice,
-                fillPrice: _fillPrice(sizeDelta, tradePrice),
-                makerFee: makerFee,
-                takerFee: takerFee,
-                trackingCode: bytes32(0)
-            });
+        TradeParams memory params = TradeParams({
+            sizeDelta: sizeDelta,
+            oraclePrice: tradePrice,
+            desiredFillPrice: tradePrice,
+            fillPrice: _fillPrice(sizeDelta, tradePrice),
+            makerFee: makerFee,
+            takerFee: takerFee,
+            trackingCode: bytes32(0)
+        });
         (Position memory newPosition, uint fee_, Status status_) = _postTradeDetails(marketState.positions(sender), params);
 
         liqPrice = _approxLiquidationPrice(newPosition, newPosition.lastPrice);
@@ -333,15 +319,9 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
     }
 
     /// helper to fetch the orderFee (maker/taker) bps by order type (Atomic, Delayed, Offchain).
-    function _makerTakeFeeByOrderType(IPerpsV2MarketBaseTypes.OrderType orderType)
-        internal
-        view
-        returns (
-            uint makerFee,
-            uint takerFee,
-            bool invalid
-        )
-    {
+    function _makerTakeFeeByOrderType(
+        IPerpsV2MarketBaseTypes.OrderType orderType
+    ) internal view returns (uint makerFee, uint takerFee, bool invalid) {
         bytes32 marketKey = _marketKey();
         invalid = false;
 
@@ -385,15 +365,14 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         //  substitute with: profitLoss = (price - last-price) * positionSize
         //  and also with: funding = netFundingPerUnit * positionSize
         //  we get: margin + (price - last-price) * positionSize + netFundingPerUnit * positionSize = liquidationMargin
-        //  moving around: price = lastPrice + (liquidationMargin - margin - liqPremium) / positionSize - netFundingPerUnit
-        int result =
-            int(position.lastPrice)
-                .add(
+        //  moving around: price = lastPrice + (liquidationMargin - (margin - liqPremium)) / positionSize - netFundingPerUnit
+        int result = int(position.lastPrice)
+            .add(
                 int(_liquidationMargin(position.size, currentPrice))
                     .sub(int(position.margin).sub(int(_liquidationPremium(position.size, currentPrice))))
                     .divideDecimal(position.size)
             )
-                .sub(_netFundingPerUnit(position.lastFundingIndex, currentPrice));
+            .sub(_netFundingPerUnit(position.lastFundingIndex, currentPrice));
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
         return uint(_max(0, result));
@@ -407,8 +386,9 @@ contract PerpsV2MarketViews is PerpsV2MarketBase, IPerpsV2MarketViews {
         }
         // see comment explaining this calculation in _positionDebtCorrection()
         int priceWithFunding = int(price).add(_nextFundingEntry(price));
-        int totalDebt =
-            int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(marketState.entryDebtCorrection());
+        int totalDebt = int(marketState.marketSkew()).multiplyDecimal(priceWithFunding).add(
+            marketState.entryDebtCorrection()
+        );
         return uint(_max(totalDebt, 0));
     }
 }
