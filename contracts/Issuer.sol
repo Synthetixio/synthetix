@@ -93,6 +93,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXBRIDGETOBASE = "SynthetixBridgeToBase";
     bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
     bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM = "DebtMigratorOnOptimism";
+    bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
 
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
@@ -343,6 +344,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
+        if (_issuer == resolver.getAddress(CONTRACT_V3_LEGACYMARKET)) {
+            // `uint(-1)` is uint max in older solidity versions
+            return (uint(-1), false);
+        }
         // What is the value of their SNX balance in sUSD
         (uint snxRate, bool isInvalid) = _rateAndInvalid(SNX);
         uint destinationValue = _snxToUSD(_collateral(_issuer), snxRate);
