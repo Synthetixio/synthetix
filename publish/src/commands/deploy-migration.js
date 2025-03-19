@@ -8,6 +8,7 @@ const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const {
 	constants: { FLATTENED_FOLDER },
+	networkToChainId,
 } = require('../../..');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const linker = require('solc/linker');
@@ -268,6 +269,7 @@ const deployMigration = async ({
 				contractName: libName,
 				buildPath,
 				etherscanUrl,
+				network,
 				useOvm,
 			});
 			// verify contract
@@ -276,6 +278,7 @@ const deployMigration = async ({
 				contractName,
 				buildPath,
 				etherscanUrl,
+				network,
 				useOvm,
 				linkedLibraryName: libName,
 				linkedLibraryAddress: deployedLib.address,
@@ -293,6 +296,7 @@ async function verifyContract({
 	contractName,
 	buildPath,
 	etherscanUrl,
+	network,
 	useOvm,
 	linkedLibraryName,
 	linkedLibraryAddress,
@@ -332,6 +336,8 @@ async function verifyContract({
 		qs.stringify({
 			module: 'contract',
 			action: 'verifysourcecode',
+			chainId: Number(networkToChainId[network]),
+			codeformat: 'solidity-single-file',
 			contractaddress: deployedContract.address,
 			sourceCode: readFlattened(),
 			contractname: contractName,
