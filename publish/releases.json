@@ -1074,6 +1074,12 @@
 			"layer": "both",
 			"sources": ["DebtCache", "DynamicSynthRedeemer", "Issuer"],
 			"released": "both"
+		},
+		{
+			"sip": 420,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -2025,6 +2031,24 @@
 				"minor": 101
 			},
 			"sips": [2059],
+			"released": true
+		},
+		{
+			"name": "Han",
+			"version": {
+				"major": 2,
+				"minor": 102
+			},
+			"sips": [420],
+			"released": true
+		},
+		{
+			"name": "Han (Optimism)",
+			"version": {
+				"major": 2,
+				"minor": 102
+			},
+			"sips": [420],
 			"released": true
 		}
 	]

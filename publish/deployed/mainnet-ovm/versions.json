@@ -5942,8 +5942,9 @@
 			},
 			"Issuer": {
 				"address": "0xb4E0FA941376e101C29A9FA5A9C6a95489aA34cD",
-				"status": "current",
-				"keccak256": "0x122394906d88b596f09642fb03cdb2d4b798a65cf4280cecbccc0279ba67b3a2"
+				"status": "replaced",
+				"keccak256": "0x122394906d88b596f09642fb03cdb2d4b798a65cf4280cecbccc0279ba67b3a2",
+				"replaced_in": "v2.102.0"
 			},
 			"DynamicSynthRedeemer": {
 				"address": "0x64EA298C622c628C8b4C596c1e4403eb5AFcFff7",
@@ -5964,6 +5965,21 @@
 				"address": "0x3f2A1F997Ef089798d19473D96be484Aeb3E4ECf",
 				"status": "current",
 				"keccak256": "0x9023d9e36b889055353a27eb9c00ac211202574ac8569730d9e3577f3f2c3727"
+			}
+		}
+	},
+	"v2.102.0": {
+		"tag": "v2.102.0",
+		"fulltag": "v2.102.0",
+		"release": "Han",
+		"network": "mainnet",
+		"date": "2025-03-21T13:02:01-04:00",
+		"commit": "946a0903d34eff74bebb18881dd33ed8ee2a509d",
+		"contracts": {
+			"Issuer": {
+				"address": "0x49acf95f875984fF57E1bB8b9bA49c5487C133A7",
+				"status": "current",
+				"keccak256": "0x01c9073479a323531592b4a418de497b073561b5ec28d2471093911debe3397e"
 			}
 		}
 	}
