@@ -27,19 +27,19 @@ defaultValue = "5000000000"
 [setting.rate_btc]
 defaultValue = "50000000000"
 
-[import.aggregator_snx]
+[clone.aggregator_snx]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_snx %>"
 options.timestamp = "1558469483"
 options.salt = "snx"
 
-[import.aggregator_eth]
+[clone.aggregator_eth]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_eth %>"
 options.timestamp = "1558469483"
 options.salt = "eth"
 
-[import.aggregator_btc]
+[clone.aggregator_btc]
 source = "chainlink:0.7-mock"
 options.rate = "<%= settings.rate_btc %>"
 options.timestamp = "1558469483"
@@ -241,7 +241,7 @@ args = [
     "<%= imports.aggregator_snx.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "import.aggregator_snx"]
+depends = ["invoke.accept_ownership", "clone.aggregator_snx"]
 
 [invoke.set_aggregator_eth]
 target = ["ExchangeRates"]
@@ -253,7 +253,7 @@ args = [
     "<%= imports.aggregator_eth.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "import.aggregator_eth"]
+depends = ["invoke.accept_ownership", "clone.aggregator_eth"]
 
 [invoke.set_aggregator_btc]
 target = ["ExchangeRates"]
@@ -265,7 +265,7 @@ args = [
     "<%= imports.aggregator_btc.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "import.aggregator_btc"]
+depends = ["invoke.accept_ownership", "clone.aggregator_btc"]
 
 [invoke.increase_snapshot_stale_time]
 target = ["SystemSettings"]
