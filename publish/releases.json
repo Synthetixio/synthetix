@@ -1078,7 +1078,8 @@
 		{
 			"sip": 420,
 			"layer": "both",
-			"sources": ["Issuer"]
+			"sources": ["Issuer"],
+			"released": "both"
 		}
 	],
 	"releases": [
@@ -2038,7 +2039,8 @@
 				"major": 2,
 				"minor": 102
 			},
-			"sips": [420]
+			"sips": [420],
+			"released": true
 		},
 		{
 			"name": "Han (Optimism)",
@@ -2046,7 +2048,8 @@
 				"major": 2,
 				"minor": 102
 			},
-			"sips": [420]
+			"sips": [420],
+			"released": true
 		}
 	]
 }

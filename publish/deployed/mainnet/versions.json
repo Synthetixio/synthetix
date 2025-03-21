@@ -4799,8 +4799,9 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0xab4688E54A216aB3813438D30603Bf855648AF8d",
-				"status": "current",
-				"keccak256": "0x122394906d88b596f09642fb03cdb2d4b798a65cf4280cecbccc0279ba67b3a2"
+				"status": "replaced",
+				"keccak256": "0x122394906d88b596f09642fb03cdb2d4b798a65cf4280cecbccc0279ba67b3a2",
+				"replaced_in": "v2.102.0"
 			},
 			"DebtCache": {
 				"address": "0xd1cad1A569E70d2Df4C8ed43d3cC93DBE16285dE",
@@ -4826,6 +4827,21 @@
 				"address": "0xc5f0b4194455e0C175ab68C501400e46C7203504",
 				"status": "current",
 				"keccak256": "0xf5af266ffe444334cd8903b556e23be15b0644f532a083013f03af8d92d9dbfd"
+			}
+		}
+	},
+	"v2.102.0": {
+		"tag": "v2.102.0",
+		"fulltag": "v2.102.0",
+		"release": "Han",
+		"network": "mainnet",
+		"date": "2025-03-21T13:02:01-04:00",
+		"commit": "946a0903d34eff74bebb18881dd33ed8ee2a509d",
+		"contracts": {
+			"Issuer": {
+				"address": "0x7A1b3DB73E5B8c58EDC8A821890005064f2B83Fd",
+				"status": "current",
+				"keccak256": "0x01c9073479a323531592b4a418de497b073561b5ec28d2471093911debe3397e"
 			}
 		}
 	}
