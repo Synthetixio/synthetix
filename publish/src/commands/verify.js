@@ -9,6 +9,7 @@ const qs = require('querystring');
 
 const {
 	constants: { BUILD_FOLDER, FLATTENED_FOLDER, CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	networkToChainId,
 } = require('../../..');
 
 const {
@@ -57,6 +58,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm, contractToVe
 	const tableData = [];
 
 	const etherscanKey = useOvm ? process.env.OVM_ETHERSCAN_KEY : process.env.ETHERSCAN_KEY;
+	const chainId = Number(networkToChainId[network]);
 
 	for (const name of Object.keys(config)) {
 		if (name !== contractToVerify) continue;
@@ -176,36 +178,34 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm, contractToVe
 			// The version reported by solc-js is too verbose and needs a v at the front
 			const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
 
-			result = await axios.post(
-				etherscanUrl,
-				qs.stringify({
-					module: 'contract',
-					action: 'verifysourcecode',
-					contractaddress: address,
-					sourceCode: warningHeader() + readFlattened(),
-					contractname: source,
-					// note: spelling mistake is on etherscan's side
-					constructorArguements: constructorArguments,
-					// if ovm remove the +commit... info
-					compilerversion: solcVersion,
-					optimizationUsed: 1,
-					runs,
-					libraryname1: 'SafeDecimalMath',
-					libraryname2: 'SystemSettingsLib',
-					libraryname3: 'SignedSafeDecimalMath',
-					libraryname4: 'ExchangeSettlementLib',
-					libraryaddress1: deployment.targets['SafeDecimalMath'].address,
-					libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
-					libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
-					libraryaddress4: (deployment.targets['ExchangeSettlementLib'] || {}).address,
-					apikey: etherscanKey,
-				}),
-				{
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded',
-					},
-				}
-			);
+			const postData = {
+				module: 'contract',
+				action: 'verifysourcecode',
+				apikey: etherscanKey,
+				chainid: chainId,
+				codeformat: 'solidity-single-file',
+				contractaddress: address,
+				sourceCode: warningHeader() + readFlattened(),
+				contractname: source,
+				constructorArguements: constructorArguments,
+				compilerversion: solcVersion,
+				optimizationUsed: 1,
+				runs,
+				libraryname1: 'SafeDecimalMath',
+				libraryname2: 'SystemSettingsLib',
+				libraryname3: 'SignedSafeDecimalMath',
+				libraryname4: 'ExchangeSettlementLib',
+				libraryaddress1: deployment.targets['SafeDecimalMath'].address,
+				libraryaddress2: (deployment.targets['SystemSettingsLib'] || {}).address,
+				libraryaddress3: (deployment.targets['SignedSafeDecimalMath'] || {}).address,
+				libraryaddress4: (deployment.targets['ExchangeSettlementLib'] || {}).address,
+			};
+
+			result = await axios.post(etherscanUrl, qs.stringify(postData), {
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+			});
 
 			console.log(gray(' - Got result:', result.data.result));
 
@@ -235,6 +235,7 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm, contractToVe
 						module: 'contract',
 						action: 'checkverifystatus',
 						guid,
+						apikey: etherscanKey,
 					},
 				});
 				status = result.data.result;
